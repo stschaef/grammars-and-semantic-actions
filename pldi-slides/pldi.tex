@@ -369,7 +369,7 @@ upquote=true
   \end{tikzpicture}
   \end{center}
 
-  \onslide<+->{Necessary at every level of the software stack}
+  \onslide<2->{Necessary at every level of the software stack}
 
   \onslide<+->{
   \begin{alertblock}{The Cost of Incorrect Parsers}
@@ -786,17 +786,81 @@ parse (cons ((*@$\sigma$@*) ')' a) w) (suc n) =
 
 \begin{frame}{In the Paper}
   \onslide<1->{
-    Proving unambiguity in \theoryabbv
+    Proving unambiguity of grammars in \theoryabbv
+
+
+%   \begin{minipage}[t]{.4\textwidth}
+%     \[
+%       \onslide<2->{A = \literal{a} \concat (\literal{b} \disj \literal{c})}
+%     \]
+%   \begin{tikzpicture}[%opacity=0.5,
+%   treenode/.style = {shape=rectangle, rounded corners,
+%     draw, align=center,
+%     top color=white, bottom color=white!20},
+%     line/.style={draw, -latex'},
+%     edge from parent/.style={draw,-latex'},
+%     level 1/.style={sibling distance=20mm, level distance=0.5cm},
+%     level 2/.style={sibling distance=1cm, level distance=1cm},
+%     visible on=<3->
+%     ]
+%   \node[treenode] (tree) {$\concat$}
+%     child { node[treenode] (a) {$\stringquote{a}$} }
+%     child { node[treenode] (b){$\mathsf{inl}$}
+%         child { node[treenode] (c) {$\stringquote{b}$} }
+%       };
+%       \node[draw, fit=(tree)(a)(b)(c),
+%       label={[name=l] $\stringquote{ab} \vdash A$}, visible on=<3->] {};
+% \end{tikzpicture}
+%   \end{minipage}%
+%   \begin{minipage}[t]{.6\textwidth}
+%     \[
+%       \onslide<5->{B = \kstar{\literal{a}} \concat \kstar{\literal{a}}}
+%     \]
+%   \begin{tikzpicture}[%opacity=0.5,
+%   treenode/.style = {shape=rectangle, rounded corners,
+%     draw, align=center,
+%     top color=white, bottom color=white!20},
+%     line/.style={draw, -latex'},
+%     edge from parent/.style={draw,-latex'},
+%     level 1/.style={sibling distance=2cm, level distance=0.5cm},
+%     level 2/.style={sibling distance=1cm, level distance=1cm},
+%     visible on=<6->
+%     ]
+
+%    \node[treenode] (tree) {$\concat$}
+%    child { node[treenode] (a) {$cons$}
+%      child {node[treenode] (b) {$\stringquote{a}}$}
+%      child {node[treenode] (c) {$nil$}}
+%    }
+%    child {node[treenode] (x)) };
+%    \node[treenode, right=2.5cm of tree] (tree2) {$\concat$}
+%    child {node[treenode] {$nil$}
+%    child { node[treenode] (x) {$cons$}
+%      child {node[treenode] (y){$\stringquote{a}}$}
+%      child {node[treenode] (z){$nil$}}
+%    }
+%     ;
+%       \node[draw, fit=(tree)(a)(b)(c)(x)(y)(z)(w),
+%       label={[name=l] $h(a)$}, visible on=<6->] {};
+% \end{tikzpicture}
+%   \end{minipage}%
+
+
   }
+
+    \vspace{1cm}
 
   \onslide<2->{
     Linear-Non-Linear Dependent Types
     \begin{itemize}
       \item $\LinSigTyLimit{x}{X}{A~x}$, $\LinPiTyLimit{x}{X}{A~x}$
+      \item Key to describing grammars of unrestricted complexity
     \end{itemize}
   }
 
-  \onslide<2->{
+    \vspace{1cm}
+
+  \onslide<3->{
     Denotational Semantics
     \begin{itemize}
       \item Interpret grammars in the category $\String \to \Set$
