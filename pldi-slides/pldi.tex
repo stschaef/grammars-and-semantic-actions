@@ -33,7 +33,7 @@
 \usepackage{stmaryrd}
 \usepackage{amsmath}
 \usepackage{amssymb}
-\usepackage{listings}
+% \usepackage{listings}
 \usepackage{pdfpc}
 \usepackage{textcomp}
 \newcommand<>{\talknote}[1]{\only#2{\pdfpcnote{- #1}\relax}}
@@ -89,31 +89,57 @@
 %  \usepackage[mathrm=sym]{unicode-math}
 % \setmathfont{Fira Math}
 
-\definecolor{codegreen}{rgb}{0,0.6,0}
-\definecolor{codegray}{rgb}{0.5,0.5,0.5}
-\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\colorlet{keywordcolor}{blue}
+\colorlet{nonlintycolor}{RubineRed}
+\colorlet{lintycolor}{PineGreen}
+\colorlet{nonlinconstructorcolor}{nonlintycolor}
+\colorlet{linconstructorcolor}{lintycolor}
+\colorlet{alphabetcolor}{black}
+\colorlet{funarrowcolor}{lintycolor}
 \definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\newcommand{\uparrowcode}{{\color{nonlinconstructorcolor} \uparrow}}
+\newcommand{\tocode}{{\color{black} \to}}
+\newcommand{\tocodelin}{{\color{linconstructorcolor} \lto}}
+
+\newcommand{\mkLinColor}[1]{{\color{lintycolor} #1}}
+\newcommand{\mkNonLinColor}[1]{{\color{nonlintycolor} #1}}
 
 \usepackage{listings}
 \lstdefinelanguage{Agda}{
+alsoletter={0123\&'},
 keywords={data, where, module, import, open, public,
 record, field, let, in, if, then, else, case, of, with,
 do, postulate, primitive, mutual, abstract, private,
 forall, exists, cong, set, prop, sort, Level, Data, Type,
 Renamer},
-morekeywords=[2]{Set, Type, Prop, moduleFuncs, instance, Named},
+morekeywords=[2]{L, Bool, Nat, Fin, LinTy},
+morekeywords=[3]{String, Dyck, Trace, Exp, Atom, O, D, C, A, NotStartsWithLP, NotStartsWithRP, I},
+% morekeywords=[4]{bal, .nil, .cons, cons, nil, inl, inr, stop, 1to1, 1to2, 0to2, 0to1,
+%   done, add, num, parens, left, unexpected, lookAheadRP, lookAheadNot, closeGood, closeBad,
+%   doneGood, doneBad},
+% morekeywords=[5]{.states, states, .isAcc, isAcc, transitions, src, dst, .transitions, .dst,
+%   .src, .label, label, 0 , 1 , 2, 3, true, false, zero},
+morekeywords=[6]{NUM},
+morekeywords=[7]{\&, '},
 sensitive=true,
 comment=[l]{--},
 morecomment=[s]{\{-}{-\}},
 morestring=[b]",
 mathescape=true,
-escapeinside={(*@}{@*)}
+moredelim={[is][]{\#}{\#}},
+escapeinside={(*@}{@*)},
 }
 \lstset{
 language=Agda,
-basicstyle=\ttfamily\small,
-keywordstyle=\color{blue},
-keywordstyle=[2]\color{teal},
+basicstyle=\ttfamily\footnotesize,
+keywordstyle=\color{keywordcolor},
+keywordstyle=[2]\color{nonlintycolor},
+keywordstyle=[3]\color{lintycolor},
+% keywordstyle=[4]\color{linconstructorcolor},
+% keywordstyle=[5]\color{nonlinconstructorcolor},
+keywordstyle=[6]\color{alphabetcolor},
+keywordstyle=[7]\color{funarrowcolor},
 identifierstyle=\color{black},
 commentstyle=\color{gray}\textit,
 stringstyle=\color{orange},
@@ -130,10 +156,12 @@ rulecolor=\color{black},
 texcl=true,
 backgroundcolor=\color{backcolour},
 frame=single,
+xleftmargin = 1.5mm ,
+xrightmargin = 1.5mm,
 upquote=true
 }
 
-\colorlet{LinTyColor}{blue}
+\colorlet{LinTyColor}{lintycolor}
 
 \newcommand{\Subst}{\textrm{Subst}}
 \newcommand{\SPF}{\mathsf{SPF}}
@@ -147,13 +175,13 @@ upquote=true
 \newcommand{\sem}[1]{\llbracket{#1}\rrbracket}
 \newcommand{\semg}[1]{\sem{#1}\gamma}
 \newcommand{\cat}[1]{\mathbf{#1}}
-\newcommand{\lto}{\multimap}
+\newcommand{\lto}{{\color{LinTyColor} \multimap}}
 \newcommand{\tol}{\mathrel{\rotatebox[origin=c]{180}{$\lto$}}}
 \newcommand{\String}{\textbf{String}}
 \newcommand{\Char}{\textbf{Char}}
 \newcommand{\stringg}{{\color{LinTyColor} String}}
 \newcommand{\charg}{\mathtt{Char}}
-\newcommand{\Set}{\mathbf{Set}}
+\newcommand{\Set}{\textbf{Set}}
 \newcommand{\Syn}{\mathbf{Synx}}
 \newcommand{\SemAct}{\mathbf{SemAct}}
 \newcommand{\Gr}{\mathbf{Gr}}
@@ -341,14 +369,16 @@ upquote=true
   \end{tikzpicture}
   \end{center}
 
-  \onslide<2->{
+  \onslide<+->{Necessary at every level of the software stack}
+
+  \onslide<+->{
   \begin{alertblock}{The Cost of Incorrect Parsers}
     \begin{itemize}
-        \item<2-> Critical real-world vulnerabilities, including remote code execution
-        \item<3-> The guarantees of other software verification can be invalidated
-        \item<4-> Early versions of CompCert
+        \item<+-> Critical real-world vulnerabilities, including remote code execution
+        \item<+-> The guarantees of other software verification can be invalidated
+        \item<+-> Early versions of CompCert
         \begin{itemize}
-            \item<5-> 0 middle or backend bugs, 6 parser bugs \textbf{(Yang et al., 2011)}
+            \item<+-> 0 middle or backend bugs, 6 parser bugs \textbf{(Yang et al., 2011)}
         \end{itemize}
     \end{itemize}
   \end{alertblock}
@@ -409,16 +439,16 @@ upquote=true
 \end{frame}
 
 \begin{frame}{\theoryname (\theoryabbv)}
-   \begin{exampleblock}{\theoryabbv : DSL for \textit{intrinsically} verified parsing}
+   \begin{block}{\theoryabbv : DSL for \textit{intrinsically} verified parsing}
    \begin{itemize}
-     \item<2-> Ordered, linear system for writing verified parsing algorithms as functional programs
+     \item<2-> Ordered, linear type system for writing verified parsers as functional programs
      \item<3-> Typechecking guarantees parser \alert{soundness for free}
        \begin{itemize}
           \item<4-> \alert{Completeness} with a little effort
        \end{itemize}
      \item<5-> Extensible framework for implementing grammar formalisms, their parsers, and their parser generators
    \end{itemize}
-   \end{exampleblock}
+   \end{block}
 
    \onslide<6->{
    \theoryabbv subsumes existing formalisms by expressing \alert{grammars as types}
@@ -430,7 +460,7 @@ upquote=true
 
    \vspace{1em}
 
-   \onslide<9->{Implemented in Cubical Agda \agdalogo~ with verified case studies for regular expressions and
+   \onslide<9->{Implemented in Cubical Agda \agdalogo~ with verified parsers for regular expressions and
    selected context-free grammars}
 \end{frame}
 
@@ -440,6 +470,40 @@ upquote=true
 \end{frame}
 
 \section{\theoryabbv}
+
+\begin{frame}{Typing Judgment}
+  \begin{center}
+    \begin{tikzpicture}[
+      label/.style={font=\footnotesize, text=ForestGreen},
+      arrow/.style={->, >=stealth, ForestGreen, thick}
+    ]
+      % The main judgment
+      \node (judgment) {\Huge $\Delta \vdash e : \A$};
+
+      % Labels with arrows appearing sequentially
+      \onslide<2->{
+        \node[label, above=1.5cm of judgment.west, xshift=-1cm] (delta-label) {\large Input list of parse trees};
+        \draw[arrow] (delta-label) -- ([yshift=2pt]judgment.west);
+      }
+
+      \onslide<4->{
+        \node[label, below=1.5cm of judgment.center, xshift=0.1cm] (e-label) {\large Parse tree};
+        \draw[arrow] (e-label) -- ([yshift=-2pt,xshift=0.1cm]judgment.south);
+      }
+
+      \onslide<3->{
+        \node[label, above=1.5cm of judgment.east, xshift=1cm] (a-label) {\large Formal grammar};
+        \draw[arrow] (a-label) -- ([yshift=2pt]judgment.east);
+      }
+    \end{tikzpicture}
+  \end{center}
+
+  \onslide<4->{
+    \begin{center}
+    $e$ is a parse tree of grammar $\A$ assembled from the parse trees in $\Delta$
+    \end{center}
+  }
+\end{frame}
 
 
 \newcommand{\whyExampleString}{cat}
@@ -491,34 +555,6 @@ upquote=true
   \end{center}
 \end{frame}
 
-\begin{frame}{Typing Judgment}
-  \begin{center}
-    \begin{tikzpicture}[
-      label/.style={font=\footnotesize, text=ForestGreen},
-      arrow/.style={->, >=stealth, ForestGreen, thick}
-    ]
-      % The main judgment
-      \node (judgment) {\Huge $\Delta \vdash e : \A$};
-
-      % Labels with arrows appearing sequentially
-      \onslide<2->{
-        \node[label, above=1.5cm of judgment.west, xshift=-1cm] (delta-label) {\large Input list of parse trees};
-        \draw[arrow] (delta-label) -- ([yshift=2pt]judgment.west);
-      }
-
-      \onslide<4->{
-        \node[label, below=1.5cm of judgment.center, xshift=0.1cm] (e-label) {\large Parse tree};
-        \draw[arrow] (e-label) -- ([yshift=-2pt,xshift=0.1cm]judgment.south);
-      }
-
-      \onslide<3->{
-        \node[label, above=1.5cm of judgment.east, xshift=1cm] (a-label) {\large Formal grammar};
-        \draw[arrow] (a-label) -- ([yshift=2pt]judgment.east);
-      }
-    \end{tikzpicture}
-  \end{center}
-\end{frame}
-
 \begin{frame}{Grammar Semantics}
 \begin{center}
   \begin{tabular}{cc}
@@ -532,7 +568,7 @@ upquote=true
 \end{center}
 \end{frame}
 
-\begin{frame}{Regular Expressions in \theoryabbv}
+\begin{frame}{Regular Expressions as Types in \theoryabbv}
 
 \begin{itemize}
 \item<+-> Characters $\literal c$
@@ -551,7 +587,7 @@ upquote=true
 
 \section{Dyck Grammar: An Extended Example}
 
-\begin{frame}[fragile]{Dyck Grammar}
+\begin{frame}[fragile]{Dyck Grammar as a Type in \theoryabbv}
 \vspace{-2cm}
 Context-free grammar of balanced parentheses
 
@@ -567,8 +603,8 @@ Context-free grammar of balanced parentheses
 \begin{onlyenv}<2->
 \begin{lstlisting}
 data Dyck : LinTy where
-  nil :  I (*@$\lto$@*) Dyck
-  bal : '(' (*@$\lto$@*) Dyck (*@$\lto$@*) ')' (*@$\lto$@*) Dyck (*@$\lto$@*) Dyck
+  nil :  I (*@$\tocodelin$@*) Dyck
+  bal : '(' (*@$\tocodelin$@*) Dyck (*@$\tocodelin$@*) ')' (*@$\tocodelin$@*) Dyck (*@$\tocodelin$@*) Dyck
 \end{lstlisting}
 \vspace{-1cm}
 \begin{center}
@@ -589,13 +625,13 @@ treenode/.style = {shape=rectangle, rounded corners,
   ]
 
  \node[treenode] (bal) {$bal$}
- child {node[treenode] (l) {$\literal{(}$}}
+ child {node[treenode] (l) {$\stringquote{(}$}}
  child {node[treenode] (m) {$nil$}}
- child {node[treenode] (r) {$\literal{)}$}}
+ child {node[treenode] (r) {$\stringquote{)}$}}
  child { node[treenode] (a) {$bal$}
-   child {node[treenode] (l1) {$\literal{(}$}}
+   child {node[treenode] (l1) {$\stringquote{(}$}}
    child {node[treenode] (m1) {$nil$}}
-   child {node[treenode] (r1) {$\literal{)}$}}
+   child {node[treenode] (r1) {$\stringquote{)}$}}
    child {node[treenode] (a1) {$nil$}}
  }
   ;
@@ -607,42 +643,50 @@ treenode/.style = {shape=rectangle, rounded corners,
 \end{frame}
 
 \begin{frame}{A Parser for the Dyck Grammar}
-  \begin{exampleblock}{Dyck Parser}
+  \begin{block}{Dyck Parser}
     A parser for $\Dyck$ is a function
   \[
-    \stringg \lto \Dyck~\disj~\T
+    \stringg~\lto~\Dyck~\disj~\T
   \]
-  \end{exampleblock}
+  \end{block}
 
   \begin{description}
-    \item<2->[Soundness] Guaranteed for free by the type system
+    \item<2->[Soundness] Guaranteed for \alert{free} by the type system
     \item<3->[Completeness] \alert{Type signature is not rich enough}
   \end{description}
 
-  \onslide<4->{This notion of a parser is incomplete, as always returning $\inr$ satisfies the specification}
+  \onslide<4->{This notion of a parser is insufficient, as always failing satisfies the specification}
 \end{frame}
 
 \begin{frame}{A Parser for the Dyck Grammar}
-  \begin{exampleblock}{Complete Dyck Parser}
+  \begin{block}{Complete Dyck Parser}
     A \textit{complete} parser for $\Dyck$ is a choice of type $\Dyck_{\negGram}$ and function
   \[
-    \stringg \lto \Dyck~\disj~\Dyck_{\negGram}
+    \stringg~\lto~\Dyck~\disj~\Dyck_{\negGram}
   \]
   where $\Dyck~\with~\Dyck_{\negGram} \cong \Z$
-  \end{exampleblock}
+  \end{block}
 
   \onslide<2->{
-    Intrinsic verification of both soundness and completeness
+    \begin{center}
+    \textit{Intrinsic verification} of both soundness and completeness
+    \end{center}
   }
 
-  \onslide<3->{\alert{To define the parser we will use an automaton}}
+  \vspace{1cm}
+
+  \onslide<3->{
+    \begin{center}
+    \alert{To define the parser we will use an automaton}
+    \end{center}
+  }
 \end{frame}
 
 \begin{frame}[fragile]{Deterministic Automaton for the Dyck Grammar}
 \begin{center}
 \onslide<1-8>{
 \begin{tikzpicture}[node distance = 15mm ]
-  \alert<3>{\node[state, initial, accepting] (0) {$0$};}
+  \alert<3,7>{\node[state, initial, accepting] (0) {$0$};}
   \alert<4>{\node[state, right of=0] (1) {$1$};}
   \alert<4>{\node[state, right of=1] (2) {$2$};}
   \node[right of=2] (3) {$\dots$};
@@ -662,12 +706,12 @@ treenode/.style = {shape=rectangle, rounded corners,
 \begin{overlayarea}{\linewidth}{3cm}
 \begin{onlyenv}<2->
 \begin{lstlisting}
-data Trace : Bool (*@$\to$@*) (*@$\mathbb{N}$@*) (*@$\to$@*) LinTy where
+data Trace : Bool (*@$\tocode$@*) (*@$\color{nonlintycolor}\mathbb{N}$@*) (*@$\tocode$@*) LinTy where
  (*@${\alert<3> {eof}}$@*) : Trace true 0
- (*@$\alert<4> {leftovers}$@*) : (*@$\forall$@*) n (*@$\to$@*) Trace false (suc n)
- (*@$\alert<5>{push}$@*) : (*@$\forall$@*) b n (*@$\to$@*) '(' (*@$\lto$@*) Trace b (suc n) (*@$\lto$@*) Trace b n
- (*@$\alert<6>{pop}$@*) : (*@$\forall$@*) b n (*@$\to$@*) ')' (*@$\lto$@*) Trace b n (*@$\lto$@*) Trace b (suc n)
- (*@$\alert<7> {unexpected}$@*) : ')' (*@$\lto$@*) (*@$\top$@*) (*@$\lto$@*) Trace false 0
+ (*@$\alert<4> {leftovers}$@*) : (*@$\color{black}\forall$@*) n (*@$\tocode$@*) Trace false (suc n)
+ (*@$\alert<5>{push}$@*) : (*@$\color{black}\forall$@*) b n (*@$\tocode$@*) '(' (*@$\tocodelin$@*) Trace b (suc n) (*@$\tocodelin$@*) Trace b n
+ (*@$\alert<6>{pop}$@*) : (*@$\color{black}\forall$@*) b n (*@$\tocode$@*) ')' (*@$\tocodelin$@*) Trace b n (*@$\tocodelin$@*) Trace b (suc n)
+ (*@$\alert<7> {unexpected}$@*) : ')' (*@$\tocodelin$@*) (*@$\color{lintycolor}\top$@*) (*@$\tocodelin$@*) Trace false 0
 \end{lstlisting}
 \end{onlyenv}
 \end{overlayarea}
@@ -679,22 +723,22 @@ data Trace : Bool (*@$\to$@*) (*@$\mathbb{N}$@*) (*@$\to$@*) LinTy where
 
 \begin{frame}{A Parser for the Dyck Grammar}
   \onslide<1->{
-  \begin{exampleblock}{Deterministic Automaton}
+  \begin{block}{Deterministic Automaton}
     \[ \stringg \cong \TraceDyck~true~0~\disj~\TraceDyck~false~0 \]
-  \end{exampleblock}
+  \end{block}
   }
   \onslide<2->{
-  \begin{exampleblock}{The Dyck Grammar is Recognized by the Automaton}
+  \begin{block}{The Dyck Grammar is Recognized by the Automaton}
   \[
     \Dyck \cong \TraceDyck~true~0
   \]
-  \end{exampleblock}
+  \end{block}
   }
   \onslide<3->{
   \begin{align*}
     \stringg
-    & \lto \TraceDyck~true~0~\disj~\TraceDyck~false~0 \\
-    & \lto \Dyck~\disj~\TraceDyck~false~0
+    & \lto~\TraceDyck~true~0~\disj~\TraceDyck~false~0 \\
+    & \lto~\Dyck~\disj~\TraceDyck~false~0
   \end{align*}
   }
 \end{frame}
@@ -705,8 +749,7 @@ Looks like an ordinary functional program
 \begin{overlayarea}{\linewidth}{1cm}
 \begin{onlyenv}<1->
 \begin{lstlisting}
-parse :
-  (*@$\uparrow$@*)(String (*@$\lto$@*) &[ n (*@$\in$@*) (*@$\mathbb{N}$@*) ] (*@$\oplus$@*)[ b (*@$\in$@*) Bool ] Trace b n)
+parse : String (*@$\lto$@*) &[ n (*@$\color{black}\in$@*) (*@$\color{nonlintycolor}\mathbb{N}$@*) ] (*@$\color{lintycolor}\oplus$@*)[ b (*@$\color{black}\in$@*) Bool ] Trace b n
 parse nil zero = (*@$\sigma$@*) true eof
 parse nil (suc n) = (*@$\sigma$@*) false leftovers
 parse (cons ((*@$\sigma$@*) '(' a) w) n =
@@ -721,8 +764,6 @@ parse (cons ((*@$\sigma$@*) ')' a) w) (suc n) =
 \end{onlyenv}
 \end{overlayarea}
 \end{frame}
-
-% \section{Additional Case Studies}
 
 \section{Final Thoughts}
 
@@ -744,12 +785,24 @@ parse (cons ((*@$\sigma$@*) ')' a) w) (suc n) =
 \end{frame}
 
 \begin{frame}{In the Paper}
-  \begin{description}
-    \item<1->[Unambiguity] Reasoning principles in \theoryabbv for proving a grammar has a unique parse tree
-    \item<2->[Linear-Non-Linear Dependent Types] $\LinSigTy{x}{X}{A~x}$, $\LinPiTy{x}{X}{A~x}$
-    \item<3->[Denotational Semantics] Modeled in $\String \to \Set$
-    \item<4->[Implemeniation] Details about Agda formalization
-  \end{description}
+  \onslide<1->{
+    Proving unambiguity in \theoryabbv
+  }
+
+  \onslide<2->{
+    Linear-Non-Linear Dependent Types
+    \begin{itemize}
+      \item $\LinSigTyLimit{x}{X}{A~x}$, $\LinPiTyLimit{x}{X}{A~x}$
+    \end{itemize}
+  }
+
+  \onslide<2->{
+    Denotational Semantics
+    \begin{itemize}
+      \item Interpret grammars in the category $\String \to \Set$
+      \item Basis for Agda implementation
+    \end{itemize}
+  }
 \end{frame}
 
 % \begin{frame}{Implementation}
@@ -772,13 +825,13 @@ parse (cons ((*@$\sigma$@*) ')' a) w) (suc n) =
 \end{frame}
 
 \begin{frame}{\theoryname (\theoryabbv)}
-   \begin{exampleblock}{\theoryabbv}
+   \begin{block}{\theoryabbv}
    \begin{itemize}
      \item Extensible framework for implementing verified parsers
      \item Grammars are \alert{linear types}
      \item Typechecking guarantees parser \alert{soundness for free}
    \end{itemize}
-   \end{exampleblock}
+   \end{block}
 \end{frame}
 
 \end{document}
