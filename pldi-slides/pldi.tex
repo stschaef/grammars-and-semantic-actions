@@ -133,6 +133,8 @@ frame=single,
 upquote=true
 }
 
+\colorlet{LinTyColor}{blue}
+
 \newcommand{\Subst}{\textrm{Subst}}
 \newcommand{\SPF}{\mathsf{SPF}}
 \newcommand{\Var}{\mathsf{Var}}
@@ -149,7 +151,7 @@ upquote=true
 \newcommand{\tol}{\mathrel{\rotatebox[origin=c]{180}{$\lto$}}}
 \newcommand{\String}{\textbf{String}}
 \newcommand{\Char}{\textbf{Char}}
-\newcommand{\stringg}{\texttt{String}}
+\newcommand{\stringg}{{\color{LinTyColor} String}}
 \newcommand{\charg}{\mathtt{Char}}
 \newcommand{\Set}{\mathbf{Set}}
 \newcommand{\Syn}{\mathbf{Synx}}
@@ -197,7 +199,7 @@ upquote=true
 \newcommand{\data}{\mathsf{data}}
 \newcommand{\where}{\mathsf{where}}
 \newcommand{\Trace}{\texttt{Trace}}
-\newcommand{\literal}[1]{\color{blue} \texttt{\textquotesingle#1\textquotesingle}}
+\newcommand{\literal}[1]{{\color{LinTyColor} \texttt{\textquotesingle#1\textquotesingle}}}
 \newcommand{\stringquote}[1]{\texttt{\textquotedbl#1\textquotedbl}}
 \newcommand{\internalize}[1]{\lceil#1\rceil}
 
@@ -243,15 +245,22 @@ upquote=true
 \newcommand{\LR}[1]{\LRR(#1)}
 \newcommand{\LALR}[1]{\LALRR(#1)}
 
-\newcommand{\A}{\color{blue} A}
-\newcommand{\B}{\color{blue} B}
-\newcommand{\I}{\color{blue} I}
-\newcommand{\Z}{\color{blue} 0}
-\newcommand{\T}{\color{blue} \top}
-\newcommand{\concat}{\color{blue} \otimes}
-\newcommand{\disj}{\color{blue} \oplus}
-\newcommand{\with}{\color{blue} \&}
-\newcommand{\kstar}[1]{\color{blue} #1^{*}}
+
+\newcommand{\A}{{\color{LinTyColor} A}}
+\newcommand{\X}{{\color{LinTyColor} X}}
+\newcommand{\bal}{bal}
+\newcommand{\dnil}{nil}
+\newcommand{\Dyck}{{\color{LinTyColor} Dyck}}
+\newcommand{\TraceDyck}{{\color{LinTyColor} Trace}}
+\newcommand{\negGram}{\color{LinTyColor} \neg}
+\newcommand{\B}{{\color{LinTyColor} B}}
+\newcommand{\I}{{\color{LinTyColor} I}}
+\newcommand{\Z}{{\color{LinTyColor} 0}}
+\newcommand{\T}{{\color{LinTyColor} \top}}
+\newcommand{\concat}{{\color{LinTyColor} \otimes}}
+\newcommand{\disj}{{\color{LinTyColor} \oplus}}
+\newcommand{\with}{{\color{LinTyColor} \&}}
+\newcommand{\kstar}[1]{{\color{LinTyColor} #1^{*}}}
 
 \usetikzlibrary{automata, positioning, arrows, fit}
 \usetikzlibrary{shapes,arrows,calc,positioning,trees}
@@ -367,7 +376,7 @@ upquote=true
   }
 \end{frame}
 
-\newcommand{\treeexamplegoalbase}{\A \disj \B}
+\newcommand{\treeexamplegoalbase}{\A~\disj~\B}
 \newcommand{\treeexamplegoal}{(\treeexamplegoalbase)^{*}}
 
 \newcommand{\treeexampleinput}{\stringquote{aba}}
@@ -421,7 +430,7 @@ upquote=true
 
    \vspace{1em}
 
-   \onslide<9->{Implemented in Cubical Agda \agdalogo~ and instantiated with verified parsers for regular expressions and
+   \onslide<9->{Implemented in Cubical Agda \agdalogo~ with verified case studies for regular expressions and
    selected context-free grammars}
 \end{frame}
 
@@ -515,10 +524,10 @@ upquote=true
   \begin{tabular}{cc}
     \textbf{Grammars} & \textbf{Linear Types} \\
     \hline
-    Grammar $A$ & Linear type $A$ \\
-    \onslide<2->{ Parse transformer } & \onslide<2->{$\Delta \vdash  A$} \\
-    \onslide<3->{ Parse of string $w$} & \onslide<3->{$w \vdash A$} \\
-    \onslide<4->{ Parser } & \onslide<4->{$String \vdash A \oplus \top$} \\
+    Grammar $\A$ & Linear type $\A$ \\
+    \onslide<2->{ Parse transformer } & \onslide<2->{$\Delta \vdash  \A$} \\
+    \onslide<3->{ Parse of string $w$} & \onslide<3->{$w \vdash \A$} \\
+    \onslide<4->{ Parser } & \onslide<4->{$\stringg \vdash \A~\disj~\T$} \\
   \end{tabular}
 \end{center}
 \end{frame}
@@ -534,292 +543,243 @@ upquote=true
 \item<+-> Kleene Star $\kstar{\cdot}$
    \begin{itemize}
      \item<+-> Linear list type
-     \item<.-> $\kstar{\A} = \mu X . \I \disj \A \concat X$
+     \item<.-> $\kstar{\A} = \mu \X . \I~\disj~\A \concat \X$
      \item<+-> Generalizing to all inductive types encodes context-free grammars
    \end{itemize}
 \end{itemize}
-
-
-
 \end{frame}
 
+\section{Dyck Grammar: An Extended Example}
 
-\section{An Example Parser}
+\begin{frame}[fragile]{Dyck Grammar}
+\vspace{-2cm}
+Context-free grammar of balanced parentheses
 
-\section{Additional Case Studies}
+\vspace{-1em}
 
-\section{Future Work}
+\begin{align*}
+  D & \to \epsilon ~|~ (D)D
+\end{align*}
 
+\vspace{-1em}
 
-% \begin{frame}{Types in Dependent Lambek Calculus}
-% Linear Types
-% \begin{itemize}
-% \item<+-> Characters in the alphabet --- i.e. $\literal a$
+\begin{overlayarea}{\linewidth}{3cm}
+\begin{onlyenv}<2->
+\begin{lstlisting}
+data Dyck : LinTy where
+  nil :  I (*@$\lto$@*) Dyck
+  bal : '(' (*@$\lto$@*) Dyck (*@$\lto$@*) ')' (*@$\lto$@*) Dyck (*@$\lto$@*) Dyck
+\end{lstlisting}
+\vspace{-1cm}
+\begin{center}
+\onslide<3->{
+\[
+  \stringquote{()()} \vdash \bal~l1~\dnil~r1~(\bal~l2~\dnil~r2) : \Dyck
+\]
+}
+\begin{tikzpicture}[%opacity=0.5,
+treenode/.style = {shape=rectangle, rounded corners,
+  draw, align=center,
+  top color=white, bottom color=white!20},
+  line/.style={draw, -latex'},
+  edge from parent/.style={draw,-latex'},
+  level 1/.style={sibling distance=1cm, level distance=1cm},
+  level 2/.style={sibling distance=1cm, level distance=1cm},
+  visible on=<3->
+  ]
 
-% \item<+-> Empty string $I$
-% \item<+-> Concatenation $\otimes$
-% \item<+-> Linear function types $\lto$, $\tol$
-% \item<+-> Disjunction $(\oplus, 0)$, conjunction $(\amp, \top)$
+ \node[treenode] (bal) {$bal$}
+ child {node[treenode] (l) {$\literal{(}$}}
+ child {node[treenode] (m) {$nil$}}
+ child {node[treenode] (r) {$\literal{)}$}}
+ child { node[treenode] (a) {$bal$}
+   child {node[treenode] (l1) {$\literal{(}$}}
+   child {node[treenode] (m1) {$nil$}}
+   child {node[treenode] (r1) {$\literal{)}$}}
+   child {node[treenode] (a1) {$nil$}}
+ }
+  ;
+    \node[draw, fit=(bal)(l)(m)(r)(a1), visible on=<3->] {};
+\end{tikzpicture}
+\end{center}
+\end{onlyenv}
+\end{overlayarea}
+\end{frame}
 
+\begin{frame}{A Parser for the Dyck Grammar}
+  \begin{exampleblock}{Dyck Parser}
+    A parser for $\Dyck$ is a function
+  \[
+    \stringg \lto \Dyck~\disj~\T
+  \]
+  \end{exampleblock}
 
-% \item<+-> Indexed disjunction $\LinSigTyLimit {x} {X} {A~x}$, indexed conjunction $\LinPiTyLimit {x} {X} {A~x}$ over a non-linear type $X$
+  \begin{description}
+    \item<2->[Soundness] Guaranteed for free by the type system
+    \item<3->[Completeness] \alert{Type signature is not rich enough}
+  \end{description}
 
-% \item<+-> Indexed inductive linear types
-% \end{itemize}
+  \onslide<4->{This notion of a parser is incomplete, as always returning $\inr$ satisfies the specification}
+\end{frame}
 
-% \onslide<+->{Non-linear Types}
-% \begin{itemize}
-% \item<+-> Ordinary dependent types
-% \item<+-> $\uparrow : LinTy \to NonLinTy$
-%     \begin{itemize}
-%       \item<+-> $\uparrow A$ is the type of $A$-parses for the empty string
-%       \item<+-> $\bang$ in linear logic, $\square$ in separation logic
-%     \end{itemize}
-% \end{itemize}
+\begin{frame}{A Parser for the Dyck Grammar}
+  \begin{exampleblock}{Complete Dyck Parser}
+    A \textit{complete} parser for $\Dyck$ is a choice of type $\Dyck_{\negGram}$ and function
+  \[
+    \stringg \lto \Dyck~\disj~\Dyck_{\negGram}
+  \]
+  where $\Dyck~\with~\Dyck_{\negGram} \cong \Z$
+  \end{exampleblock}
+
+  \onslide<2->{
+    Intrinsic verification of both soundness and completeness
+  }
+
+  \onslide<3->{\alert{To define the parser we will use an automaton}}
+\end{frame}
+
+\begin{frame}[fragile]{Deterministic Automaton for the Dyck Grammar}
+\begin{center}
+\onslide<1-8>{
+\begin{tikzpicture}[node distance = 15mm ]
+  \alert<3>{\node[state, initial, accepting] (0) {$0$};}
+  \alert<4>{\node[state, right of=0] (1) {$1$};}
+  \alert<4>{\node[state, right of=1] (2) {$2$};}
+  \node[right of=2] (3) {$\dots$};
+  % \node[state, left of=0] (fail) {$fail$};
+
+  \alert<5>{\draw[->] (0) edge[above, bend left] node{\stringquote{(}} (1) ;}
+  \alert<6>{\draw[->] (1) edge[below, bend left] node{\stringquote{)}} (0) ;}
+  \alert<5>{\draw[->] (1) edge[above, bend left] node{\stringquote{(}} (2) ;}
+  \alert<6>{\draw[->] (2) edge[below, bend left] node{\stringquote{)}} (1) ;}
+  \alert<5>{\draw[->] (2) edge[above, bend left] node{\stringquote{(}} (3) ;}
+  \alert<6>{\draw[->] (3) edge[below, bend left] node{\stringquote{)}} (2) ;}
+  % \draw[->] (fail) edge[loop left] node{\stringquote{(}, \stringquote{)}} (fail);
+  % \draw[->] (0) edge[above] node{\stringquote{)}} (fail);
+\end{tikzpicture}
+}
+\end{center}
+\begin{overlayarea}{\linewidth}{3cm}
+\begin{onlyenv}<2->
+\begin{lstlisting}
+data Trace : Bool (*@$\to$@*) (*@$\mathbb{N}$@*) (*@$\to$@*) LinTy where
+ (*@${\alert<3> {eof}}$@*) : Trace true 0
+ (*@$\alert<4> {leftovers}$@*) : (*@$\forall$@*) n (*@$\to$@*) Trace false (suc n)
+ (*@$\alert<5>{push}$@*) : (*@$\forall$@*) b n (*@$\to$@*) '(' (*@$\lto$@*) Trace b (suc n) (*@$\lto$@*) Trace b n
+ (*@$\alert<6>{pop}$@*) : (*@$\forall$@*) b n (*@$\to$@*) ')' (*@$\lto$@*) Trace b n (*@$\lto$@*) Trace b (suc n)
+ (*@$\alert<7> {unexpected}$@*) : ')' (*@$\lto$@*) (*@$\top$@*) (*@$\lto$@*) Trace false 0
+\end{lstlisting}
+\end{onlyenv}
+\end{overlayarea}
+
+\onslide<2->{
+  $\TraceDyck~b~n$ denotes a path through the automaton from state $n$ ending in some state with acceptance criteria $b$
+}
+\end{frame}
+
+\begin{frame}{A Parser for the Dyck Grammar}
+  \onslide<1->{
+  \begin{exampleblock}{Deterministic Automaton}
+    \[ \stringg \cong \TraceDyck~true~0~\disj~\TraceDyck~false~0 \]
+  \end{exampleblock}
+  }
+  \onslide<2->{
+  \begin{exampleblock}{The Dyck Grammar is Recognized by the Automaton}
+  \[
+    \Dyck \cong \TraceDyck~true~0
+  \]
+  \end{exampleblock}
+  }
+  \onslide<3->{
+  \begin{align*}
+    \stringg
+    & \lto \TraceDyck~true~0~\disj~\TraceDyck~false~0 \\
+    & \lto \Dyck~\disj~\TraceDyck~false~0
+  \end{align*}
+  }
+\end{frame}
+
+\begin{frame}[fragile]{A Parser for Dyck Traces}
+\vspace{-3.5cm}
+Looks like an ordinary functional program
+\begin{overlayarea}{\linewidth}{1cm}
+\begin{onlyenv}<1->
+\begin{lstlisting}
+parse :
+  (*@$\uparrow$@*)(String (*@$\lto$@*) &[ n (*@$\in$@*) (*@$\mathbb{N}$@*) ] (*@$\oplus$@*)[ b (*@$\in$@*) Bool ] Trace b n)
+parse nil zero = (*@$\sigma$@*) true eof
+parse nil (suc n) = (*@$\sigma$@*) false leftovers
+parse (cons ((*@$\sigma$@*) '(' a) w) n =
+  let (*@$\sigma$@*) b tr = parse w (suc n) in
+  (*@$\sigma$@*) b (push a tr)
+parse (cons ((*@$\sigma$@*) ')' a) w) zero =
+  (*@$\sigma$@*) false (unexpected a _)
+parse (cons ((*@$\sigma$@*) ')' a) w) (suc n) =
+  let (*@$\sigma$@*) b tr = parse w n in
+  (*@$\sigma$@*) b (pop a tr)
+\end{lstlisting}
+\end{onlyenv}
+\end{overlayarea}
+\end{frame}
+
+% \section{Additional Case Studies}
+
+\section{Final Thoughts}
+
+\begin{frame}{Strategy for Building a Parser}
+  \begin{enumerate}
+    \item Describe a grammar $A$ and the traces of an automaton each as \textit{linear types}
+    \item In the equational theory of \theoryabbv, prove $A$ is equivalent to the type of traces
+    \item Use the equivalence to create a parser for $A$
+  \end{enumerate}
+
+  \onslide<2->{Instantiated the same strategy in}
+  \begin{itemize}
+    \item<2-> Parser for an \LL{1} grammar of arithmetic expressions and a lookahead automaton
+    \item<3-> Parser generator for regular expressions and finite automata
+      \begin{itemize}
+        \item Thompson's construction and Powerset construction
+      \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{In the Paper}
+  \begin{description}
+    \item<1->[Unambiguity] Reasoning principles in \theoryabbv for proving a grammar has a unique parse tree
+    \item<2->[Linear-Non-Linear Dependent Types] $\LinSigTy{x}{X}{A~x}$, $\LinPiTy{x}{X}{A~x}$
+    \item<3->[Denotational Semantics] Modeled in $\String \to \Set$
+    \item<4->[Implemeniation] Details about Agda formalization
+  \end{description}
+\end{frame}
+
+% \begin{frame}{Implementation}
+%   Implemented in Cubical Agda \agdalogo~as a shallowly embedded DSL
+
+%   \onslide<2->{Encode linear types in Agda via their denotational semantics}
+
+%   \begin{description}
+%     \item<3->[Pros] Reusing the Agda typechecker
+%     \item<3->[Cons] Combinatory style, Parsers currently run during typechecking
+%   \end{description}
 % \end{frame}
 
-% \section{An Example Parser}
+\begin{frame}{Ongoing and Future Work}
+  \begin{itemize}
+    \item<+-> Encode richer parsing algorithms (e.g. \LLL, \LRR, and forms of context-sensitivity)
+    \item<+-> Verified semantic actions to integrate with language backends
+    \item<+-> Verified frontends (typechecking and semantic analysis) in a modified version of \theoryabbv
+  \end{itemize}
+\end{frame}
 
-% \begin{frame}[fragile]{Dyck Grammar}
-% \talknotebool{This is how you configure arbitary CFGs. With productions as constructors}
-% \talknotebool{Dyck is either empty, or a parse of open paren, a Dyck parse, close
-%   paren, and then another Dyck parse}
-% \vspace{-2cm}
-% \begin{itemize}
-%   \item<1-> Context-free grammar of balanced parentheses
-%   \item<2-> Define as an inductive linear type
-% \end{itemize}
-% \begin{overlayarea}{\linewidth}{3cm}
-% \begin{onlyenv}<3->
-% \begin{lstlisting}
-% data Dyck : LinTy where
-%   nil : (*@$\uparrow$@*) Dyck
-%   bal : (*@$\uparrow$@*)('(' (*@$\lto$@*) Dyck (*@$\lto$@*) ')' (*@$\lto$@*) Dyck (*@$\lto$@*) Dyck)
-% \end{lstlisting}
-% \vspace{-1cm}
-% \begin{center}
-% \onslide<4->{
-% \[
-%   \stringquote{()()} \vdash bal~l1~nil~r1~(bal~l2~nil~r2) : Dyck
-% \]
-% }
-% \begin{tikzpicture}[%opacity=0.5,
-% treenode/.style = {shape=rectangle, rounded corners,
-%   draw, align=center,
-%   top color=white, bottom color=white!20},
-%   line/.style={draw, -latex'},
-%   edge from parent/.style={draw,-latex'},
-%   level 1/.style={sibling distance=1cm, level distance=1cm},
-%   level 2/.style={sibling distance=1cm, level distance=1cm},
-%   visible on=<4->
-%   ]
-
-%  \node[treenode] (bal) {$bal$}
-%  child {node[treenode] (l) {$\literal{(}$}}
-%  child {node[treenode] (m) {$nil$}}
-%  child {node[treenode] (r) {$\literal{)}$}}
-%  child { node[treenode] (a) {$bal$}
-%    child {node[treenode] (l1) {$\literal{(}$}}
-%    child {node[treenode] (m1) {$nil$}}
-%    child {node[treenode] (r1) {$\literal{)}$}}
-%    child {node[treenode] (a1) {$nil$}}
-%  }
-%   ;
-%     \node[draw, fit=(bal)(l)(m)(r)(a1), visible on=<4->] {};
-% \end{tikzpicture}
-% \end{center}
-% \end{onlyenv}
-% \end{overlayarea}
-% \end{frame}
-
-% \begin{frame}{A Parser for the Dyck Grammar}
-%   \begin{block}{Dyck Parser}
-%     A parser for $Dyck$ is a function
-%   \[
-%     \uparrow ( String \lto Dyck \oplus Dyck_{\neg} )
-%   \]
-%   where $Dyck \amp Dyck_{\neg} \cong 0$
-%   \end{block}
-
-%   \onslide<2->{
-%   \textbf{Soundness:} guaranteed by the linear type system
-%   }
-
-%   \onslide<3->{
-%   \textbf{Completeness:} guaranteed by the disjointness of $Dyck$ and $Dyck_{\neg}$
-%   }
-
-%   \begin{center}
-%     \onslide<4->{\alert{Need an automaton to define the parser!}}
-%   \end{center}
-% \end{frame}
-
-% \begin{frame}[fragile]{Dyck Traces}
-% \talknotebool{boolean tags accepting/rejecting}
-% \talknotebool{nat marks which state the trace begins in}
-% \talknotebool{push/pop allow us to describe transitions. To construct a trace from the
-% src of a transition, parse the label and a trace from the destination}
-% \talknotebool{unexpected fails at 0 when trying to use an unwritten transition }
-% \talknotebool{This same strategy can encode the traces of other automata}
-% \begin{center}
-% \onslide<1-8>{
-% \begin{tikzpicture}[node distance = 15mm ]
-%   \alert<3>{\node[state, initial, accepting] (0) {$0$};}
-%   \alert<4>{\node[state, right of=0] (1) {$1$};}
-%   \alert<4>{\node[state, right of=1] (2) {$2$};}
-%   \node[right of=2] (3) {$\dots$};
-
-%   \alert<5>{\draw[->] (0) edge[above, bend left] node{\stringquote{(}} (1) ;}
-%   \alert<6>{\draw[->] (1) edge[below, bend left] node{\stringquote{)}} (0) ;}
-%   \alert<5>{\draw[->] (1) edge[above, bend left] node{\stringquote{(}} (2) ;}
-%   \alert<6>{\draw[->] (2) edge[below, bend left] node{\stringquote{)}} (1) ;}
-%   \alert<5>{\draw[->] (2) edge[above, bend left] node{\stringquote{(}} (3) ;}
-%   \alert<6>{\draw[->] (3) edge[below, bend left] node{\stringquote{)}} (2) ;}
-% \end{tikzpicture}
-% }
-% \end{center}
-% \begin{overlayarea}{\linewidth}{3cm}
-% \begin{onlyenv}<2->
-% \begin{lstlisting}
-% data Trace : Bool (*@$\to$@*) (*@$\mathbb{N}$@*) (*@$\to$@*) LinTy where
-%  (*@${\alert<3> {eof}}$@*) : (*@$\uparrow$@*) (Trace true 0)
-%  (*@$\alert<4> {leftovers}$@*) : (*@$\forall$@*) n (*@$\to$@*) (*@$\uparrow$@*) (Trace false (suc n))
-%  (*@$\alert<5>{push}$@*) : (*@$\forall$@*) b n (*@$\to$@*) (*@$\uparrow$@*)('(' (*@$\lto$@*) Trace b (suc n) (*@$\lto$@*) Trace b n)
-%  (*@$\alert<6>{pop}$@*) : (*@$\forall$@*) b n (*@$\to$@*) (*@$\uparrow$@*)(')' (*@$\lto$@*) Trace b n (*@$\lto$@*) Trace b (suc n))
-%  (*@$\alert<7> {unexpected}$@*) : (*@$\uparrow$@*)(')' (*@$\lto$@*) (*@$\top$@*) (*@$\lto$@*) Trace false 0)
-% \end{lstlisting}
-% \end{onlyenv}
-% \end{overlayarea}
-% \end{frame}
-
-% \begin{frame}{A Parser for the Dyck Grammar}
-% \talknotebool{Soundness guaranteed by the type system}
-% \talknotebool{Completeness guaranteed by the second iso}
-%   \onslide<1->{
-%   \begin{exampleblock}{Deterministic Automaton}
-%     \[ String \cong Trace~true~0 \oplus Trace~false~0 \]
-%   \end{exampleblock}
-%   }
-%   \onslide<2->{
-%   \begin{exampleblock}{The Dyck Grammar is Recognized by the Automaton}
-%   \[
-%     Dyck \cong Trace~true~0
-%   \]
-%   \end{exampleblock}
-%   }
-%   \onslide<3->{
-%   \begin{align*}
-%     String
-%     & \lto Trace~true~0 \oplus Trace~false~0 \\
-%     & \lto Dyck \oplus Trace~false~0 \qquad \onslide<4->{\alert{\text{A parser!}}}
-%   \end{align*}
-%   }
-% \end{frame}
-
-% \begin{frame}[fragile]{A Parser for Dyck Traces}
-% \vspace{-3.5cm}
-% Looks like an ordinary functional program
-% \begin{overlayarea}{\linewidth}{1cm}
-% \begin{onlyenv}<1->
-% \begin{lstlisting}
-% parse :
-%   (*@$\uparrow$@*)(String (*@$\lto$@*) &[ n (*@$\in$@*) (*@$\mathbb{N}$@*) ] (*@$\oplus$@*)[ b (*@$\in$@*) Bool ] Trace b n)
-% parse nil zero = (*@$\sigma$@*) true eof
-% parse nil (suc n) = (*@$\sigma$@*) false leftovers
-% parse (cons ((*@$\sigma$@*) '(' a) w) n =
-%   let (*@$\sigma$@*) b tr = parse w (suc n) in
-%   (*@$\sigma$@*) b (push a tr)
-% parse (cons ((*@$\sigma$@*) ')' a) w) zero =
-%   (*@$\sigma$@*) false (unexpected a _)
-% parse (cons ((*@$\sigma$@*) ')' a) w) (suc n) =
-%   let (*@$\sigma$@*) b tr = parse w n in
-%   (*@$\sigma$@*) b (pop a tr)
-% \end{lstlisting}
-% \end{onlyenv}
-% \end{overlayarea}
-% \end{frame}
-
-% \section{Implementation}
-
-% \begin{frame}{Semantics and Implementation}
-%   Denotational semantics
-%   \[
-%     \sem{A} : String \to Set \qquad \sem{A}~w = \{ \text{parse trees of $w$ for $A$} \}
-%   \]
-
-%   \onslide<2->{Implementation of Dependent Lambek Calculus shallowly embedded in Cubical Agda \agdalogo
-%   \begin{itemize}
-%     \item $LinTy := String \to Set$
-%     \item \textbf{Pros:} reuses the Agda typechecker
-%     \item \textbf{Cons:} poor performance and enforced combinatory style
-%   \end{itemize}
-
-%   % \includegraphics[width=\textwidth]{real_code.png}
-%   }
-% \end{frame}
-
-% \begin{frame}{Parsers Implemented in Agda}
-% \onslide<1->{
-% Dyck grammar (LL(0))
-% }
-
-% \onslide<2->{
-% Arithmetic expressions with a binary operation (LL(1))
-% }
-
-% \onslide<3->{
-% Regular expressions
-% \begin{itemize}
-%   \item Equivalences between NFAs, DFAs, and regexes
-%   \item Thompson's construction, powerset construction
-% \end{itemize}
-% }
-% \end{frame}
-
-
-% \section{Future Work}
-
-% \begin{frame}{Future Work}
-%   Parsing
-%   \begin{itemize}
-%     \item<+-> LL/LR parser generator
-%     \item<+-> Semantic actions
-%   \end{itemize}
-
-%   \onslide<+->{Implementation}
-%   \begin{itemize}
-%     \item<+-> Performance, ergonomics
-%   \end{itemize}
-
-%   \onslide<+->{Typechecking?}
-% \end{frame}
-
-% \begin{frame}{Dependent Lambek Calculus}
-% \begin{center}
-%   \begin{tabular}{cc}
-%     \textbf{Grammars} & \textbf{Linear Types} \\
-%     \hline
-%     Grammar $A$ & Linear type $A$ \\
-%     \onslide<1->{ Parse of string $w$} & \onslide<1->{$w \vdash A$} \\
-%     \onslide<1->{ Parser } & \onslide<1->{$String \vdash A \oplus A_{\neg}$} \\
-%     \onslide<1->{ Parse transformer } & \onslide<1->{$\Delta \vdash A$} \\
-%   \end{tabular}
-% \end{center}
-
-% \begin{center}
-%   \alert{Grammars are types! Automata are types!}
-% \end{center}
-
-% Language and examples implemented in Cubical Agda \agdalogo
-% \begin{itemize}
-%   \item {\href{https://github.com/maxsnew/grammars-and-semantic-actions}{github.com/maxsnew/grammars-and-semantic-actions}}
-% \end{itemize}
-
-% Preprint of this work
-% \begin{itemize}
-%   \item {\href{https://maxsnew.com/docs/lambek.pdf}{maxsnew.com/docs/lambek.pdf}}
-% \end{itemize}
-% \end{frame}
+\begin{frame}{\theoryname (\theoryabbv)}
+   \begin{exampleblock}{\theoryabbv}
+   \begin{itemize}
+     \item Extensible framework for implementing verified parsers
+     \item Grammars are \alert{linear types}
+     \item Typechecking guarantees parser \alert{soundness for free}
+   \end{itemize}
+   \end{exampleblock}
+\end{frame}
 
 \end{document}
 
