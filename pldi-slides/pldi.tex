@@ -337,10 +337,11 @@ upquote=true
 
 \maketitle
 
+% TODO flash real world vulnerability
 \begin{frame}{Parsing is Everywhere}
-  % \talknotebool{A parser transforms user input into a machine-readable format}
-  % \talknotebool{Anytime we execute high-level PLs, we rely on a parser}
-  % \talknotebool{Parsers ought to be verified in all verified projects}
+  \talknotebool{Parsing is one of the oldest and most studied problems, and it is used throughout the software stack}
+  \talknotebool{Despite parsing's maturity, we still don't have it perfected, and there is a high price for incorrect parsers}
+  \talknotebool{Existence of parser bugs in compcert means that end users aren't guaranteed to have correctly compiled programs}
   \begin{center}
   \begin{tikzpicture}[
     treenode/.style = {shape=rectangle, rounded corners,
@@ -369,16 +370,14 @@ upquote=true
   \end{tikzpicture}
   \end{center}
 
-  \onslide<2->{Necessary at every level of the software stack}
-
-  \onslide<+->{
+  \onslide<2->{
   \begin{alertblock}{The Cost of Incorrect Parsers}
     \begin{itemize}
-        \item<+-> Critical real-world vulnerabilities, including remote code execution
-        \item<+-> The guarantees of other software verification can be invalidated
-        \item<+-> Early versions of CompCert
+        \item<3-> Critical real-world vulnerabilities, including remote code execution \textbf{(Equifax, 2017)}
+        \item<4-> The guarantees of other software verification can be invalidated
+        \item<5-> Early versions of CompCert
         \begin{itemize}
-            \item<+-> 0 middle or backend bugs, 6 parser bugs \textbf{(Yang et al., 2011)}
+            \item<5-> 0 middle or backend bugs, 6 parser bugs \textbf{(Yang et al., 2011)}
         \end{itemize}
     \end{itemize}
   \end{alertblock}
@@ -386,12 +385,14 @@ upquote=true
 \end{frame}
 
 \begin{frame}{Ensuring Parser Correctness}
+  \talknotebool{Criteria for a correct parser}
+  \talknotebool{Existing appraoches are often siloed}
   For a formal grammar $A$, a parser is a function $\String \rightharpoonup \textbf{Parse}(A)$
 
   \vspace{1em}
 
   \begin{description}
-    \item<2->[Soundness] Parser output matches the formal grammar specification
+    \item<2->[Soundness] For a string $w$, $f(w)$ is a valid parse tree of $w$ for the grammar $A$
     \item<3->[Completeness] Parser returns a parse tree whenever one exists
   \end{description}
 
@@ -401,7 +402,6 @@ upquote=true
        \begin{itemize}
           \item<5->\LLL, \LRR, \CYK, parser combinators, Brzozowski derivatives, etc
           \item<6-> \alert{Isolated solutions where each formalism requires its own implementation}
-          \item<7-> Difficult to combine implementations or relate between them
        \end{itemize}
   }
 \end{frame}
@@ -414,9 +414,11 @@ upquote=true
 \newcommand{\treeexampleinputtail}{\stringquote{ba}}
 
 \begin{frame}{Deductive Approaches to Parsing}
-  \onslide<1->{Parse trees are \textit{proofs} in a variant of linear logic
+  \talknotebool{A general approach is to describe parsing deductively}
+  \talknotebool{Deductive apporach gives a type-level specification for what a parser should return}
+  \onslide<1->{Parse trees are \textit{proofs} in Lambek Calculus
   \begin{itemize}
-    \item \textit{Lambek Calculus}
+    \item A variant of linear logic
   \end{itemize}
   }
 
@@ -433,16 +435,17 @@ upquote=true
     \begin{itemize}
       \item<2-> User specifies input $\treeexampleinput$ and goal $\treeexamplegoal$
       \item<3-> Use logic programming (e.g. Datalog) to synthesize parse trees
-      \item<4-> \alert{Cannot directly write a parsing algorithm}
+      \item<4-> Soundness of a parse is built-in to Lambek Calculus
     \end{itemize}
   }
 \end{frame}
 
 \begin{frame}{\theoryname (\theoryabbv)}
+  \talknotebool{We build off of the deductive approach}
    \begin{block}{\theoryabbv : DSL for \textit{intrinsically} verified parsing}
    \begin{itemize}
-     \item<2-> Ordered, linear type system for writing verified parsers as functional programs
-     \item<3-> Typechecking guarantees parser \alert{soundness for free}
+     \item<2-> Functional programming language for writing verified parsers
+     \item<3-> Ordered, linear type system guarantees parser \alert{soundness for free}
        \begin{itemize}
           \item<4-> \alert{Completeness} with a little effort
        \end{itemize}
@@ -452,15 +455,11 @@ upquote=true
 
    \onslide<6->{
    \theoryabbv subsumes existing formalisms by expressing \alert{grammars as types}
-   \begin{itemize}
-   \item<7-> Regular, context-free, and unrestricted grammars expressible as linear types
-   \item<8-> Their accompanying automata are \textit{also} expressible as linear types, so we can reason about their equivalence within the equational theory of \theoryabbv
-   \end{itemize}
    }
 
    \vspace{1em}
 
-   \onslide<9->{Implemented in Cubical Agda \agdalogo~ with verified parsers for regular expressions and
+   \onslide<7->{Implemented as an embedded DSL in Cubical Agda \agdalogo~ with verified parsers for regular expressions and
    selected context-free grammars}
 \end{frame}
 
@@ -471,40 +470,33 @@ upquote=true
 
 \section{\theoryabbv}
 
-\begin{frame}{Typing Judgment}
-  \begin{center}
-    \begin{tikzpicture}[
-      label/.style={font=\footnotesize, text=ForestGreen},
-      arrow/.style={->, >=stealth, ForestGreen, thick}
-    ]
-      % The main judgment
-      \node (judgment) {\Huge $\Delta \vdash e : \A$};
+\begin{frame}[fragile]{Regular Expressions as Types in \theoryabbv}
+  \talknotebool{Can capture classes of grammars as types}
 
-      % Labels with arrows appearing sequentially
-      \onslide<2->{
-        \node[label, above=1.5cm of judgment.west, xshift=-1cm] (delta-label) {\large Input list of parse trees};
-        \draw[arrow] (delta-label) -- ([yshift=2pt]judgment.west);
-      }
+\begin{itemize}
+\item<2-> Characters $\literal c$
+\item<3-> Empty string $\I$
+\item<4-> Concatenation $\concat$
+\item<5-> Disjunction $(\disj, \Z)$
+\item<6-> Conjunction $(\with, \T)$
+\item<7-> Kleene Star $\kstar{\cdot}$
+   \begin{itemize}
+     \item<8-> Inductive linear type of lists
+     \item<9-> Generalizing to all inductive types encodes \textit{context-free grammars}
+   \end{itemize}
+\end{itemize}
 
-      \onslide<4->{
-        \node[label, below=1.5cm of judgment.center, xshift=0.1cm] (e-label) {\large Parse tree};
-        \draw[arrow] (e-label) -- ([yshift=-2pt,xshift=0.1cm]judgment.south);
-      }
+\begin{overlayarea}{\linewidth}{3cm}
+\begin{onlyenv}<8->
+\begin{lstlisting}
+data A(*@$^{*}$@*) : LinTy where
+  nil :  I (*@$\tocodelin$@*) A(*@$^{*}$@*)
+  cons : A (*@$\tocodelin$@*) A(*@$^{*}$@*) (*@$\tocodelin$@*) A(*@$^{*}$@*)
+\end{lstlisting}
+\end{onlyenv}
+\end{overlayarea}
 
-      \onslide<3->{
-        \node[label, above=1.5cm of judgment.east, xshift=1cm] (a-label) {\large Formal grammar};
-        \draw[arrow] (a-label) -- ([yshift=2pt]judgment.east);
-      }
-    \end{tikzpicture}
-  \end{center}
-
-  \onslide<4->{
-    \begin{center}
-    $e$ is a parse tree of grammar $\A$ assembled from the parse trees in $\Delta$
-    \end{center}
-  }
 \end{frame}
-
 
 \newcommand{\whyExampleString}{cat}
 \newcommand{\fstChar}{c}
@@ -515,11 +507,15 @@ upquote=true
 \newcommand{\sndVar}{y}
 \newcommand{\thirdVar}{z}
 
-\begin{frame}{Why Linearity?}
-  \onslide<1->{An \emph{ordered} and \emph{linear} type system}
-  \[
-    \onslide<+->{\boxed{\stringquote{\whyExampleString} \vdash \A}}
-  \]
+\begin{frame}{Parse Trees in \theoryabbv}
+  \talknotebool{We've seen some of the Types, so what are the terms?}
+  \talknotebool{These restrictions ensure that each term preserves the underlying string being parsed}
+  \onslide<1->{
+    \[
+      \boxed{\text{Parse trees of } \stringquote{\whyExampleString}}
+    \]
+  }
+
   \vspace{-0.7cm}
 
   \onslide<+->{
@@ -529,25 +525,25 @@ upquote=true
   }
 
   \onslide<+->{
-  \onslide<.->{Variables used at least once}
+  \onslide<.->{Variables used in order (no exchange)}
+    \[
+        {\fstVar : {\literal \fstChar}, \sndVar : {\literal \sndChar}, \thirdVar : {\literal \thirdChar}}  {~\not \vdash (\sndVar,(\fstVar,\thirdVar)) : {\literal \sndChar} \concat {\literal \fstChar} \concat {\literal \thirdChar}} \quad \text{\xmark}
+    \]
+      }
+
+  \onslide<+->{
+  \onslide<.->{At least once (no weakening)}
     \[
         {\fstVar : {\literal \fstChar}, \sndVar : {\literal \sndChar}, \thirdVar : {\literal \thirdChar}} {~ \not \vdash (\sndVar,\thirdVar) : {\literal \sndChar} \concat {\literal \thirdChar}} \quad \text{\xmark}
     \]
   }
 
   \onslide<+->{
-  \onslide<.->{At most once}
+  \onslide<.->{At most once (no contraction)}
     \[
         {\fstVar : {\literal \fstChar}, \sndVar : {\literal \sndChar}, \thirdVar : {\literal \thirdChar}}  {~ \not \vdash (\fstVar, (\sndVar , (\thirdVar , \thirdVar))) : {\literal \fstChar} \concat {\literal \sndChar} \concat {\literal \thirdChar} \concat {\literal \thirdChar}} \quad \text{\xmark}
     \]
   }
-
-  \onslide<+->{
-  \onslide<.->{In order}
-    \[
-        {\fstVar : {\literal \fstChar}, \sndVar : {\literal \sndChar}, \thirdVar : {\literal \thirdChar}}  {~\not \vdash (\sndVar,(\fstVar,\thirdVar)) : {\literal \sndChar} \concat {\literal \fstChar} \concat {\literal \thirdChar}} \quad \text{\xmark}
-    \]
-      }
 
   \begin{center}
   \onslide<+->{
@@ -555,35 +551,77 @@ upquote=true
   \end{center}
 \end{frame}
 
+\begin{frame}[fragile]{Terms as Grammar Reductions}
+  \talknotebool{Simple functional code}
+  \talknotebool{Just a flattening of a list of pairs}
+  \talknotebool{But because it typechecks, it carries the data of a reduction of grammars}
+  \onslide<2->{
+    All strings parsed by $\kstar{(A~\concat~A)}$ are also parsed by $\kstar{A}$
+
+    \[ aas : \kstar{(A~\concat~A)} \vdash foo~aas : \kstar{A} \]
+  }
+\begin{overlayarea}{\linewidth}{3cm}
+\begin{onlyenv}<3->
+\begin{lstlisting}
+foo : (A (*@$\concat$@*) A)(*@$^{*}$@*) (*@$\tocodelin$@*) A(*@$^{*}$@*)
+foo nil = nil
+foo (cons (a , a') aas) = cons a (cons a' (foo aas))
+\end{lstlisting}
+\end{onlyenv}
+\end{overlayarea}
+
+\end{frame}
+
+% TODO ordered here too
+% \begin{frame}{Typing Judgment}
+%   \begin{center}
+%     \begin{tikzpicture}[
+%       label/.style={font=\footnotesize, text=ForestGreen},
+%       arrow/.style={->, >=stealth, ForestGreen, thick}
+%     ]
+%       % The main judgment
+%       \node (judgment) {\Huge $\Delta \vdash e : \A$};
+
+%       % Labels with arrows appearing sequentially
+%       \onslide<2->{
+%         \node[label, above=1.5cm of judgment.west, xshift=-1cm] (delta-label) {\large Ordered list of parse tree variables};
+%         \draw[arrow] (delta-label) -- ([yshift=2pt]judgment.west);
+%       }
+
+%       \onslide<4->{
+%         \node[label, below=1.5cm of judgment.center, xshift=0.1cm] (e-label) {\large Parse tree};
+%         \draw[arrow] (e-label) -- ([yshift=-2pt,xshift=0.1cm]judgment.south);
+%       }
+
+%       \onslide<3->{
+%         \node[label, above=1.5cm of judgment.east, xshift=1cm] (a-label) {\large Formal grammar};
+%         \draw[arrow] (a-label) -- ([yshift=2pt]judgment.east);
+%       }
+%     \end{tikzpicture}
+%   \end{center}
+
+%   \onslide<4->{
+%     \begin{center}
+%     $e$ is a parse tree of grammar $\A$ assembled from the parse trees in $\Delta$
+%     \end{center}
+%   }
+% \end{frame}
+
 \begin{frame}{Grammar Semantics}
+  \talknotebool{Recapping the grammatical concepts so far}
 \begin{center}
   \begin{tabular}{cc}
     \textbf{Grammars} & \textbf{Linear Types} \\
     \hline
     Grammar $\A$ & Linear type $\A$ \\
-    \onslide<2->{ Parse transformer } & \onslide<2->{$\Delta \vdash  \A$} \\
-    \onslide<3->{ Parse of string $w$} & \onslide<3->{$w \vdash \A$} \\
-    \onslide<4->{ Parser } & \onslide<4->{$\stringg \vdash \A~\disj~\T$} \\
+    \onslide<2->{Parse of string $w$} & \onslide<2->{$x : {\color{LinTyColor} \lceil w \rceil} \vdash e : \A$} \\
+    % \onslide<3->{ Parse transformer } & \onslide<3->{$\Delta \vdash e : \A$} \\
+    \onslide<3->{Reduction from $A$ to $B$} & \onslide<3->{$x : \A \vdash e : \B$} \\
+    \onslide<4->{ Parser } & \onslide<4->{$x : \stringg \vdash e : \A~\disj~\T$} \\
   \end{tabular}
 \end{center}
 \end{frame}
 
-\begin{frame}{Regular Expressions as Types in \theoryabbv}
-
-\begin{itemize}
-\item<+-> Characters $\literal c$
-\item<+-> Empty string $\I$
-\item<+-> Concatenation $\concat$
-\item<+-> Disjunction $(\disj, \Z)$
-\item<+-> Conjunction $(\with, \T)$
-\item<+-> Kleene Star $\kstar{\cdot}$
-   \begin{itemize}
-     \item<+-> Linear list type
-     \item<.-> $\kstar{\A} = \mu \X . \I~\disj~\A \concat \X$
-     \item<+-> Generalizing to all inductive types encodes context-free grammars
-   \end{itemize}
-\end{itemize}
-\end{frame}
 
 \section{Dyck Grammar: An Extended Example}
 
@@ -610,7 +648,7 @@ data Dyck : LinTy where
 \begin{center}
 \onslide<3->{
 \[
-  \stringquote{()()} \vdash \bal~l1~\dnil~r1~(\bal~l2~\dnil~r2) : \Dyck
+  l : \literal{(}, r : \literal{)}, l' : \literal{(}, r' : \literal{)} \vdash \bal~l~\dnil~r~(\bal~l'~\dnil~r') : \Dyck
 \]
 }
 \begin{tikzpicture}[%opacity=0.5,
@@ -651,11 +689,9 @@ treenode/.style = {shape=rectangle, rounded corners,
   \end{block}
 
   \begin{description}
-    \item<2->[Soundness] Guaranteed for \alert{free} by the type system
-    \item<3->[Completeness] \alert{Type signature is not rich enough}
+    \item<2->[Soundness] Guaranteed for free by the type system
+    \item<3->[Completeness] \alert{Not guaranteed}, as the parser can choose to always fail
   \end{description}
-
-  \onslide<4->{This notion of a parser is insufficient, as always failing satisfies the specification}
 \end{frame}
 
 \begin{frame}{A Parser for the Dyck Grammar}
@@ -721,29 +757,9 @@ data Trace : Bool (*@$\tocode$@*) (*@$\color{nonlintycolor}\mathbb{N}$@*) (*@$\t
 }
 \end{frame}
 
-\begin{frame}{A Parser for the Dyck Grammar}
-  \onslide<1->{
-  \begin{block}{Deterministic Automaton}
-    \[ \stringg \cong \TraceDyck~true~0~\disj~\TraceDyck~false~0 \]
-  \end{block}
-  }
-  \onslide<2->{
-  \begin{block}{The Dyck Grammar is Recognized by the Automaton}
-  \[
-    \Dyck \cong \TraceDyck~true~0
-  \]
-  \end{block}
-  }
-  \onslide<3->{
-  \begin{align*}
-    \stringg
-    & \lto~\TraceDyck~true~0~\disj~\TraceDyck~false~0 \\
-    & \lto~\Dyck~\disj~\TraceDyck~false~0
-  \end{align*}
-  }
-\end{frame}
-
 \begin{frame}[fragile]{A Parser for Dyck Traces}
+\talknotebool{is an ordinary functional program}
+\talknotebool{has soundness and completeness guarantees by adhering to syntactic discipline}
 \vspace{-3.5cm}
 Looks like an ordinary functional program
 \begin{overlayarea}{\linewidth}{1cm}
@@ -765,9 +781,36 @@ parse (cons ((*@$\sigma$@*) ')' a) w) (suc n) =
 \end{overlayarea}
 \end{frame}
 
-\section{Final Thoughts}
+\begin{frame}{A Parser for the Dyck Grammar}
+  \talknotebool{The code we just saw defines a parser for accepting traces}
+  \talknotebool{Equivalence because teh automaton is determinstic}
+  \talknotebool{Combine equivalences to get a Dyck parser}
+  \onslide<1->{
+  \begin{block}{Deterministic Automaton}
+    \[ \stringg \cong \TraceDyck~true~0~\disj~\TraceDyck~false~0 \]
+  \end{block}
+  }
+  \onslide<2->{
+  \begin{block}{The Dyck Grammar is Recognized by the Automaton}
+  \[
+    \Dyck \cong \TraceDyck~true~0
+  \]
+  \end{block}
+  }
+  \onslide<3->{
+  \begin{align*}
+    \stringg
+    & \lto~\TraceDyck~true~0~\disj~\TraceDyck~false~0 \\
+    & \lto~\Dyck~\disj~\TraceDyck~false~0
+  \end{align*}
+  }
+\end{frame}
+
+\section{Conclusion}
 
 \begin{frame}{Strategy for Building a Parser}
+  \talknotebool{Reusable strategy for building parsers}
+  \talknotebool{When you can abstract over a class of grammars, such as the regular grammars, you can build a parser generator with this method}
   \begin{enumerate}
     \item Describe a grammar $A$ and the traces of an automaton each as \textit{linear types}
     \item In the equational theory of \theoryabbv, prove $A$ is equivalent to the type of traces
@@ -777,7 +820,7 @@ parse (cons ((*@$\sigma$@*) ')' a) w) (suc n) =
   \onslide<2->{Instantiated the same strategy in}
   \begin{itemize}
     \item<2-> Parser for an \LL{1} grammar of arithmetic expressions and a lookahead automaton
-    \item<3-> Parser generator for regular expressions and finite automata
+    \item<3-> \textit{Parser generator} for regular expressions and finite automata
       \begin{itemize}
         \item Thompson's construction and Powerset construction
       \end{itemize}
@@ -787,7 +830,6 @@ parse (cons ((*@$\sigma$@*) ')' a) w) (suc n) =
 \begin{frame}{In the Paper}
   \onslide<1->{
     Proving unambiguity of grammars in \theoryabbv
-
 
 %   \begin{minipage}[t]{.4\textwidth}
 %     \[
@@ -891,9 +933,9 @@ parse (cons ((*@$\sigma$@*) ')' a) w) (suc n) =
 \begin{frame}{\theoryname (\theoryabbv)}
    \begin{block}{\theoryabbv}
    \begin{itemize}
-     \item Extensible framework for implementing verified parsers
-     \item Grammars are \alert{linear types}
-     \item Typechecking guarantees parser \alert{soundness for free}
+     \item Extensible framework for implementing verified parsers and parser generators
+     \item Grammars and automata are each represented as \alert{linear types}
+     \item Type system carries proof of parser \alert{soundness} and \alert{completeness}
    \end{itemize}
    \end{block}
 \end{frame}
