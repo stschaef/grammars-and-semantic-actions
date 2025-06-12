@@ -301,8 +301,9 @@ upquote=true
 }
 
 \newif\ifpresenter
-\presentertrue
-\newcommand{\talknotebool}[1]{\ifpresenter{\talknote{#1}\fi}}
+\presenterfalse
+% \newcommand{\talknotebool}[1]{\ifpresenter{\talknote{#1}\fi}}
+\newcommand{\talknotebool}[1]{}
 
 \author{\textbf{Steven Schaefer} \inst{1} \and Nathan Varner \inst{1} \and Pedro
   H. Azevedo de Amorim \inst{2} \\ Max S. New \inst{1}}
@@ -395,9 +396,9 @@ upquote=true
     \item<2->[Soundness] For a string $w$, $f(w)$ is a valid parse tree of $w$ for the grammar $A$
     \item<3->[Completeness] Parser returns a parse tree whenever one exists
   \end{description}
+\end{frame}
 
-  \vspace{1em}
-
+\begin{frame}{Verified Parsing Implementations}
   \onslide<4->{Existing verified parsers often implement a single formalism/algorithm
        \begin{itemize}
           \item<5->\LLL, \LRR, \CYK, parser combinators, Brzozowski derivatives, etc
@@ -454,7 +455,7 @@ upquote=true
    \end{block}
 
    \onslide<6->{
-   \theoryabbv subsumes existing formalisms by expressing \alert{grammars as types}
+   Universal formalism that expressing \alert{grammars as types}
    }
 
    \vspace{1em}
@@ -470,7 +471,7 @@ upquote=true
 
 \section{\theoryabbv}
 
-\begin{frame}[fragile]{Regular Expressions as Types in \theoryabbv}
+\begin{frame}[fragile]{Types in \theoryabbv}
   \talknotebool{Can capture classes of grammars as types}
 
 \begin{itemize}
@@ -507,7 +508,7 @@ data A(*@$^{*}$@*) : LinTy where
 \newcommand{\sndVar}{y}
 \newcommand{\thirdVar}{z}
 
-\begin{frame}{Parse Trees in \theoryabbv}
+\begin{frame}{A Linear, Ordered Theory}
   \talknotebool{We've seen some of the Types, so what are the terms?}
   \talknotebool{These restrictions ensure that each term preserves the underlying string being parsed}
   \onslide<1->{
@@ -558,14 +559,24 @@ data A(*@$^{*}$@*) : LinTy where
   \onslide<2->{
     All strings parsed by $\kstar{(A~\concat~A)}$ are also parsed by $\kstar{A}$
 
-    \[ aas : \kstar{(A~\concat~A)} \vdash foo~aas : \kstar{A} \]
+    \[ aas : \kstar{(A~\concat~A)} \vdash flatten~aas : \kstar{A} \]
   }
 \begin{overlayarea}{\linewidth}{3cm}
 \begin{onlyenv}<3->
 \begin{lstlisting}
-foo : (A (*@$\concat$@*) A)(*@$^{*}$@*) (*@$\tocodelin$@*) A(*@$^{*}$@*)
-foo nil = nil
-foo (cons (a , a') aas) = cons a (cons a' (foo aas))
+flatten : (A (*@$\concat$@*) A)(*@$^{*}$@*) (*@$\tocodelin$@*) A(*@$^{*}$@*)
+flatten nil = nil
+flatten (cons (a , a') aas) = cons a (cons a' (flatten aas))
+\end{lstlisting}
+\end{onlyenv}
+\end{overlayarea}
+
+\begin{overlayarea}{\linewidth}{3cm}
+\begin{onlyenv}<3->
+\begin{lstlisting}
+flattenBad : (A (*@$\concat$@*) A)(*@$^{*}$@*) (*@$\tocodelin$@*) A(*@$^{*}$@*)
+flattenBad nil = nil
+flattenBad (cons (a , a') aas) = cons a' (cons a (flatten aas))
 \end{lstlisting}
 \end{onlyenv}
 \end{overlayarea}
@@ -931,13 +942,24 @@ parse (cons ((*@$\sigma$@*) ')' a) w) (suc n) =
 \end{frame}
 
 \begin{frame}{\theoryname (\theoryabbv)}
-   \begin{block}{\theoryabbv}
+  \talknotebool{We build off of the deductive approach}
+   \begin{block}{\theoryabbv : DSL for \textit{intrinsically} verified parsing}
    \begin{itemize}
-     \item Extensible framework for implementing verified parsers and parser generators
-     \item Grammars and automata are each represented as \alert{linear types}
-     \item Type system carries proof of parser \alert{soundness} and \alert{completeness}
+     \item Functional programming language for writing verified parsers
+     \item Ordered, linear type system guarantees parser \alert{soundness for free}
+       \begin{itemize}
+          \item \alert{Completeness} with a little effort
+       \end{itemize}
+     \item Extensible framework for implementing grammar formalisms, their parsers, and their parser generators
    \end{itemize}
    \end{block}
+
+   Universal formalism that expresses \alert{grammars as types}
+
+   \vspace{1em}
+
+  Implemented as an embedded DSL in Cubical Agda \agdalogo~ with verified parsers for regular expressions and
+     selected context-free grammars
 \end{frame}
 
 \end{document}
