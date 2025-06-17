@@ -3,7 +3,7 @@
 %%% mode: latex
 %%% TeX-engine: xetex
 %%% End:
-\documentclass[10pt,notes]{beamer}
+\documentclass[10pt,show notes]{beamer}
 % NOTE May need to manually set tex engine in emacs
 
 % \usetheme[progressbar=frametitle]{metropolis}
@@ -84,6 +84,7 @@
 \renewcommand{\familydefault}{\ttdefault}
 \usepackage{mathastext}
 \let\familydefault\origfamilydefault
+
 % \renewcommand{\familydefault}{\myvar}
 % \usefonttheme[onlymath]{serif}
 %  \usepackage[mathrm=sym]{unicode-math}
@@ -179,7 +180,7 @@ upquote=true
 \newcommand{\tol}{\mathrel{\rotatebox[origin=c]{180}{$\lto$}}}
 \newcommand{\String}{\textbf{String}}
 \newcommand{\Char}{\textbf{Char}}
-\newcommand{\stringg}{{\color{LinTyColor} String}}
+\newcommand{\stringg}{{\color{LinTyColor} \texttt{String}}}
 \newcommand{\charg}{\mathtt{Char}}
 \newcommand{\Set}{\textbf{Set}}
 \newcommand{\Syn}{\mathbf{Synx}}
@@ -190,11 +191,9 @@ upquote=true
 \newcommand{\Type}{\mathbf{Type}}
 \newcommand{\Prop}{\mathbf{Prop}}
 \newcommand{\Bool}{\mathtt{Bool}}
-\newcommand{\true}{\mathtt{true}}
-\newcommand{\false}{\mathtt{false}}
 \newcommand{\nat}{\mathbb{N}}
 \newcommand{\theoryname}{Dependent Lambek Calculus\xspace}
-\newcommand{\theoryabbv}{$\text{Lambek}^D$\xspace}
+\newcommand{\theoryabbv}{$\text{Lambek}^{\texttt{D}}$\xspace}
 \newcommand{\lnld}{$\textrm{LNL}_D$}
 
 \newcommand{\isTy}{\textrm{ type}}
@@ -249,9 +248,9 @@ upquote=true
 \newcommand{\PiTy}[3]{\textstyle\prod (#1 : #2). #3}
 \newcommand{\SigTy}[3]{\textstyle\sum (#1 : #2). #3}
 \newcommand{\LinPiTy}[3]{\textstyle\bigamp (#1 : #2). #3}
-\newcommand{\LinPiTyLimit}[3]{\bigwith\limits_{#1 : #2} #3}
+\newcommand{\LinPiTyLimit}[3]{{\color{LinTyColor} \bigwith\limits_{\color{black} #1 : #2}} #3}
 \newcommand{\LinSigTy}[3]{\textstyle\bigoplus (#1 : #2). #3}
-\newcommand{\LinSigTyLimit}[3]{\bigoplus\limits_{#1 : #2} #3}
+\newcommand{\LinSigTyLimit}[3]{{\color{LinTyColor} \bigoplus\limits_{\color{black} #1 : #2}} #3}
 %% \newcommand{\DepWith}[2]{{\textstyle\bigamp}\limits_{#1}{#2}
 %% \newcommand{\DepPlus}[2]{{\textstyle\bigoplus}\limits_{#1}{#2}
 \newcommand{\GrTy}{\mathsf{Gr}}
@@ -274,15 +273,19 @@ upquote=true
 \newcommand{\LALR}[1]{\LALRR(#1)}
 
 
-\newcommand{\A}{{\color{LinTyColor} A}}
-\newcommand{\X}{{\color{LinTyColor} X}}
+\newcommand{\true}{\texttt{true}}
+\newcommand{\false}{\texttt{false}}
+\newcommand{\w}{\texttt{w}}
+\newcommand{\f}{\texttt{f}}
+\newcommand{\A}{{\color{LinTyColor} \texttt{A}}}
+\newcommand{\X}{{\color{LinTyColor} \texttt{X}}}
 \newcommand{\bal}{bal}
 \newcommand{\dnil}{nil}
-\newcommand{\Dyck}{{\color{LinTyColor} Dyck}}
-\newcommand{\TraceDyck}{{\color{LinTyColor} Trace}}
+\newcommand{\Dyck}{{\color{LinTyColor} \texttt{Dyck}}}
+\newcommand{\TraceDyck}{{\color{LinTyColor} \texttt{Trace}}}
 \newcommand{\negGram}{\color{LinTyColor} \neg}
-\newcommand{\B}{{\color{LinTyColor} B}}
-\newcommand{\I}{{\color{LinTyColor} I}}
+\newcommand{\B}{{\color{LinTyColor} \texttt{B}}}
+\newcommand{\I}{{\color{LinTyColor} \texttt{I}}}
 \newcommand{\Z}{{\color{LinTyColor} 0}}
 \newcommand{\T}{{\color{LinTyColor} \top}}
 \newcommand{\concat}{{\color{LinTyColor} \otimes}}
@@ -301,9 +304,8 @@ upquote=true
 }
 
 \newif\ifpresenter
-\presenterfalse
-% \newcommand{\talknotebool}[1]{\ifpresenter{\talknote{#1}\fi}}
-\newcommand{\talknotebool}[1]{}
+\presentertrue
+\newcommand{\talknotebool}[1]{\ifpresenter{\talknote{#1}\fi}}
 
 \author{\textbf{Steven Schaefer} \inst{1} \and Nathan Varner \inst{1} \and Pedro
   H. Azevedo de Amorim \inst{2} \\ Max S. New \inst{1}}
@@ -315,12 +317,12 @@ upquote=true
 
 \titlegraphic{%
   \begin{picture}(0,0)
-    \put(258,-150){
+    \put(258,-130){
       \makebox(0,0)[rt]{
         \includegraphics[width=2cm]{figures/umich.png}
       }
     }
-    \put(329,-134){
+    \put(329,-114){
       \makebox(0,0)[rt]{
         \includegraphics[width=2.6cm]{figures/oxford_logo}
       }
@@ -329,6 +331,8 @@ upquote=true
 
 \AtBeginSection{
 \begin{frame}
+  \talknotebool{First, let's dig into the types and terms}
+  \talknotebool{We have seen the types and terms, now lets use them}
   \setbeamertemplate{section in toc}[sections numbered]
   \tableofcontents[currentsection]
 \end{frame}
@@ -387,22 +391,23 @@ upquote=true
 
 \begin{frame}{Ensuring Parser Correctness}
   \talknotebool{Criteria for a correct parser}
-  \talknotebool{Existing appraoches are often siloed}
-  For a formal grammar $A$, a parser is a function $\String \rightharpoonup \textbf{Parse}(A)$
+  For a formal grammar $\A$, a parser is a function $\String \rightharpoonup \textbf{Parse}(\A)$
 
   \vspace{1em}
 
   \begin{description}
-    \item<2->[Soundness] For a string $w$, $f(w)$ is a valid parse tree of $w$ for the grammar $A$
+    \item<2->[Soundness] For a string $\w$, $\f(\w)$ is a valid parse tree of $\w$ for the grammar $\A$
     \item<3->[Completeness] Parser returns a parse tree whenever one exists
   \end{description}
 \end{frame}
 
 \begin{frame}{Verified Parsing Implementations}
-  \onslide<4->{Existing verified parsers often implement a single formalism/algorithm
+  \talknotebool{A family of isolated solutions}
+  \talknotebool{Miss opportunity to reuse a core grammatical foundation}
+  \onslide<1->{Existing verified parsers often implement a single formalism/algorithm
        \begin{itemize}
-          \item<5->\LLL, \LRR, \CYK, parser combinators, Brzozowski derivatives, etc
-          \item<6-> \alert{Isolated solutions where each formalism requires its own implementation}
+          \item<+->\LLL, \LRR, \CYK, parser combinators, Brzozowski derivatives, etc
+          \item<+-> \alert{Each formalism requires its own implementation}
        \end{itemize}
   }
 \end{frame}
@@ -416,7 +421,8 @@ upquote=true
 
 \begin{frame}{Deductive Approaches to Parsing}
   \talknotebool{A general approach is to describe parsing deductively}
-  \talknotebool{Deductive apporach gives a type-level specification for what a parser should return}
+  \talknotebool{Gives a type-level specification for what a parser should return}
+  \talknotebool{Automated reasoning trades off expressivity for convenience}
   \onslide<1->{Parse trees are \textit{proofs} in Lambek Calculus
   \begin{itemize}
     \item A variant of linear logic
@@ -442,8 +448,8 @@ upquote=true
 \end{frame}
 
 \begin{frame}{\theoryname (\theoryabbv)}
-  \talknotebool{We build off of the deductive approach}
-   \begin{block}{\theoryabbv : DSL for \textit{intrinsically} verified parsing}
+  \talknotebool{We build off of the deductive approach, but provide a functional language}
+   \begin{exampleblock}{\theoryabbv : DSL for \textit{intrinsically} verified parsing}
    \begin{itemize}
      \item<2-> Functional programming language for writing verified parsers
      \item<3-> Ordered, linear type system guarantees parser \alert{soundness for free}
@@ -452,19 +458,25 @@ upquote=true
        \end{itemize}
      \item<5-> Extensible framework for implementing grammar formalisms, their parsers, and their parser generators
    \end{itemize}
-   \end{block}
+   \end{exampleblock}
 
    \onslide<6->{
-   Universal formalism that expressing \alert{grammars as types}
+   Universal formalism that expresses \alert{grammars as types}
    }
 
    \vspace{1em}
 
-   \onslide<7->{Implemented as an embedded DSL in Cubical Agda \agdalogo~ with verified parsers for regular expressions and
-   selected context-free grammars}
+   \onslide<7->{Implemented as an embedded DSL in Cubical Agda \agdalogo
+     \begin{itemize}
+       \item Verified parsers for selected context-free grammars
+       \item Verified parser generator for regular expressions
+     \end{itemize}
+     }
 \end{frame}
 
 \begin{frame}
+  \talknotebool{Now that we have a target for parser correctness, I'll show you LambekD and how we achiee correctness}
+  \talknotebool{Then we will walk through the construction of a verified parser for a particular context-free grammar}
   \setbeamertemplate{section in toc}[sections numbered]
   \tableofcontents
 \end{frame}
@@ -472,7 +484,9 @@ upquote=true
 \section{\theoryabbv}
 
 \begin{frame}[fragile]{Types in \theoryabbv}
-  \talknotebool{Can capture classes of grammars as types}
+  \talknotebool{Let's look at some of the types}
+  \talknotebool{The types we see capture the regular expressions}
+  \talknotebool{These are just simple functional programs. Kleene star is just a list type}
 
 \begin{itemize}
 \item<2-> Characters $\literal c$
@@ -483,7 +497,7 @@ upquote=true
 \item<7-> Kleene Star $\kstar{\cdot}$
    \begin{itemize}
      \item<8-> Inductive linear type of lists
-     \item<9-> Generalizing to all inductive types encodes \textit{context-free grammars}
+     \item<9-> Arbitrary inductive types generalize to context-free grammars and beyond
    \end{itemize}
 \end{itemize}
 
@@ -510,6 +524,7 @@ data A(*@$^{*}$@*) : LinTy where
 
 \begin{frame}{A Linear, Ordered Theory}
   \talknotebool{We've seen some of the Types, so what are the terms?}
+  \talknotebool{We can use terms to encode parse trees}
   \talknotebool{These restrictions ensure that each term preserves the underlying string being parsed}
   \onslide<1->{
     \[
@@ -553,31 +568,48 @@ data A(*@$^{*}$@*) : LinTy where
 \end{frame}
 
 \begin{frame}[fragile]{Terms as Grammar Reductions}
-  \talknotebool{Simple functional code}
+  \talknotebool{Let's look at another term}
   \talknotebool{Just a flattening of a list of pairs}
-  \talknotebool{But because it typechecks, it carries the data of a reduction of grammars}
+  \talknotebool{But because it adheres to our syntactic discipline, this simple program carries the semantics of a reduction of grammars}
+  \talknotebool{Reduction: translation between types of parse trees}
   \onslide<2->{
-    All strings parsed by $\kstar{(A~\concat~A)}$ are also parsed by $\kstar{A}$
+    All strings parsed by $\kstar{(\A~\concat~\A)}$ are also parsed by $\kstar{\A}$
 
-    \[ aas : \kstar{(A~\concat~A)} \vdash flatten~aas : \kstar{A} \]
+    \[ aas : \kstar{(\A~\concat~\A)} \vdash \texttt{flatten}~aas : \kstar{\A} \]
   }
 \begin{overlayarea}{\linewidth}{3cm}
 \begin{onlyenv}<3->
+\begin{minipage}{.85\textwidth}
 \begin{lstlisting}
 flatten : (A (*@$\concat$@*) A)(*@$^{*}$@*) (*@$\tocodelin$@*) A(*@$^{*}$@*)
 flatten nil = nil
-flatten (cons (a , a') aas) = cons a (cons a' (flatten aas))
+flatten (cons (a , a') aas) =
+   cons a (cons a' (flatten aas))
 \end{lstlisting}
+\end{minipage}%
+\begin{minipage}{.15\textwidth}
+  \begin{center}
+     \cmark
+  \end{center}
+\end{minipage}
 \end{onlyenv}
 \end{overlayarea}
 
 \begin{overlayarea}{\linewidth}{3cm}
-\begin{onlyenv}<3->
+\begin{onlyenv}<4->
+\begin{minipage}{.85\textwidth}
 \begin{lstlisting}
 flattenBad : (A (*@$\concat$@*) A)(*@$^{*}$@*) (*@$\tocodelin$@*) A(*@$^{*}$@*)
 flattenBad nil = nil
-flattenBad (cons (a , a') aas) = cons a' (cons a (flatten aas))
+flattenBad (cons (a , a') aas) =
+  cons a' (cons a (flatten aas))
 \end{lstlisting}
+\end{minipage}%
+\begin{minipage}{.15\textwidth}
+  \begin{center}
+     \xmark
+  \end{center}
+\end{minipage}%
 \end{onlyenv}
 \end{overlayarea}
 
@@ -620,14 +652,17 @@ flattenBad (cons (a , a') aas) = cons a' (cons a (flatten aas))
 
 \begin{frame}{Grammar Semantics}
   \talknotebool{Recapping the grammatical concepts so far}
+  \talknotebool{Parse trees of a fixed string are terms where the context corresponds to that string}
+  \talknotebool{Reductions context corresponds to a single grammar}
+  \talknotebool{Parser, reduction from a type of strings to maybe parse trees}
 \begin{center}
   \begin{tabular}{cc}
     \textbf{Grammars} & \textbf{Linear Types} \\
     \hline
     Grammar $\A$ & Linear type $\A$ \\
-    \onslide<2->{Parse of string $w$} & \onslide<2->{$x : {\color{LinTyColor} \lceil w \rceil} \vdash e : \A$} \\
+    \onslide<2->{Parse of string $\w$} & \onslide<2->{$x : {\color{LinTyColor} \lceil \w \rceil} \vdash e : \A$} \\
     % \onslide<3->{ Parse transformer } & \onslide<3->{$\Delta \vdash e : \A$} \\
-    \onslide<3->{Reduction from $A$ to $B$} & \onslide<3->{$x : \A \vdash e : \B$} \\
+    \onslide<3->{Reduction from $\A$ to $\B$} & \onslide<3->{$x : \A \vdash e : \B$} \\
     \onslide<4->{ Parser } & \onslide<4->{$x : \stringg \vdash e : \A~\disj~\T$} \\
   \end{tabular}
 \end{center}
@@ -643,7 +678,7 @@ Context-free grammar of balanced parentheses
 \vspace{-1em}
 
 \begin{align*}
-  D & \to \epsilon ~|~ (D)D
+  D & \to \varepsilon ~|~ (D)D
 \end{align*}
 
 \vspace{-1em}
@@ -754,11 +789,11 @@ treenode/.style = {shape=rectangle, rounded corners,
 \begin{onlyenv}<2->
 \begin{lstlisting}
 data Trace : Bool (*@$\tocode$@*) (*@$\color{nonlintycolor}\mathbb{N}$@*) (*@$\tocode$@*) LinTy where
- (*@${\alert<3> {eof}}$@*) : Trace true 0
- (*@$\alert<4> {leftovers}$@*) : (*@$\color{black}\forall$@*) n (*@$\tocode$@*) Trace false (suc n)
- (*@$\alert<5>{push}$@*) : (*@$\color{black}\forall$@*) b n (*@$\tocode$@*) '(' (*@$\tocodelin$@*) Trace b (suc n) (*@$\tocodelin$@*) Trace b n
- (*@$\alert<6>{pop}$@*) : (*@$\color{black}\forall$@*) b n (*@$\tocode$@*) ')' (*@$\tocodelin$@*) Trace b n (*@$\tocodelin$@*) Trace b (suc n)
- (*@$\alert<7> {unexpected}$@*) : ')' (*@$\tocodelin$@*) (*@$\color{lintycolor}\top$@*) (*@$\tocodelin$@*) Trace false 0
+ (*@${\alert<3> {\texttt{eof}}}$@*) : Trace true 0
+ (*@$\alert<4> {\texttt{leftovers}}$@*) : (*@$\color{black}\forall$@*) n (*@$\tocode$@*) Trace false (suc n)
+ (*@$\alert<5>{\texttt{push}}$@*) : (*@$\color{black}\forall$@*) b n (*@$\tocode$@*) '(' (*@$\tocodelin$@*) Trace b (suc n) (*@$\tocodelin$@*) Trace b n
+ (*@$\alert<6>{\texttt{pop}}$@*) : (*@$\color{black}\forall$@*) b n (*@$\tocode$@*) ')' (*@$\tocodelin$@*) Trace b n (*@$\tocodelin$@*) Trace b (suc n)
+ (*@$\alert<7> {\texttt{unexpected}}$@*) : ')' (*@$\tocodelin$@*) (*@$\color{lintycolor}\top$@*) (*@$\tocodelin$@*) Trace false 0
 \end{lstlisting}
 \end{onlyenv}
 \end{overlayarea}
@@ -798,26 +833,24 @@ parse (cons ((*@$\sigma$@*) ')' a) w) (suc n) =
   \talknotebool{Combine equivalences to get a Dyck parser}
   \onslide<1->{
   \begin{block}{Deterministic Automaton}
-    \[ \stringg \cong \TraceDyck~true~0~\disj~\TraceDyck~false~0 \]
+    \[ \stringg \cong \TraceDyck~\true~0~\disj~\TraceDyck~\false~0 \]
   \end{block}
   }
   \onslide<2->{
   \begin{block}{The Dyck Grammar is Recognized by the Automaton}
   \[
-    \Dyck \cong \TraceDyck~true~0
+    \Dyck \cong \TraceDyck~\true~0
   \]
   \end{block}
   }
   \onslide<3->{
   \begin{align*}
     \stringg
-    & \lto~\TraceDyck~true~0~\disj~\TraceDyck~false~0 \\
-    & \lto~\Dyck~\disj~\TraceDyck~false~0
+    & \lto~\TraceDyck~\true~0~\disj~\TraceDyck~\false~0 \\
+    & \lto~\Dyck~\disj~\TraceDyck~\false~0
   \end{align*}
   }
 \end{frame}
-
-\section{Conclusion}
 
 \begin{frame}{Strategy for Building a Parser}
   \talknotebool{Reusable strategy for building parsers}
@@ -837,6 +870,8 @@ parse (cons ((*@$\sigma$@*) ')' a) w) (suc n) =
       \end{itemize}
   \end{itemize}
 \end{frame}
+
+\section{Conclusion}
 
 \begin{frame}{In the Paper}
   \onslide<1->{
@@ -906,7 +941,7 @@ parse (cons ((*@$\sigma$@*) ')' a) w) (suc n) =
   \onslide<2->{
     Linear-Non-Linear Dependent Types
     \begin{itemize}
-      \item $\LinSigTyLimit{x}{X}{A~x}$, $\LinPiTyLimit{x}{X}{A~x}$
+      \item $\LinSigTyLimit{x}{X}{\A~x}$, $\LinPiTyLimit{x}{X}{\A~x}$
       \item Key to describing grammars of unrestricted complexity
     \end{itemize}
   }
@@ -958,8 +993,11 @@ parse (cons ((*@$\sigma$@*) ')' a) w) (suc n) =
 
    \vspace{1em}
 
-  Implemented as an embedded DSL in Cubical Agda \agdalogo~ with verified parsers for regular expressions and
-     selected context-free grammars
+   Implemented as an embedded DSL in Cubical Agda \agdalogo
+     \begin{itemize}
+     \item Verified parsers for selected context-free grammars
+       \item Verified parser generator for regular expressions
+     \end{itemize}
 \end{frame}
 
 \end{document}

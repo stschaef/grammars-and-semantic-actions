@@ -1,4 +1,4 @@
-prelim.pdf: prelim.tex
-	xelatex prelim.tex
+prelim.pdf: pldi.tex
+	xelatex pldi.tex
 clean:
 	latexmk -C
