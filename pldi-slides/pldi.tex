@@ -278,7 +278,8 @@ upquote=true
 \newcommand{\w}{\texttt{w}}
 \newcommand{\f}{\texttt{f}}
 \newcommand{\A}{{\color{LinTyColor} \texttt{A}}}
-\newcommand{\X}{{\color{LinTyColor} \texttt{X}}}
+\newcommand{\X}{\texttt{X}}
+\newcommand{\x}{\texttt{x}}
 \newcommand{\bal}{bal}
 \newcommand{\dnil}{nil}
 \newcommand{\Dyck}{{\color{LinTyColor} \texttt{Dyck}}}
@@ -344,8 +345,9 @@ upquote=true
 
 % TODO flash real world vulnerability
 \begin{frame}{Parsing is Everywhere}
-  \talknotebool{Parsing is one of the oldest and most studied problems, and it is used throughout the software stack}
-  \talknotebool{Despite parsing's maturity, we still don't have it perfected, and there is a high price for incorrect parsers}
+  \talknotebool{Parsing is one of the oldest and most studied problems}
+  \talknotebool{In its simplest form, parsing is the process of turning unstructured text into a structure representation, which occurs throughout the software stack}
+  \talknotebool{Despite parsing's maturity, we still don't have it perfected. Due to its ubiquity, there is a high price for incorrect parsers}
   \talknotebool{Existence of parser bugs in compcert means that end users aren't guaranteed to have correctly compiled programs}
   \begin{center}
   \begin{tikzpicture}[
@@ -390,7 +392,8 @@ upquote=true
 \end{frame}
 
 \begin{frame}{Ensuring Parser Correctness}
-  \talknotebool{Criteria for a correct parser}
+  \talknotebool{To verify parsers, we need a specification}
+  \talknotebool{We aim to verify two key properties, soundness and completeness}
   For a formal grammar $\A$, a parser is a function $\String \rightharpoonup \textbf{Parse}(\A)$
 
   \vspace{1em}
@@ -402,12 +405,13 @@ upquote=true
 \end{frame}
 
 \begin{frame}{Verified Parsing Implementations}
-  \talknotebool{A family of isolated solutions}
-  \talknotebool{Miss opportunity to reuse a core grammatical foundation}
+  \talknotebool{With this strategy, each formalism requires its own implementation}
+  \talknotebool{A family of isolated solutions that miss a crucial opportunity to reuse a core grammatical foundation}
+  \talknotebool{Verification is easier if new projects don't need to duplicate this effort}
   \onslide<1->{Existing verified parsers often implement a single formalism/algorithm
        \begin{itemize}
-          \item<+->\LLL, \LRR, \CYK, parser combinators, Brzozowski derivatives, etc
-          \item<+-> \alert{Each formalism requires its own implementation}
+          \item<2->\LLL, \LRR, \CYK, parser combinators, Brzozowski derivatives, etc
+          \item<3-> \alert{Each formalism requires its own implementation}
        \end{itemize}
   }
 \end{frame}
@@ -420,29 +424,31 @@ upquote=true
 \newcommand{\treeexampleinputtail}{\stringquote{ba}}
 
 \begin{frame}{Deductive Approaches to Parsing}
-  \talknotebool{A general approach is to describe parsing deductively}
+  \talknotebool{Another thread of parser verification is a general approach of describing parsing deductively}
+  \talknotebool{General system to unify the isolated solutions from before, but it misses some expressivity}
   \talknotebool{Gives a type-level specification for what a parser should return}
   \talknotebool{Automated reasoning trades off expressivity for convenience}
   \onslide<1->{Parse trees are \textit{proofs} in Lambek Calculus
   \begin{itemize}
     \item A variant of linear logic
+    \item Framework that can describe some existing formalisms
   \end{itemize}
   }
 
-  \onslide<2->{
+  \onslide<3->{
     \begin{mathpar}
-      \inferrule{\onslide<3->{
+      \inferrule{\onslide<4->{
           \inferrule{\cdots}{\treeexampleinputhead \vdash \treeexamplegoalbase} \and
           \inferrule{\cdots}{\treeexampleinputtail \vdash \treeexamplegoal}}}
-      {\onslide<2->{\treeexampleinput \vdash \treeexamplegoal}}
+      {\onslide<3->{\treeexampleinput \vdash \treeexamplegoal}}
     \end{mathpar}
   }
 
   \onslide<2->{
     \begin{itemize}
-      \item<2-> User specifies input $\treeexampleinput$ and goal $\treeexamplegoal$
-      \item<3-> Use logic programming (e.g. Datalog) to synthesize parse trees
-      \item<4-> Soundness of a parse is built-in to Lambek Calculus
+      \item<3-> User specifies input $\treeexampleinput$ and goal $\treeexamplegoal$
+      \item<2-> Use logic programming (e.g. Datalog) to synthesize parse trees
+      \item<5-> Soundness of a parse is built-in to Lambek Calculus
     \end{itemize}
   }
 \end{frame}
@@ -867,6 +873,8 @@ parse (cons ((*@$\sigma$@*) ')' a) w) (suc n) =
     \item Use the equivalence to create a parser for $A$
   \end{enumerate}
 
+  \vspace{1cm}
+
   \onslide<2->{Instantiated the same strategy in}
   \begin{itemize}
     \item<2-> Parser for an \LL{1} grammar of arithmetic expressions and a lookahead automaton
@@ -879,89 +887,38 @@ parse (cons ((*@$\sigma$@*) ')' a) w) (suc n) =
 
 \section{Conclusion}
 
-\begin{frame}{In the Paper}
+\begin{frame}[fragile]{In the Paper}
   \talknotebool{Things elided from this talk that you can find in the code/artifact}
 
   \onslide<1->{
     Proving unambiguity of grammars in \theoryabbv
-
-%   \begin{minipage}[t]{.4\textwidth}
-%     \[
-%       \onslide<2->{A = \literal{a} \concat (\literal{b} \disj \literal{c})}
-%     \]
-%   \begin{tikzpicture}[%opacity=0.5,
-%   treenode/.style = {shape=rectangle, rounded corners,
-%     draw, align=center,
-%     top color=white, bottom color=white!20},
-%     line/.style={draw, -latex'},
-%     edge from parent/.style={draw,-latex'},
-%     level 1/.style={sibling distance=20mm, level distance=0.5cm},
-%     level 2/.style={sibling distance=1cm, level distance=1cm},
-%     visible on=<3->
-%     ]
-%   \node[treenode] (tree) {$\concat$}
-%     child { node[treenode] (a) {$\stringquote{a}$} }
-%     child { node[treenode] (b){$\mathsf{inl}$}
-%         child { node[treenode] (c) {$\stringquote{b}$} }
-%       };
-%       \node[draw, fit=(tree)(a)(b)(c),
-%       label={[name=l] $\stringquote{ab} \vdash A$}, visible on=<3->] {};
-% \end{tikzpicture}
-%   \end{minipage}%
-%   \begin{minipage}[t]{.6\textwidth}
-%     \[
-%       \onslide<5->{B = \kstar{\literal{a}} \concat \kstar{\literal{a}}}
-%     \]
-%   \begin{tikzpicture}[%opacity=0.5,
-%   treenode/.style = {shape=rectangle, rounded corners,
-%     draw, align=center,
-%     top color=white, bottom color=white!20},
-%     line/.style={draw, -latex'},
-%     edge from parent/.style={draw,-latex'},
-%     level 1/.style={sibling distance=2cm, level distance=0.5cm},
-%     level 2/.style={sibling distance=1cm, level distance=1cm},
-%     visible on=<6->
-%     ]
-
-%    \node[treenode] (tree) {$\concat$}
-%    child { node[treenode] (a) {$cons$}
-%      child {node[treenode] (b) {$\stringquote{a}}$}
-%      child {node[treenode] (c) {$nil$}}
-%    }
-%    child {node[treenode] (x)) };
-%    \node[treenode, right=2.5cm of tree] (tree2) {$\concat$}
-%    child {node[treenode] {$nil$}
-%    child { node[treenode] (x) {$cons$}
-%      child {node[treenode] (y){$\stringquote{a}}$}
-%      child {node[treenode] (z){$nil$}}
-%    }
-%     ;
-%       \node[draw, fit=(tree)(a)(b)(c)(x)(y)(z)(w),
-%       label={[name=l] $h(a)$}, visible on=<6->] {};
-% \end{tikzpicture}
-%   \end{minipage}%
-
-
   }
 
     \vspace{1cm}
 
   \onslide<2->{
     Linear-Non-Linear Dependent Types
-    \begin{itemize}
-      \item $\LinSigTyLimit{x}{X}{\A~x}$, $\LinPiTyLimit{x}{X}{\A~x}$
-      \item Key to describing grammars of unrestricted complexity
-    \end{itemize}
+    \[
+    \LinSigTyLimit{\x}{\X}{\,\A~\x} \qquad \qquad \qquad \LinPiTyLimit{\x}{\X}{\,\A~\x}
+    \]
+
+    % \begin{itemize}
+      % \item $\LinSigTyLimit{\x}{\X}{\A~\x}$, $\LinPiTyLimit{\x}{\X}{\A~\x}$
+      % \item Key to describing grammars of unrestricted complexity
+    % \end{itemize}
   }
 
     \vspace{1cm}
 
   \onslide<3->{
     Denotational Semantics
-    \begin{itemize}
-      \item Interpret grammars in the category $\String \to \Set$
-      \item Basis for Agda implementation
-    \end{itemize}
+    \[
+      \text{Interpret grammars in the category }\String \to \Set
+    \]
+    % \begin{itemize}
+    %   \item Interpret grammars in the category $\String \to \Set$
+    %   \item Basis for Agda implementation
+    % \end{itemize}
   }
 \end{frame}
 
@@ -987,7 +944,7 @@ parse (cons ((*@$\sigma$@*) ')' a) w) (suc n) =
 
 \begin{frame}{\theoryname (\theoryabbv)}
   \talknotebool{To summarize, LambekD is a functional programming language for writing parsers/parser generators where the type system carries the proofs of correctness}
-   \begin{block}{\theoryabbv : DSL for \textit{intrinsically} verified parsing}
+   \begin{exampleblock}{\theoryabbv : DSL for \textit{intrinsically} verified parsing}
    \begin{itemize}
      \item Functional programming language for writing verified parsers
      \item Ordered, linear type system guarantees parser \alert{soundness for free}
@@ -996,7 +953,7 @@ parse (cons ((*@$\sigma$@*) ')' a) w) (suc n) =
        \end{itemize}
      \item Extensible framework for implementing grammar formalisms, their parsers, and their parser generators
    \end{itemize}
-   \end{block}
+   \end{exampleblock}
 
    Universal formalism that expresses \alert{grammars as types}
 
