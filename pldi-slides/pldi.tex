@@ -668,10 +668,11 @@ flattenBad (cons (a , a') aas) =
 \end{center}
 \end{frame}
 
-
 \section{Dyck Grammar: An Extended Example}
 
 \begin{frame}[fragile]{Dyck Grammar as a Type in \theoryabbv}
+  \talknotebool{Usually written as a generative grammar}
+  \talknotebool{Each production is a constructor}
 \vspace{-2cm}
 Context-free grammar of balanced parentheses
 
@@ -727,6 +728,7 @@ treenode/.style = {shape=rectangle, rounded corners,
 \end{frame}
 
 \begin{frame}{A Parser for the Dyck Grammar}
+  \talknotebool{We can implement parsers of this type, but the type system doesn't guarantee as much as it could}
   \begin{block}{Dyck Parser}
     A parser for $\Dyck$ is a function
   \[
@@ -741,6 +743,7 @@ treenode/.style = {shape=rectangle, rounded corners,
 \end{frame}
 
 \begin{frame}{A Parser for the Dyck Grammar}
+  \talknotebool{Now the type system carries proofs of both soundness and completeness}
   \begin{block}{Complete Dyck Parser}
     A \textit{complete} parser for $\Dyck$ is a choice of type $\Dyck_{\negGram}$ and function
   \[
@@ -765,6 +768,9 @@ treenode/.style = {shape=rectangle, rounded corners,
 \end{frame}
 
 \begin{frame}[fragile]{Deterministic Automaton for the Dyck Grammar}
+  \talknotebool{Inductive data type indexed by two pieces of data}
+  \talknotebool{Constructors of the inductive data type tell us how to build traces}
+  \talknotebool{Either stop at a state or transition}
 \begin{center}
 \onslide<1-8>{
 \begin{tikzpicture}[node distance = 15mm ]
@@ -804,14 +810,14 @@ data Trace : Bool (*@$\tocode$@*) (*@$\color{nonlintycolor}\mathbb{N}$@*) (*@$\t
 \end{frame}
 
 \begin{frame}[fragile]{A Parser for Dyck Traces}
-\talknotebool{is an ordinary functional program}
-\talknotebool{has soundness and completeness guarantees by adhering to syntactic discipline}
+\talknotebool{A small, ordinary functional program}
+\talknotebool{Soundness and completeness guarantees by adhering to syntactic discipline}
 \vspace{-3.5cm}
 Looks like an ordinary functional program
 \begin{overlayarea}{\linewidth}{1cm}
 \begin{onlyenv}<1->
 \begin{lstlisting}
-parse : String (*@$\lto$@*) &[ n (*@$\color{black}\in$@*) (*@$\color{nonlintycolor}\mathbb{N}$@*) ] (*@$\color{lintycolor}\oplus$@*)[ b (*@$\color{black}\in$@*) Bool ] Trace b n
+parse : (*@$\color{lintycolor} \texttt{String}$@*) (*@$\lto$@*) &[ n (*@$\color{black}\in$@*) (*@$\color{nonlintycolor}\mathbb{N}$@*) ] ((*@$\color{lintycolor} \texttt{Trace}$@*) true n (*@$\color{lintycolor}\oplus$@*) (*@$\color{lintycolor} \texttt{Trace}$@*) false n)
 parse nil zero = (*@$\sigma$@*) true eof
 parse nil (suc n) = (*@$\sigma$@*) false leftovers
 parse (cons ((*@$\sigma$@*) '(' a) w) n =
@@ -829,7 +835,7 @@ parse (cons ((*@$\sigma$@*) ')' a) w) (suc n) =
 
 \begin{frame}{A Parser for the Dyck Grammar}
   \talknotebool{The code we just saw defines a parser for accepting traces}
-  \talknotebool{Equivalence because teh automaton is determinstic}
+  \talknotebool{Equivalence because the automaton is determinstic}
   \talknotebool{Combine equivalences to get a Dyck parser}
   \onslide<1->{
   \begin{block}{Deterministic Automaton}
@@ -874,6 +880,8 @@ parse (cons ((*@$\sigma$@*) ')' a) w) (suc n) =
 \section{Conclusion}
 
 \begin{frame}{In the Paper}
+  \talknotebool{Things elided from this talk that you can find in the code/artifact}
+
   \onslide<1->{
     Proving unambiguity of grammars in \theoryabbv
 
@@ -969,6 +977,7 @@ parse (cons ((*@$\sigma$@*) ')' a) w) (suc n) =
 % \end{frame}
 
 \begin{frame}{Ongoing and Future Work}
+  \talknotebool{In a variant of lambekD, we believe we may be able to verify a broader class of language frontends}
   \begin{itemize}
     \item<+-> Encode richer parsing algorithms (e.g. \LLL, \LRR, and forms of context-sensitivity)
     \item<+-> Verified semantic actions to integrate with language backends
@@ -977,7 +986,7 @@ parse (cons ((*@$\sigma$@*) ')' a) w) (suc n) =
 \end{frame}
 
 \begin{frame}{\theoryname (\theoryabbv)}
-  \talknotebool{We build off of the deductive approach}
+  \talknotebool{To summarize, LambekD is a functional programming language for writing parsers/parser generators where the type system carries the proofs of correctness}
    \begin{block}{\theoryabbv : DSL for \textit{intrinsically} verified parsing}
    \begin{itemize}
      \item Functional programming language for writing verified parsers
