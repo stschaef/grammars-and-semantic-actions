@@ -343,7 +343,6 @@ upquote=true
 
 \maketitle
 
-% TODO flash real world vulnerability
 \begin{frame}{Parsing is Everywhere}
   \talknotebool{Parsing is one of the oldest and most studied problems}
   \talknotebool{In its simplest form, parsing is the process of turning unstructured text into a structure representation, which occurs throughout the software stack}
@@ -394,12 +393,12 @@ upquote=true
 \begin{frame}{Ensuring Parser Correctness}
   \talknotebool{To verify parsers, we need a specification}
   \talknotebool{We aim to verify two key properties, soundness and completeness}
-  For a formal grammar $\A$, a parser is a function $\String \rightharpoonup \textbf{Parse}(\A)$
+  For a formal grammar $\A$, a parser is a function $\f : \String \rightharpoonup \textbf{Parse}(\A)$
 
   \vspace{1em}
 
   \begin{description}
-    \item<2->[Soundness] For a string $\w$, $\f(\w)$ is a valid parse tree of $\w$ for the grammar $\A$
+    \item<2->[Soundness] For a string $\w$, $\f(\w)$ is a valid parse tree for the grammar $\A$ of $\w$
     \item<3->[Completeness] Parser returns a parse tree whenever one exists
   \end{description}
 \end{frame}
@@ -408,6 +407,7 @@ upquote=true
   \talknotebool{With this strategy, each formalism requires its own implementation}
   \talknotebool{A family of isolated solutions that miss a crucial opportunity to reuse a core grammatical foundation}
   \talknotebool{Verification is easier if new projects don't need to duplicate this effort}
+
   \onslide<1->{Existing verified parsers often implement a single formalism/algorithm
        \begin{itemize}
           \item<2->\LLL, \LRR, \CYK, parser combinators, Brzozowski derivatives, etc
@@ -416,45 +416,36 @@ upquote=true
   }
 \end{frame}
 
-\newcommand{\treeexamplegoalbase}{\A~\disj~\B}
-\newcommand{\treeexamplegoal}{(\treeexamplegoalbase)^{*}}
+% \begin{frame}{Deductive Approaches to Parsing}
+%   \talknotebool{Another thread of parser verification is a general approach of describing parsing deductively}
+%   \talknotebool{General system to unify the isolated solutions from before, but it misses some expressivity}
+%   \talknotebool{Gives a type-level specification for what a parser should return}
+%   \talknotebool{Automated reasoning trades off expressivity for convenience}
+%   \onslide<1->{Parse trees are \textit{proofs} in Lambek Calculus
+%   \begin{itemize}
+%     \item A variant of linear logic
+%   \end{itemize}
+%   }
 
-\newcommand{\treeexampleinput}{\stringquote{aba}}
-\newcommand{\treeexampleinputhead}{\stringquote{a}}
-\newcommand{\treeexampleinputtail}{\stringquote{ba}}
+%   \onslide<2->{
+%     \begin{mathpar}
+%       \inferrule{\onslide<2->{
+%           \inferrule{\cdots}{\treeexampleinputhead \vdash \treeexamplegoalbase} \and
+%           \inferrule{\cdots}{\treeexampleinputtail \vdash \treeexamplegoal}}}
+%       {\onslide<2->{\treeexampleinput \vdash \treeexamplegoal}}
+%     \end{mathpar}
+%   }
 
-\begin{frame}{Deductive Approaches to Parsing}
-  \talknotebool{Another thread of parser verification is a general approach of describing parsing deductively}
-  \talknotebool{General system to unify the isolated solutions from before, but it misses some expressivity}
-  \talknotebool{Gives a type-level specification for what a parser should return}
-  \talknotebool{Automated reasoning trades off expressivity for convenience}
-  \onslide<1->{Parse trees are \textit{proofs} in Lambek Calculus
-  \begin{itemize}
-    \item A variant of linear logic
-    \item Framework that can describe some existing formalisms
-  \end{itemize}
-  }
-
-  \onslide<3->{
-    \begin{mathpar}
-      \inferrule{\onslide<4->{
-          \inferrule{\cdots}{\treeexampleinputhead \vdash \treeexamplegoalbase} \and
-          \inferrule{\cdots}{\treeexampleinputtail \vdash \treeexamplegoal}}}
-      {\onslide<3->{\treeexampleinput \vdash \treeexamplegoal}}
-    \end{mathpar}
-  }
-
-  \onslide<2->{
-    \begin{itemize}
-      \item<3-> User specifies input $\treeexampleinput$ and goal $\treeexamplegoal$
-      \item<2-> Use logic programming (e.g. Datalog) to synthesize parse trees
-      \item<5-> Soundness of a parse is built-in to Lambek Calculus
-    \end{itemize}
-  }
-\end{frame}
+%   \onslide<3->{
+%     \begin{itemize}
+%       \item<3-> User specifies input $\treeexampleinput$ and goal $\treeexamplegoal$
+%       \item<4-> Use logic programming (e.g. Datalog) to synthesize parse trees
+%       \item<5-> Soundness of a parse is built-in to Lambek Calculus
+%     \end{itemize}
+%   }
+% \end{frame}
 
 \begin{frame}{\theoryname (\theoryabbv)}
-  \talknotebool{We build off of the deductive approach, but provide a functional language}
    \begin{exampleblock}{\theoryabbv : DSL for \textit{intrinsically} verified parsing}
    \begin{itemize}
      \item<2-> Functional programming language for writing verified parsers
@@ -488,6 +479,36 @@ upquote=true
 \end{frame}
 
 \section{\theoryabbv}
+
+\newcommand{\treeexamplegoalbase}{\literal{a} \disj \literal{b}}
+\newcommand{\treeexamplegoal}{(\treeexamplegoalbase)^{*}}
+
+\newcommand{\treeexampleinput}{\stringquote{ab}}
+\newcommand{\treeexampleinputhead}{\stringquote{a}}
+\newcommand{\treeexampleinputtail}{\stringquote{b}}
+
+\begin{frame}{Lambek Calculus: The Basis for \theoryabbv}
+  \talknotebool{Our work builds upon Lambek Calculus which describes parsing as a deductive problem}
+  \talknotebool{In implementation, the parse trees are often synthesized or searched for by a logic programming engine like datalog}
+  \talknotebool{We extend Lambek calculus by giving a functional term language with dependent types}
+
+  Parsing is a deductive problem
+  \begin{itemize}
+    \item<2-> User provides a type-level specification
+    \item<3-> Parse trees are synthesized via logic programming
+  \end{itemize}
+
+  \begin{mathpar}
+    \inferrule{
+        \inferrule{\cdots}{\treeexampleinputhead \vdash \treeexamplegoalbase} \and
+        \inferrule{\cdots}{\treeexampleinputtail \vdash \treeexamplegoal}}
+    {\treeexampleinput \vdash \treeexamplegoal}
+  \end{mathpar}
+
+  \onslide<4->{
+  \theoryabbv extends the expressivity of Lambek Calculus by adding dependent types
+  }
+\end{frame}
 
 \begin{frame}[fragile]{Types in \theoryabbv}
   \talknotebool{Let's look at some of the types}
@@ -531,7 +552,9 @@ data A(*@$^{*}$@*) : LinTy where
 \begin{frame}{A Linear, Ordered Theory}
   \talknotebool{We've seen some of the Types, so what are the terms?}
   \talknotebool{We can use terms to encode parse trees}
-  \talknotebool{These restrictions ensure that each term preserves the underlying string being parsed}
+  \talknotebool{A parse tree of a string is a term whose context corresponds to that string}
+  \talknotebool{If that is the intended interpretation, we need the following restrictions}
+  \talknotebool{These restrictions ensure that each term preserves the underlying resources, the string, being parsed}
   \onslide<1->{
     \[
       \boxed{\text{Parse trees of } \stringquote{\whyExampleString}}
@@ -585,40 +608,14 @@ data A(*@$^{*}$@*) : LinTy where
   }
 \begin{overlayarea}{\linewidth}{3cm}
 \begin{onlyenv}<3->
-\begin{minipage}{.85\textwidth}
 \begin{lstlisting}
 flatten : (A (*@$\concat$@*) A)(*@$^{*}$@*) (*@$\tocodelin$@*) A(*@$^{*}$@*)
 flatten nil = nil
 flatten (cons (a , a') aas) =
    cons a (cons a' (flatten aas))
 \end{lstlisting}
-\end{minipage}%
-\begin{minipage}{.15\textwidth}
-  \begin{center}
-     \cmark
-  \end{center}
-\end{minipage}
 \end{onlyenv}
 \end{overlayarea}
-
-\begin{overlayarea}{\linewidth}{3cm}
-\begin{onlyenv}<4->
-\begin{minipage}{.85\textwidth}
-\begin{lstlisting}
-flattenBad : (A (*@$\concat$@*) A)(*@$^{*}$@*) (*@$\tocodelin$@*) A(*@$^{*}$@*)
-flattenBad nil = nil
-flattenBad (cons (a , a') aas) =
-  cons a' (cons a (flatten aas))
-\end{lstlisting}
-\end{minipage}%
-\begin{minipage}{.15\textwidth}
-  \begin{center}
-     \xmark
-  \end{center}
-\end{minipage}%
-\end{onlyenv}
-\end{overlayarea}
-
 \end{frame}
 
 % TODO ordered here too
@@ -655,24 +652,6 @@ flattenBad (cons (a , a') aas) =
 %     \end{center}
 %   }
 % \end{frame}
-
-\begin{frame}{Grammar Semantics}
-  \talknotebool{Recapping the grammatical concepts so far}
-  \talknotebool{Parse trees of a fixed string are terms where the context corresponds to that string}
-  \talknotebool{Reductions context corresponds to a single grammar}
-  \talknotebool{Parser, reduction from a type of strings to maybe parse trees}
-\begin{center}
-  \begin{tabular}{cc}
-    \textbf{Grammars} & \textbf{Linear Types} \\
-    \hline
-    Grammar $\A$ & Linear type $\A$ \\
-    \onslide<2->{Parse of string $\w$} & \onslide<2->{$x : {\color{LinTyColor} \lceil \w \rceil} \vdash e : \A$} \\
-    % \onslide<3->{ Parse transformer } & \onslide<3->{$\Delta \vdash e : \A$} \\
-    \onslide<3->{Reduction from $\A$ to $\B$} & \onslide<3->{$x : \A \vdash e : \B$} \\
-    \onslide<4->{ Parser } & \onslide<4->{$x : \stringg \vdash e : \A~\disj~\T$} \\
-  \end{tabular}
-\end{center}
-\end{frame}
 
 \section{Dyck Grammar: An Extended Example}
 
@@ -748,8 +727,26 @@ treenode/.style = {shape=rectangle, rounded corners,
   \end{description}
 \end{frame}
 
+% \begin{frame}{Grammar Semantics}
+%   \talknotebool{Recapping the grammatical concepts so far}
+%   \talknotebool{Parse trees of a fixed string are terms where the context corresponds to that string}
+%   \talknotebool{Reductions context corresponds to a single grammar}
+%   \talknotebool{Parser, reduction from a type of strings to maybe parse trees}
+% \begin{center}
+%   \begin{tabular}{cc}
+%     \textbf{Grammars} & \textbf{Linear Types} \\
+%     \hline
+%     Grammar $\A$ & Linear type $\A$ \\
+%     \onslide<2->{Parse of string $\w$} & \onslide<2->{$x : {\color{LinTyColor} \lceil \w \rceil} \vdash e : \A$} \\
+%     % \onslide<3->{ Parse transformer } & \onslide<3->{$\Delta \vdash e : \A$} \\
+%     \onslide<3->{Reduction from $\A$ to $\B$} & \onslide<3->{$x : \A \vdash e : \B$} \\
+%     \onslide<4->{ Parser } & \onslide<4->{$x : \stringg \vdash e : \A~\disj~\T$} \\
+%   \end{tabular}
+% \end{center}
+% \end{frame}
+
 \begin{frame}{A Parser for the Dyck Grammar}
-  \talknotebool{Now the type system carries proofs of both soundness and completeness}
+  \talknotebool{Reduce completeness to proving disjointness of these grammars}
   \begin{block}{Complete Dyck Parser}
     A \textit{complete} parser for $\Dyck$ is a choice of type $\Dyck_{\negGram}$ and function
   \[
@@ -758,15 +755,9 @@ treenode/.style = {shape=rectangle, rounded corners,
   where $\Dyck~\with~\Dyck_{\negGram} \cong \Z$
   \end{block}
 
-  \onslide<2->{
-    \begin{center}
-    \textit{Intrinsic verification} of both soundness and completeness
-    \end{center}
-  }
-
   \vspace{1cm}
 
-  \onslide<3->{
+  \onslide<2->{
     \begin{center}
     \alert{To define the parser we will use an automaton}
     \end{center}
@@ -774,6 +765,7 @@ treenode/.style = {shape=rectangle, rounded corners,
 \end{frame}
 
 \begin{frame}[fragile]{Deterministic Automaton for the Dyck Grammar}
+  \talknotebool{Automaton counts parthenses to determine if the input is balanced}
   \talknotebool{Inductive data type indexed by two pieces of data}
   \talknotebool{Constructors of the inductive data type tell us how to build traces}
   \talknotebool{Either stop at a state or transition}
@@ -817,7 +809,7 @@ data Trace : Bool (*@$\tocode$@*) (*@$\color{nonlintycolor}\mathbb{N}$@*) (*@$\t
 
 \begin{frame}[fragile]{A Parser for Dyck Traces}
 \talknotebool{A small, ordinary functional program}
-\talknotebool{Soundness and completeness guarantees by adhering to syntactic discipline}
+\talknotebool{Soundness and completeness guarantees by adhering to syntactic discipline and because disjointness between accepting and rejecting traces}
 \vspace{-3.5cm}
 Looks like an ordinary functional program
 \begin{overlayarea}{\linewidth}{1cm}
@@ -894,23 +886,27 @@ parse (cons ((*@$\sigma$@*) ')' a) w) (suc n) =
     Proving unambiguity of grammars in \theoryabbv
   }
 
-    \vspace{1cm}
+ \vspace{1cm}
 
   \onslide<2->{
-    Linear-Non-Linear Dependent Types
-    \[
-    \LinSigTyLimit{\x}{\X}{\,\A~\x} \qquad \qquad \qquad \LinPiTyLimit{\x}{\X}{\,\A~\x}
-    \]
-
-    % \begin{itemize}
-      % \item $\LinSigTyLimit{\x}{\X}{\A~\x}$, $\LinPiTyLimit{\x}{\X}{\A~\x}$
-      % \item Key to describing grammars of unrestricted complexity
-    % \end{itemize}
+    Weak equivalence v. strong equivalence of grammars
   }
 
     \vspace{1cm}
 
   \onslide<3->{
+    Linear-Non-Linear Dependent Types
+    \[
+    \LinSigTyLimit{\x}{\X}{\,\A~\x} \qquad \qquad \qquad \LinPiTyLimit{\x}{\X}{\,\A~\x}
+    \]
+    \begin{center}
+      Key to describing grammars of unrestricted complexity
+    \end{center}
+  }
+
+    \vspace{1cm}
+
+  \onslide<4->{
     Denotational Semantics
     \[
       \text{Interpret grammars in the category }\String \to \Set
