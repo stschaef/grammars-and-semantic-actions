@@ -4,24 +4,19 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     flake-utils.url = "github:numtide/flake-utils";
-    agda.url = "github:agda/agda";
-    cubical = {
-      url = "github:agda/cubical";
-      inputs = {
-        nixpkgs.follows = "nixpkgs";
-        flake-utils.follows = "flake-utils";
-        agda.follows = "agda";
-      };
-    };
     cubical-categorical-logic = {
       url = "github:um-catlab/cubical-categorical-logic";
       inputs = {
         nixpkgs.follows = "nixpkgs";
         flake-utils.follows = "flake-utils";
-        agda.follows = "agda";
-        cubical.follows = "cubical";
       };
     };
+
+    # Track cubical-categorical-logic's toolchain rather than pinning our own:
+    # whatever cubical c-c-l was built against is what we typecheck against,
+    # by construction. Bumping the c-c-l input is the only way to move cubical.
+    cubical.follows = "cubical-categorical-logic/cubical";
+    agda.follows = "cubical-categorical-logic/agda";
   };
 
   outputs = {

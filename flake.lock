@@ -23,38 +23,38 @@
     "cubical": {
       "inputs": {
         "agda": [
+          "cubical-categorical-logic",
           "agda"
         ],
         "flake-compat": "flake-compat",
         "flake-utils": [
+          "cubical-categorical-logic",
           "flake-utils"
         ],
         "nixpkgs": [
+          "cubical-categorical-logic",
           "nixpkgs"
         ]
       },
       "locked": {
-        "lastModified": 1774856631,
-        "narHash": "sha256-1fWypSCapLL9pTpBPkoz6plpMcdYeS7QzuYGUraJyTo=",
+        "lastModified": 1782378843,
+        "narHash": "sha256-gfgDESQ/sKeok/LxN3ABHeEI/vAQfgO7UGiuK0/QO70=",
         "owner": "agda",
         "repo": "cubical",
-        "rev": "5c1bccf5d4868f854a78fdc11f68593c17f41aad",
+        "rev": "92166033326aa59800a580b428125f3c654b5e45",
         "type": "github"
       },
       "original": {
         "owner": "agda",
         "repo": "cubical",
+        "rev": "92166033326aa59800a580b428125f3c654b5e45",
         "type": "github"
       }
     },
     "cubical-categorical-logic": {
       "inputs": {
-        "agda": [
-          "agda"
-        ],
-        "cubical": [
-          "cubical"
-        ],
+        "agda": "agda",
+        "cubical": "cubical",
         "flake-utils": [
           "flake-utils"
         ],
@@ -63,11 +63,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1777305855,
-        "narHash": "sha256-LxUIret6VnAwt0Bvae7nK62m/fVGEtUvm06NREYvab8=",
+        "lastModified": 1785940358,
+        "narHash": "sha256-dHZLUeW1MBEctlW0NrS7tOIGsvq9ksFWp/ga7pbK7As=",
         "owner": "um-catlab",
         "repo": "cubical-categorical-logic",
-        "rev": "3a1f2fea115ac6a6c1ec7640681ddf2ddfccad96",
+        "rev": "b90862d0bb9daaaa79d63eaffedbe94d45351712",
         "type": "github"
       },
       "original": {
@@ -233,8 +233,14 @@
     },
     "root": {
       "inputs": {
-        "agda": "agda",
-        "cubical": "cubical",
+        "agda": [
+          "cubical-categorical-logic",
+          "agda"
+        ],
+        "cubical": [
+          "cubical-categorical-logic",
+          "cubical"
+        ],
         "cubical-categorical-logic": "cubical-categorical-logic",
         "flake-utils": "flake-utils_2",
         "nixpkgs": "nixpkgs_3"
