@@ -23,13 +23,19 @@ open import Cubical.Data.Bool using (Bool ; true ; false)
 open import Cubical.Data.Sigma using (_,_ ; fst ; snd)
 open import Cubical.Data.Unit using (tt)
 
-open import Theory.Instances.Monoid.RecursiveDescent.List Alphabet _≟_ public
-  hiding (Parser ; _<|>_ ; mapP ; seqP ; pureP ; failP)
+-- open import Theory.Instances.Monoid.RecursiveDescent.List Alphabet _≟_ public
+--   hiding (Parser ; _<|>_ ; mapP ; seqP ; pureP ; failP)
+
+open import Theory.Instances.Monoid.Types Alphabet _≟_ public
 open import Theory.Instances.Monoid.Suffix.Base Alphabet isSetAlphabet public
 open import Theory.Instances.Monoid.Residual Alphabet isSetAlphabet
   using (⊗ε-unit-l⁻ ; ⊗ε-unit-r ; ⊗ε-unit-r⁻ ; ⊗⊕ᴰ-distL ; &⊕ᴰ-distR)
 
 private variable ℓA ℓB ℓC ℓD ℓK ℓL : Level
+
+-- dec-lit⊗↑ : {K : TheoryTy ℓA tt} (c : Alphabet)
+--   → literal c ⊗ DecTy K ⊢ DecTy (literal c ⊗ K)
+-- dec-lit⊗↑ c = ⊕-elim dec-yes (dec-no ∘⊢ lit⊗-precise c) ∘⊢ ⊗⊕-distR
 
 ▷dec-map : {b : Bool} {K : TheorySet ℓK tt} {L : TheorySet ℓL tt}
   → ty K ⊢ ty L → ty L ⊢ ty K
@@ -61,8 +67,13 @@ dec-lit⊗-at c {K = K} = look⊗ br
     where
     go : (d Eq.≡ c) Sum.⊎ ((d Eq.≡ c) → Empty.⊥)
        → ty (▷ (DecSet K)) & Λ₁ (tk d) ⊢ DecTy (literal c ⊗ ty K)
-    go (Sum.inl Eq.refl) =
-      dec-lit⊗↑ c ∘⊢ (id⊢ ,⊗ π₁) ∘⊢ ▷⊗r c
+    go (Sum.inl Eq.refl) = {!!}
+      -- dec-lit⊗↑ c ∘⊢ (id⊢ ,⊗ π₁) ∘⊢ ▷⊗r c
+      -- TODO
+      -- This needs to be cleaned up from
+      -- Theory.Instances.Monoid.RecursiveDescent.List
+      -- which itself needs to be cleaned up and this file has no
+      -- business depending on
     go (Sum.inr ne) = ¬fibre (tk d) (λ where Eq.refl → ne Eq.refl)
 
 dec-char⊗-at : {K : TheorySet ℓK tt}
@@ -78,7 +89,13 @@ dec-char⊗-at {K = K} = look⊗ br
 
   br : (o : M₁) → ty (▷ (DecSet K)) & Λ₁ o ⊢ DecTy (char ⊗ ty K)
   br ε₁ = dec-no ∘⊢ ⇒-intro (ε-char ∘⊢ ((π₂ ∘⊢ π₁) ,& π₂))
-  br (tk d) = dec-char⊗↑ ∘⊢ (σ⊕ d ,⊗ π₁) ∘⊢ ▷⊗r d
+  br (tk d) = {!!}
+    -- dec-char⊗↑ ∘⊢ (σ⊕ d ,⊗ π₁) ∘⊢ ▷⊗r d
+    -- TODO
+    -- This needs to be cleaned up from
+    -- Theory.Instances.Monoid.RecursiveDescent.List
+    -- which itself needs to be cleaned up and this file has no
+    -- business depending on
 
 ℓG : Level
 ℓG = ℓ-max ℓM ℓ

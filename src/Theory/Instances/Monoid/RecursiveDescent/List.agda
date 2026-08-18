@@ -1,11 +1,4 @@
 {-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
-{- Recursive-descent combinators on the list presentation.  A parser is an
-   internal map `⊤Ty ⊢ Maybe (A ⊗ ⊤Ty)`: it either fails, or produces an `A`
-   together with the unconsumed suffix.
-
-   Token comparison is stated in `Eq` rather than `_≡_` so that matching
-   `Eq.refl` unifies the two letters definitionally; a `subst` here would
-   block the parser from reducing on canonical input. -}
 open import Cubical.Foundations.Prelude
 open import Cubical.Algebra.Theory.Finitary
 import Cubical.Data.Sum as Sum
@@ -32,12 +25,6 @@ open import Theory.Instances.Monoid.Types Alphabet _≟_ public
 
 private variable ℓA ℓB ℓC ℓD : Level
 
-------------------------------------------------------------------------
--- Tests and parsers.  A test asks whether the input lies in `A`; a parser
--- asks whether a *prefix* of it does, which is the same question at
--- `A ⊗ ⊤Ty`.  So the two are one notion, and the lookahead combinators
--- below serve both.
-
 Test : TheoryTy ℓA tt → Type _
 Test A = ⊤Ty ⊢ Maybe A
 
@@ -51,7 +38,6 @@ altMaybe : {A : TheoryTy ℓA tt} → Maybe A & Maybe A ⊢ Maybe A
 altMaybe m (Sum.inl a , _) = Sum.inl a
 altMaybe m (Sum.inr _ , r) = r
 
--- first success wins; with `sep` in hand the order does not matter
 _<|>_ : {A : TheoryTy ℓA tt} → Test A → Test A → Test A
 p <|> q = altMaybe ∘⊢ (p ,& q)
 
@@ -79,7 +65,6 @@ onSuccess = Monad.bind MaybeMonad
 mapP : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt} → A ⊢ B → Parser A → Parser B
 mapP f p = Monad.fmap MaybeMonad (f ,⊗ id⊢) ∘⊢ p
 
--- The parser that consumes nothing.
 pureP : {A : TheoryTy ℓA tt} → εTy ⊢ A → Parser A
 pureP f m _ = Sum.inl (two [] m , Eq.refl , (f [] εTy-pt , (tt , tt*)))
 
@@ -89,22 +74,15 @@ failT = nothing ∘⊢ ⊤Ty-intro
 failP : {A : TheoryTy ℓA tt} → Parser A
 failP = failT
 
--- Run `p`, then `q` on the suffix, then reassociate.  Point-free over the
--- `Maybe` monad and the tensor.
 seqP : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt}
   → Parser A → Parser B → Parser (A ⊗ B)
 seqP p q =
   onSuccess (Monad.fmap MaybeMonad ⊗-assoc⁻ ∘⊢ Maybe⊗r ∘⊢ (id⊢ ,⊗ q)) ∘⊢ p
 
--- Consume a prefix, then test the rest.  This is what makes k tokens of
--- lookahead k uses of the one-token cover, rather than a new cover.
 seqT : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt}
   → Parser A → Test B → Test (A ⊗ B)
 seqT p q = onSuccess (Maybe⊗r ∘⊢ (id⊢ ,⊗ q)) ∘⊢ p
 
-
--- The primitives are read straight off the lookahead cover: `Λ-total`
--- observes one token, and each fibre `Λ₁ (tk c)` *is* `literal c ⊗ ⊤Ty`.
 anyChar : Parser char
 anyChar = ⊕ᴰ-elim step ∘⊢ Λ-total
   where
@@ -112,19 +90,9 @@ anyChar = ⊕ᴰ-elim step ∘⊢ Λ-total
   step ε₁ = nothing ∘⊢ ⊤Ty-intro
   step (tk c) = just ∘⊢ (σ⊕ c ,⊗ id⊢)
 
--- Every test built from the cover has the same shape: observe one token,
--- then decide per fibre.  Completeness is then stated with the observed
--- fibre *bound* rather than recovered by casing on the input, so a client
--- never mentions `Λ-total`.
 lookBy : {A : TheoryTy ℓA tt} → ((o : M₁) → Λ₁ o ⊢ Maybe A) → Test A
 lookBy f = ⊕ᴰ-elim f ∘⊢ Λ-total
 
--- The whole of one-token lookahead: `look o` succeeds exactly on the
--- fibre `Λ₁ o`.  Soundness is its type; completeness is `dec-look` below,
--- where the cover's disjointness *is* the other branch.
--- the two branches, named rather than taken by `with`: a caller that cases
--- on the decision itself still sees `lookStep` reduce, which `Leaves`'s
--- `litP-ok` needs and a `with` inside `lookStep` would not give it
 lookCase : (o o' : M₁) → (o' Eq.≡ o) Sum.⊎ ((o' Eq.≡ o) → Empty.⊥)
   → Λ₁ o' ⊢ Maybe (Λ₁ o)
 lookCase o o' (Sum.inl Eq.refl) = just
@@ -136,26 +104,14 @@ lookStep o o' = lookCase o o' (o' ≟M o)
 look : (o : M₁) → Test (Λ₁ o)
 look o = lookBy (lookStep o)
 
--- `Λ₁ (tk c)` *is* `literal c ⊗ ⊤Ty`, so reading one letter is a lookahead.
 litP : (c : Alphabet) → Parser (literal c)
 litP c = look (tk c)
 
-------------------------------------------------------------------------
--- Decisions.  A decision is a test that also refutes -- `Decidable A` is
--- `⊤Ty ⊢ A ⊕ ¬Ty A`, which `decisionCover` presents as a complete and
--- disjoint cover.  Nothing here says "this test fired": a witness picks the
--- branch (`fromDec`), because the other one refutes.
-
--- A witness picks the branch.  This is `fromJust` with its hypothesis
--- replaced by the witness itself: nothing has to say that the decision
--- fires, because its other branch refutes.
 fromDec : {A : TheoryTy ℓA tt} {m : ↓M tt} (v : DecTy A m)
   → A m → Σ[ a ∈ A m ] (v ≡ Sum.inl a)
 fromDec (Sum.inl a) _ = a , refl
 fromDec (Sum.inr na) a = Empty.rec* (na a)
 
--- ...and the other branch, read out: `isNo d` is a computation, so
--- `Eq.refl` is the evidence that the decision refuted.
 isNo : {A : TheoryTy ℓA tt} {m : ↓M tt} → DecTy A m → Bool
 isNo (Sum.inl _) = false
 isNo (Sum.inr _) = true
@@ -164,12 +120,10 @@ theNo : {A : TheoryTy ℓA tt} {m : ↓M tt} (d : DecTy A m)
   → isNo d Eq.≡ true → ¬Ty A m
 theNo (Sum.inr na) _ = na
 
--- ...and the affirming branch, read the same way
 isYes : {A : TheoryTy ℓA tt} {m : ↓M tt} → DecTy A m → Bool
 isYes (Sum.inl _) = true
 isYes (Sum.inr _) = false
 
--- Soundness, generically: an affirming answer *is* a witness.
 theYes : {A : TheoryTy ℓA tt} {m : ↓M tt} (d : DecTy A m)
   → isYes d Eq.≡ true → A m
 theYes (Sum.inl a) _ = a
