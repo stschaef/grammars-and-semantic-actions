@@ -63,11 +63,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1785940358,
-        "narHash": "sha256-dHZLUeW1MBEctlW0NrS7tOIGsvq9ksFWp/ga7pbK7As=",
+        "lastModified": 1786655467,
+        "narHash": "sha256-rK2yNKy1emFuC8sXJcqCGX9gmQvUuKOuurNFFauzJ8E=",
         "owner": "um-catlab",
         "repo": "cubical-categorical-logic",
-        "rev": "b90862d0bb9daaaa79d63eaffedbe94d45351712",
+        "rev": "82334ffb8328d5029489c108010e9a893adda660",
         "type": "github"
       },
       "original": {
