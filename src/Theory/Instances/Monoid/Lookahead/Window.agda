@@ -1,3 +1,4 @@
+{-# OPTIONS -WnoUnsupportedIndexedMatch #-}
 {- Lookahead of a fixed width: the truncation monoid Σ*/≡ₖ and the fibres
    of its classifying map, generalising `Lookahead.Base` from n = 1.
 

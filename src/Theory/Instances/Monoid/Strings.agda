@@ -1,3 +1,4 @@
+{-# OPTIONS -WnoUnsupportedIndexedMatch #-}
 {- Strings: the free monoid on an alphabet, and the Kleene-star code that
    picks a normal form for each of its elements.
 
