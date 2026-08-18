@@ -115,7 +115,7 @@ semact-⊥ = ⊥Ty-elim
 
 semact-lift : {s : S} {A : TheoryTy ℓA s} {X : Type ℓX}
   → SemanticAction A X → SemanticAction (LiftTheoryTy ℓB A) X
-semact-lift a = a ∘⊢ lowerG
+semact-lift a = a ∘⊢ lowerTy
 
 Δ-⊗ : (o : σ .ops) (X : (a : arities σ o) → Type ℓX)
   → ⊗ᵘ[ o ] (λ a → Δ (X a)) ⊢ Δ ((a : arities σ o) → X a)

@@ -1,0 +1,267 @@
+{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
+{- The proper-suffix order on the free monoid, and its guarded elimination
+   rules.  This is the order any left-to-right recursion descends on, a
+   sibling of `Rank.agda`'s length measure; it knows nothing about memo
+   tables or about PEG.
+
+   This module is the suffix world's *justification*: it is where the order
+   lives, and it hands consumers a `Löb` whose step relation is "is a proper
+   suffix of", together with the guarded eliminations built on it.  Those are
+   `GuardedSplit`'s `▷⊛r` paid for once, by `payTok`; a step written against
+   them runs against either the plain or the memoised fixed point
+   (`Suffix/Memo.agda`). -}
+open import Cubical.Foundations.Prelude
+open import Cubical.Algebra.Theory.Finitary
+open SortedSig
+open SortedEqns
+
+module Theory.Instances.Monoid.Suffix.Base
+  {ℓAlph}
+  (Alphabet : Type ℓAlph) (isSetAlphabet : isSet Alphabet) where
+
+open import Cubical.Data.Bool using (Bool ; true ; false)
+open import Cubical.Data.List using (List ; [] ; _∷_ ; _++_ ; length)
+open import Cubical.Data.Nat using (ℕ ; suc)
+open import Cubical.Data.FinData using (zero ; suc)
+import Cubical.Data.Nat.Order as NO
+open import Cubical.Data.Sigma using (_,_ ; fst ; snd)
+open import Cubical.Data.Unit using (Unit ; tt ; tt* ; isSetUnit)
+import Cubical.Data.Empty as Empty
+import Cubical.Data.Sum as Sum
+open import Cubical.Data.Sum using (isProp⊎)
+open import Cubical.Data.Equality.More using (isSet→isSetEq)
+import Cubical.Data.Equality as Eq
+open import Cubical.Induction.WellFounded
+open import Cubical.Relation.Nullary.Base using (Discrete)
+import Cubical.Relation.Nullary.Base as NB
+open import Cubical.Data.List.Properties using (discreteList)
+open import Cubical.Categories.Direct.Base using (WFOrder)
+
+open import Theory.Instances.Monoid.Base
+open import Theory.Instances.Monoid.Strings Alphabet isSetAlphabet
+open import Theory.Instances.Monoid.Derivative Alphabet isSetAlphabet
+open import Theory.Type.HLevels MonEqns Alphabet (λ _ → tt) listPresentation
+open import Theory.Type.Later.Indexed MonEqns Alphabet (λ _ → tt) listPresentation
+open import Theory.Type.Guarded.Base MonEqns Alphabet (λ _ → tt) listPresentation
+open import Theory.Type.Guarded.Justification MonEqns Alphabet (λ _ → tt)
+  listPresentation
+open import Theory.Instances.Monoid.GuardedSplit MonEqns Alphabet (λ _ → tt)
+  listPresentation
+
+private variable ℓA ℓB ℓC ℓD ℓY : Level
+
+-- `w ◂ v`: `w` is a proper suffix of `v`.  Data, not a length inequality,
+-- so a memo cell can be located from the witness.
+_◂_ : String → String → Type ℓM
+w ◂ [] = Empty.⊥*
+w ◂ (c ∷ v) = (w Eq.≡ v) Sum.⊎ (w ◂ v)
+
+infix 4 _◂_
+
+-- a proper suffix is shorter, which is what makes the relation a poset
+◂-length : ∀ {w} v → w ◂ v → length w NO.< length v
+◂-length (c ∷ v) (Sum.inl Eq.refl) = NO.≤-refl
+◂-length (c ∷ v) (Sum.inr i) = NO.<-trans (◂-length v i) NO.≤-refl
+
+◂-irrefl : ∀ w → w ◂ w → Empty.⊥
+◂-irrefl w i = NO.¬m<m (◂-length w i)
+
+isProp◂ : ∀ {w} v → isProp (w ◂ v)
+isProp◂ [] = Empty.isProp⊥*
+isProp◂ {w = w} (c ∷ v) =
+  isProp⊎ (isSet→isSetEq (M .fst tt .snd)) (isProp◂ v)
+    λ e i → ◂-irrefl v (Eq.transport (_◂ v) e i)
+
+◂-trans : ∀ {u w} v → u ◂ w → w ◂ v → u ◂ v
+◂-trans (c ∷ v) i (Sum.inl Eq.refl) = Sum.inr i
+◂-trans (c ∷ v) i (Sum.inr j) = Sum.inr (◂-trans v i j)
+
+-- deciding a proper suffix means deciding equality against each tail
+dec◂ : Discrete Alphabet → ∀ w v → NB.Dec (w ◂ v)
+dec◂ dA w [] = NB.no λ z → z .lower
+dec◂ dA w (c ∷ v) with discreteList dA w v
+... | NB.yes e = NB.yes (Sum.inl (Eq.pathToEq e))
+... | NB.no ¬e with dec◂ dA w v
+...   | NB.yes i = NB.yes (Sum.inr i)
+...   | NB.no ¬i = NB.no (Sum.rec (λ e → ¬e (Eq.eqToPath e)) ¬i)
+
+-- accessibility is structural recursion on the string
+private
+  accStep : ∀ {c} (v : String) → Acc _◂_ v → ∀ u → u ◂ (c ∷ v) → Acc _◂_ u
+  accStep v a u (Sum.inl Eq.refl) = a
+  accStep v (acc r) u (Sum.inr i) = r u i
+
+  acc◂ : ∀ w → Acc _◂_ w
+  acc◂ [] = acc λ u ()
+  acc◂ (c ∷ w) = acc (accStep w (acc◂ w))
+
+-- the same order as a bare `WFOrder`, for use as one component of a
+-- lexicographic guard
+suffixWFOrder : WFOrder ℓM ℓM
+suffixWFOrder = record
+  { D = String ; isSetD = M .fst tt .snd ; _<_ = _◂_
+  ; isProp< = λ w v → isProp◂ v
+  ; trans< = λ {u} {w} {v} → ◂-trans v
+  ; wf< = acc◂ }
+
+-- points of the one-nonterminal indexing: a memo row per suffix
+SPt : Type ℓM
+SPt = IPt {X = Unit} (λ _ → tt)
+
+private
+  accPt : ∀ w → Acc _◂_ w → (x : Unit)
+    → Acc (λ (p q : SPt) → p .snd ◂ q .snd) (x , w)
+  accPt w (acc r) x =
+    acc λ q lt → accPt (q .snd) (r (q .snd) lt) (q .fst)
+
+suffixOrder : IPtOrder {X = Unit} (λ _ → tt) ℓM
+suffixOrder .IPtOrder.isSetIndex = isSetUnit
+suffixOrder .IPtOrder._<_ p q = p .snd ◂ q .snd
+suffixOrder .IPtOrder.isProp< p q = isProp◂ (q .snd)
+suffixOrder .IPtOrder.trans< {q = q} {r = r} = ◂-trans (r .snd)
+suffixOrder .IPtOrder.wf< p = accPt (p .snd) (acc◂ (p .snd)) (p .fst)
+
+------------------------------------------------------------------------
+-- Guarded elimination
+
+-- the suffix world's step relation: a recursive call is entitled to a proper
+-- suffix of its input
+Below : SPt → SPt → Type ℓM
+Below p q = p .snd ◂ q .snd
+
+SFam : (ℓA : Level) → Type _
+SFam ℓA = (x : Unit) → TheoryTy ℓA tt
+
+-- appending a non-empty prefix lands strictly below
+◂-cons : (c : Alphabet) (u w : String) → w ◂ (c ∷ (u ++ w))
+◂-cons c [] w = Sum.inl Eq.refl
+◂-cons c (d ∷ u) w = Sum.inr (◂-cons d u w)
+
+-- The token payment: a letter in the left slot of a splitting puts the right
+-- slot strictly below the whole.  This is the only place the suffix order is
+-- spent, and every guarded token rule below is it.
+◂-lit : (c : Alphabet) {m : String} (ms : interpIn _⊙_ ↓M)
+  → op _⊙_ ms Eq.≡ m → literal c (ms zero) → ms (suc zero) ◂ m
+◂-lit c ms e lc =
+  Eq.transport (ms (suc zero) ◂_) e
+    (Eq.transport (λ z → ms (suc zero) ◂ (z ++ ms (suc zero)))
+      (Eq.sym lc) (◂-cons c [] (ms (suc zero))))
+
+module Guarded▷ {ℓA} (A : SFam ℓA) (isSetA : ∀ x m → isSet (A x m)) where
+  suffixLöb : Löb Below A
+  suffixLöb = löbFrom suffixOrder (λ r → r) A isSetA
+
+  open Löb suffixLöb public
+
+  -- the hypothesis, read after one token has been consumed
+  ▷-tok : (c : Alphabet) → Dl c (▷ tt) ⊢ A tt
+  ▷-tok c m = app (Sum.inl Eq.refl)
+
+  private
+    -- the payment `▷⊛r` asks for is `◂-lit`
+    payTok : (c : Alphabet) → PayR suffixLöb {X = literal c}
+    payTok c _ = ◂-lit c
+
+  -- ... and in a tensor context: the second factor of `literal c ⊗ B` sits
+  -- strictly below, so the hypothesis may be read there
+  ▷-⊗r : (c : Alphabet) {ℓB : Level} {B : TheoryTy ℓB tt}
+    → ▷ tt & (literal c ⊗ B) ⊢ literal c ⊗ (A tt & B)
+  ▷-⊗r c = (id⊢ ,⊗ &-swap) ∘⊢ ▷⊛r suffixLöb (payTok c) ∘⊢ &-swap
+
+  -- the same guard at an empty continuation: the shape a parser consumes
+  ▷-tok⊗ : (c : Alphabet) → ▷ tt & (literal c ⊗ ⊤Ty) ⊢ literal c ⊗ (A tt & ⊤Ty)
+  ▷-tok⊗ c = ▷-⊗r c
+
+------------------------------------------------------------------------
+-- `▷` at this order, on grammars.  There is one nonterminal, so a grammar
+-- *is* a family, and the modality, its structural maps and Löb are all
+-- statements about grammars: nothing downstream names a family or a point.
+
+private
+  module G = GuardedIndexed {X = Unit} (λ _ → tt) suffixOrder
+
+  fam : TheorySet ℓA tt → G.SetFam ℓA
+  fam A = (λ _ → ty A) , λ _ → A .snd
+
+private variable
+  A : TheorySet ℓA tt
+  B : TheorySet ℓB tt
+
+-- `▷? true` is "at every proper suffix", `▷? false` is that and here too
+▷? : Bool → TheorySet ℓA tt → TheorySet (ℓ-max ℓA ℓM) tt
+▷? b A = G.▷? b (fam A) .fst tt , G.▷? b (fam A) .snd tt
+
+▷ : TheorySet ℓA tt → TheorySet (ℓ-max ℓA ℓM) tt
+▷ = ▷? true
+
+□ : TheorySet ℓA tt → TheorySet (ℓ-max ℓA ℓM) tt
+□ = ▷? false
+
+-- the modality is functorial, lax over `&`, and holds a closed term
+▷map : {b : Bool} → ty A ⊢ ty B → ty (▷? b A) ⊢ ty (▷? b B)
+▷map {A = A} {B = B} f = G.▷?map {A = fam A} {B = fam B} (λ _ → f) tt
+
+▷lax : {b : Bool} → ty (▷? b A) & ty (▷? b B) ⊢ ty (▷? b (A &Set B))
+▷lax {A = A} {B = B} = G.▷?lax {A = fam A} {B = fam B} tt
+
+-- ...over a whole family of them, which is how one branch of a choice is
+-- taken at each point without the others being run
+▷laxᴰ : {b : Bool} {Y : Type ℓY} (A : Y → TheorySet ℓA tt)
+  → &ᴰ Y (λ y → ty (▷? b (A y))) ⊢ ty (▷? b (&ᴰSet A))
+▷laxᴰ {b = b} A = G.▷?laxᴰ {b = b} (λ y → fam (A y)) tt
+
+▷next : {b : Bool} {D : TheoryTy ℓD tt} → ⊤Ty ⊢ ty A → D ⊢ ty (▷? b A)
+▷next {A = A} t = G.▷?next (fam A) (λ _ → t) tt ∘⊢ ⊤Ty-intro
+
+-- reading the term here, and forgetting it
+□here : ty (□ A) ⊢ ty A
+□here {A = A} = G.□here (fam A) tt
+
+▷wk : {b : Bool} → ty (□ A) ⊢ ty (▷? b A)
+▷wk {A = A} = G.▷?wk (fam A) tt
+
+-- what holds at every proper suffix holds one step down, in both flavours
+▷δ : ty (▷ A) ⊢ ty (▷ (▷ A))
+▷δ {A = A} = G.▷δ (fam A) tt
+
+▷δ□ : ty (▷ A) ⊢ ty (▷ (□ A))
+▷δ□ = ▷lax ∘⊢ (id⊢ ,& ▷δ)
+
+-- ...so a term made from the delayed one is available here as well
+▷□ : (ty (▷ A) ⊢ ty B) → ty (▷ A) ⊢ ty (□ B)
+▷□ {A = A} {B = B} f = G.▷□ {A = fam A} {B = fam B} (λ _ → f) tt
+
+-- the token payment: a letter in the left slot puts the right one below
+▷⊗r : (c : Alphabet) {C : TheoryTy ℓC tt}
+  → ty (▷ A) & (literal c ⊗ C) ⊢ literal c ⊗ (ty A & C)
+▷⊗r {A = A} c = Guarded▷.▷-⊗r (fam A .fst) (fam A .snd) c
+
+-- ...and Löb at a grammar
+löbG : (ty (▷ A) ⊢ ty A) → ⊤Ty ⊢ ty A
+löbG {A = A} φ = Guarded▷.löb (fam A .fst) (fam A .snd) (λ _ → φ) tt
+
+------------------------------------------------------------------------
+-- The multi-nonterminal guard: the suffix order above, with the index's
+-- rank as the tiebreaker.  A drop-in alternative to `Lex`.
+
+module SufLex {ℓX} {X : Type ℓX} (xs : X → Sorts) (rank : X → ℕ) where
+  -- the call took a proper suffix, or stayed put and dropped the rank
+  Step : Pt xs → Pt xs → Type ℓM
+  Step = Suffix {X = X} {xs = xs} suffixWFOrder (λ _ w → w) rank
+
+  -- the call consumed something...
+  shorter : {y z : X} {v W : String} → v ◂ W → Step (z , v) (y , W)
+  shorter = Sum.inl
+
+  -- ...or it stayed where it was and the rank dropped
+  dropped : {y z : X} {v : String} → rank z NO.< rank y → Step (z , v) (y , v)
+  dropped lt = Sum.inr (refl , lt)
+
+  decStep : Discrete Alphabet → ∀ p q → NB.Dec (Step p q)
+  decStep dA = decSuffix {X = X} {xs = xs} suffixWFOrder (λ _ w → w) rank
+    (discreteList dA) (dec◂ dA)
+
+  löbBy : isSet X → {ℓR : Level} {R : Pt xs → Pt xs → Type ℓR}
+    → (∀ {p q} → R p q → Step p q)
+    → (A : IFam xs ℓA) (isSetA : ∀ x m → isSet (A x m)) → Löb R A
+  löbBy isSetX = löbBySuffix isSetX suffixWFOrder (λ _ w → w) rank
