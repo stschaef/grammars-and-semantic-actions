@@ -22,7 +22,7 @@ open import Theory.Instances.Monoid.Combinator.Decidable.Base Br _≟_ (ℓ-suc 
 Sset : TheorySet ℓG tt
 Sset = S , isSetS
 
-module P = Fix Sset
+module P = Fix ℓG Sset
 
 -- what the inner `S` is followed by
 afterS : TheorySet ℓG tt
@@ -33,20 +33,20 @@ afterLp : TheorySet ℓG tt
 afterLp = Sset ⊗Set afterS
 
 -- Using parser combinators to get a sound and complete Dyck parser
-step : ty (▷ (ParserSet ⟨□⟩ ⟨□⟩ Sset)) ⊢ Parser ⟨□⟩ ⟨□⟩ Sset
+step : ty (▷ (ParserSet ℓG ⟨□⟩ ⟨□⟩ Sset)) ⊢ Parser ℓG ⟨□⟩ ⟨□⟩ Sset
 step = mapP rollS unrollS ∘⊢ ((pmore ∘⊢ nodeP) <|> nil)
   where
   -- `) S`
-  tail′ : ty (▷ (ParserSet ⟨□⟩ ⟨□⟩ Sset)) ⊢ Parser ⟨▷⟩ ⟨□⟩ afterS
+  tail′ : ty (▷ (ParserSet ℓG ⟨□⟩ ⟨□⟩ Sset)) ⊢ Parser ℓG ⟨▷⟩ ⟨□⟩ afterS
   tail′ = seq Sset (tok rp) P.call
 
   -- `S ) S`
-  mid : ty (▷ (ParserSet ⟨□⟩ ⟨□⟩ Sset)) ⊢ Parser ⟨▷⟩ ⟨▷⟩ afterLp
+  mid : ty (▷ (ParserSet ℓG ⟨□⟩ ⟨□⟩ Sset)) ⊢ Parser ℓG ⟨▷⟩ ⟨▷⟩ afterLp
   mid = seq afterS P.call (pless ∘⊢ tail′)
 
   -- `( S ) S`
-  nodeP : ty (▷ (ParserSet ⟨□⟩ ⟨□⟩ Sset))
-    ⊢ Parser ⟨▷⟩ ⟨□⟩ (litSet lp ⊗Set afterLp)
+  nodeP : ty (▷ (ParserSet ℓG ⟨□⟩ ⟨□⟩ Sset))
+    ⊢ Parser ℓG ⟨▷⟩ ⟨□⟩ (litSet lp ⊗Set afterLp)
   nodeP = seq afterLp (tok lp) mid
 
 decDyck : Decidable S

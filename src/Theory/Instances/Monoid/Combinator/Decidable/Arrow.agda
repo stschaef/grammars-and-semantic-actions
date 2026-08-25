@@ -228,10 +228,10 @@ module F = FixAll LangSet
 
 private
   tokL : {ℓD : Level} {D : TheoryTy ℓD tt} (c : Tok)
-    → D ⊢ Parser ⟨▷⟩ ⟨□⟩ (lit↑ c)
+    → D ⊢ Parser ℓG ⟨▷⟩ ⟨□⟩ (lit↑ c)
   tokL c = mapP liftTy lowerTy ∘⊢ tok c
 
-  altE : (t : Tg E) → ty (▷ F.Pall) ⊢ Parser ⟨□⟩ ⟨□⟩ (Cb E t)
+  altE : (t : Tg E) → ty (▷ F.Pall) ⊢ Parser ℓG ⟨□⟩ ⟨□⟩ (Cb E t)
   altE arrow = pmore ∘⊢
     seq (LangSet Q ⊗Set (lit↑ ar ⊗Set LangSet E)) (tokL lp)
       (seq (lit↑ ar ⊗Set LangSet E) (F.callAt Q)
@@ -243,7 +243,7 @@ private
           (seq (lit↑ vid) (pless ∘⊢ tokL dot) (pless ∘⊢ tokL vid))))
   altE idT = pmore ∘⊢ tokL vid
 
-  altQ : (t : Tg Q) → ty (▷ F.Pall) ⊢ Parser ⟨□⟩ ⟨□⟩ (Cb Q t)
+  altQ : (t : Tg Q) → ty (▷ F.Pall) ⊢ Parser ℓG ⟨□⟩ ⟨□⟩ (Cb Q t)
   altQ one = pmore ∘⊢ seq (lit↑ rp) (tokL vid) (pless ∘⊢ tokL rp)
   altQ cons = pmore ∘⊢
     seq (lit↑ cm ⊗Set LangSet Q) (tokL vid)

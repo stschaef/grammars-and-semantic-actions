@@ -113,7 +113,7 @@ lit↑ c = LiftTheoryTy ℓG (literal c) , isSetLiftTheoryTy (isSetLiteral c)
 Cb : (N : NT) → Tag N → TheorySet ℓG tt
 Cb Exp  enum   = lit↑ nm ⊗Set LangSet Exp'
 Cb Exp  eparen = ((lit↑ lb ⊗Set LangSet Exp) ⊗Set lit↑ rb) ⊗Set LangSet Exp'
-Cb Exp' done   = ε↑Set
+Cb Exp' done   = ε↑Set ℓG
 Cb Exp' add    = lit↑ pl ⊗Set LangSet Exp
 
 bodyIn : (N : NT) (t : Tag N) → ty (Cb N t) ⊢ ⟦ body N t ⟧TheoryTy Lang
@@ -158,29 +158,29 @@ module F = FixAll LangSet
 
 private
   tokL : {ℓD : Level} {D : TheoryTy ℓD tt} (c : Tok)
-    → D ⊢ Parser ⟨▷⟩ ⟨□⟩ (lit↑ c)
+    → D ⊢ Parser ℓG ⟨▷⟩ ⟨□⟩ (lit↑ c)
   tokL c = mapP liftTy lowerTy ∘⊢ tok c
 
-  altExp : (t : Tag Exp) → ty (▷ F.Pall) ⊢ Parser ⟨□⟩ ⟨□⟩ (Cb Exp t)
+  altExp : (t : Tag Exp) → ty (▷ F.Pall) ⊢ Parser ℓG ⟨□⟩ ⟨□⟩ (Cb Exp t)
   altExp enum = pmore ∘⊢ seq (LangSet Exp') (tokL nm) (F.callAt Exp')
   altExp eparen = pmore ∘⊢ seq (LangSet Exp') inner (F.callAt Exp')
     where
     inner : ty (▷ F.Pall)
-      ⊢ Parser ⟨▷⟩ ⟨□⟩ ((lit↑ lb ⊗Set LangSet Exp) ⊗Set lit↑ rb)
+      ⊢ Parser ℓG ⟨▷⟩ ⟨□⟩ ((lit↑ lb ⊗Set LangSet Exp) ⊗Set lit↑ rb)
     inner = seq (lit↑ rb)
               (seq (LangSet Exp) (tokL lb) (F.callAt Exp))
               (pless ∘⊢ tokL rb)
 
-  expP : ty (▷ F.Pall) ⊢ Parser ⟨□⟩ ⟨□⟩ (LangSet Exp)
+  expP : ty (▷ F.Pall) ⊢ Parser ℓG ⟨□⟩ ⟨□⟩ (LangSet Exp)
   expP = mapP (rollN Exp) (unrollN Exp) ∘⊢ CE.choose gExp altExp
 
-  exp'P : ty (▷ F.Pall) ⊢ Parser ⟨□⟩ ⟨□⟩ (LangSet Exp')
+  exp'P : ty (▷ F.Pall) ⊢ Parser ℓG ⟨□⟩ ⟨□⟩ (LangSet Exp')
   exp'P = mapP rollE' unrollE' ∘⊢ (addP <|> doneP)
     where
-    addP : ty (▷ F.Pall) ⊢ Parser ⟨□⟩ ⟨□⟩ (Cb Exp' add)
+    addP : ty (▷ F.Pall) ⊢ Parser ℓG ⟨□⟩ ⟨□⟩ (Cb Exp' add)
     addP = pmore ∘⊢ seq (LangSet Exp) (tokL pl) (F.callAt Exp)
 
-    doneP : ty (▷ F.Pall) ⊢ Parser ⟨□⟩ ⟨□⟩ (Cb Exp' done)
+    doneP : ty (▷ F.Pall) ⊢ Parser ℓG ⟨□⟩ ⟨□⟩ (Cb Exp' done)
     doneP = mapP liftTy lowerTy ∘⊢ nil
 
     rollE' : ty (Cb Exp' add) ⊕ ty (Cb Exp' done) ⊢ Lang Exp'

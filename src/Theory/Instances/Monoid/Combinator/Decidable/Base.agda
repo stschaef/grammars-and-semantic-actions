@@ -82,45 +82,56 @@ dec-char⊗-at {K = K} = look⊗ br
 ℓG : Level
 ℓG = ℓ-max ℓM ℓ
 
-ε↑Set : TheorySet ℓG tt
-ε↑Set = LiftTheoryTy ℓ εTy , isSetLiftTheoryTy isSetεTy
+ε↑Set : (ℓK : Level) → TheorySet (ℓ-max ℓM ℓK) tt
+ε↑Set ℓK = LiftTheoryTy ℓK εTy , isSetLiftTheoryTy isSetεTy
+
+-- the continuation level `seq` asks of its head parser
+ℓ⊗ : Level → Level → Level
+ℓ⊗ ℓB ℓK = ℓ-max ℓAlph (ℓ-max ℓB ℓK)
 
 -- A parser for A turns decisions on grammar K into
 -- decisions on A ⊗ K
+-- `ℓK` is the universe the continuations range over: an end has to pick
+-- one, but nothing forces the same one for every parser
 -- The two tags say which resources the domain and codomain refer to
 -- ▷? ⟨▷⟩ A = ▷ A
 -- ▷? ⟨□⟩ A = ▷ A & A ≅ □ A
-Parser : ParserTag → ParserTag → TheorySet ℓA tt → TheoryTy _ tt
-Parser a c A =
-  &[ K ∈ TheorySet ℓG tt ]
+Parser : (ℓK : Level) → ParserTag → ParserTag → TheorySet ℓA tt → TheoryTy _ tt
+Parser ℓK a c A =
+  &[ K ∈ TheorySet ℓK tt ]
     (ty (▷? a (DecSet K)) ⇒ ty (▷? c (DecSet (A ⊗Set K))))
 
-ParserSet : (a c : ParserTag) → TheorySet ℓA tt → TheorySet _ tt
-ParserSet a c A =
-  Parser a c A , isSet&ᴰ λ K → isSet⇒ (▷? c (DecSet (A ⊗Set K)) .snd)
+ParserSet : (ℓK : Level) (a c : ParserTag) → TheorySet ℓA tt → TheorySet _ tt
+ParserSet ℓK a c A =
+  Parser ℓK a c A
+  , isSet&ᴰ λ K → isSet⇒ (▷? c (DecSet (A ⊗Set K)) .snd)
 
-mkP : {a c : ParserTag} {A : TheorySet ℓA tt} {D : TheoryTy ℓD tt}
-  → (∀ K → D & ty (▷? a (DecSet K)) ⊢ ty (▷? c (DecSet (A ⊗Set K))))
-  → D ⊢ Parser a c A
+mkP : {ℓK : Level} {a c : ParserTag} {A : TheorySet ℓA tt} {D : TheoryTy ℓD tt}
+  → (∀ (K : TheorySet ℓK tt)
+      → D & ty (▷? a (DecSet K)) ⊢ ty (▷? c (DecSet (A ⊗Set K))))
+  → D ⊢ Parser ℓK a c A
 mkP f = &ᴰ-intro λ K → ⇒-intro (f K)
 
-pAt : {a c : ParserTag} {A : TheorySet ℓA tt} {D : TheoryTy ℓD tt}
-  → D ⊢ Parser a c A → (K : TheorySet ℓG tt)
+pAt : {ℓK : Level} {a c : ParserTag} {A : TheorySet ℓA tt} {D : TheoryTy ℓD tt}
+  → D ⊢ Parser ℓK a c A → (K : TheorySet ℓK tt)
   → D & ty (▷? a (DecSet K)) ⊢ ty (▷? c (DecSet (A ⊗Set K)))
 pAt p K = ⇒-app ∘⊢ ((π K ∘⊢ p) ,&p id⊢)
 
-pmore : {c : ParserTag} {A : TheorySet ℓA tt} → Parser ⟨▷⟩ c A ⊢ Parser ⟨□⟩ c A
+pmore : {ℓK : Level} {c : ParserTag} {A : TheorySet ℓA tt}
+  → Parser ℓK ⟨▷⟩ c A ⊢ Parser ℓK ⟨□⟩ c A
 pmore = mkP λ K → pAt id⊢ K ∘⊢ (id& ▷wk)
 
-pless : {a : ParserTag} {A : TheorySet ℓA tt} → Parser a ⟨□⟩ A ⊢ Parser a ⟨▷⟩ A
+pless : {ℓK : Level} {a : ParserTag} {A : TheorySet ℓA tt}
+  → Parser ℓK a ⟨□⟩ A ⊢ Parser ℓK a ⟨▷⟩ A
 pless = mkP λ K → ▷wk ∘⊢ pAt id⊢ K
 
-mapP : {a c : ParserTag} {A : TheorySet ℓA tt} {B : TheorySet ℓB tt}
-  → ty A ⊢ ty B → ty B ⊢ ty A → Parser a c A ⊢ Parser a c B
+mapP : {ℓK : Level} {a c : ParserTag} {A : TheorySet ℓA tt} {B : TheorySet ℓB tt}
+  → ty A ⊢ ty B → ty B ⊢ ty A
+  → Parser ℓK a c A ⊢ Parser ℓK a c B
 mapP f g = mkP λ K → ▷dec-map (f ,⊗ id⊢) (g ,⊗ id⊢) ∘⊢ pAt id⊢ K
 
-pApp : {A : TheorySet ℓA tt} (K : TheorySet ℓG tt)
-  → ty (▷ (ParserSet ⟨□⟩ ⟨□⟩ A)) & ty (▷ (DecSet K))
+pApp : {ℓK : Level} {A : TheorySet ℓA tt} (K : TheorySet ℓK tt)
+  → ty (▷ (ParserSet ℓK ⟨□⟩ ⟨□⟩ A)) & ty (▷ (DecSet K))
   ⊢ ty (▷ (DecSet (A ⊗Set K)))
 pApp K = ▷map (□here ∘⊢ pAt id⊢ K) ∘⊢ ▷lax ∘⊢ (id⊢ ,&p ▷δ□)
 
@@ -129,64 +140,75 @@ module _ {D : TheoryTy ℓD tt} where
 
   infixr 15 _<|>_
 
-  -- Sequencing of parsers
-  seq : {a b c : ParserTag} {A : TheorySet ℓA tt} (B : TheorySet ℓG tt)
-    → D ⊢ Parser b c A → D ⊢ Parser a b B
-    → D ⊢ Parser a c (A ⊗Set B)
+  -- Sequencing of parsers.  `p` is run at the continuation `B ⊗Set K`, so
+  -- it is asked for at that level -- which is what makes `B`'s level free.
+  -- Only the *head* is raised; `q` stays at `ℓK`, so a recursive call in
+  -- tail position costs nothing.
+  seq : {ℓK ℓB : Level} {a b c : ParserTag} {A : TheorySet ℓA tt}
+    (B : TheorySet ℓB tt)
+    → D ⊢ Parser (ℓ⊗ ℓB ℓK) b c A
+    → D ⊢ Parser ℓK a b B
+    → D ⊢ Parser ℓK a c (A ⊗Set B)
   seq B p q = mkP λ K →
     ▷dec-map ⊗-assoc⁻ ⊗-assoc ∘⊢ pAt p (B ⊗Set K) ∘⊢ (π₁ ,& pAt q K)
 
   -- Alternation of parsers
-  _<|>_ : {a c : ParserTag} {A : TheorySet ℓA tt} {B : TheorySet ℓB tt}
-    → D ⊢ Parser a c A → D ⊢ Parser a c B → D ⊢ Parser a c (A ⊕Set B)
+  _<|>_ : {ℓK : Level} {a c : ParserTag} {A : TheorySet ℓA tt}
+    {B : TheorySet ℓB tt}
+    → D ⊢ Parser ℓK a c A → D ⊢ Parser ℓK a c B
+    → D ⊢ Parser ℓK a c (A ⊕Set B)
   (p <|> q) = mkP λ K →
     ▷dec-map ⊗⊕-distL⁻ ⊗⊕-distL ∘⊢ ▷dec-⊕& ∘⊢ (pAt p K ,& pAt q K)
 
   -- Parser for each literal
-  tok : (c : Alphabet) → D ⊢ Parser ⟨▷⟩ ⟨□⟩ (litSet c)
+  tok : {ℓK : Level} (c : Alphabet) → D ⊢ Parser ℓK ⟨▷⟩ ⟨□⟩ (litSet c)
   tok c = mkP λ K → ▷□ (dec-lit⊗-at c) ∘⊢ π₂
 
   -- Parser for any literal
-  anyTok : D ⊢ Parser ⟨▷⟩ ⟨□⟩ charSet
+  anyTok : {ℓK : Level} → D ⊢ Parser ℓK ⟨▷⟩ ⟨□⟩ charSet
   anyTok = mkP λ K → ▷□ dec-char⊗-at ∘⊢ π₂
 
   -- Parser for ε
-  nil : D ⊢ Parser ⟨□⟩ ⟨□⟩ εSet
+  nil : {ℓK : Level} → D ⊢ Parser ℓK ⟨□⟩ ⟨□⟩ εSet
   nil = mkP λ K → ▷dec-map ⊗ε-unit-l⁻ ⊗-unit-l ∘⊢ π₂
 
   -- Parser for ⊥
-  fail : {a c : ParserTag} → D ⊢ Parser a c ⊥Set
+  fail : {ℓK : Level} {a c : ParserTag} → D ⊢ Parser ℓK a c ⊥Set
   fail {c = c} = mkP λ K → ▷next {t = c} (dec-no ∘⊢ ⇒-intro (⊗⊥-annihL ∘⊢ π₂))
 
   -- a closed parser is available at every suffix
-  box : {A : TheorySet ℓA tt} → ⊤Ty ⊢ Parser ⟨□⟩ ⟨□⟩ A
-    → D ⊢ Parser ⟨▷⟩ ⟨▷⟩ A
+  box : {ℓK : Level} {A : TheorySet ℓA tt} → ⊤Ty ⊢ Parser ℓK ⟨□⟩ ⟨□⟩ A
+    → D ⊢ Parser ℓK ⟨▷⟩ ⟨▷⟩ A
   box p = mkP λ K → pApp K ∘⊢ (▷next {t = ⟨▷⟩} p ,&p id⊢)
 
-□dec-ε : {D : TheoryTy ℓD tt} → D ⊢ ty (□ (DecSet ε↑Set))
+□dec-ε : {ℓK : Level} {D : TheoryTy ℓD tt} → D ⊢ ty (□ (DecSet (ε↑Set ℓK)))
 □dec-ε = ▷next {t = ⟨□⟩} (decLiftTheoryTy dec-ε)
 
 -- A parser under the hypothesis ⊤ is sufficent for
 -- buidling a decider for A
-runP : {A : TheorySet ℓA tt} → ⊤Ty ⊢ Parser ⟨□⟩ ⟨□⟩ A → Decidable (ty A)
-runP p =
+runP : (ℓK : Level) {A : TheorySet ℓA tt}
+  → ⊤Ty ⊢ Parser (ℓ-max ℓM ℓK) ⟨□⟩ ⟨□⟩ A → Decidable (ty A)
+runP _ p =
   dec-map (⊗ε-unit-r ∘⊢ (id⊢ ,⊗ lowerTy))
           (¬Ty-map ((id⊢ ,⊗ liftTy) ∘⊢ ⊗ε-unit-r⁻))
-  ∘⊢ □here ∘⊢ pAt p ε↑Set ∘⊢ (id⊢ ,& □dec-ε)
+  ∘⊢ □here ∘⊢ pAt p (ε↑Set _) ∘⊢ (id⊢ ,& □dec-ε)
 
 -- Build parsers as fixpoints
-module Fix {ℓA} (A : TheorySet ℓA tt) where
+module Fix {ℓA} (ℓK : Level) (A : TheorySet ℓA tt) where
+
+  ℓ𝒦 : Level
+  ℓ𝒦 = ℓ-max ℓM ℓK
 
   -- Call the hypothetical parser on a strictly smaller suffix
-  call : ty (▷ (ParserSet ⟨□⟩ ⟨□⟩ A)) ⊢ Parser ⟨▷⟩ ⟨▷⟩ A
+  call : ty (▷ (ParserSet ℓ𝒦 ⟨□⟩ ⟨□⟩ A)) ⊢ Parser ℓ𝒦 ⟨▷⟩ ⟨▷⟩ A
   call = mkP pApp
 
   -- Guarded fixpoints build closed parsers
-  fix : ty (▷ (ParserSet ⟨□⟩ ⟨□⟩ A)) ⊢ Parser ⟨□⟩ ⟨□⟩ A
-    → ⊤Ty ⊢ Parser ⟨□⟩ ⟨□⟩ A
-  fix = löbG {A = ParserSet ⟨□⟩ ⟨□⟩ A}
+  fix : ty (▷ (ParserSet ℓ𝒦 ⟨□⟩ ⟨□⟩ A)) ⊢ Parser ℓ𝒦 ⟨□⟩ ⟨□⟩ A
+    → ⊤Ty ⊢ Parser ℓ𝒦 ⟨□⟩ ⟨□⟩ A
+  fix = löbG {A = ParserSet ℓ𝒦 ⟨□⟩ ⟨□⟩ A}
 
   -- ...which are then used to build deciders
-  decide : ty (▷ (ParserSet ⟨□⟩ ⟨□⟩ A)) ⊢ Parser ⟨□⟩ ⟨□⟩ A
+  decide : ty (▷ (ParserSet ℓ𝒦 ⟨□⟩ ⟨□⟩ A)) ⊢ Parser ℓ𝒦 ⟨□⟩ ⟨□⟩ A
     → Decidable (ty A)
-  decide φ = runP (fix φ)
+  decide φ = runP ℓK (fix φ)

@@ -125,7 +125,7 @@ module Choice
       ∘⊢ routeIn (λ y → ty (C y) ⊗ ty K) (g K) decY
 
   choose : {a c : ParserTag} {D : TheoryTy ℓD tt}
-    → Guide → ((y : Y) → D ⊢ Parser a c (C y)) → D ⊢ Parser a c RAlt
+    → Guide → ((y : Y) → D ⊢ Parser ℓG a c (C y)) → D ⊢ Parser ℓG a c RAlt
   choose g p = mkP λ K →
     ▷map (commit g K) ∘⊢ ▷laxᴰ (λ y → DecSet (C y ⊗Set K))
     ∘⊢ (&ᴰ-intro λ y → pAt (p y) K)
@@ -139,13 +139,13 @@ module Choice
 module FixAll {X : Type ℓAlph} (A : X → TheorySet ℓG tt) where
 
   Pall : TheorySet _ tt
-  Pall = &ᴰSet (λ x → ParserSet ⟨□⟩ ⟨□⟩ (A x))
+  Pall = &ᴰSet (λ x → ParserSet ℓG ⟨□⟩ ⟨□⟩ (A x))
 
-  callAt : (x : X) → ty (▷ Pall) ⊢ Parser ⟨▷⟩ ⟨▷⟩ (A x)
+  callAt : (x : X) → ty (▷ Pall) ⊢ Parser ℓG ⟨▷⟩ ⟨▷⟩ (A x)
   callAt x = mkP pApp ∘⊢ ▷map {t = ⟨▷⟩} (π x)
 
   parsers : ty (▷ Pall) ⊢ ty Pall → ⊤Ty ⊢ ty Pall
   parsers = löbG {A = Pall}
 
   decideAt : (ty (▷ Pall) ⊢ ty Pall) → (x : X) → Decidable (ty (A x))
-  decideAt step x = runP (π x ∘⊢ parsers step)
+  decideAt step x = runP ℓG (π x ∘⊢ parsers step)

@@ -191,26 +191,26 @@ module Gen {X : Type ℓAlph} (T : Table X) where
   -- `call y` reads the y-th component at a strict suffix.
 
   Pall : TheorySet _ tt
-  Pall = &ᴰSet λ x → ParserSet ⟨□⟩ ⟨□⟩ (Sset x)
+  Pall = &ᴰSet λ x → ParserSet ℓG ⟨□⟩ ⟨□⟩ (Sset x)
 
-  call : (y : X) → ty (▷ Pall) ⊢ Parser ⟨▷⟩ ⟨▷⟩ (Sset y)
+  call : (y : X) → ty (▷ Pall) ⊢ Parser ℓG ⟨▷⟩ ⟨▷⟩ (Sset y)
   call y = mkP pApp ∘⊢ ▷map {t = ⟨▷⟩} (π y)
 
-  tokP : (c : Alphabet) → ty (▷ Pall) ⊢ Parser ⟨▷⟩ ⟨□⟩ (itemSet (tm c))
+  tokP : (c : Alphabet) → ty (▷ Pall) ⊢ Parser ℓG ⟨▷⟩ ⟨□⟩ (itemSet (tm c))
   tokP c = mapP liftTy lowerTy ∘⊢ tok c
 
-  itemP : (i : Item X) → ty (▷ Pall) ⊢ Parser ⟨▷⟩ ⟨▷⟩ (itemSet i)
+  itemP : (i : Item X) → ty (▷ Pall) ⊢ Parser ℓG ⟨▷⟩ ⟨▷⟩ (itemSet i)
   itemP (tm c) = pless ∘⊢ tokP c
   itemP (nt y) = mapP liftTy lowerTy ∘⊢ call y
 
-  tailP : (β : List (Item X)) → ty (▷ Pall) ⊢ Parser ⟨□⟩ ⟨▷⟩ (bodySet β)
+  tailP : (β : List (Item X)) → ty (▷ Pall) ⊢ Parser ℓG ⟨□⟩ ⟨▷⟩ (bodySet β)
   tailP [] = pless ∘⊢ mapP liftTy lowerTy ∘⊢ nil
   tailP (i ∷ β) =
     mapP (⟦⊗e⟧⁻ (itemCode i) (bodyCode β)) (⟦⊗e⟧ (itemCode i) (bodyCode β))
     ∘⊢ seq (bodySet β) (itemP i) (tailP β)
 
   -- the leading terminal is where the step is paid for
-  prodP : {o : M₁} (p : Prod X o) → ty (▷ Pall) ⊢ Parser ⟨□⟩ ⟨□⟩ (prodSet p)
+  prodP : {o : M₁} (p : Prod X o) → ty (▷ Pall) ⊢ Parser ℓG ⟨□⟩ ⟨□⟩ (prodSet p)
   prodP none = mapP (liftTy ∘⊢ liftTy) (lowerTy ∘⊢ lowerTy) ∘⊢ fail
   prodP (led {c} β) =
     mapP (⟦⊗e⟧⁻ (itemCode (tm c)) (bodyCode β))
@@ -218,11 +218,11 @@ module Gen {X : Type ℓAlph} (T : Table X) where
     ∘⊢ seq (bodySet β) (tokP c) (tailP β)
 
   -- the ε-production, if there is one, and a refutation if there is not
-  nulP : (x : X) → ty (▷ Pall) ⊢ Parser ⟨□⟩ ⟨□⟩ (nulSet x)
+  nulP : (x : X) → ty (▷ Pall) ⊢ Parser ℓG ⟨□⟩ ⟨□⟩ (nulSet x)
   nulP x = go (nul x)
     where
     go : (b : Bool)
-      → ty (▷ Pall) ⊢ Parser ⟨□⟩ ⟨□⟩ (setOf (nulCode b) (isSetNul b))
+      → ty (▷ Pall) ⊢ Parser ℓG ⟨□⟩ ⟨□⟩ (setOf (nulCode b) (isSetNul b))
     go true = mapP liftTy lowerTy ∘⊢ nil
     go false = mapP (liftTy ∘⊢ liftTy) (lowerTy ∘⊢ lowerTy) ∘⊢ fail
 
@@ -235,7 +235,7 @@ module Gen {X : Type ℓAlph} (T : Table X) where
   parsers = löbG {A = Pall} step
 
   decide : (x : X) → Decidable (S x)
-  decide x = runP (π x ∘⊢ parsers)
+  decide x = runP ℓG (π x ∘⊢ parsers)
 
   ------------------------------------------------------------------------
   -- Reading the parse tree out

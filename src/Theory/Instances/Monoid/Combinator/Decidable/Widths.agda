@@ -225,16 +225,16 @@ module Gram (kk : Width) where
 
   private
     tokL : {ℓD : Level} {D : TheoryTy ℓD tt} (c : Tok)
-      → D ⊢ Parser ⟨▷⟩ ⟨□⟩ (lit↑ c)
+      → D ⊢ Parser ℓG ⟨▷⟩ ⟨□⟩ (lit↑ c)
     tokL c = mapP liftTy lowerTy ∘⊢ tok c
 
     -- `k+1` tokens, then the rest: one `seq` per `a`, by induction
     powP : {ℓD : Level} {D : TheoryTy ℓD tt} (n : Width) {X : TheorySet ℓG tt}
-      → D ⊢ Parser ⟨▷⟩ ⟨▷⟩ X → D ⊢ Parser ⟨▷⟩ ⟨□⟩ (CbPow (more n) X)
+      → D ⊢ Parser ℓG ⟨▷⟩ ⟨▷⟩ X → D ⊢ Parser ℓG ⟨▷⟩ ⟨□⟩ (CbPow (more n) X)
     powP none {X} p = seq X (tokL ta) p
     powP (more n) {X} p = seq (CbPow (more n) X) (tokL ta) (pless ∘⊢ powP n p)
 
-    altS : (t : Tg St) → ty (▷ F.Pall) ⊢ Parser ⟨□⟩ ⟨□⟩ (Cb St t)
+    altS : (t : Tg St) → ty (▷ F.Pall) ⊢ Parser ℓG ⟨□⟩ ⟨□⟩ (Cb St t)
     altS nest = pmore ∘⊢ powP kk
       (seq (lit↑ tb) (F.callAt St) (pless ∘⊢ tokL tb))
     altS flat = pmore ∘⊢ powP kk (pless ∘⊢ tokL tc)

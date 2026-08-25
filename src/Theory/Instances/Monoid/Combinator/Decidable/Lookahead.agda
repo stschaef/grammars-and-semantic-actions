@@ -101,7 +101,7 @@ module Predictive
   -- Choice with no separation argument: the branches are indexed by the
   -- cover, so at each point exactly one of them is demanded.
   choose : {a c : ParserTag} {D : TheoryTy ℓD tt}
-    → ((y : Y) → D ⊢ Parser a c (C y)) → D ⊢ Parser a c Alt
+    → ((y : Y) → D ⊢ Parser ℓG a c (C y)) → D ⊢ Parser ℓG a c Alt
   choose p = mkP λ K →
     ▷map (commit K) ∘⊢ ▷laxᴰ (λ y → DecSet (C y ⊗Set K))
     ∘⊢ (&ᴰ-intro λ y → pAt (p y) K)
@@ -129,5 +129,5 @@ leadTok c X = (id⊢ ,⊗ ⊤Ty-intro) ∘⊢ ⊗-assoc
 leadNone : (y : M₁) → ty ⊥Set↑ ⊗ ⊤Ty ⊢ Λ₁ y
 leadNone y = ⊥Ty-elim ∘⊢ ⊗⊥-annihL ∘⊢ (lowerTy ,⊗ id⊢)
 
-noBranch : {a c : ParserTag} {D : TheoryTy ℓD tt} → D ⊢ Parser a c ⊥Set↑
+noBranch : {a c : ParserTag} {D : TheoryTy ℓD tt} → D ⊢ Parser ℓG a c ⊥Set↑
 noBranch = mapP liftTy lowerTy ∘⊢ fail
