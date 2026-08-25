@@ -22,19 +22,18 @@ import Cubical.Data.Equality as Eq
 open SortedSig
 open SortedEqns
 
-module Theory.Instances.Monoid.Combinator.Lookahead
+module Theory.Instances.Monoid.Combinator.Decidable.Lookahead
   {ℓAlph}
   (Alphabet : Type ℓAlph)
   (_≟_ : (x y : Alphabet) → (x Eq.≡ y) Sum.⊎ ((x Eq.≡ y) → Empty.⊥))
   (ℓ : Level)
   where
 
-open import Cubical.Data.Bool using (Bool ; true ; false)
 open import Cubical.Data.Sigma using (_,_ ; fst ; snd)
 open import Cubical.Data.Unit using (tt)
 open import Cubical.Relation.Nullary.Properties using (Discrete→isSet)
 
-open import Theory.Instances.Monoid.Combinator.Base Alphabet _≟_ ℓ public
+open import Theory.Instances.Monoid.Combinator.Decidable.Base Alphabet _≟_ ℓ public
 open import Theory.Instances.Monoid.Residual Alphabet isSetAlphabet
   using (⊗⊕ᴰ-distL ; &⊕ᴰ-distR)
 
@@ -101,7 +100,7 @@ module Predictive
 
   -- Choice with no separation argument: the branches are indexed by the
   -- cover, so at each point exactly one of them is demanded.
-  choose : {a c : Bool} {D : TheoryTy ℓD tt}
+  choose : {a c : ParserTag} {D : TheoryTy ℓD tt}
     → ((y : Y) → D ⊢ Parser a c (C y)) → D ⊢ Parser a c Alt
   choose p = mkP λ K →
     ▷map (commit K) ∘⊢ ▷laxᴰ (λ y → DecSet (C y ⊗Set K))
@@ -130,5 +129,5 @@ leadTok c X = (id⊢ ,⊗ ⊤Ty-intro) ∘⊢ ⊗-assoc
 leadNone : (y : M₁) → ty ⊥Set↑ ⊗ ⊤Ty ⊢ Λ₁ y
 leadNone y = ⊥Ty-elim ∘⊢ ⊗⊥-annihL ∘⊢ (lowerTy ,⊗ id⊢)
 
-noBranch : {a c : Bool} {D : TheoryTy ℓD tt} → D ⊢ Parser a c ⊥Set↑
+noBranch : {a c : ParserTag} {D : TheoryTy ℓD tt} → D ⊢ Parser a c ⊥Set↑
 noBranch = mapP liftTy lowerTy ∘⊢ fail

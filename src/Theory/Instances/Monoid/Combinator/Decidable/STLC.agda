@@ -19,7 +19,7 @@ import Cubical.Data.Sum as Sum
 import Cubical.Data.Empty as Empty
 import Cubical.Data.Equality as Eq
 
-module Theory.Instances.Monoid.Combinator.STLC where
+module Theory.Instances.Monoid.Combinator.Decidable.STLC where
 
 open import Cubical.Data.Bool using (Bool ; true ; false)
 open import Cubical.Data.List using (List ; [] ; _∷_ ; _++_ ; length)
@@ -992,7 +992,7 @@ vxs ≟T vn = Sum.inr λ ()
 vxs ≟T vx = Sum.inr λ ()
 vxs ≟T vxs = Sum.inl Eq.refl
 
-open import Theory.Instances.Monoid.Combinator.Productions Tok _≟T_
+open import Theory.Instances.Monoid.Combinator.Decidable.Productions Tok _≟T_
 
 -- the three nonterminals
 data NT : Type ℓ-zero where

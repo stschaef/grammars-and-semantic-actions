@@ -9,9 +9,8 @@ import Cubical.Data.Equality as Eq
 open SortedSig
 open SortedEqns
 
-module Theory.Instances.Monoid.Combinator.Arith where
+module Theory.Instances.Monoid.Combinator.Decidable.Arith where
 
-open import Cubical.Data.Bool using (Bool ; true ; false)
 open import Cubical.Data.Maybe using (Maybe ; just ; nothing)
 open import Cubical.Data.FinData using (zero ; suc)
 open import Cubical.Data.List using (List ; [] ; _∷_)
@@ -34,7 +33,7 @@ pl ≟T nm = Sum.inr λ () ; pl ≟T lb = Sum.inr λ () ; pl ≟T rb = Sum.inr �
 lb ≟T nm = Sum.inr λ () ; lb ≟T pl = Sum.inr λ () ; lb ≟T rb = Sum.inr λ ()
 rb ≟T nm = Sum.inr λ () ; rb ≟T pl = Sum.inr λ () ; rb ≟T lb = Sum.inr λ ()
 
-open import Theory.Instances.Monoid.Combinator.Routed Tok _≟T_ (ℓ-suc ℓ-zero)
+open import Theory.Instances.Monoid.Combinator.Decidable.Routed Tok _≟T_ (ℓ-suc ℓ-zero)
 open import Theory.Instances.Monoid.Residual Tok isSetAlphabet
   using (⟦⊗e⟧ ; ⟦⊗e⟧⁻)
 
@@ -159,29 +158,29 @@ module F = FixAll LangSet
 
 private
   tokL : {ℓD : Level} {D : TheoryTy ℓD tt} (c : Tok)
-    → D ⊢ Parser true false (lit↑ c)
+    → D ⊢ Parser ⟨▷⟩ ⟨□⟩ (lit↑ c)
   tokL c = mapP liftTy lowerTy ∘⊢ tok c
 
-  altExp : (t : Tag Exp) → ty (▷ F.Pall) ⊢ Parser false false (Cb Exp t)
+  altExp : (t : Tag Exp) → ty (▷ F.Pall) ⊢ Parser ⟨□⟩ ⟨□⟩ (Cb Exp t)
   altExp enum = pmore ∘⊢ seq (LangSet Exp') (tokL nm) (F.callAt Exp')
   altExp eparen = pmore ∘⊢ seq (LangSet Exp') inner (F.callAt Exp')
     where
     inner : ty (▷ F.Pall)
-      ⊢ Parser true false ((lit↑ lb ⊗Set LangSet Exp) ⊗Set lit↑ rb)
+      ⊢ Parser ⟨▷⟩ ⟨□⟩ ((lit↑ lb ⊗Set LangSet Exp) ⊗Set lit↑ rb)
     inner = seq (lit↑ rb)
               (seq (LangSet Exp) (tokL lb) (F.callAt Exp))
               (pless ∘⊢ tokL rb)
 
-  expP : ty (▷ F.Pall) ⊢ Parser false false (LangSet Exp)
+  expP : ty (▷ F.Pall) ⊢ Parser ⟨□⟩ ⟨□⟩ (LangSet Exp)
   expP = mapP (rollN Exp) (unrollN Exp) ∘⊢ CE.choose gExp altExp
 
-  exp'P : ty (▷ F.Pall) ⊢ Parser false false (LangSet Exp')
+  exp'P : ty (▷ F.Pall) ⊢ Parser ⟨□⟩ ⟨□⟩ (LangSet Exp')
   exp'P = mapP rollE' unrollE' ∘⊢ (addP <|> doneP)
     where
-    addP : ty (▷ F.Pall) ⊢ Parser false false (Cb Exp' add)
+    addP : ty (▷ F.Pall) ⊢ Parser ⟨□⟩ ⟨□⟩ (Cb Exp' add)
     addP = pmore ∘⊢ seq (LangSet Exp) (tokL pl) (F.callAt Exp)
 
-    doneP : ty (▷ F.Pall) ⊢ Parser false false (Cb Exp' done)
+    doneP : ty (▷ F.Pall) ⊢ Parser ⟨□⟩ ⟨□⟩ (Cb Exp' done)
     doneP = mapP liftTy lowerTy ∘⊢ nil
 
     rollE' : ty (Cb Exp' add) ⊕ ty (Cb Exp' done) ⊢ Lang Exp'

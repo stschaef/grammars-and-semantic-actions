@@ -45,7 +45,7 @@ import Cubical.Data.Equality as Eq
 open SortedSig
 open SortedEqns
 
-module Theory.Instances.Monoid.Combinator.Polynomial
+module Theory.Instances.Monoid.Combinator.Decidable.Polynomial
   (V : Type ℓ-zero)
   (_≟V_ : (a b : V) → (a Eq.≡ b) Sum.⊎ ((a Eq.≡ b) → Empty.⊥))
   where
@@ -174,7 +174,7 @@ nat _ ≟ caret = Sum.inr λ ()
 nat _ ≟ var _ = Sum.inr λ ()
 
 -- the continuation level: the one `μ` lands at
-open import Theory.Instances.Monoid.Combinator.Base Tok _≟_ (ℓ-suc ℓ-zero)
+open import Theory.Instances.Monoid.Combinator.Decidable.Base Tok _≟_ (ℓ-suc ℓ-zero)
 open import Theory.Instances.Monoid.Residual Tok isSetAlphabet
   using (⟦⊗e⟧ ; ⟦⊗e⟧⁻)
 

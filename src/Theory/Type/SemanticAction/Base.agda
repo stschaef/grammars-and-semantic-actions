@@ -27,6 +27,7 @@ open import Theory.Type.Operation.Base σeq V vs 𝒫
 open import Theory.Type.Lift.Base σeq V vs 𝒫
 open import Theory.Type.Inductive.Base σeq V vs 𝒫
 open import Theory.Type.Monad.Maybe σeq V vs 𝒫 using (Maybe)
+open import Theory.Type.Decidable.Base σeq V vs 𝒫 using (DecTy)
 
 private variable ℓA ℓB ℓX ℓY : Level
 
@@ -93,6 +94,11 @@ semact-disjunct x y = semact-⊕ (semact-map Sum.inl x) (semact-map Sum.inr y)
 semact-Maybe : {s : S} {A : TheoryTy ℓA s} {X : Type ℓX}
   → SemanticAction A X → SemanticAction (Maybe A) (M.Maybe X)
 semact-Maybe a = semact-⊕ (semact-map M.just a) (semact-pure M.nothing)
+
+-- ...and so is the refutation branch of a decision.
+semact-dec : {s : S} {A : TheoryTy ℓA s} {X : Type ℓX}
+  → SemanticAction A X → SemanticAction (DecTy A) (M.Maybe X)
+semact-dec a = semact-⊕ (semact-map M.just a) (semact-pure M.nothing)
 
 semact-⊕ᴰ : {s : S} {X : Type ℓX} {A : X → TheoryTy ℓA s} {Y : X → Type ℓY}
   → ((x : X) → SemanticAction (A x) (Y x)) → SemanticAction (⊕[ x ∈ X ] A x) (Σ X Y)

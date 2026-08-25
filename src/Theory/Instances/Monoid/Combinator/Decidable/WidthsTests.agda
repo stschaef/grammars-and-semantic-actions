@@ -8,13 +8,13 @@
 open import Cubical.Foundations.Prelude
 import Cubical.Data.Equality as Eq
 
-module Theory.Instances.Monoid.Combinator.WidthsTests where
+module Theory.Instances.Monoid.Combinator.Decidable.WidthsTests where
 
 open import Cubical.Data.List using ([] ; _∷_)
 open import Cubical.Data.Unit using (tt)
 
-open import Theory.Instances.Monoid.Combinator.Widths
-open import Theory.Instances.Monoid.Combinator.Window Tok _≟T_ (ℓ-suc ℓ-zero)
+open import Theory.Instances.Monoid.Combinator.Decidable.Widths
+open import Theory.Instances.Monoid.Combinator.Decidable.Window Tok _≟T_ (ℓ-suc ℓ-zero)
 
 ------------------------------------------------------------------------
 -- k = 0: `S ::= a S b | a c`, separated at width 2, not at width 1.

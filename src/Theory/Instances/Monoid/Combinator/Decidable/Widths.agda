@@ -16,9 +16,8 @@ import Cubical.Data.Equality as Eq
 open SortedSig
 open SortedEqns
 
-module Theory.Instances.Monoid.Combinator.Widths where
+module Theory.Instances.Monoid.Combinator.Decidable.Widths where
 
-open import Cubical.Data.Bool using (Bool ; true ; false)
 open import Cubical.Data.FinData using (zero ; suc)
 open import Cubical.Data.Maybe using (Maybe ; just ; nothing)
 open import Cubical.Data.Sigma using (Σ-syntax ; _,_ ; fst ; snd)
@@ -35,7 +34,7 @@ ta ≟T tb = Sum.inr λ () ; ta ≟T tc = Sum.inr λ ()
 tb ≟T ta = Sum.inr λ () ; tb ≟T tc = Sum.inr λ ()
 tc ≟T ta = Sum.inr λ () ; tc ≟T tb = Sum.inr λ ()
 
-open import Theory.Instances.Monoid.Combinator.Window Tok _≟T_ (ℓ-suc ℓ-zero)
+open import Theory.Instances.Monoid.Combinator.Decidable.Window Tok _≟T_ (ℓ-suc ℓ-zero)
 open import Theory.Instances.Monoid.Residual Tok isSetAlphabet
   using (⟦⊗e⟧ ; ⟦⊗e⟧⁻)
 
@@ -226,16 +225,16 @@ module Gram (kk : Width) where
 
   private
     tokL : {ℓD : Level} {D : TheoryTy ℓD tt} (c : Tok)
-      → D ⊢ Parser true false (lit↑ c)
+      → D ⊢ Parser ⟨▷⟩ ⟨□⟩ (lit↑ c)
     tokL c = mapP liftTy lowerTy ∘⊢ tok c
 
     -- `k+1` tokens, then the rest: one `seq` per `a`, by induction
     powP : {ℓD : Level} {D : TheoryTy ℓD tt} (n : Width) {X : TheorySet ℓG tt}
-      → D ⊢ Parser true true X → D ⊢ Parser true false (CbPow (more n) X)
+      → D ⊢ Parser ⟨▷⟩ ⟨▷⟩ X → D ⊢ Parser ⟨▷⟩ ⟨□⟩ (CbPow (more n) X)
     powP none {X} p = seq X (tokL ta) p
     powP (more n) {X} p = seq (CbPow (more n) X) (tokL ta) (pless ∘⊢ powP n p)
 
-    altS : (t : Tg St) → ty (▷ F.Pall) ⊢ Parser false false (Cb St t)
+    altS : (t : Tg St) → ty (▷ F.Pall) ⊢ Parser ⟨□⟩ ⟨□⟩ (Cb St t)
     altS nest = pmore ∘⊢ powP kk
       (seq (lit↑ tb) (F.callAt St) (pless ∘⊢ tokL tb))
     altS flat = pmore ∘⊢ powP kk (pless ∘⊢ tokL tc)

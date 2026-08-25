@@ -41,6 +41,7 @@ open import Theory.Instances.Monoid.Base
 open import Theory.Instances.Monoid.Strings Alphabet isSetAlphabet
 open import Theory.Instances.Monoid.Derivative Alphabet isSetAlphabet
 open import Theory.Type.HLevels MonEqns Alphabet (λ _ → tt) listPresentation
+open import Theory.Type.Later.Tag public
 open import Theory.Type.Later.Indexed MonEqns Alphabet (λ _ → tt) listPresentation
 open import Theory.Type.Guarded.Base MonEqns Alphabet (λ _ → tt) listPresentation
 open import Theory.Type.Guarded.Justification MonEqns Alphabet (λ _ → tt)
@@ -187,37 +188,37 @@ private variable
   A : TheorySet ℓA tt
   B : TheorySet ℓB tt
 
--- `▷? true` is "at every proper suffix", `▷? false` is that and here too
-▷? : Bool → TheorySet ℓA tt → TheorySet (ℓ-max ℓA ℓM) tt
-▷? b A = G.▷? b (fam A) .fst tt , G.▷? b (fam A) .snd tt
+-- `▷? ⟨▷⟩` is "at every proper suffix", `▷? ⟨□⟩` is that and here too
+▷? : ParserTag → TheorySet ℓA tt → TheorySet (ℓ-max ℓA ℓM) tt
+▷? t A = G.▷? t (fam A) .fst tt , G.▷? t (fam A) .snd tt
 
 ▷ : TheorySet ℓA tt → TheorySet (ℓ-max ℓA ℓM) tt
-▷ = ▷? true
+▷ = ▷? ⟨▷⟩
 
 □ : TheorySet ℓA tt → TheorySet (ℓ-max ℓA ℓM) tt
-□ = ▷? false
+□ = ▷? ⟨□⟩
 
 -- the modality is functorial, lax over `&`, and holds a closed term
-▷map : {b : Bool} → ty A ⊢ ty B → ty (▷? b A) ⊢ ty (▷? b B)
+▷map : {t : ParserTag} → ty A ⊢ ty B → ty (▷? t A) ⊢ ty (▷? t B)
 ▷map {A = A} {B = B} f = G.▷?map {A = fam A} {B = fam B} (λ _ → f) tt
 
-▷lax : {b : Bool} → ty (▷? b A) & ty (▷? b B) ⊢ ty (▷? b (A &Set B))
+▷lax : {t : ParserTag} → ty (▷? t A) & ty (▷? t B) ⊢ ty (▷? t (A &Set B))
 ▷lax {A = A} {B = B} = G.▷?lax {A = fam A} {B = fam B} tt
 
 -- ...over a whole family of them, which is how one branch of a choice is
 -- taken at each point without the others being run
-▷laxᴰ : {b : Bool} {Y : Type ℓY} (A : Y → TheorySet ℓA tt)
-  → &ᴰ Y (λ y → ty (▷? b (A y))) ⊢ ty (▷? b (&ᴰSet A))
-▷laxᴰ {b = b} A = G.▷?laxᴰ {b = b} (λ y → fam (A y)) tt
+▷laxᴰ : {t : ParserTag} {Y : Type ℓY} (A : Y → TheorySet ℓA tt)
+  → &ᴰ Y (λ y → ty (▷? t (A y))) ⊢ ty (▷? t (&ᴰSet A))
+▷laxᴰ {t = t} A = G.▷?laxᴰ {t = t} (λ y → fam (A y)) tt
 
-▷next : {b : Bool} {D : TheoryTy ℓD tt} → ⊤Ty ⊢ ty A → D ⊢ ty (▷? b A)
-▷next {A = A} t = G.▷?next (fam A) (λ _ → t) tt ∘⊢ ⊤Ty-intro
+▷next : {t : ParserTag} {D : TheoryTy ℓD tt} → ⊤Ty ⊢ ty A → D ⊢ ty (▷? t A)
+▷next {A = A} f = G.▷?next (fam A) (λ _ → f) tt ∘⊢ ⊤Ty-intro
 
 -- reading the term here, and forgetting it
 □here : ty (□ A) ⊢ ty A
 □here {A = A} = G.□here (fam A) tt
 
-▷wk : {b : Bool} → ty (□ A) ⊢ ty (▷? b A)
+▷wk : {t : ParserTag} → ty (□ A) ⊢ ty (▷? t A)
 ▷wk {A = A} = G.▷?wk (fam A) tt
 
 -- what holds at every proper suffix holds one step down, in both flavours

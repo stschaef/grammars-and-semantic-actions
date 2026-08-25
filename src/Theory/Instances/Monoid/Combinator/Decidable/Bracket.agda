@@ -14,9 +14,8 @@ import Cubical.Data.Equality as Eq
 open SortedSig
 open SortedEqns
 
-module Theory.Instances.Monoid.Combinator.Bracket where
+module Theory.Instances.Monoid.Combinator.Decidable.Bracket where
 
-open import Cubical.Data.Bool using (Bool ; true ; false)
 open import Cubical.Data.List using (List ; [] ; _∷_ ; _++_ ; ++-assoc)
 open import Cubical.Data.Maybe using (Maybe ; just ; nothing)
 open import Cubical.Data.Nat using (ℕ ; zero ; suc)

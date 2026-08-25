@@ -17,9 +17,8 @@ import Cubical.Data.Equality as Eq
 open SortedSig
 open SortedEqns
 
-module Theory.Instances.Monoid.Combinator.Arrow where
+module Theory.Instances.Monoid.Combinator.Decidable.Arrow where
 
-open import Cubical.Data.Bool using (Bool ; true ; false)
 open import Cubical.Data.FinData using (zero ; suc)
 open import Cubical.Data.List using (List ; [] ; _∷_ ; _++_)
 open import Cubical.Data.Maybe using (Maybe ; just ; nothing)
@@ -27,8 +26,8 @@ open import Cubical.Data.Nat using (ℕ)
 open import Cubical.Data.Sigma using (Σ-syntax ; _,_ ; _×_ ; fst ; snd)
 open import Cubical.Data.Unit using (Unit ; tt ; tt*)
 
-open import Theory.Instances.Monoid.Combinator.Bracket
-open import Theory.Instances.Monoid.Combinator.Window Tok _≟T_ (ℓ-suc ℓ-zero)
+open import Theory.Instances.Monoid.Combinator.Decidable.Bracket
+open import Theory.Instances.Monoid.Combinator.Decidable.Window Tok _≟T_ (ℓ-suc ℓ-zero)
 open import Theory.Instances.Monoid.Residual Tok isSetAlphabet
   using (⟦⊗e⟧ ; ⟦⊗e⟧⁻)
 
@@ -229,10 +228,10 @@ module F = FixAll LangSet
 
 private
   tokL : {ℓD : Level} {D : TheoryTy ℓD tt} (c : Tok)
-    → D ⊢ Parser true false (lit↑ c)
+    → D ⊢ Parser ⟨▷⟩ ⟨□⟩ (lit↑ c)
   tokL c = mapP liftTy lowerTy ∘⊢ tok c
 
-  altE : (t : Tg E) → ty (▷ F.Pall) ⊢ Parser false false (Cb E t)
+  altE : (t : Tg E) → ty (▷ F.Pall) ⊢ Parser ⟨□⟩ ⟨□⟩ (Cb E t)
   altE arrow = pmore ∘⊢
     seq (LangSet Q ⊗Set (lit↑ ar ⊗Set LangSet E)) (tokL lp)
       (seq (lit↑ ar ⊗Set LangSet E) (F.callAt Q)
@@ -244,7 +243,7 @@ private
           (seq (lit↑ vid) (pless ∘⊢ tokL dot) (pless ∘⊢ tokL vid))))
   altE idT = pmore ∘⊢ tokL vid
 
-  altQ : (t : Tg Q) → ty (▷ F.Pall) ⊢ Parser false false (Cb Q t)
+  altQ : (t : Tg Q) → ty (▷ F.Pall) ⊢ Parser ⟨□⟩ ⟨□⟩ (Cb Q t)
   altQ one = pmore ∘⊢ seq (lit↑ rp) (tokL vid) (pless ∘⊢ tokL rp)
   altQ cons = pmore ∘⊢
     seq (lit↑ cm ⊗Set LangSet Q) (tokL vid)

@@ -7,7 +7,7 @@ import Cubical.Data.Equality as Eq
 open SortedSig
 open SortedEqns
 
-module Theory.Instances.Monoid.Combinator.Window
+module Theory.Instances.Monoid.Combinator.Decidable.Window
   {ℓAlph}
   (Alphabet : Type ℓAlph)
   (_≟_ : (x y : Alphabet) → (x Eq.≡ y) Sum.⊎ ((x Eq.≡ y) → Empty.⊥))
@@ -17,7 +17,7 @@ module Theory.Instances.Monoid.Combinator.Window
 open import Cubical.Data.Maybe using (Maybe ; just ; nothing)
 open import Cubical.Data.Unit using (tt)
 
-open import Theory.Instances.Monoid.Combinator.Routed Alphabet _≟_ ℓ public
+open import Theory.Instances.Monoid.Combinator.Decidable.Routed Alphabet _≟_ ℓ public
   hiding (_◂_)
 open import Theory.Instances.Monoid.Lookahead.Window Alphabet isSetAlphabet
   public

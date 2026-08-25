@@ -11,9 +11,9 @@ import Cubical.Data.Sum as Sum
 import Cubical.Data.Empty as Empty
 import Cubical.Data.Equality as Eq
 
-module Theory.Instances.Monoid.Combinator.Lambda where
+module Theory.Instances.Monoid.Combinator.Decidable.Lambda where
 
-open import Cubical.Data.Bool using (Bool ; true ; false)
+open import Cubical.Data.Bool using (false)
 open import Cubical.Data.List using (List ; [] ; _∷_)
 open import Cubical.Data.Unit using (Unit ; tt)
 
@@ -47,7 +47,7 @@ v ≟T lp = Sum.inr λ ()
 v ≟T rp = Sum.inr λ ()
 v ≟T v = Sum.inl Eq.refl
 
-open import Theory.Instances.Monoid.Combinator.Productions Tok _≟T_
+open import Theory.Instances.Monoid.Combinator.Decidable.Productions Tok _≟T_
 
 lamTable : Table Unit
 lamTable .Table.at _ ε₁ = none

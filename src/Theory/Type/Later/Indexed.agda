@@ -38,6 +38,7 @@ open import Cubical.Categories.Presheaf.StrictHom.Base using (pshhom)
 import Cubical.Categories.Direct.StrictDownset as SD
 
 open import Theory.Type.Later.Lex
+open import Theory.Type.Later.Tag
 
 open import Theory.Base σeq V vs 𝒫
 open import Theory.Type.Top.Base σeq V vs 𝒫
@@ -245,38 +246,38 @@ module _ {X : Type ℓX} (xs : X → S) where
     □Set : SetFam ℓA → SetFam (ℓ▷ ℓA)
     □Set A = A &Set ▷Set A
 
-    ▷? : Bool → SetFam ℓA → SetFam (ℓ▷ ℓA)
-    ▷? true = ▷Set
-    ▷? false = □Set
+    ▷? : ParserTag → SetFam ℓA → SetFam (ℓ▷ ℓA)
+    ▷? ⟨▷⟩ = ▷Set
+    ▷? ⟨□⟩ = □Set
 
     □here : (A : SetFam ℓA) → ∀ x → □Set A .fst x ⊢ A .fst x
     □here A x = π₁
 
-    ▷?wk : {b : Bool} (A : SetFam ℓA) → ∀ x → □Set A .fst x ⊢ ▷? b A .fst x
-    ▷?wk {b = true} A x = π₂
-    ▷?wk {b = false} A x = id⊢
+    ▷?wk : {t : ParserTag} (A : SetFam ℓA) → ∀ x → □Set A .fst x ⊢ ▷? t A .fst x
+    ▷?wk {t = ⟨▷⟩} A x = π₂
+    ▷?wk {t = ⟨□⟩} A x = id⊢
 
     module _ {A : SetFam ℓA} {B : SetFam ℓB} where
-      ▷?map : {b : Bool} → (∀ x → A .fst x ⊢ B .fst x)
-        → ∀ x → ▷? b A .fst x ⊢ ▷? b B .fst x
-      ▷?map {b = true} f = ▷map {A = A} {B = B} f
-      ▷?map {b = false} f x = f x ,&p ▷map {A = A} {B = B} f x
+      ▷?map : {t : ParserTag} → (∀ x → A .fst x ⊢ B .fst x)
+        → ∀ x → ▷? t A .fst x ⊢ ▷? t B .fst x
+      ▷?map {t = ⟨▷⟩} f = ▷map {A = A} {B = B} f
+      ▷?map {t = ⟨□⟩} f x = f x ,&p ▷map {A = A} {B = B} f x
 
-      ▷?lax : {b : Bool} → ∀ x
-        → ▷? b A .fst x & ▷? b B .fst x ⊢ ▷? b (A &Set B) .fst x
-      ▷?lax {b = true} = ▷lax {A = A} {B = B}
-      ▷?lax {b = false} x =
+      ▷?lax : {t : ParserTag} → ∀ x
+        → ▷? t A .fst x & ▷? t B .fst x ⊢ ▷? t (A &Set B) .fst x
+      ▷?lax {t = ⟨▷⟩} = ▷lax {A = A} {B = B}
+      ▷?lax {t = ⟨□⟩} x =
         (π₁ ,&p π₁) ,& (▷lax {A = A} {B = B} x ∘⊢ (π₂ ,&p π₂))
 
       ▷□ : (∀ x → ▷ A x ⊢ B .fst x) → ∀ x → ▷ A x ⊢ □Set B .fst x
       ▷□ f x = f x ,& (▷map {A = ▷Set A} {B = B} f x ∘⊢ ▷δ A x)
 
-    ▷?next : {b : Bool} (A : SetFam ℓA) → (∀ x → ⊤Ty ⊢ A .fst x)
-      → ∀ x → ⊤Ty ⊢ ▷? b A .fst x
-    ▷?next {b = true} A t = ▷next A t
-    ▷?next {b = false} A t x = t x ,& ▷next A t x
+    ▷?next : {t : ParserTag} (A : SetFam ℓA) → (∀ x → ⊤Ty ⊢ A .fst x)
+      → ∀ x → ⊤Ty ⊢ ▷? t A .fst x
+    ▷?next {t = ⟨▷⟩} A f = ▷next A f
+    ▷?next {t = ⟨□⟩} A f x = f x ,& ▷next A f x
 
-    ▷?laxᴰ : {b : Bool} {Y : Type ℓY} (A : Y → SetFam ℓA) → ∀ x
-      → &ᴰ Y (λ y → ▷? b (A y) .fst x) ⊢ ▷? b (&SetFam A) .fst x
-    ▷?laxᴰ {b = true} A x = ▷laxᴰ A x
-    ▷?laxᴰ {b = false} A x m f = (λ y → f y .fst) , ▷laxᴰ A x m (λ y → f y .snd)
+    ▷?laxᴰ : {t : ParserTag} {Y : Type ℓY} (A : Y → SetFam ℓA) → ∀ x
+      → &ᴰ Y (λ y → ▷? t (A y) .fst x) ⊢ ▷? t (&SetFam A) .fst x
+    ▷?laxᴰ {t = ⟨▷⟩} A x = ▷laxᴰ A x
+    ▷?laxᴰ {t = ⟨□⟩} A x m f = (λ y → f y .fst) , ▷laxᴰ A x m (λ y → f y .snd)

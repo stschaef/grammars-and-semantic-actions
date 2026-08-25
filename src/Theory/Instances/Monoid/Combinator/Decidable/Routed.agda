@@ -1,9 +1,9 @@
 {-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
 {- Predictive choice indexed by the alternatives, not by the cover's cells.
 
-   `Combinator/Lookahead`'s `Predictive.choose` demands one branch per cell,
+   `Decidable/Lookahead`'s `Predictive.choose` demands one branch per cell,
    so cells with no production need a `⊥Set↑` pad, and a nullable branch
-   cannot pay `lead` at all -- which is why `Combinator/Productions` bolts a
+   cannot pay `lead` at all -- which is why `Decidable/Productions` bolts a
    `nul : X → Bool` field and a trailing `<|>` on top.  Here the branches are
    indexed by whatever indexes them (production tags), the cover is reached
    only through `routeIn`, and cells with no branch are `nothing`.
@@ -22,20 +22,19 @@ import Cubical.Data.Equality as Eq
 open SortedSig
 open SortedEqns
 
-module Theory.Instances.Monoid.Combinator.Routed
+module Theory.Instances.Monoid.Combinator.Decidable.Routed
   {ℓAlph}
   (Alphabet : Type ℓAlph)
   (_≟_ : (x y : Alphabet) → (x Eq.≡ y) Sum.⊎ ((x Eq.≡ y) → Empty.⊥))
   (ℓ : Level)
   where
 
-open import Cubical.Data.Bool using (Bool ; true ; false)
 open import Cubical.Data.Maybe using (Maybe ; just ; nothing)
 open import Cubical.Data.Sigma using (Σ-syntax ; _,_ ; fst ; snd)
 open import Cubical.Data.Unit using (Unit ; Unit* ; tt ; tt*)
 open import Cubical.Relation.Nullary.Properties using (Discrete→isSet)
 
-open import Theory.Instances.Monoid.Combinator.Base Alphabet _≟_ ℓ public
+open import Theory.Instances.Monoid.Combinator.Decidable.Base Alphabet _≟_ ℓ public
   hiding (Maybe ; just ; nothing)
 open import Theory.Instances.Monoid.Residual Alphabet isSetAlphabet
   using (⊗ε-unit-l⁻ ; ⊗ε-unit-r ; ⊗ε-unit-r⁻ ; ⊗⊕ᴰ-distL ; &⊕ᴰ-distR)
@@ -94,7 +93,7 @@ module Push {Y : Type ℓAlph} (r : M₁ → Maybe Y) =
   PushOf Λ₁ lookaheadCover decM₁ r
 
 ------------------------------------------------------------------------
--- Routed choice, over `Combinator/Base`'s parser.
+-- Routed choice, over `Decidable/Base`'s parser.
 
 module Choice
   {Y : Type ℓAlph} (decY : DiscreteEq Y)
@@ -125,7 +124,7 @@ module Choice
       dec-map (distL⁻ K) (¬Ty-map ⊗⊕ᴰ-distL)
       ∘⊢ routeIn (λ y → ty (C y) ⊗ ty K) (g K) decY
 
-  choose : {a c : Bool} {D : TheoryTy ℓD tt}
+  choose : {a c : ParserTag} {D : TheoryTy ℓD tt}
     → Guide → ((y : Y) → D ⊢ Parser a c (C y)) → D ⊢ Parser a c RAlt
   choose g p = mkP λ K →
     ▷map (commit g K) ∘⊢ ▷laxᴰ (λ y → DecSet (C y ⊗Set K))
@@ -134,16 +133,16 @@ module Choice
 ------------------------------------------------------------------------
 -- The fixpoint over a family of nonterminals: the hypothesis is a
 -- conjunction of guarded parsers, and `callAt` reads any of them at a
--- strict suffix.  `Combinator/Dyck`'s `Fix`, with the single grammar
+-- strict suffix.  `Decidable/Dyck`'s `Fix`, with the single grammar
 -- replaced by a family.
 
 module FixAll {X : Type ℓAlph} (A : X → TheorySet ℓG tt) where
 
   Pall : TheorySet _ tt
-  Pall = &ᴰSet (λ x → ParserSet false false (A x))
+  Pall = &ᴰSet (λ x → ParserSet ⟨□⟩ ⟨□⟩ (A x))
 
-  callAt : (x : X) → ty (▷ Pall) ⊢ Parser true true (A x)
-  callAt x = mkP pApp ∘⊢ ▷map {b = true} (π x)
+  callAt : (x : X) → ty (▷ Pall) ⊢ Parser ⟨▷⟩ ⟨▷⟩ (A x)
+  callAt x = mkP pApp ∘⊢ ▷map {t = ⟨▷⟩} (π x)
 
   parsers : ty (▷ Pall) ⊢ ty Pall → ⊤Ty ⊢ ty Pall
   parsers = löbG {A = Pall}

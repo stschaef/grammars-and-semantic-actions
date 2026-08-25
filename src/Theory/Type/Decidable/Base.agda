@@ -16,6 +16,7 @@ module Theory.Type.Decidable.Base
 open import Cubical.Data.Unit using (tt)
 open import Cubical.Data.Bool using (Bool ; true ; false)
 open import Cubical.Data.Empty as Empty using (⊥)
+open import Cubical.Data.Sigma using (Σ-syntax ; _,_)
 import Cubical.Data.Sum as Sum
 import Cubical.Data.Equality as Eq
 
@@ -57,6 +58,35 @@ dec-no = inr
 ¬Ty-map : ∀ {s} {A : TheoryTy ℓA s} {B : TheoryTy ℓB s}
   → B ⊢ A → ¬Ty A ⊢ ¬Ty B
 ¬Ty-map f m na b = na (f m b)
+
+------------------------------------------------------------------------
+-- Reading a decision at a point.  A test asks `isYes`/`isNo` and the
+-- matching projection turns the `Eq.refl` it observed into the payload.
+
+module _ {s} {A : TheoryTy ℓA s} {m : ↓M s} where
+  fromDec : (v : DecTy A m) → A m → Σ[ a ∈ A m ] (v ≡ Sum.inl a)
+  fromDec (Sum.inl a) _ = a , refl
+  fromDec (Sum.inr na) a = Empty.rec* (na a)
+
+  isNo : DecTy A m → Bool
+  isNo (Sum.inl _) = false
+  isNo (Sum.inr _) = true
+
+  theNo : (d : DecTy A m) → isNo d Eq.≡ true → ¬Ty A m
+  theNo (Sum.inr na) _ = na
+
+  isYes : DecTy A m → Bool
+  isYes (Sum.inl _) = true
+  isYes (Sum.inr _) = false
+
+  theYes : (d : DecTy A m) → isYes d Eq.≡ true → A m
+  theYes (Sum.inl a) _ = a
+
+  -- Completeness, generically: a witness forces the affirming branch,
+  -- because the other one refutes.  This is `fromDec` read as a `Bool`.
+  yesFrom : (d : DecTy A m) → A m → isYes d Eq.≡ true
+  yesFrom (Sum.inl _) _ = Eq.refl
+  yesFrom (Sum.inr na) a = Empty.rec* (na a)
 
 isProp¬Ty : ∀ {s} (A : TheoryTy ℓA s) {m : ↓M s} → isProp (¬Ty A m)
 isProp¬Ty A p q = funExt λ x → Empty.rec* (p x)
