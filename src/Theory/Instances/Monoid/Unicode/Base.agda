@@ -15,7 +15,7 @@ import Cubical.Data.Equality as Eq
 
 module Theory.Instances.Monoid.Unicode.Base where
 
-open import Cubical.Data.Nat using (ℕ ; zero ; suc)
+open import Cubical.Data.Nat using (ℕ ; zero ; suc ; _+_)
 open import Cubical.Data.Bool using (Bool ; true ; false)
 open import Cubical.Data.List using (List ; [] ; _∷_ ; map)
 open import Cubical.Relation.Nullary.Properties using (Discrete→isSet)
@@ -66,8 +66,23 @@ isSetUChar : isSet UChar
 isSetUChar = Discrete→isSet λ x y → Sum.rec
   (λ p → yes (Eq.eqToPath p)) (λ ¬p → no λ p → ¬p (Eq.pathToEq p)) (x ≟U y)
 
+-- Accumulator form, so the recursive call appears once.  Measured: the
+-- duplicating form (`toNat bs + toNat bs`) is no slower, so Agda shares
+-- the thunk -- this is defensive, not a fix.
+toNat : {k : ℕ} → Bits k → ℕ
+toNat = go 1
+  where
+  go : {k : ℕ} → ℕ → Bits k → ℕ
+  go w [] = 0
+  go w (true -∷ bs) = w + go (w + w) bs
+  go w (false -∷ bs) = go (w + w) bs
+
 ch : AC.Char → UChar
 ch c = fromNat 21 (AC.primCharToNat c)
+
+-- the code point back out, so a range can be decided by comparison
+code : UChar → ℕ
+code = toNat
 
 -- text enters the theory here and nowhere else
 text : AS.String → List UChar
