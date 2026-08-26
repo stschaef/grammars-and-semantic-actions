@@ -21,7 +21,7 @@ module Theory.Instances.Monoid.KleeneStar.Guarded
 
 open import Cubical.Foundations.Function using (_∘_)
 open import Cubical.Data.FinData using (zero ; suc)
-open import Cubical.Data.List using ([] ; _∷_ ; _++_)
+open import Cubical.Data.List using (List ; [] ; _∷_ ; _++_)
 import Cubical.Data.Empty as Empty
 import Cubical.Data.List.Properties as L
 open import Cubical.Data.Unit using (tt)
@@ -56,6 +56,26 @@ NonNull A = (m : String) (ms : interpIn _⊙_ ↓M) → op _⊙_ ms Eq.≡ m
 literal-¬Nullable : (c : Alphabet) → ¬Nullable (literal c)
 literal-¬Nullable c m (lc , (_ , ee , _)) =
   Empty.rec (L.¬cons≡nil (sym (Eq.eqToPath ee ∙ Eq.eqToPath lc)))
+
+-- Non-nullability is compositional, so a token grammar states it the same
+-- way it is built.
+⊗-¬Nullable : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt}
+  → ¬Nullable A → ¬Nullable (A ⊗ B)
+⊗-¬Nullable {A = A} nu m (t , eps) =
+  go (t .fst zero) (t .fst (suc zero)) (t .snd .snd .fst)
+     (Eq.eqToPath (t .snd .fst) ∙ sym (Eq.eqToPath (eps .snd .fst)))
+  where
+  go : (u v : String) → A u → (u ++ v) ≡ [] → ⊥Ty m
+  go [] v a p = nu [] (a , εTy-pt)
+  go (c ∷ u) v a p = Empty.rec (L.¬cons≡nil p)
+
+⊕-¬Nullable : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt}
+  → ¬Nullable A → ¬Nullable B → ¬Nullable (A ⊕ B)
+⊕-¬Nullable nuA nuB =
+  ⊕-elim& (nuA ∘⊢ &-swap) (nuB ∘⊢ &-swap) ∘⊢ &-swap
+
+char-¬Nullable : ¬Nullable char
+char-¬Nullable m ((c , lc) , eps) = literal-¬Nullable c m (lc , eps)
 
 -- ...and the bridge.  A head that is an `A` cannot be `[]`, so what follows
 -- it is a *proper* suffix.  This is the only place the two readings meet.
@@ -93,3 +113,40 @@ module _ {A : TheoryTy ℓA tt} (B : TheorySet ℓB tt) (nu : ¬Nullable A) wher
     -- ...and Löb closes it.  One combinator, no pragma.
     fold*g : A * ⊢ ty B
     fold*g = ⇒-app ∘⊢ ((GB.löb (λ _ → ⇒-intro body) tt ∘⊢ ⊤Ty-intro) ,& id⊢)
+
+------------------------------------------------------------------------
+-- The two star actions, by löb.  `SemanticAction.semact-*` and
+-- `semact-skip*` are `rec`, so the pragma sits under every action; these
+-- are the same folds with `fold*g` underneath.
+--
+-- The price is `isSet X`: löb fixes a family and wants it set-valued,
+-- where `rec` did not.
+
+open import Cubical.Data.List.Properties using (isOfHLevelList)
+open import Cubical.Data.Sigma using (_×_ ; _,_ ; fst ; snd)
+open import Cubical.Data.Maybe using (Maybe ; just ; nothing)
+import Theory.Instances.Monoid.SemanticAction Alphabet isSetAlphabet as Act
+
+private variable ℓX : Level
+
+private
+  ΔSet : {X : Type ℓX} → isSet X → TheorySet ℓX tt
+  ΔSet {X = X} isSetX = Act.Δ X , isSet⊕ᴰ isSetX λ _ → isSet⊤Ty
+
+semact-*g : {A : TheoryTy ℓA tt} {X : Type ℓX}
+  → isSet X → ¬Nullable A
+  → Act.SemanticAction A X → Act.SemanticAction (A *) (List X)
+semact-*g {X = X} isSetX nu a =
+  fold*g (ΔSet (isOfHLevelList 0 isSetX)) nu (Act.semact-pure [])
+    (Act.semact-map (λ p → p .fst ∷ p .snd) (Act.semact-⊗₂ a Act.semact-Δ))
+
+semact-skip*g : {A : TheoryTy ℓA tt} {X : Type ℓX}
+  → isSet X → ¬Nullable A
+  → Act.SemanticAction A (Maybe X) → Act.SemanticAction (A *) (List X)
+semact-skip*g {X = X} isSetX nu a =
+  fold*g (ΔSet (isOfHLevelList 0 isSetX)) nu (Act.semact-pure [])
+    (Act.semact-map push (Act.semact-⊗₂ a Act.semact-Δ))
+  where
+  push : Maybe X × List X → List X
+  push (nothing , ys) = ys
+  push (just x , ys) = x ∷ ys

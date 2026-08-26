@@ -22,6 +22,8 @@ open import Cubical.Data.Unit using (tt)
 
 open import Theory.Instances.Monoid.Combinator.Incomplete.Star Alphabet _≟_ ℓ
   public
+open import Theory.Instances.Monoid.KleeneStar.Guarded Alphabet isSetAlphabet
+  public
 
 private variable ℓA ℓTok : Level
 
@@ -41,6 +43,11 @@ module _ {T : Type ℓTok} (Tk : TheorySet ℓA tt) where
     lexTest : Test (ty Tokens)
     lexTest = runP ℓ lexP
 
-    -- the sole boundary at which a token list leaves the theory
-    lex : (act : Emit {T = T} {A = ty Tk}) → String → M.Maybe (List T)
-    lex act = observe lexTest (semact-Maybe (semact-skip* act))
+    -- the sole boundary at which a token list leaves the theory.  The fold
+    -- is `semact-skip*g`, i.e. löb -- not `semact-skip*`, which is `rec`
+    -- and carries the pragma.  The price is the token grammar's
+    -- non-nullability, which is what stops a lexer looping on ε anyway.
+    lex : isSet T → ¬Nullable (ty Tk) → (act : Emit {T = T} {A = ty Tk})
+        → String → M.Maybe (List T)
+    lex isSetT nu act =
+      observe lexTest (semact-Maybe (semact-skip*g isSetT nu act))

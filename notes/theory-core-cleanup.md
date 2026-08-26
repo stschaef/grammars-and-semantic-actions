@@ -510,12 +510,42 @@ second induction principle.
 literal-headed production gets its payment for free — which is the LL fragment
 (§2.8).
 
+### The lexer is off the pragma
+
+`semact-*g` and `semact-skip*g` are the two star actions built on `fold*g`,
+and `Lex/Base.lex` now uses the second. The lexer's live path no longer runs
+through `Inductive/Base.rec`. Measured: `Lex/Demo` checks in 2.5s, against
+2.8s on `rec` — the same, so löb costs nothing here.
+
+Two prices, both real:
+
+- **`isSet X`.** Löb fixes a family and wants it set-valued; `rec` did not.
+  `Lex/Demo` pays it by retracting `Tok` onto `Unit ⊎ (Unit ⊎ UChar)`.
+- **the non-nullability witness**, which is the point — it is what stops a
+  lexer looping on ε, and `rec` was simply not asking.
+
+Non-nullability composes, so a token grammar states it the way it is built:
+
+```agda
+⊗-¬Nullable    : ¬Nullable A → ¬Nullable (A ⊗ B)
+⊕-¬Nullable    : ¬Nullable A → ¬Nullable B → ¬Nullable (A ⊕ B)
+char-¬Nullable : ¬Nullable char
+```
+
+and `Lex/Demo`'s obligation is six lines of exactly that shape, with no order
+and no model element in sight.
+
 ### What this leaves
 
-`semact-*` and `semact-skip*` still call `rec`, so the pragma is still on the
-live path. Retargeting them onto `fold*g` needs a `NonNull` witness for the
-token grammar, which for a literal-headed one is `◂-lit`. That is the next
-concrete step and it is now a wiring job, not a research one.
+`semact-*` and `semact-skip*` remain, still on `rec`. They are the
+low-ceremony option — no `isSet`, no `¬Nullable` — exactly as `fold*r` sits
+beside `fold*g`, so the pair is deliberate rather than dead. But
+`semact-skip*` now has no client, so if the ceremony proves cheap in practice
+it should go.
+
+The pragma is still under `semact-*`, hence under `Grammars/Dyck`'s action and
+the Dyck test suites. Retargeting those is the same wiring again, and needs
+`¬Nullable` for the Dyck body — which is `⊗-¬Nullable (literal-¬Nullable lp)`.
 
 ## 3. Per-module verdicts
 

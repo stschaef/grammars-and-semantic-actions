@@ -14,7 +14,9 @@ module Theory.Instances.Monoid.Lex.Demo where
 
 open import Cubical.Data.List using (List ; [] ; _∷_)
 import Cubical.Data.Maybe as M
-open import Cubical.Data.Unit using (tt)
+open import Cubical.Data.Unit using (Unit ; tt ; isSetUnit)
+import Cubical.Data.Sum as S
+open import Cubical.Foundations.HLevels using (isSetRetract)
 import Agda.Builtin.String as AS
 
 open import Theory.Instances.Monoid.Unicode.Base
@@ -49,8 +51,36 @@ emit =
   (semact-⊕ (semact-pure M.nothing)
             (semact-map (λ c → M.just (Var c)) semact-char)))
 
+-- `Tok` is a set, by retraction onto a sum of sets
+private
+  toS : Tok → Unit S.⊎ (Unit S.⊎ UChar)
+  toS KLet = S.inl tt
+  toS KIn = S.inr (S.inl tt)
+  toS (Var c) = S.inr (S.inr c)
+
+  fromS : Unit S.⊎ (Unit S.⊎ UChar) → Tok
+  fromS (S.inl _) = KLet
+  fromS (S.inr (S.inl _)) = KIn
+  fromS (S.inr (S.inr c)) = Var c
+
+  sect : (t : Tok) → fromS (toS t) ≡ t
+  sect KLet = refl
+  sect KIn = refl
+  sect (Var c) = refl
+
+isSetTok : isSet Tok
+isSetTok = isSetRetract toS fromS sect
+  (S.isSet⊎ isSetUnit (S.isSet⊎ isSetUnit isSetUChar))
+
+-- ...and the token grammar is non-nullable, stated the way it is built
+nuTok : ¬Nullable (ty TokSet)
+nuTok =
+  ⊕-¬Nullable (⊗-¬Nullable (literal-¬Nullable (ch 'l')))
+  (⊕-¬Nullable (⊗-¬Nullable (literal-¬Nullable (ch 'i')))
+  (⊕-¬Nullable (literal-¬Nullable (ch ' ')) char-¬Nullable))
+
 lexDemo : AS.String → M.Maybe (List Tok)
-lexDemo s = lex {T = Tok} TokSet oneTok emit (text s)
+lexDemo s = lex {T = Tok} TokSet oneTok isSetTok nuTok emit (text s)
 
 ------------------------------------------------------------------------
 -- ...and it runs, on text written the way it is read.
