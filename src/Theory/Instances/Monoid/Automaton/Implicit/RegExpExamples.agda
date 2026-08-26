@@ -1,0 +1,128 @@
+{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
+{- A deterministic regular expression, compiled and run.
+
+   `a b*` over {a,b}, built by the constructions of `Implicit/RegExp`:
+   `⊗Aut (litAut a) (*Aut (litAut b) …)`.  Its states are the two
+   positions of the expression, so no determinisation happens anywhere;
+   the side conditions the constructions demand are discharged by `refl`
+   because `litAut`'s follow set is empty.
+
+   `parse` then reads the whole state table in one pass, and
+   `⊕[ b ] Trace b init` is total: an accepting run is `Trace true`, a
+   rejecting run is `Trace false`, and reading the tag off says which. -}
+open import Cubical.Foundations.Prelude
+
+module Theory.Instances.Monoid.Automaton.Implicit.RegExpExamples where
+
+open import Cubical.Data.Bool using (Bool ; true ; false ; isSetBool)
+open import Cubical.Data.List using (List ; [] ; _∷_ ; _++_)
+open import Cubical.Data.Nat using (ℕ ; zero ; suc)
+open import Cubical.Data.Unit using (Unit* ; tt ; tt*)
+open import Cubical.Relation.Nullary.Base using (Discrete ; yes ; no)
+import Cubical.Data.Sum as Sum
+import Cubical.Data.Empty as Empty
+import Cubical.Data.Equality as Eq
+
+data L2 : Type ℓ-zero where
+  a b : L2
+
+_≟L2_ : (x y : L2) → (x Eq.≡ y) Sum.⊎ ((x Eq.≡ y) → Empty.⊥)
+a ≟L2 a = Sum.inl Eq.refl
+b ≟L2 b = Sum.inl Eq.refl
+a ≟L2 b = Sum.inr λ ()
+b ≟L2 a = Sum.inr λ ()
+
+discL2 : Discrete L2
+discL2 a a = yes refl
+discL2 b b = yes refl
+discL2 a b = no λ p → Empty.rec (subst (λ where a → Unit* ; b → Empty.⊥) p tt*)
+discL2 b a = no λ p → Empty.rec (subst (λ where b → Unit* ; a → Empty.⊥) p tt*)
+
+open import Theory.Instances.Monoid.Types L2 _≟L2_
+open import Theory.Instances.Monoid.KleeneStar L2 isSetAlphabet
+open import Theory.Instances.Monoid.Automaton.Deterministic L2 isSetAlphabet
+open import Theory.Instances.Monoid.Automaton.Implicit.RegExp L2 isSetAlphabet
+
+open ImplicitDeterministicAutomaton
+
+------------------------------------------------------------------------
+-- `a b*`, as an implicit automaton.
+
+private
+  -- `litAut c` never steps once it has accepted, so its follow set is
+  -- empty and every sequencing condition holds on the left.
+  litFollows : {c : L2} (d : L2)
+    → ((q : Unit*) → litAut discL2 c .acc q ≡ true
+         → fail ≡ litAut discL2 c .δq q d)
+      Sum.⊎ (fail ≡ litAut discL2 c .δᵢ d)
+  litFollows d = Sum.inl λ _ _ → refl
+
+bStar : ImplicitDeterministicAutomaton (Unit* {ℓ-zero})
+bStar = *Aut discL2 (litAut discL2 b) refl litFollows
+
+abStar : ImplicitDeterministicAutomaton (Unit* {ℓ-zero} Sum.⊎ Unit* {ℓ-zero})
+abStar = ⊗Aut discL2 (litAut discL2 a) bStar refl litFollows
+
+DA : DeterministicAutomaton _
+DA = IDA→DA abStar
+
+isSetU : isSet (Unit* {ℓ-zero})
+isSetU = isProp→isSet λ _ _ → refl
+
+isSetQ : isSet _
+isSetQ = isSetFreelyAddFail+Initial _ (Sum.isSet⊎ isSetU isSetU)
+
+open DeterministicAutomaton DA using (parseInit)
+
+------------------------------------------------------------------------
+-- Running it.  The input is presented as a `char *`.
+
+readChars : ⊤Ty ⊢ char *
+readChars [] _ = NIL _ (lift εTy-pt)
+readChars (c ∷ w) _ =
+  CONS _ (two (c ∷ []) w , Eq.refl , ((c , Eq.refl) , (readChars w _ , tt*)))
+
+-- `true` exactly when the automaton accepts
+accepts : String → Bool
+accepts w = parseInit isSetQ w (readChars w tt) .fst
+
+_ : accepts (a ∷ []) ≡ true
+_ = refl
+
+_ : accepts (a ∷ b ∷ b ∷ b ∷ []) ≡ true
+_ = refl
+
+_ : accepts [] ≡ false
+_ = refl
+
+_ : accepts (b ∷ []) ≡ false
+_ = refl
+
+_ : accepts (a ∷ a ∷ []) ≡ false
+_ = refl
+
+_ : accepts (a ∷ b ∷ a ∷ []) ≡ false
+_ = refl
+
+------------------------------------------------------------------------
+-- ...at scale.  Both directions: an accepting run of length n and a
+-- rejecting one of length n+1, decided at typechecking time.
+--
+-- Measured off-tree, against a 3.5s baseline (accept and reject
+-- together, so roughly 2n characters per row):
+--
+--     n:     0    50   200   800  3200  12800  25600
+--   sec:   3.5   3.1   3.5   3.6   5.2   13.8   26.7
+--
+-- ~0.45ms/char, and doubling the input from 12800 to 25600 costs 2.25x
+-- the marginal time.  Linear.
+
+bs : ℕ → String
+bs zero = []
+bs (suc n) = b ∷ bs n
+
+_ : accepts (a ∷ bs 800) ≡ true
+_ = refl
+
+_ : accepts (a ∷ bs 800 ++ (a ∷ [])) ≡ false
+_ = refl
