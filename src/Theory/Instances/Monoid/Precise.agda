@@ -34,6 +34,14 @@ flat : (c : Alphabet) (u v w : ↓M tt)
   → u Eq.≡ (c ∷ []) → (u ++ v) Eq.≡ w → c ∷ v ≡ w
 flat c u v w lc e = cong (_++ v) (sym (Eq.eqToPath lc)) ∙ Eq.eqToPath e
 
+-- The same fact in the Eq world.  `flat` composes its two inputs with `∙`,
+-- so a `subst` along it is a stuck `transp` even when both are `Eq.refl`;
+-- `Eq.transport A Eq.refl a = a` holds on the nose, which is what lets a
+-- witness transported through it be projected back out.
+flatEq : (c : Alphabet) (u v w : ↓M tt)
+  → u Eq.≡ (c ∷ []) → (u ++ v) Eq.≡ w → (c ∷ v) Eq.≡ w
+flatEq c u v w Eq.refl Eq.refl = Eq.refl
+
 lit⊗-nil : {X : Type ℓA} (c : Alphabet) (u v : ↓M tt)
   → u Eq.≡ (c ∷ []) → (u ++ v) Eq.≡ [] → X
 lit⊗-nil c u v lc e = Empty.rec (L.¬cons≡nil (flat c u v [] lc e))

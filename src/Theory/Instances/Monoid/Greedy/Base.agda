@@ -20,7 +20,7 @@ open import Theory.Instances.Monoid.Base
 open import Theory.Instances.Monoid.Strings Alphabet isSetAlphabet
 open import Theory.Instances.Monoid.KleeneStar Alphabet isSetAlphabet
 open import Theory.Instances.Monoid.Residual Alphabet isSetAlphabet
-open import Theory.Instances.Monoid.Precise Alphabet isSetAlphabet using (flat)
+open import Theory.Instances.Monoid.Precise Alphabet isSetAlphabet using (flat ; flatEq)
 open import Theory.Type.Decidable.Base MonEqns Alphabet (λ _ → tt)
   listPresentation
 
@@ -114,10 +114,12 @@ open import Theory.Instances.Monoid.Derivative Alphabet isSetAlphabet
   using (Dl)
 
 module _ (c : Alphabet) where
-  -- a `c` in front of `A`'s derivative is an `A`
+  -- a `c` in front of `A`'s derivative is an `A`.  `flatEq`, not `flat`:
+  -- a cubical `subst` here leaves a `transp` over the witness's splitting
+  -- that never reduces, so the match could not be read back out.
   lit⊗Dl : {A : TheoryTy ℓA tt} → literal c ⊗ Dl c A ⊢ A
   lit⊗Dl {A = A} m (ms , e , (lc , (a , _))) =
-    subst A (flat c (ms zero) (ms (suc zero)) m lc e) a
+    Eq.transport A (flatEq c (ms zero) (ms (suc zero)) m lc e) a
 
 GreedyAt : (A : TheoryTy ℓA tt) (R : TheoryTy ℓB tt) → TheoryTy _ tt
 GreedyAt A R = A ⊗ ¬Ty ((R & char⁺) ⊗ ⊤Ty)
