@@ -1,104 +1,70 @@
 {-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
-{- A lexicon with multi-character keywords, over real Unicode text, at `refl`.
+{- A lexicon, written as POSIX regexes.
 
-   The alphabet is `Unicode.Base`'s internal `UChar`, so `c ≟ d` reduces;
-   `String.Unicode`'s postulated oracle would leave every branch stuck.
-   Keyword-before-identifier priority is `<|>`'s left bias, and skipping is
-   the action's `nothing`. -}
+   The previous version built its one-token parser by hand: `seq`ed
+   `tok`s, a hand-ordered `<|>`, an `emit` action per branch, an
+   `isSet Tok` by retraction, and a `¬Nullable` assembled from
+   `⊗-¬Nullable`/`⊕-¬Nullable`.  All of it is gone -- a lexicon is a list
+   of regexes and everything else is derived.
+
+   Lexing itself has no semantic action: the parse tree of
+   `(kw|ident|num|space)*` already *is* the tokenisation.  `tokens` below
+   only reads it back out for display, which is the bridge to the next
+   phase rather than part of this one. -}
 open import Cubical.Foundations.Prelude
-import Cubical.Data.Sum as Sum
-import Cubical.Data.Empty as Empty
 import Cubical.Data.Equality as Eq
 
 module Theory.Instances.Monoid.Lex.Demo where
 
 open import Cubical.Data.List using (List ; [] ; _∷_)
-import Cubical.Data.Maybe as M
-open import Cubical.Data.Unit using (Unit ; tt ; isSetUnit)
-import Cubical.Data.Sum as S
-open import Cubical.Foundations.HLevels using (isSetRetract)
+open import Cubical.Data.Nat using (ℕ)
+open import Cubical.Data.Sigma using (_×_ ; _,_ ; fst)
+open import Cubical.Data.Unit using (tt)
 import Agda.Builtin.String as AS
 
 open import Theory.Instances.Monoid.Unicode.Base
-open import Theory.Instances.Monoid.Lex.Base UChar _≟U_ (ℓ-suc ℓ-zero)
-
-data Tok : Type ℓ-zero where
-  KLet KIn : Tok
-  Var : UChar → Tok
-
--- `l e t`, `i n`, a skipped space, and a catch-all -- in that order, which
--- is what makes `let` one token rather than three variables.
-LetG : TheorySet ℓM tt
-LetG = litSet (ch 'l') ⊗Set (litSet (ch 'e') ⊗Set litSet (ch 't'))
-
-InG : TheorySet ℓM tt
-InG = litSet (ch 'i') ⊗Set litSet (ch 'n')
-
-TokSet : TheorySet ℓM tt
-TokSet = LetG ⊕Set (InG ⊕Set (litSet (ch ' ') ⊕Set charSet))
-
-oneTok : {ℓ' : Level} → ⊤Ty ⊢ Parser ℓ' ⟨▷⟩ ⟨□⟩ TokSet
-oneTok =
-  seq (litSet (ch 'e') ⊗Set litSet (ch 't')) (tok (ch 'l'))
-      (seq (litSet (ch 't')) (pless ∘⊢ tok (ch 'e')) (pless ∘⊢ tok (ch 't')))
-  <|> (seq (litSet (ch 'n')) (tok (ch 'i')) (pless ∘⊢ tok (ch 'n'))
-  <|> (tok (ch ' ') <|> anyTok))
-
-emit : Emit {T = Tok} {A = ty TokSet}
-emit =
-  semact-⊕ (semact-pure (M.just KLet))
-  (semact-⊕ (semact-pure (M.just KIn))
-  (semact-⊕ (semact-pure M.nothing)
-            (semact-map (λ c → M.just (Var c)) semact-char)))
-
--- `Tok` is a set, by retraction onto a sum of sets
-private
-  toS : Tok → Unit S.⊎ (Unit S.⊎ UChar)
-  toS KLet = S.inl tt
-  toS KIn = S.inr (S.inl tt)
-  toS (Var c) = S.inr (S.inr c)
-
-  fromS : Unit S.⊎ (Unit S.⊎ UChar) → Tok
-  fromS (S.inl _) = KLet
-  fromS (S.inr (S.inl _)) = KIn
-  fromS (S.inr (S.inr c)) = Var c
-
-  sect : (t : Tok) → fromS (toS t) ≡ t
-  sect KLet = refl
-  sect KIn = refl
-  sect (Var c) = refl
-
-isSetTok : isSet Tok
-isSetTok = isSetRetract toS fromS sect
-  (S.isSet⊎ isSetUnit (S.isSet⊎ isSetUnit isSetUChar))
-
--- ...and the token grammar is non-nullable, stated the way it is built
-nuTok : ¬Nullable (ty TokSet)
-nuTok =
-  ⊕-¬Nullable (⊗-¬Nullable (literal-¬Nullable (ch 'l')))
-  (⊕-¬Nullable (⊗-¬Nullable (literal-¬Nullable (ch 'i')))
-  (⊕-¬Nullable (literal-¬Nullable (ch ' ')) char-¬Nullable))
-
-lexDemo : AS.String → M.Maybe (List Tok)
-lexDemo s = lex {T = Tok} TokSet oneTok isSetTok nuTok emit (text s)
+open import Theory.Instances.Monoid.Regex.Parse using (reOf)
+open import Theory.Instances.Monoid.Lex.Regex UChar _≟U_ (ℓ-suc ℓ-zero)
 
 ------------------------------------------------------------------------
--- ...and it runs, on text written the way it is read.
+-- The lexicon, in priority order: keywords before identifiers.
+--
+--   0  let|in
+--   1  [[:alpha:]_][[:alnum:]_]*
+--   2  -?[0-9]+
+--   3  [ \t\n]+
 
-_ : lexDemo "" ≡ M.just []
+lexicon : Lexicon
+lexicon =
+    reOf "let|in"
+  ∷ reOf "[[:alpha:]_][[:alnum:]_]*"
+  ∷ reOf "-?[0-9]+"
+  ∷ reOf "[ \t\n]+"
+  ∷ []
+
+-- the tokenisation, as rule index and lexeme
+lexed : (w : AS.String) → Tokenisation lexicon (text w) → List (ℕ × List UChar)
+lexed w t = tokens lexicon (text w) t .fst
+
+------------------------------------------------------------------------
+-- ...and it runs, showing what it lexed to.
+
+letx : Tokenisation lexicon (text "let x")
+letx = theYes (lexer lexicon (text "let x") tt) Eq.refl
+
+_ : lexed "let x" letx
+  ≡ (0 , ch 'l' ∷ ch 'e' ∷ ch 't' ∷ [])
+  ∷ (3 , ch ' ' ∷ [])
+  ∷ (1 , ch 'x' ∷ [])
+  ∷ []
 _ = refl
 
-_ : lexDemo "x" ≡ M.just (Var (ch 'x') ∷ [])
+n42 : Tokenisation lexicon (text "-42")
+n42 = theYes (lexer lexicon (text "-42") tt) Eq.refl
+
+_ : lexed "-42" n42 ≡ (2 , ch '-' ∷ ch '4' ∷ ch '2' ∷ []) ∷ []
 _ = refl
 
--- three characters, one token
-_ : lexDemo "let" ≡ M.just (KLet ∷ [])
-_ = refl
-
--- ...but a prefix of the keyword is not the keyword: the rules fall through
-_ : lexDemo "le" ≡ M.just (Var (ch 'l') ∷ Var (ch 'e') ∷ [])
-_ = refl
-
--- whitespace is skipped by the action, not by the grammar
-_ : lexDemo "let x" ≡ M.just (KLet ∷ Var (ch 'x') ∷ [])
-_ = refl
+-- `?` is in no rule, so *nothing* tokenises this input
+noq : NoTokenisation lexicon (text "x?")
+noq = theNo (lexer lexicon (text "x?") tt) Eq.refl

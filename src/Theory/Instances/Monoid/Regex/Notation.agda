@@ -58,7 +58,8 @@ r ?r = εr ⊕r r
 -- the non-nullable index
 anyOfr : List (RE notNullable) → RE notNullable
 anyOfr [] = ⊥r
-anyOfr (r ∷ rs) = r ⊕r anyOfr rs
+anyOfr (r ∷ []) = r                        -- no trailing `⊕r ⊥r` to explore
+anyOfr (r ∷ rs@(_ ∷ _)) = r ⊕r anyOfr rs
 
 infix 30 _?r
 
