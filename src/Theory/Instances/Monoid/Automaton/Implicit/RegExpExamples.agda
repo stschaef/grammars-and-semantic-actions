@@ -75,12 +75,7 @@ isSetQ = isSetFreelyAddFail+Initial _ (Sum.isSet⊎ isSetU isSetU)
 open DeterministicAutomaton DA using (parseInit)
 
 ------------------------------------------------------------------------
--- Running it.  The input is presented as a `char *`.
-
-readChars : ⊤Ty ⊢ char *
-readChars [] _ = NIL _ (lift εTy-pt)
-readChars (c ∷ w) _ =
-  CONS _ (two (c ∷ []) w , Eq.refl , ((c , Eq.refl) , (readChars w _ , tt*)))
+-- Running it.  `readChars` presents the input as a `char *`.
 
 -- `true` exactly when the automaton accepts
 accepts : String → Bool

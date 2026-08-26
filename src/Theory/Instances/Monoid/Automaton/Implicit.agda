@@ -40,10 +40,6 @@ private variable ℓ ℓ' : Level
 ------------------------------------------------------------------------
 -- Freely adjoined states.
 
-data FreelyAddInitial (Q : Type ℓ) : Type ℓ where
-  initial : FreelyAddInitial Q
-  ↑i_ : Q → FreelyAddInitial Q
-
 data FreelyAddFail (Q : Type ℓ) : Type ℓ where
   fail : FreelyAddFail Q
   ↑f_ : Q → FreelyAddFail Q
@@ -52,36 +48,17 @@ data FreelyAddFail+Initial (Q : Type ℓ) : Type ℓ where
   fail initial : FreelyAddFail+Initial Q
   ↑q_ : Q → FreelyAddFail+Initial Q
 
-FreelyAddInitial→FreelyAddFail+Initial : {Q : Type ℓ}
-  → FreelyAddInitial Q → FreelyAddFail+Initial Q
-FreelyAddInitial→FreelyAddFail+Initial initial = initial
-FreelyAddInitial→FreelyAddFail+Initial (↑i q) = ↑q q
-
 FreelyAddFail→FreelyAddFail+Initial : {Q : Type ℓ}
   → FreelyAddFail Q → FreelyAddFail+Initial Q
 FreelyAddFail→FreelyAddFail+Initial fail = fail
 FreelyAddFail→FreelyAddFail+Initial (↑f q) = ↑q q
 
 ↑f→q = FreelyAddFail→FreelyAddFail+Initial
-↑i→q = FreelyAddInitial→FreelyAddFail+Initial
 
-module _ {Q : Type ℓ} where
-  fail≢↑f : {q : Q} → fail Eq.≡ ↑f q → Empty.⊥
-  fail≢↑f ()
-
-module _ {X : Type ℓ} {Y : Type ℓ'} (f : X → Y) where
-  mapFreelyAddFail : FreelyAddFail X → FreelyAddFail Y
-  mapFreelyAddFail fail = fail
-  mapFreelyAddFail (↑f x) = ↑f (f x)
-
-  mapFreelyAddInitial : FreelyAddInitial X → FreelyAddInitial Y
-  mapFreelyAddInitial initial = initial
-  mapFreelyAddInitial (↑i x) = ↑i (f x)
-
-  mapFreelyAddFail+Initial : FreelyAddFail+Initial X → FreelyAddFail+Initial Y
-  mapFreelyAddFail+Initial fail = fail
-  mapFreelyAddFail+Initial initial = initial
-  mapFreelyAddFail+Initial (↑q x) = ↑q (f x)
+mapFreelyAddFail : {X : Type ℓ} {Y : Type ℓ'}
+  → (X → Y) → FreelyAddFail X → FreelyAddFail Y
+mapFreelyAddFail f fail = fail
+mapFreelyAddFail f (↑f x) = ↑f (f x)
 
 -- ...and the state sets are sets, which is all `parse` needs of them.
 module _ (Q : Type ℓ) where

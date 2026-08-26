@@ -7,6 +7,8 @@ module Theory.Instances.Monoid.KleeneStar
 
 open import Cubical.Data.Bool using (Bool ; true ; false ; isSetBool)
 open import Cubical.Data.FinData using (zero ; suc)
+open import Cubical.Data.List using ([] ; _∷_)
+import Cubical.Data.Equality as Eq
 open import Cubical.Data.Unit using (Unit ; tt ; tt*)
 
 open import Theory.Instances.Monoid.Base
@@ -95,6 +97,13 @@ unroll* {ℓA = ℓA} {A = A} = fromF ∘⊢ unroll (λ _ → StarCode A) tt
 roll* : {ℓA : Level} {A : TheoryTy ℓA tt}
   → (A ⊗ (A *)) ⊕ LiftTheoryTy (ℓF ℓA) εTy ⊢ A *
 roll* = ⊕-elim CONS NIL
+
+-- Every word is a list of characters: `Strings.read` at the star rather
+-- than at `String*`.  This is how an input is presented to a fold.
+readChars : ⊤Ty ⊢ char *
+readChars [] _ = NIL _ (lift εTy-pt)
+readChars (c ∷ w) _ =
+  CONS _ (two (c ∷ []) w , Eq.refl , ((c , Eq.refl) , (readChars w _ , tt*)))
 
 fold*r : {ℓA ℓB : Level} {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt}
   → (⟦ starBranch A false ⟧TheoryTy (λ _ → B) ⊢ B)
