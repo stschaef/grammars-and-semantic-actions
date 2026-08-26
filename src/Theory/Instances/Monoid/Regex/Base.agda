@@ -28,6 +28,8 @@ open import Theory.Instances.Monoid.Combinator.Decidable.Star Alphabet _≟_ ℓ
   public
 open import Theory.Instances.Monoid.KleeneStar.Guarded Alphabet isSetAlphabet
   public
+open import Theory.Instances.Monoid.Residual Alphabet isSetAlphabet
+  using (⊗ε-unit-l⁻)
 open import Theory.Instances.Monoid.Regex.Sat Alphabet _≟_ ℓ
   using (Sat ; satG ; satSet ; satTok) public
 
@@ -146,3 +148,30 @@ re-¬Nullable (_⊕r_ {notNullable} {notNullable} r r') p =
 re-¬Nullable (_⊕r_ {notNullable} {nullable} r r') p = Empty.rec (ν≢ν̸ p)
 re-¬Nullable (_⊕r_ {nullable} {n'} r r') p = Empty.rec (ν≢ν̸ p)
 re-¬Nullable (r *r) p = Empty.rec (ν≢ν̸ p)
+
+------------------------------------------------------------------------
+-- Nullability is decided, and the index is what decides it.
+--
+-- `re-¬Nullable` above gives one direction.  With the other, the syntactic
+-- index is not bookkeeping: it answers the semantic question "does this
+-- regex match the empty word", correctly, for every regex.
+
+re-Nullable : ∀ {n} (r : RE n) → n ≡ nullable → εTy ⊢ ty ⟦ r ⟧
+re-Nullable εr p = id⊢
+re-Nullable ⊥r p = Empty.rec (ν≢ν̸ (sym p))
+re-Nullable ⟨ c ⟩r p = Empty.rec (ν≢ν̸ (sym p))
+re-Nullable (satr P) p = Empty.rec (ν≢ν̸ (sym p))
+re-Nullable (_⊗r_ {nullable} {nullable} r r') p =
+  (re-Nullable r refl ,⊗ re-Nullable r' refl) ∘⊢ ⊗ε-unit-l⁻
+re-Nullable (_⊗r_ {nullable} {notNullable} r r') p = Empty.rec (ν≢ν̸ (sym p))
+re-Nullable (_⊗r_ {notNullable} {n'} r r') p = Empty.rec (ν≢ν̸ (sym p))
+re-Nullable (_⊕r_ {nullable} {n'} r r') p = inl ∘⊢ re-Nullable r refl
+re-Nullable (_⊕r_ {notNullable} {nullable} r r') p = inr ∘⊢ re-Nullable r' refl
+re-Nullable (_⊕r_ {notNullable} {notNullable} r r') p = Empty.rec (ν≢ν̸ (sym p))
+re-Nullable (r *r) p = roll↑ ∘⊢ inr
+
+-- ...so the two together are a decision, with no case left open.
+decNullable : ∀ {n} (r : RE n)
+  → (εTy ⊢ ty ⟦ r ⟧) Sum.⊎ ¬Nullable (ty ⟦ r ⟧)
+decNullable {nullable} r = Sum.inl (re-Nullable r refl)
+decNullable {notNullable} r = Sum.inr (re-¬Nullable r refl)
