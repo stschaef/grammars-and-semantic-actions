@@ -24,7 +24,7 @@ open import Theory.Instances.Monoid.Precise Alphabet isSetAlphabet using (flat)
 open import Theory.Type.Decidable.Base MonEqns Alphabet (λ _ → tt)
   listPresentation
 
-private variable ℓA : Level
+private variable ℓA ℓB : Level
 
 -- one or more characters
 char⁺ : TheoryTy _ tt
@@ -90,3 +90,44 @@ noExt-step c {A = A} m (ms , e , (lc , (nk , _))) t =
     shape = sym headed
           ∙ cong (_∷ ks1) (sym c≡d)
           ∙ sym (cong (_++ ks1) (Eq.eqToPath ll))
+
+------------------------------------------------------------------------
+-- The same thing, indexed by the residual instead of by the matched word.
+--
+-- `Greedy` above names the match with `⊕[ w ] (⌈ w ⌉ & A)` so that the
+-- refutation can say `A ⟜ ⌈ w ⌉` -- "what is left of A after w".  But a
+-- tensor already carries its own splitting, so `⌈ w ⌉` is redundant with
+-- it; the word is there only to be fed to the residual.  Name the
+-- residual directly and both disappear.
+--
+-- The cost of extending then drops from O(n) to O(1): `extendAt` is an
+-- associativity and one substitution, where `Grammar/Greedy/Automata`'s
+-- `extend-Greedy` destructures `w` and rebuilds at `c ∷ w`, which is what
+-- makes a match of length n cost O(n²) to build.
+--
+-- The price is that `R` is a parameter, so `GreedyAt A R` is only *about*
+-- greediness when `R` really is A's residual after the match.  A scan
+-- maintains that by construction (start at `A`, step by δ); recovering
+-- the self-contained statement is `δ-sound`/`δ-complete`.
+
+open import Theory.Instances.Monoid.Derivative Alphabet isSetAlphabet
+  using (Dl)
+
+module _ (c : Alphabet) where
+  -- a `c` in front of `A`'s derivative is an `A`
+  lit⊗Dl : {A : TheoryTy ℓA tt} → literal c ⊗ Dl c A ⊢ A
+  lit⊗Dl {A = A} m (ms , e , (lc , (a , _))) =
+    subst A (flat c (ms zero) (ms (suc zero)) m lc e) a
+
+GreedyAt : (A : TheoryTy ℓA tt) (R : TheoryTy ℓB tt) → TheoryTy _ tt
+GreedyAt A R = A ⊗ ¬Ty ((R & char⁺) ⊗ ⊤Ty)
+
+module _ {A : TheoryTy ℓA tt} {R : TheoryTy ℓB tt} where
+  -- one character, O(1)
+  extendAt : (c : Alphabet)
+    → literal c ⊗ GreedyAt (Dl c A) R ⊢ GreedyAt A R
+  extendAt c = (lit⊗Dl c ,⊗ id⊢) ∘⊢ ⊗-assoc⁻
+
+  -- ...and what it gives up: the prefix parse
+  GreedyAt→prefix : GreedyAt A R ⊢ A ⊗ ⊤Ty
+  GreedyAt→prefix = id⊢ ,⊗ ⊤Ty-intro
