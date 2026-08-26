@@ -50,9 +50,6 @@ open import Theory.Instances.Monoid.Automaton.Implicit.Compile L2 isSetAlphabet
 ------------------------------------------------------------------------
 -- The syntax tree, and its determinism derivation.
 
-abStar-r : RegularExpression
-abStar-r = ＂ a ＂r ⊗r ＂ b ＂r *r
-
 private
   -- `litAut c` never steps once it has accepted, so every letter is
   -- outside its follow-last set and `⊤ℙ` is the honest index.
@@ -65,10 +62,7 @@ abStar-dr = ＂ a ＂dr ⊗DR[ anywhere ] (＂ b ＂dr *DR[ anywhere ])
 ------------------------------------------------------------------------
 -- Compiled.  `States abStar-dr` is `Unit* ⊎ Unit*`: one position per
 -- literal, and nothing merged.  `erase` recovers the plain regular
--- expression, which is what a semantics would be stated against.
-
-_ : erase abStar-dr ≡ abStar-r
-_ = refl
+-- literal, and nothing merged.
 
 _ : States abStar-dr ≡ (Unit* Sum.⊎ Unit*)
 _ = refl

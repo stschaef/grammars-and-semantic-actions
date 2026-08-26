@@ -63,6 +63,16 @@ module _ (discAlpha : Discrete Alphabet) where
   ... | no _ = fail
   litAut c .δq _ _ = fail
 
+  -- ...and a character class is the same automaton with a decidable
+  -- predicate deciding the entry instead of a single letter.  Its
+  -- follow-last set is empty for the same reason: it never steps once
+  -- it has accepted.
+  satAut : (P : Alphabet → Bool) → ImplicitDeterministicAutomaton (Unit* {ℓAlph})
+  satAut P .acc _ = true
+  satAut P .null = false
+  satAut P .δᵢ c = if P c then ↑f _ else fail
+  satAut P .δq _ _ = fail
+
   ------------------------------------------------------------------
   -- Alternation: disjoint firsts, and not both nullable.
 

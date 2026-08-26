@@ -3,8 +3,8 @@
 
    `Implicit/RegExp` gives five constructions, each demanding the
    determinism side conditions as arguments, so there is no total
-   `RegularExpression → Automaton`.  `DetReg`, ported from
-   `Grammar/RegularExpression/Deterministic.agda`, is the subtype that
+   deterministic regular expressions to automata.  `DetReg`, ported from
+   `Grammar/RegularExpression/Deterministic.agda`, is the fragment that
    does compile: a regex indexed by the complements of its follow-last
    and first sets and by the negation of its nullability, with the
    disjointness conditions carried on the `⊗`, `⊕` and `*` nodes.
@@ -42,8 +42,6 @@ import Cubical.Data.Equality as Eq
 
 open import Theory.Instances.Monoid.Base
 open import Theory.Instances.Monoid.Strings Alphabet isSetAlphabet
-open import Theory.Instances.Monoid.RegularExpression Alphabet isSetAlphabet
-  public
 open import Theory.Instances.Monoid.Automaton.Deterministic
   Alphabet isSetAlphabet
 open import Theory.Instances.Monoid.Automaton.Implicit.RegExp
@@ -54,7 +52,6 @@ open ImplicitDeterministicAutomaton
 private variable
   ℓ : Level
   b b' : Bool
-  r r' : RegularExpression
 
 ------------------------------------------------------------------------
 -- Sets of letters.
@@ -79,6 +76,10 @@ _∩ℙ_ : ℙ → ℙ → ℙ
 ⟦_⟧ℙ : Alphabet → ℙ
 ⟦ c ⟧ℙ c' = c ≡ c'
 
+-- a decidable character class, as the set it denotes
+⟦_⟧sat : (Alphabet → Bool) → ℙ
+⟦ P ⟧sat c = Lift ℓAlph (P c ≡ true)
+
 ¬ℙ_ : ℙ → ℙ
 (¬ℙ P) c = P c → Empty.⊥* {ℓAlph}
 
@@ -89,11 +90,11 @@ infix 25 ¬ℙ_
 -- Deterministic regular expressions, ported from
 -- `Grammar/RegularExpression/Deterministic.agda`.
 --
--- Written directly, rather than as a predicate on `RegularExpression`:
--- the constructors ARE the deterministic combinators, so a deterministic
--- regex is one term instead of a syntax tree plus a proof about it.
--- `erase` recovers the plain regular expression when a semantics needs
--- it.
+-- Written directly, rather than as a predicate on a separate regex
+-- datatype: the constructors ARE the deterministic combinators, so a
+-- deterministic regex is one term instead of a syntax tree plus a proof
+-- about it.  Nothing here mentions regex syntax at all -- the bridge to
+-- `RE` lives where both are in scope.
 --
 -- Indexed by the complement of the follow-last set, the complement of
 -- the first set, and the negation of nullability -- negated so that the
@@ -104,6 +105,12 @@ data DetReg : ℙ → ℙ → Bool → Type (ℓ-suc ℓAlph) where
   εdr : DetReg ⊤ℙ ⊤ℙ false
   ⊥dr : DetReg ⊤ℙ ⊤ℙ true
   ＂_＂dr : (c : Alphabet) → DetReg ⊤ℙ (¬ℙ ⟦ c ⟧ℙ) true
+  -- A class needs no more than a literal does.  Its follow-last set is
+  -- empty (`⊤ℙ` is its complement), so sequencing and starring a class
+  -- carry exactly the trivial side condition that a literal carries;
+  -- only *alternation* of two classes asks for anything, namely that
+  -- they are disjoint.
+  satdr : (P : Alphabet → Bool) → DetReg ⊤ℙ (¬ℙ ⟦ P ⟧sat) true
   _⊗DR[_]_ :
     {¬FL ¬FL' ¬F ¬F' : ℙ} →
     (dr : DetReg ¬FL ¬F true) →
@@ -143,6 +150,7 @@ States : {¬FL ¬F : ℙ} {b : Bool} → DetReg ¬FL ¬F b → Type ℓAlph
 States εdr = Empty.⊥*
 States ⊥dr = Empty.⊥*
 States ＂ c ＂dr = Unit*
+States (satdr P) = Unit*
 States (dr ⊗DR[ _ ] dr') = States dr ⊎ States dr'
 States (dr ⊕DR[ _ ] dr') = States dr ⊎ States dr'
 States (dr *DR[ _ ]) = States dr
@@ -151,18 +159,10 @@ isSetStates : {¬FL ¬F : ℙ} {b : Bool} (dr : DetReg ¬FL ¬F b) → isSet (St
 isSetStates εdr x = Empty.rec* x
 isSetStates ⊥dr x = Empty.rec* x
 isSetStates ＂ c ＂dr = isSetUnit*
+isSetStates (satdr P) = isSetUnit*
 isSetStates (dr ⊗DR[ _ ] dr') = Sum.isSet⊎ (isSetStates dr) (isSetStates dr')
 isSetStates (dr ⊕DR[ _ ] dr') = Sum.isSet⊎ (isSetStates dr) (isSetStates dr')
 isSetStates (dr *DR[ _ ]) = isSetStates dr
-
--- ...and the underlying regular expression, for stating semantics
-erase : {¬FL ¬F : ℙ} {b : Bool} → DetReg ¬FL ¬F b → RegularExpression
-erase εdr = εr
-erase ⊥dr = ⊥r
-erase ＂ c ＂dr = ＂ c ＂r
-erase (dr ⊗DR[ _ ] dr') = erase dr ⊗r erase dr'
-erase (dr ⊕DR[ _ ] dr') = erase dr ⊕r erase dr'
-erase (dr *DR[ _ ]) = erase dr *r
 
 ------------------------------------------------------------------------
 -- Bool scaffolding.  `if-true` is the only way the `if (M .acc q)` in
@@ -241,6 +241,7 @@ module _ (discAlpha : Discrete Alphabet) where
   compile εdr = εAut discAlpha
   compile ⊥dr = ⊥Aut discAlpha
   compile ＂ c ＂dr = litAut discAlpha c
+  compile (satdr P) = satAut discAlpha P
   compile (dr ⊗DR[ su ] dr') =
     ⊗Aut discAlpha (compile dr) (compile dr')
       (nullOf dr) (seqOf dr dr' su)
@@ -254,6 +255,7 @@ module _ (discAlpha : Discrete Alphabet) where
   nullOf εdr = refl
   nullOf ⊥dr = refl
   nullOf ＂ c ＂dr = refl
+  nullOf (satdr P) = refl
   nullOf (dr ⊗DR[ su ] dr') = refl
   nullOf (_⊕DR[_]_ {b = true} {notBothNull = nbn} dr sep dr') = nullOf dr'
   nullOf (_⊕DR[_]_ {b = false} {b' = true} {notBothNull = nbn} dr sep dr') =
@@ -266,6 +268,9 @@ module _ (discAlpha : Discrete Alphabet) where
   δᵢ-fail ＂ c' ＂dr c c∉F with discAlpha c' c
   ... | yes c'≡c = Empty.rec* (c∉F c'≡c)
   ... | no _ = refl
+  δᵢ-fail (satdr P) c c∉F with P c
+  ... | true = Empty.rec* (c∉F (lift refl))
+  ... | false = refl
   δᵢ-fail (dr ⊗DR[ su ] dr') c c∉F =
     cong (mapFreelyAddFail Sum.inl) (δᵢ-fail dr c c∉F)
   δᵢ-fail (dr ⊕DR[ sep ] dr') c (c∉F , c∉F') with sep c
@@ -276,6 +281,7 @@ module _ (discAlpha : Discrete Alphabet) where
   δq-fail εdr c _ ()
   δq-fail ⊥dr c _ ()
   δq-fail ＂ c' ＂dr c _ _ _ = refl
+  δq-fail (satdr P) c _ _ _ = refl
   -- `b' ≡ true`: the right factor is not nullable, so no state of the
   -- left factor accepts and there is nothing to prove there.
   δq-fail (_⊗DR[_]_ {b' = true} dr su dr') c c∉FL' (Sum.inl q) accq =
