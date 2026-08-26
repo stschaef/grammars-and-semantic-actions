@@ -40,6 +40,10 @@ private variable ℓ ℓ' : Level
 ------------------------------------------------------------------------
 -- Freely adjoined states.
 
+data FreelyAddInitial (Q : Type ℓ) : Type ℓ where
+  initial : FreelyAddInitial Q
+  ↑i_ : Q → FreelyAddInitial Q
+
 data FreelyAddFail (Q : Type ℓ) : Type ℓ where
   fail : FreelyAddFail Q
   ↑f_ : Q → FreelyAddFail Q
@@ -55,10 +59,33 @@ FreelyAddFail→FreelyAddFail+Initial (↑f q) = ↑q q
 
 ↑f→q = FreelyAddFail→FreelyAddFail+Initial
 
+FreelyAddInitial→FreelyAddFail+Initial : {Q : Type ℓ}
+  → FreelyAddInitial Q → FreelyAddFail+Initial Q
+FreelyAddInitial→FreelyAddFail+Initial initial = initial
+FreelyAddInitial→FreelyAddFail+Initial (↑i q) = ↑q q
+
+↑i→q = FreelyAddInitial→FreelyAddFail+Initial
+
+-- `fail` is not in the image of `↑f_`, in the `Eq` world where the
+-- transition table's `with`-abstractions leave their equations
+fail≢↑f : {Q : Type ℓ} {q : Q} → fail Eq.≡ (↑f q) → Empty.⊥
+fail≢↑f ()
+
 mapFreelyAddFail : {X : Type ℓ} {Y : Type ℓ'}
   → (X → Y) → FreelyAddFail X → FreelyAddFail Y
 mapFreelyAddFail f fail = fail
 mapFreelyAddFail f (↑f x) = ↑f (f x)
+
+mapFreelyAddInitial : {X : Type ℓ} {Y : Type ℓ'}
+  → (X → Y) → FreelyAddInitial X → FreelyAddInitial Y
+mapFreelyAddInitial f initial = initial
+mapFreelyAddInitial f (↑i x) = ↑i (f x)
+
+mapFreelyAddFail+Initial : {X : Type ℓ} {Y : Type ℓ'}
+  → (X → Y) → FreelyAddFail+Initial X → FreelyAddFail+Initial Y
+mapFreelyAddFail+Initial f fail = fail
+mapFreelyAddFail+Initial f initial = initial
+mapFreelyAddFail+Initial f (↑q x) = ↑q (f x)
 
 -- ...and the state sets are sets, which is all `parse` needs of them.
 module _ (Q : Type ℓ) where
