@@ -355,6 +355,11 @@ module _ {A : TheoryTy ℓ tt} {K : TheoryTy ℓ' tt} where
   → (⊕[ y ∈ Y ] A y) ⊗ C ⊢ ⊕[ y ∈ Y ] (A y ⊗ C)
 ⊗⊕ᴰ-distL m (ms , e , ((y , a) , (c , _))) = y , (ms , e , (a , (c , tt*)))
 
+-- ...and the mirror, in the right factor
+⊗⊕ᴰ-distR : {Y : Type ℓY} {A : TheoryTy ℓ tt} {C : Y → TheoryTy ℓ' tt}
+  → A ⊗ (⊕[ y ∈ Y ] C y) ⊢ ⊕[ y ∈ Y ] (A ⊗ C y)
+⊗⊕ᴰ-distR m (ms , e , (a , ((y , c) , _))) = y , (ms , e , (a , (c , tt*)))
+
 &⊕-distR : {A : TheoryTy ℓ tt} {B : TheoryTy ℓ' tt} {C : TheoryTy ℓ'' tt}
   → A & (B ⊕ C) ⊢ (A & B) ⊕ (A & C)
 &⊕-distR m (a , Sum.inl b) = Sum.inl (a , b)

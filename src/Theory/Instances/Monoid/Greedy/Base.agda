@@ -28,7 +28,7 @@ private variable ℓA ℓB : Level
 
 -- one or more characters
 char⁺ : TheoryTy _ tt
-char⁺ = char ⊗ (char *)
+char⁺ = char ⊗ String*
 
 module _ (A : TheoryTy ℓA tt) where
   -- A parse of `A` over some `w`, plus a refutation of every nonempty

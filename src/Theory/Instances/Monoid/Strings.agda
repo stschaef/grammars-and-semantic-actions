@@ -16,7 +16,7 @@ module Theory.Instances.Monoid.Strings
   {ℓAlph}
   (Alphabet : Type ℓAlph) (isSetAlphabet : isSet Alphabet) where
 
-private variable ℓA ℓB ℓC ℓD : Level
+private variable ℓA ℓB ℓC ℓD ℓY : Level
 
 open import Cubical.Data.Bool using (Bool ; true ; false ; isSetBool)
 open import Cubical.Data.FinData using (Fin ; zero ; suc)
@@ -490,6 +490,22 @@ private
 read-section : read ∘⊢ ⊤Ty-intro ≡ id⊢
 read-section =
   rec-section (λ _ → KleeneCode) (λ _ → ⊤Ty-intro) (λ _ → read) readSq tt
+
+-- A string is empty, or a character followed by a string.  `unrollString`
+-- lands in the raw code layer; this is the same observation as a
+-- connective, which is what clients actually want to case on.
+stringLayer↑ : String* ⊢ εTy ⊕ (char ⊗ String*)
+stringLayer↑ = ⊕ᴰ-elim branch ∘⊢ unrollString
+  where
+  branch : (b : Bool)
+    → ⟦ kleeneBranch b ⟧TheoryTy (λ _ → String*) ⊢ εTy ⊕ (char ⊗ String*)
+  branch false m (ms , e , _) = Sum.inl (ms , e , tt*)
+  branch true m (ms , e , f) =
+    Sum.inr (ms , e , (f zero .lower , (f (suc zero) .lower , tt*)))
+
+-- the unit's inverse.  `⊗-unit-l⁻` above lands in `⊤Ty`, which is weaker.
+ε⊗-intro : {A : TheoryTy ℓA tt} → A ⊢ εTy ⊗ A
+ε⊗-intro m a = two [] m , Eq.refl , (εTy-pt , (a , tt*))
 
 unambiguous-String* : (m : String) → isProp (String* m)
 unambiguous-String* =

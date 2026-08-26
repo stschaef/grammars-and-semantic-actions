@@ -31,8 +31,6 @@ open import Cubical.Data.List using ([] ; _∷_ ; _++_)
 open import Cubical.Data.FinData using (zero ; suc)
 open import Cubical.Data.Unit using (tt ; tt*)
 import Cubical.Data.Equality as Eq
-import Cubical.Data.Empty as Empty
-import Cubical.Data.List.Properties as L
 
 open import Theory.Instances.Monoid.Base
 open import Theory.Instances.Monoid.Strings Alphabet isSetAlphabet
@@ -41,9 +39,8 @@ open import Theory.Instances.Monoid.KleeneStar.Guarded Alphabet isSetAlphabet
   using (¬Nullable ; ⊗-¬Nullable ; char-¬Nullable ; fold*g)
 open import Theory.Instances.Monoid.Greedy.Base Alphabet isSetAlphabet
   using (GreedyAt ; extendAt ; char⁺ ; noExt-step)
-open import Theory.Instances.Monoid.Derivative Alphabet isSetAlphabet using (Dl)
-open import Theory.Instances.Monoid.Precise Alphabet isSetAlphabet using (flat)
-open import Theory.Instances.Monoid.Residual Alphabet isSetAlphabet using (_⊸_)
+open import Theory.Instances.Monoid.Residual Alphabet isSetAlphabet
+  using (⊗⊕ᴰ-distL ; ⊗⊕ᴰ-distR)
 open import Theory.Instances.Monoid.Automaton.Base Alphabet isSetAlphabet
 open import Theory.Type.Decidable.Base MonEqns Alphabet (λ _ → tt)
   listPresentation
@@ -63,6 +60,13 @@ char⁺-¬Nullable = ⊗-¬Nullable char-¬Nullable
 -- ...and a non-nullable grammar is refuted at ε
 ¬Nullable→¬ε : {A : TheoryTy ℓA tt} → ¬Nullable A → εTy ⊢ ¬Ty A
 ¬Nullable→¬ε nu = ⇒-intro (nu ∘⊢ &-swap)
+
+-- If nothing empty matches, then every match is a character followed by
+-- something -- which is what `noExt-step` wants to hear.  The case split
+-- is `stringLayer↑`, not an inspection of the splitting.
+¬Nullable→char⁺ : {A : TheoryTy ℓA tt} → ¬Nullable A → A ⊢ char⁺
+¬Nullable→char⁺ nu =
+  ⊕-elim& (⊥Ty-elim ∘⊢ nu) π₂ ∘⊢ (id⊢ ,& (stringLayer↑ ∘⊢ read ∘⊢ ⊤Ty-intro))
 
 module _ {ℓQ ℓL} (M : DerivAutomaton ℓQ ℓL) where
   open DerivAutomaton M
@@ -88,10 +92,7 @@ module _ {ℓQ ℓL} (M : DerivAutomaton ℓQ ℓL) where
     where
     go : (q : Q) (b : Bool) → acc q Eq.≡ b → εTy ⊢ Run q
     go q true p =
-      inl ∘⊢ σ⊕ q ∘⊢ (accY q p ,⊗ noExt-ε (L q)) ∘⊢ ⊗-unit-l⁻ε
-      where
-      ⊗-unit-l⁻ε : εTy ⊢ εTy ⊗ εTy
-      ⊗-unit-l⁻ε m e = two [] [] , e .snd .fst , (εTy-pt , (εTy-pt , tt*))
+      inl ∘⊢ σ⊕ q ∘⊢ (accY q p ,⊗ noExt-ε (L q)) ∘⊢ ε⊗-intro
     go q false p = inr ∘⊢ ¬Nullable→¬ε (⊗-¬Nullable (accN q p))
 
   ------------------------------------------------------------------
@@ -104,24 +105,15 @@ module _ {ℓQ ℓL} (M : DerivAutomaton ℓQ ℓL) where
     GreedyAt-map f = f ,⊗ id⊢
 
   scan-cons : char ⊗ Table ⊢ Table
-  scan-cons = &ᴰ-intro λ q → ⊕ᴰ-elim (λ c → stepAt q c) ∘⊢ charSplit
+  scan-cons = &ᴰ-intro λ q → ⊕ᴰ-elim (λ c → stepAt q c) ∘⊢ ⊗⊕ᴰ-distL
     where
-    charSplit : char ⊗ Table ⊢ ⊕[ c ∈ Alphabet ] (literal c ⊗ Table)
-    charSplit m (ms , e , ((c , lc) , (t , _))) =
-      c , ms , e , (lc , (t , tt*))
-
     stepAt : (q : Q) (c : Alphabet) → literal c ⊗ Table ⊢ Run q
     stepAt q c = ⊕-elim matched unmatched ∘⊢ ⊗⊕-distR ∘⊢ (id⊢ ,⊗ π (δ q c))
       where
       -- the recursive run matched: prepend the character, O(1)
       matched : literal c ⊗ (⊕[ q' ∈ Q ] GreedyAt (L (δ q c)) (L q')) ⊢ Run q
-      matched = inl ∘⊢ ⊕ᴰ-elim (λ q' → σ⊕ q' ∘⊢ ext q') ∘⊢ pushΣ
+      matched = inl ∘⊢ ⊕ᴰ-elim (λ q' → σ⊕ q' ∘⊢ ext q') ∘⊢ ⊗⊕ᴰ-distR
         where
-        pushΣ : literal c ⊗ (⊕[ q' ∈ Q ] GreedyAt (L (δ q c)) (L q'))
-                 ⊢ ⊕[ q' ∈ Q ] (literal c ⊗ GreedyAt (L (δ q c)) (L q'))
-        pushΣ m (ms , e , (lc , ((q' , g) , _))) =
-          q' , ms , e , (lc , (g , tt*))
-
         ext : (q' : Q) → literal c ⊗ GreedyAt (L (δ q c)) (L q')
                        ⊢ GreedyAt (L q) (L q')
         ext q' = extendAt c ∘⊢ (id⊢ ,⊗ GreedyAt-map (δ-Dl⁻ q c))
@@ -140,34 +132,11 @@ module _ {ℓQ ℓL} (M : DerivAutomaton ℓQ ℓL) where
         go : (b : Bool) → acc q Eq.≡ b
            → literal c ⊗ ¬Ty (L (δ q c) ⊗ ⊤Ty) ⊢ Run q
         go true p = inl ∘⊢ σ⊕ q ∘⊢ (accY q p ,⊗ id⊢) ∘⊢ ε⊗-intro ∘⊢ noMore
-          where
-          ε⊗-intro : {X : TheoryTy ℓA tt} → X ⊢ εTy ⊗ X
-          ε⊗-intro m x = two [] m , Eq.refl , (εTy-pt , (x , tt*))
-        -- ...or `q` rejects ε too, and then nothing matches at all: a
-        -- match is either empty, which `accN` refutes, or starts with
-        -- `c`, whose tail the recursive refutation refutes.
-        go false p = inr ∘⊢ noneAt
-          where
-          noneAt : literal c ⊗ ¬Ty (L (δ q c) ⊗ ⊤Ty) ⊢ ¬Ty (L q ⊗ ⊤Ty)
-          noneAt m (ms , e , (lc , (nk , _))) t =
-            go' (ns zero) (t .snd .snd .fst)
-              (Eq.eqToPath (t .snd .fst) ∙ sym whole)
-            where
-            ns = t .fst
-            ns1 = ns (suc zero)
-            ms1 = ms (suc zero)
-
-            whole : c ∷ ms1 ≡ m
-            whole = flat c (ms zero) ms1 m lc e
-
-            go' : (u : String) → L q u → u ++ ns1 ≡ c ∷ ms1 → ⊥Ty m
-            go' [] a q≡ = Empty.rec (accN q p [] (a , εTy-pt) .lower)
-            go' (d ∷ u) a q≡ =
-              Empty.rec (nk (two u ns1 , Eq.pathToEq (L.cons-inj₂ q≡)
-                , (δ-Dl q c u (subst (L q) headed a) , (tt , tt*))) .lower)
-              where
-              headed : d ∷ u ≡ c ∷ u
-              headed = cong (_∷ u) (L.cons-inj₁ q≡)
+        -- ...or `q` rejects ε too, and then nothing matches at all.
+        -- Rejecting ε means every match is a `char⁺`, and `noMore` has
+        -- already refuted those.
+        go false p =
+          inr ∘⊢ ¬Ty-map ((id⊢ ,& ¬Nullable→char⁺ (accN q p)) ,⊗ id⊢) ∘⊢ noMore
 
   ------------------------------------------------------------------
   -- ...and the fold.  `char` is non-nullable, so Löb closes it: one
