@@ -277,7 +277,51 @@ löbG : (ty (▷ A) ⊢ ty A) → ⊤Ty ⊢ ty A                              --
 
 Anything guarded should be written with these two and nothing else.
 
-### `hylosFromGuard` is the unification, and it was sitting unused
+### `hylosFromGuard` is the unification — but it cannot be applied here
+
+**Correction to an earlier claim.** I wrote that the guarded route to the
+recursor was "built and unused", implying it was ready. It is not, and the
+reason is precise.
+
+`Guard`'s tensor clause quantifies over *all* splittings:
+
+```agda
+Guard (⊗e o G) m root = (sp : Split o m) (a) → Guard (G a) (parts sp a) root
+Split o m = Σ[ ms ∈ interpIn o ↓M ] (op o ms Eq.≡ m)   -- Code/Container:29
+```
+
+`Split` is blind to what the slots contain. So for the Kleene cons branch
+`⊗e _⊙_ (two (k A) (Var tt))`, `Guard` demands `(tt , parts sp 1) < (tt , m)`
+*for every* split — including `([] , m)`, which asks for `m < m`. False by
+irreflexivity, for every `A`, nullable or not.
+
+**So `Guard` cannot guard a Kleene star.** `hylosFromGuard` is unused because
+it is inapplicable to the codes this library actually uses, not because nobody
+got round to it. `Inductive/Base.rec`'s `{-# TERMINATING #-}` is load-bearing.
+
+`fold` itself is fine — it takes `Hylos F` as a hypothesis. What is missing is
+a *producer* of `Hylos` for star-like codes.
+
+### The fix already exists in miniature: `PayR`
+
+`GuardedSplit.agda:54` is the content-*aware* version of the same idea:
+
+```agda
+PayR {X = X} = (m : ↓M tt) (ms : interpIn _⊙_ ↓M) → op _⊙_ ms Eq.≡ m
+  → X (ms zero)                                    -- ← the content of the left slot
+  → R (tt , ms (suc zero)) (tt , m)
+```
+
+It receives the left slot's inhabitant and only then owes the order fact, which
+is exactly how `◂-lit` discharges it for a literal head. `Guard` is its
+content-blind cousin. Generalising `Guard`'s `⊗e` clause to `PayR`'s shape —
+quantify over splits, take the non-recursive slots' contents as hypotheses —
+should make `hylosFromGuard` apply to every LL-shaped code, and then `fold`
+replaces `rec` and the pragma goes.
+
+That is the concrete next task for §4, and it is one clause of one definition.
+
+### (superseded) `hylosFromGuard` as drop-in
 
 `Justification.agda:195`:
 
@@ -365,6 +409,101 @@ the `Precise` tier:
 (3) is false without the `char⁺`: if `A` matches `ε` the split cannot be
 shifted. That is *why* `char⁺` appears in `Greedy`'s statement — a detail I had
 read as bookkeeping.
+
+## 2.8 Scale: measured, and it is roughly linear
+
+The open question after §2.5-2.7 was whether `refl`-evaluation survives past
+toy inputs. It does. Baseline (module loading, no test) is 2.5s; the marginal
+column subtracts it.
+
+**Lexer** — `Lex/Demo`, input `"let x "` repeated, 4 alternatives, 21-bit
+alphabet:
+
+| chars | tokens | total | marginal |
+|---|---|---|---|
+| 96 | 32 | 2.5s | ~0 |
+| 768 | 256 | 3.8s | 1.3s |
+| 1536 | 512 | 5.6s | 3.1s |
+| 3072 | 1024 | 8.6s | 6.1s |
+| 6144 | 2048 | 17.3s | 14.8s |
+
+**Dyck** — `Incomplete/Dyck`, fully nested `((((…))))`, so the parse tree is as
+deep as the input is long:
+
+| tokens | depth | total | marginal |
+|---|---|---|---|
+| 128 | 64 | 2.7s | 0.2s |
+| 512 | 256 | 3.3s | 0.8s |
+| 1024 | 512 | 4.8s | 2.3s |
+
+Marginal cost roughly doubles as input doubles in both, i.e. linear to mildly
+superlinear. **6144 characters is about 150 lines of source, checked in 17s.**
+Nesting is not the problem: depth 512 is cheaper than 1024 flat tokens.
+
+### What the numbers actually say
+
+Dyck at 1024 tokens costs 2.3s where the lexer at 1024 tokens costs 6.1s. The
+difference is not structure — it is that `oneTok` offers four alternatives and
+`<|>` evaluates *both* branches, and that each `tok` compares a 21-bit
+character. So the constant is **per-alternative, per-token**.
+
+Extrapolating honestly: a real lexicon with ~40 rules rather than 4 would pay
+roughly ten times the per-character constant, putting 6144 characters near
+150s. That is the wall, and it is a constant-factor wall, not a complexity one.
+
+**Which makes the parked LL(1) work the fix, not a luxury.** `look⊗`/`Λ₁`
+dispatch on the first character instead of trying every alternative; that is
+exactly the constant this measurement exposes. §1 sends the LL suite to its own
+branch on scope grounds — that stays right for *this* batch, but it is now on
+the critical path for anything real, rather than being speculative.
+
+## 2.9 The guarded Kleene fold — BUILT
+
+`KleeneStar/Guarded.agda` + `GuardedTests.agda`, green, 0 holes, 0 postulates,
+no pragma. `fold*g` is the same fold as `KleeneStar.fold*r` but by `löb`.
+
+The route is *not* fixing `Guard`. §2.7's correction stands: `Guard`'s `⊗e`
+clause quantifies over all splits and so cannot see that a cons consumes. But
+generalising it does not help either, because `hylosFromGuard` serves `hylo`
+at an *arbitrary* coalgebra, and a coalgebra into an arbitrary carrier really
+can fail to terminate — that is a property of the coalgebra, not of the
+functor. Asking `Guard` to supply it was the category error.
+
+What the star actually needs is the one missing hypothesis — the head
+consumes — and `PayR` already has exactly that shape:
+
+```agda
+NonNull A = (m : String) (ms : interpIn _⊙_ ↓M) → op _⊙_ ms Eq.≡ m
+  → A (ms zero) → ms (suc zero) ◂ m
+```
+
+which is `PayR` with the `Löb` left implicit. Given it, the fold is three
+lines of composition and one löb:
+
+```agda
+step   = cons ∘⊢ (id⊢ ,⊗ (⇒-app ∘⊢ &-swap)) ∘⊢ ▷⊛r GB.suffixLöb pay
+body   = ⊕-elim& (step ∘⊢ &-swap) (nil ∘⊢ π₂) ∘⊢ (id& unroll↑)
+fold*g = ⇒-app ∘⊢ ((GB.löb (λ _ → ⇒-intro body) tt ∘⊢ ⊤Ty-intro) ,& id⊢)
+```
+
+The family being fixed is the fold itself as an internal function,
+`A * ⇒ ty B` — which is `hylosFromGuard`'s `Fn` trick, done at one grammar
+instead of a whole system. Everything draws from `Guarded▷.löb`; there is no
+second induction principle.
+
+`GuardedTests` confirms it *computes*: `countAs (a ∷ a ∷ a ∷ []) ≡ just 3` by
+`refl`, and `countAs (b ∷ []) ≡ nothing`.
+
+**`◂-lit` is already the `NonNull` witness for a literal**, so every
+literal-headed production gets its payment for free — which is the LL fragment
+(§2.8).
+
+### What this leaves
+
+`semact-*` and `semact-skip*` still call `rec`, so the pragma is still on the
+live path. Retargeting them onto `fold*g` needs a `NonNull` witness for the
+token grammar, which for a literal-headed one is `◂-lit`. That is the next
+concrete step and it is now a wiring job, not a research one.
 
 ## 3. Per-module verdicts
 
