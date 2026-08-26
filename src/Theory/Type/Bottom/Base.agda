@@ -31,3 +31,10 @@ module _ {s} {A : TheoryTy ℓA s} where
 
   ⊥Ty-η : (e : ⊥Ty ⊢ A) → e ≡ ⊥Ty-elim
   ⊥Ty-η e i _ ()
+
+  -- the same at the lifted empty type, so a client never has to unfold it
+  ⊥Ty↑-elim : ∀ {ℓB} → ⊥Ty↑ {s = s} ℓB ⊢ A
+  ⊥Ty↑-elim _ ()
+
+  ⊥Ty↑-η : ∀ {ℓB} (e : ⊥Ty↑ {s = s} ℓB ⊢ A) → e ≡ ⊥Ty↑-elim
+  ⊥Ty↑-η e i _ ()
