@@ -111,23 +111,26 @@ residual r (c ∷ w) = residual (δ r c .snd) w
 --     RunResult x = Greedy (ty ⟦ x .snd ⟧) ⊕ ¬Ty (ty ⟦ x .snd ⟧ ⊗ ⊤Ty)
 --     scan : ⊤Ty ⊢ &[ x ∈ RE? ] RunResult x
 --
--- Three of the four pieces exist:
+-- All four pieces now exist:
 --
 --   * `scan-nil`'s dispatch is `decNullable` (Regex/Base) -- ε matches
 --     exactly the nullable regexes, and the index decides which.
 --   * `scan-cons`'s refutation step is `noExt-step` (Greedy/Base): a
 --     nonempty prefix must start with `c`, by the precision of
 --     `literal c`.
---   * `Greedy` and its projections are stated (Greedy/Base).
+--   * `Greedy` and its projections are stated (Greedy/Base), as is
+--     `GreedyAt`, which indexes by the residual instead of the matched
+--     word and so extends in O(1); `Greedy/Examples` runs it.
+--   * the derivative theorem is `δ-sound`/`δ-complete`, below.
 --
--- The fourth is the derivative theorem, stated below against `Dl` -- the
--- semantic derivative that already exists.  Both directions are needed
--- and neither is an iso: an ambiguous `r` matches ε in several ways, so
+-- The derivative theorem is stated below against `Dl`, the semantic
+-- derivative.  Both directions are needed and neither is an iso: an ambiguous `r` matches ε in several ways, so
 -- the two maps are a retraction, not an equivalence.  That is enough,
 -- because a decision only needs the witness forward and the refutation
 -- back.
 --
--- Until then there is deliberately no `match` here.  A `Bool`-valued
+-- What is left is assembling them into the fold.  There is deliberately
+-- no `match` here.  A `Bool`-valued
 -- matcher would decide in the metalanguage and carry neither witness nor
 -- refutation, which is the thing this development is for.
 
