@@ -87,3 +87,10 @@ code = toNat
 -- text enters the theory here and nowhere else
 text : AS.String → List UChar
 text s = map ch (AS.primStringToList s)
+
+-- ...and leaves here, which is what lets a test state its result as text
+unch : UChar → AC.Char
+unch b = AC.primNatToChar (toNat b)
+
+untext : List UChar → AS.String
+untext cs = AS.primStringFromList (map unch cs)
