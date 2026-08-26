@@ -42,8 +42,8 @@ open import Theory.Instances.Monoid.KleeneStar.Guarded Alphabet isSetAlphabet
   using (char-¬Nullable ; fold*g)
 open import Theory.Instances.Monoid.Residual Alphabet isSetAlphabet
   using (⊗⊕ᴰ-distL ; ⊗⊕ᴰ-distR ; _⊸_ ; ⊸-lam)
-open import Theory.Instances.Monoid.Precise Alphabet isSetAlphabet using (flat)
-open import Theory.Instances.Monoid.Derivative Alphabet isSetAlphabet using (Dl)
+open import Theory.Instances.Monoid.Precise Alphabet isSetAlphabet using (Dl-ε ; Dl-lit⊗)
+open import Theory.Instances.Monoid.Derivative Alphabet isSetAlphabet using (Dl ; Dl-map)
 open import Theory.Instances.Monoid.Derivative.General Alphabet isSetAlphabet
 open import Theory.Type.HLevels MonEqns Alphabet (λ _ → tt) listPresentation
 open import Theory.Type.Inductive.HLevels MonEqns Alphabet (λ _ → tt)
@@ -120,19 +120,19 @@ record DeterministicAutomaton (Q : Type ℓAlph) : Type (ℓ-suc ℓAlph) where
 
   -- ...and back, by determinism: a trace over `c ∷ m` cannot stop, and
   -- its step must be by `c`.  Both are the precision of `literal`.
+  -- `Dl c` is reindexing, so it commutes with `⊕` and `⊕ᴰ` on the nose
+  -- and the whole proof is the two precision facts of `Precise`:
+  -- `Dl-ε` kills the stop branch, `Dl-lit⊗` pins the step's letter.
   Dl→Trace : (b : Bool) (q : Q) (c : Alphabet)
     → Dl c (Trace b q) ⊢ Trace b (δ q c)
-  Dl→Trace b q c m x = out (unrollTrace b q (c ∷ m) x)
+  Dl→Trace b q c =
+    ⊕-elim
+      (⊕ᴰ-elim λ d → ⊕ᴰ-elim (onState d) ∘⊢ Dl-lit⊗ c d)
+      (⊕ᴰ-elim λ _ → ⊥Ty-elim ∘⊢ Dl-ε c ∘⊢ Dl-map c (lowerTy {ℓB = ℓF ℓM} {A = εTy}))
+    ∘⊢ Dl-map c (unrollTrace b q)
     where
-    out : TraceLayer b q (c ∷ m) → Trace b (δ q c) m
-    out (Sum.inr (_ , e)) =
-      Empty.rec (L.¬nil≡cons (Eq.eqToPath (e .lower .snd .fst)))
-    out (Sum.inl (d , ms , e , l , t , _)) =
-      subst (λ x → Trace b (δ q x) m) (L.cons-inj₁ headed)
-        (subst (Trace b (δ q d)) (L.cons-inj₂ headed) t)
-      where
-      headed : d ∷ ms (suc zero) ≡ c ∷ m
-      headed = flat d (ms zero) (ms (suc zero)) (c ∷ m) l e
+    onState : (d : Alphabet) → d ≡ c → Trace b (δ q d) ⊢ Trace b (δ q c)
+    onState d p m = subst (λ y → Trace b (δ q y) m) p
 
   ∂→Trace : (b : Bool) (q : Q) (c : Alphabet)
     → ∂[ literal c ] (Trace b q) ⊢ Trace b (δ q c)

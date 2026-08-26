@@ -72,36 +72,47 @@ isSetU = isProp→isSet λ _ _ → refl
 isSetQ : isSet _
 isSetQ = isSetFreelyAddFail+Initial _ (Sum.isSet⊎ isSetU isSetU)
 
-open DeterministicAutomaton DA using (parseInit)
+open DeterministicAutomaton DA using (parseInit ; Trace ; init)
 
 ------------------------------------------------------------------------
 -- Running it.  `readChars` presents the input as a `char *`.
+--
+-- `⊕[ b ] Trace b init` is total, so the parse always returns a run;
+-- its tag says whether that run accepts.  The tests below exhibit the
+-- run itself rather than comparing a `Bool`: `Trace true init w` *is*
+-- the accepting parse tree, and `Trace false init w` is the witness
+-- that the automaton ran to a non-accepting state.
 
--- `true` exactly when the automaton accepts
 accepts : String → Bool
 accepts w = parseInit isSetQ w (readChars w tt) .fst
 
-_ : accepts (a ∷ []) ≡ true
-_ = refl
+traceOf : (w : String) → Trace (accepts w) init w
+traceOf w = parseInit isSetQ w (readChars w tt) .snd
 
-_ : accepts (a ∷ b ∷ b ∷ b ∷ []) ≡ true
-_ = refl
+-- accepted: `a`, and `a` followed by any number of `b`s
+_ : Trace true init (a ∷ [])
+_ = traceOf _
 
-_ : accepts [] ≡ false
-_ = refl
+_ : Trace true init (a ∷ b ∷ b ∷ b ∷ [])
+_ = traceOf _
 
-_ : accepts (b ∷ []) ≡ false
-_ = refl
+-- rejected, each for its own reason: empty, wrong first letter, a
+-- second `a`, and an `a` after the `b`s
+_ : Trace false init []
+_ = traceOf _
 
-_ : accepts (a ∷ a ∷ []) ≡ false
-_ = refl
+_ : Trace false init (b ∷ [])
+_ = traceOf _
 
-_ : accepts (a ∷ b ∷ a ∷ []) ≡ false
-_ = refl
+_ : Trace false init (a ∷ a ∷ [])
+_ = traceOf _
+
+_ : Trace false init (a ∷ b ∷ a ∷ [])
+_ = traceOf _
 
 ------------------------------------------------------------------------
 -- ...at scale.  Both directions: an accepting run of length n and a
--- rejecting one of length n+1, decided at typechecking time.
+-- rejecting one of length n+1, built at typechecking time.
 --
 -- Measured off-tree, against a 3.5s baseline (accept and reject
 -- together, so roughly 2n characters per row):
@@ -116,8 +127,8 @@ bs : ℕ → String
 bs zero = []
 bs (suc n) = b ∷ bs n
 
-_ : accepts (a ∷ bs 800) ≡ true
-_ = refl
+_ : Trace true init (a ∷ bs 800)
+_ = traceOf _
 
-_ : accepts (a ∷ bs 800 ++ (a ∷ [])) ≡ false
-_ = refl
+_ : Trace false init (a ∷ bs 800 ++ (a ∷ []))
+_ = traceOf _

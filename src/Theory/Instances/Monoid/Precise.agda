@@ -22,6 +22,7 @@ import Cubical.Data.Equality as Eq
 
 open import Theory.Instances.Monoid.Base
 open import Theory.Instances.Monoid.Strings Alphabet isSetAlphabet
+open import Theory.Instances.Monoid.Derivative Alphabet isSetAlphabet using (Dl)
 open import Theory.Type.Decidable.Base MonEqns Alphabet (λ _ → tt)
   listPresentation
 
@@ -41,6 +42,20 @@ flat c u v w lc e = cong (_++ v) (sym (Eq.eqToPath lc)) ∙ Eq.eqToPath e
 flatEq : (c : Alphabet) (u v w : ↓M tt)
   → u Eq.≡ (c ∷ []) → (u ++ v) Eq.≡ w → (c ∷ v) Eq.≡ w
 flatEq c u v w Eq.refl Eq.refl = Eq.refl
+
+-- Under a derivative, `ε` is refuted and a leading literal is pinned:
+-- these are the two ways a one-step unrolling meets `Dl`, and both are
+-- the precision of `literal` again.
+Dl-ε : (c : Alphabet) → Dl c εTy ⊢ ⊥Ty
+Dl-ε c m e = Empty.rec (L.¬nil≡cons (Eq.eqToPath (e .snd .fst)))
+
+Dl-lit⊗ : (c d : Alphabet) {X : TheoryTy ℓA tt}
+  → Dl c (literal d ⊗ X) ⊢ ⊕[ _ ∈ d ≡ c ] X
+Dl-lit⊗ c d {X = X} m (ms , e , l , x , _) =
+  L.cons-inj₁ headed , subst X (L.cons-inj₂ headed) x
+  where
+  headed : d ∷ ms (suc zero) ≡ c ∷ m
+  headed = flat d (ms zero) (ms (suc zero)) (c ∷ m) l e
 
 lit⊗-nil : {X : Type ℓA} (c : Alphabet) (u v : ↓M tt)
   → u Eq.≡ (c ∷ []) → (u ++ v) Eq.≡ [] → X
