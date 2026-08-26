@@ -442,20 +442,39 @@ Nesting is not the problem: depth 512 is cheaper than 1024 flat tokens.
 
 ### What the numbers actually say
 
-Dyck at 1024 tokens costs 2.3s where the lexer at 1024 tokens costs 6.1s. The
-difference is not structure — it is that `oneTok` offers four alternatives and
-`<|>` evaluates *both* branches, and that each `tok` compares a 21-bit
-character. So the constant is **per-alternative, per-token**.
+**RETRACTED — this section's conclusion was wrong, and the correction matters.**
 
-Extrapolating honestly: a real lexicon with ~40 rules rather than 4 would pay
-roughly ten times the per-character constant, putting 6144 characters near
-150s. That is the wall, and it is a constant-factor wall, not a complexity one.
+It said the constant was *per-alternative, per-token*, that the wall was a
+constant factor rather than a complexity one, and that LL(1) lookahead was
+therefore the fix. All three are false, established by later measurement in the
+same session:
 
-**Which makes the parked LL(1) work the fix, not a luxury.** `look⊗`/`Λ₁`
-dispatch on the first character instead of trying every alternative; that is
-exactly the constant this measurement exposes. §1 sends the LL suite to its own
-branch on scope grounds — that stays right for *this* batch, but it is now on
-the critical path for anything real, rather than being speculative.
+- The combinator engine is not merely constant-heavy. **Accepting** stays flat
+  to 256 characters, but **rejecting** is exponential — dead at 44 characters,
+  doubling every four. That is a complexity wall, not a constant.
+- LL(1) lookahead does not fix it. Dispatching on the first character reduces
+  the branching factor; it does not give the fold anything to *reuse* between
+  positions, which is what the blowup is about.
+- The real cause is that nothing is shared across positions. Computing the
+  answer at `c ∷ s` needs the answer for `Dl c A` against `s` — a different
+  grammar from the one just computed — so a cached result never composes unless
+  the residuals collapse to a finite set.
+
+"The residuals collapse to a finite set" is exactly a deterministic automaton,
+and that is what the work became: `Automaton/Deterministic` (`parse` over
+`&[ q ∈ Q ] ⊕[ b ] Trace b q`, one pass) and `Automaton/Greedy` (maximal munch,
+with `GreedyAt`'s residual index being the end *state*). Measured linear to
+25,600 characters at ~0.45ms/char, in both directions — proofs and refutations
+alike.
+
+Two further retractions in this file's vicinity, for the record:
+
+- §2.6's "the automata port is dead" is wrong. The port is what worked; see
+  `Automaton/`.
+- The separate claim that a regex instance needed Brzozowski finiteness was an
+  artefact of an encoding since deleted (`DerivAutomaton`), where the language
+  family was a *field* and the derivative square an obligation. Generating
+  `Trace` from `δ` makes that square the unrolling, and the obstacle disappears.
 
 ## 2.9 The guarded Kleene fold — BUILT
 
