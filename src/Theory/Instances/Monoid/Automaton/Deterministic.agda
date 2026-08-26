@@ -1,0 +1,137 @@
+{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
+{- Deterministic automata, ported from `Automata/Deterministic.agda`.
+
+   The interface is the old one: a state set, an initial state, an
+   acceptance predicate, a transition.  Everything else is generated.
+
+     Trace b q  ≅  (b ≡ isAcc q → ε)  ⊕  (⊕[ c ] literal c ⊗ Trace b (δ q c))
+
+   The `Tag` carries its own payload -- the acceptance equation, or the
+   letter -- so each functor branch is a bare `k` or `k ⊗e Var`, and the
+   constructors are `roll ∘ σ⊕ tag`, with no case analysis.
+
+   Indexing the trace by a `Bool` makes `⊕[ b ] Trace b q` *total*:
+   every word has a trace from every state, and rejection is a
+   `Trace false`, a witness rather than the absence of one.  `parse` is
+   therefore a function, and it produces the whole table -- every state
+   at once, one pass. -}
+open import Cubical.Foundations.Prelude
+open import Cubical.Foundations.HLevels
+open import Cubical.Algebra.Theory.Finitary
+open SortedSig
+open SortedEqns
+
+module Theory.Instances.Monoid.Automaton.Deterministic
+  {ℓAlph}
+  (Alphabet : Type ℓAlph) (isSetAlphabet : isSet Alphabet) where
+
+open import Cubical.Data.Bool using (Bool ; true ; false ; isSetBool)
+open import Cubical.Data.Unit using (tt ; tt*)
+open import Cubical.Data.FinData using (zero ; suc)
+import Cubical.Data.Equality as Eq
+open import Cubical.Data.Sum as Sum using (_⊎_ ; isSet⊎)
+open import Cubical.Data.Equality.More using (isSet→isSetEq)
+
+open import Theory.Instances.Monoid.Base
+open import Theory.Instances.Monoid.Strings Alphabet isSetAlphabet
+open import Theory.Instances.Monoid.KleeneStar Alphabet isSetAlphabet
+open import Theory.Instances.Monoid.KleeneStar.Guarded Alphabet isSetAlphabet
+  using (char-¬Nullable ; fold*g)
+open import Theory.Instances.Monoid.Residual Alphabet isSetAlphabet
+  using (⊗⊕ᴰ-distL ; ⊗⊕ᴰ-distR)
+open import Theory.Type.HLevels MonEqns Alphabet (λ _ → tt) listPresentation
+open import Theory.Type.Inductive.HLevels MonEqns Alphabet (λ _ → tt)
+  listPresentation
+
+
+-- The state set sits at the alphabet's level.  That is forced by the code
+-- language: `Functor ℓA X` keeps its variable set at or below `ℓA`, and
+-- here `ℓA` is the carrier's level.  The alphabet itself stays polymorphic.
+record DeterministicAutomaton (Q : Type ℓAlph) : Type (ℓ-suc ℓAlph) where
+  field
+    init  : Q
+    isAcc : Q → Bool
+    δ     : Q → Alphabet → Q
+
+  data Tag (b : Bool) (q : Q) : Type ℓAlph where
+    stop : b Eq.≡ isAcc q → Tag b q
+    step : Alphabet → Tag b q
+
+  TraceTy : Bool → Q → Functor ℓM Q (λ _ → tt) tt
+  TraceTy b q = ⊕e (Tag b q) λ where
+    (stop _) → k εTy
+    (step c) → ⊗e _⊙_ (two (k (literal c)) (Var (δ q c)))
+
+  Trace : Bool → Q → TheoryTy _ tt
+  Trace b = μ (TraceTy b)
+
+  ------------------------------------------------------------------
+  -- Constructors: pick the tag, roll.
+
+  STOP : (q : Q) → LiftTheoryTy (ℓF ℓM) εTy ⊢ Trace (isAcc q) q
+  STOP q = roll ∘⊢ σ⊕ {Y = Tag (isAcc q) q} (stop Eq.refl)
+
+  STEP : {b : Bool} (c : Alphabet) (q : Q)
+    → literal c ⊗ Trace b (δ q c) ⊢ Trace b q
+  STEP {b = b} c q = roll ∘⊢ σ⊕ {Y = Tag b q} (step c) ∘⊢ STEP-branch
+    where
+    -- the only plumbing: a tensor's factors enter the code lifted, as in
+    -- `KleeneStar.CONS-branch`
+    STEP-branch : {b : Bool} → literal c ⊗ Trace b (δ q c)
+      ⊢ ⟦ ⊗e _⊙_ (two (k (literal c)) (Var (δ q c))) ⟧TheoryTy (Trace b)
+    STEP-branch m (ms , e , l , t , _) = ms , e , two (lift l) (lift t)
+
+  ------------------------------------------------------------------
+  -- `parse`: the whole table, in one pass.
+
+  private
+    -- `Tag b q` is `(b ≡ isAcc q) ⊎ Alphabet`, by its two constructors
+    isSetTag : (b : Bool) (q : Q) → isSet (Tag b q)
+    isSetTag b q = isSetRetract to from ret
+      (isSet⊎ (isProp→isSet (isSet→isSetEq isSetBool)) isSetAlphabet)
+      where
+      to : Tag b q → (b Eq.≡ isAcc q) ⊎ Alphabet
+      to (stop p) = Sum.inl p
+      to (step c) = Sum.inr c
+
+      from : (b Eq.≡ isAcc q) ⊎ Alphabet → Tag b q
+      from (Sum.inl p) = stop p
+      from (Sum.inr c) = step c
+
+      ret : (t : Tag b q) → from (to t) ≡ t
+      ret (stop p) = refl
+      ret (step c) = refl
+
+    codeIsSet : (b : Bool) (q : Q) → isSetValued (TraceTy b q)
+    codeIsSet b q .fst = lift (isSetTag b q)
+    codeIsSet b q .snd (stop _) = lift (isSet⊗ ε· _ _ λ ())
+    codeIsSet b q .snd (step c) zero = lift λ m → isProp→isSet isPropEqString
+    codeIsSet b q .snd (step c) (suc zero) = lift tt*
+
+  isSetTrace : (b : Bool) (q : Q) → isSetTheoryTy (Trace b q)
+  isSetTrace b = isSetμ (TraceTy b) (codeIsSet b)
+
+  module _ (isSetQ : isSet Q) where
+    private
+      Table : TheoryTy _ tt
+      Table = &[ q ∈ Q ] (⊕[ b ∈ Bool ] Trace b q)
+
+      isSetTable : isSetTheoryTy Table
+      isSetTable = isSet&ᴰ λ q → isSet⊕ᴰ isSetBool λ b → isSetTrace b q
+
+      nil : εTy ⊢ Table
+      nil = &ᴰ-intro λ q → σ⊕ (isAcc q) ∘⊢ STOP q ∘⊢ liftTy
+
+      cons : char ⊗ Table ⊢ Table
+      cons = &ᴰ-intro λ q →
+        ⊕ᴰ-elim (λ c →
+          ⊕ᴰ-elim (λ b → σ⊕ b ∘⊢ STEP c q)
+          ∘⊢ ⊗⊕ᴰ-distR {C = λ b → Trace b (δ q c)}
+          ∘⊢ (id⊢ ,⊗ π {A = λ q → ⊕[ b ∈ Bool ] Trace b q} (δ q c)))
+        ∘⊢ ⊗⊕ᴰ-distL
+
+    parse : char * ⊢ &[ q ∈ Q ] (⊕[ b ∈ Bool ] Trace b q)
+    parse = fold*g (Table , isSetTable) char-¬Nullable nil cons
+
+    parseInit : char * ⊢ ⊕[ b ∈ Bool ] Trace b init
+    parseInit = π init ∘⊢ parse
