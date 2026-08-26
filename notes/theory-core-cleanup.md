@@ -477,8 +477,20 @@ NonNull A = (m : String) (ms : interpIn _⊙_ ↓M) → op _⊙_ ms Eq.≡ m
   → A (ms zero) → ms (suc zero) ◂ m
 ```
 
-which is `PayR` with the `Löb` left implicit. Given it, the fold is three
-lines of composition and one löb:
+**Non-nullability is stated internally.** `NonNull` above is the *external*
+reading — it quantifies over model elements and names the order. Clients state
+the internal one and never see either:
+
+```agda
+¬Nullable A = A & εTy ⊢ ⊥Ty                        -- a ⊢-term
+¬Nullable→NonNull : ¬Nullable A → NonNull A        -- the only place they meet
+literal-¬Nullable : (c : Alphabet) → ¬Nullable (literal c)
+```
+
+which matches `Grammar/SequentialUnambiguity/Nullable`'s
+`¬Nullable A = uninhabited (A & ε)`, so the vocabulary agrees with the older
+tree. `fold*g` now takes `¬Nullable`; `NonNull` and `◂` stay internal to the
+proof. Given it, the fold is three lines of composition and one löb:
 
 ```agda
 step   = cons ∘⊢ (id⊢ ,⊗ (⇒-app ∘⊢ &-swap)) ∘⊢ ▷⊛r GB.suffixLöb pay

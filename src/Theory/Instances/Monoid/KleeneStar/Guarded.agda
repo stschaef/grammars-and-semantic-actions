@@ -19,7 +19,11 @@ module Theory.Instances.Monoid.KleeneStar.Guarded
   {ℓAlph}
   (Alphabet : Type ℓAlph) (isSetAlphabet : isSet Alphabet) where
 
+open import Cubical.Foundations.Function using (_∘_)
 open import Cubical.Data.FinData using (zero ; suc)
+open import Cubical.Data.List using ([] ; _∷_ ; _++_)
+import Cubical.Data.Empty as Empty
+import Cubical.Data.List.Properties as L
 open import Cubical.Data.Unit using (tt)
 import Cubical.Data.Equality as Eq
 
@@ -35,13 +39,35 @@ open import Theory.Type.Inductive.HLevels MonEqns Alphabet (λ _ → tt)
 
 private variable ℓA ℓB : Level
 
--- What a cons owes: its head, being inhabited, puts the tail strictly below.
--- This is `PayR` with the `Löb` left implicit, i.e. non-nullability.
+-- Non-nullability, internally: nothing that is an `A` is the empty word.
+-- A `⊢`-term -- no model element, no splitting, no order.
+¬Nullable : TheoryTy ℓA tt → Type _
+¬Nullable A = A & εTy ⊢ ⊥Ty
+
+-- What a cons owes `PayR`: its head, being inhabited, puts the tail strictly
+-- below.  This is the external reading of the same fact, and it is what the
+-- order needs; clients state `¬Nullable` and never see this.
 NonNull : TheoryTy ℓA tt → Type _
 NonNull A = (m : String) (ms : interpIn _⊙_ ↓M) → op _⊙_ ms Eq.≡ m
   → A (ms zero) → ms (suc zero) ◂ m
 
-module _ {A : TheoryTy ℓA tt} (B : TheorySet ℓB tt) (nn : NonNull A) where
+-- A letter is never empty, so every literal-headed production pays for
+-- itself.  This is the LL fragment, discharged once.
+literal-¬Nullable : (c : Alphabet) → ¬Nullable (literal c)
+literal-¬Nullable c m (lc , (_ , ee , _)) =
+  Empty.rec (L.¬cons≡nil (sym (Eq.eqToPath ee ∙ Eq.eqToPath lc)))
+
+-- ...and the bridge.  A head that is an `A` cannot be `[]`, so what follows
+-- it is a *proper* suffix.  This is the only place the two readings meet.
+¬Nullable→NonNull : {A : TheoryTy ℓA tt} → ¬Nullable A → NonNull A
+¬Nullable→NonNull {A = A} nu m ms e =
+  Eq.transport (ms (suc zero) ◂_) e ∘ go (ms zero) (ms (suc zero))
+  where
+  go : (u v : String) → A u → v ◂ (u ++ v)
+  go [] v h = Empty.rec (lower (nu [] (h , εTy-pt)))
+  go (c ∷ u) v h = ◂-cons c u v
+
+module _ {A : TheoryTy ℓA tt} (B : TheorySet ℓB tt) (nu : ¬Nullable A) where
   private
     -- the family being fixed: the fold itself, as an internal function
     Fam : TheorySet _ tt
@@ -50,7 +76,7 @@ module _ {A : TheoryTy ℓA tt} (B : TheorySet ℓB tt) (nn : NonNull A) where
     module GB = Guarded▷ (λ _ → ty Fam) (λ _ → isSetTy Fam)
 
     pay : PayR GB.suffixLöb {X = A}
-    pay = nn
+    pay = ¬Nullable→NonNull nu
 
     unroll↑ : A * ⊢ (A ⊗ (A *)) ⊕ εTy
     unroll↑ = ⊕-elim inl (inr ∘⊢ lowerTy) ∘⊢ unroll*

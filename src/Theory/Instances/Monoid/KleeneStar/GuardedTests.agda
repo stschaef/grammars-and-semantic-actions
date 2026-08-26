@@ -26,8 +26,9 @@ import Theory.Instances.Monoid.SemanticAction L isSetAlphabet as Act
 Count : TheorySet ℓ-zero tt
 Count = Act.Δ ℕ , isSet⊕ᴰ isSetℕ (λ _ → isSet⊤Ty)
 
-nn : NonNull (literal a)
-nn m ms = ◂-lit a {m} ms
+-- the client states non-nullability internally, and never sees the order
+nn : ¬Nullable (literal a)
+nn = literal-¬Nullable a
 
 -- the fold, by guarded recursion
 len : SemanticAction ((literal a) *) ℕ
