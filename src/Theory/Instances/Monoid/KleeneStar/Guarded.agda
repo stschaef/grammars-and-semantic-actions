@@ -69,6 +69,20 @@ literal-¬Nullable c m (lc , (_ , ee , _)) =
   go [] v a p = nu [] (a , εTy-pt)
   go (c ∷ u) v a p = Empty.rec (L.¬cons≡nil p)
 
+-- ...and the mirror, for a nullable head with a non-nullable tail
+⊗-¬NullableR : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt}
+  → ¬Nullable B → ¬Nullable (A ⊗ B)
+⊗-¬NullableR {B = B} nu m (t , eps) =
+  go (t .fst zero) (t .fst (suc zero)) (t .snd .snd .snd .fst)
+     (Eq.eqToPath (t .snd .fst) ∙ sym (Eq.eqToPath (eps .snd .fst)))
+  where
+  go : (u v : String) → B v → (u ++ v) ≡ [] → ⊥Ty m
+  go [] v b p = nu [] (subst B p b , εTy-pt)
+  go (c ∷ u) v b p = Empty.rec (L.¬cons≡nil p)
+
+⊥-¬Nullable : ¬Nullable (⊥Ty {s = tt})
+⊥-¬Nullable m (b , _) = b
+
 ⊕-¬Nullable : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt}
   → ¬Nullable A → ¬Nullable B → ¬Nullable (A ⊕ B)
 ⊕-¬Nullable nuA nuB =
