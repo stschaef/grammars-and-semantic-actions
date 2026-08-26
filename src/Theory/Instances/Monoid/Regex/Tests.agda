@@ -97,3 +97,34 @@ _ = refl
 
 _ : matches anyPlus [] ≡ M.nothing
 _ = refl
+
+------------------------------------------------------------------------
+-- Character classes, which `⟨_⟩r` and `anyr` could not express between
+-- them.  `notA` is a complement -- the case finite disjunction cannot do
+-- over a large alphabet.
+
+isA notA : L → Bool
+isA a = true
+isA b = false
+notA a = false
+notA b = true
+
+-- `[a] [^a] *`
+cls : RE false
+cls = satr isA ⊗r (satr notA *r)
+
+_ : matches cls (a ∷ []) ≡ M.just tt
+_ = refl
+
+_ : matches cls (a ∷ b ∷ b ∷ []) ≡ M.just tt
+_ = refl
+
+_ : matches cls (a ∷ b ∷ a ∷ []) ≡ M.nothing
+_ = refl
+
+_ : matches cls (b ∷ []) ≡ M.nothing
+_ = refl
+
+-- `anyr` still works, now as a definition
+_ : matches (anyr *r) (a ∷ b ∷ a ∷ []) ≡ M.just tt
+_ = refl

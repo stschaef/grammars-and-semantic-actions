@@ -21,18 +21,21 @@ module Theory.Instances.Monoid.Regex.Base
 
 open import Cubical.Data.Bool using (Bool ; true ; false ; _and_ ; _or_ ; true≢false)
 open import Cubical.Data.Unit using (tt)
+open import Cubical.Data.Sigma using (_,_ ; fst ; snd)
 
 open import Theory.Instances.Monoid.Combinator.Decidable.Star Alphabet _≟_ ℓ
   public
 open import Theory.Instances.Monoid.KleeneStar.Guarded Alphabet isSetAlphabet
   public
+open import Theory.Instances.Monoid.Regex.Sat Alphabet _≟_ ℓ
+  using (Sat ; satG ; satSet ; satTok) public
 
 -- `b` is "may match the empty word"
 data RE : Bool → Type ℓAlph where
   εr   : RE true
   ⊥r   : RE false
   ⟨_⟩r : Alphabet → RE false
-  anyr : RE false
+  satr : (Alphabet → Bool) → RE false
   _⊗r_ : ∀ {b b'} → RE b → RE b' → RE (b and b')
   _⊕r_ : ∀ {b b'} → RE b → RE b' → RE (b or b')
   _*r  : RE false → RE true
@@ -41,6 +44,10 @@ infixr 20 _⊗r_
 infixr 19 _⊕r_
 infix 30 _*r
 infix 30 ⟨_⟩r
+
+-- the wildcard is just the always-true class
+anyr : RE false
+anyr = satr λ _ → true
 
 -- one or more
 _+r : RE false → RE false
@@ -53,7 +60,7 @@ lv : ∀ {b} → RE b → Level
 lv εr = ℓM
 lv ⊥r = ℓ-zero
 lv ⟨ c ⟩r = ℓM
-lv anyr = ℓM
+lv (satr P) = ℓM
 lv (r ⊗r r') = ℓ-max ℓAlph (ℓ-max (lv r) (lv r'))
 lv (r ⊕r r') = ℓ-max (lv r) (lv r')
 lv (r *r) = ℓF (lv r)
@@ -63,7 +70,7 @@ lv (r *r) = ℓF (lv r)
 ⟦ εr ⟧ = εSet
 ⟦ ⊥r ⟧ = ⊥Set
 ⟦ ⟨ c ⟩r ⟧ = litSet c
-⟦ anyr ⟧ = charSet
+⟦ satr P ⟧ = satSet P
 ⟦ r ⊗r r' ⟧ = ⟦ r ⟧ ⊗Set ⟦ r' ⟧
 ⟦ r ⊕r r' ⟧ = ⟦ r ⟧ ⊕Set ⟦ r' ⟧
 ⟦ r *r ⟧ = StarSet ⟦ r ⟧
@@ -86,7 +93,7 @@ parse▷ : ∀ {b} (r : RE b) (ℓK : Level) → b ≡ false
 parse εr ℓK = nil
 parse ⊥r ℓK = fail
 parse ⟨ c ⟩r ℓK = pmore ∘⊢ tok c
-parse anyr ℓK = pmore ∘⊢ anyTok
+parse (satr P) ℓK = pmore ∘⊢ satTok P
 parse (r ⊗r r') ℓK = seq ⟦ r' ⟧ (parse r (ℓ⊗ (lv r') ℓK)) (parse r' ℓK)
 parse (r ⊕r r') ℓK = parse r ℓK <|> parse r' ℓK
 parse (r *r) ℓK = many ℓK ⟦ r ⟧ (parse▷ r (ℓ⊗ (ℓF (lv r)) ℓK) refl)
@@ -94,7 +101,7 @@ parse (r *r) ℓK = many ℓK ⟦ r ⟧ (parse▷ r (ℓ⊗ (ℓF (lv r)) ℓK) 
 parse▷ εr ℓK p = Empty.rec (true≢false p)
 parse▷ ⊥r ℓK p = fail
 parse▷ ⟨ c ⟩r ℓK p = tok c
-parse▷ anyr ℓK p = anyTok
+parse▷ (satr P) ℓK p = satTok P
 parse▷ (_⊗r_ {false} {b'} r r') ℓK p =
   seq ⟦ r' ⟧ (parse▷ r (ℓ⊗ (lv r') ℓK) refl) (box (parse r' ℓK))
 parse▷ (_⊗r_ {true} {false} r r') ℓK p =
@@ -114,11 +121,14 @@ decide-r r ℓK = runP ℓK (parse r ℓK)
 -- The `RE false` index *is* the non-nullability witness: what the type
 -- rules already forbid, the star fold no longer has to be told.
 
+sat-¬Nullable : {P : Alphabet → Bool} → ¬Nullable (satG P)
+sat-¬Nullable m ((x , lc) , eps) = literal-¬Nullable (x .fst) m (lc , eps)
+
 re-¬Nullable : ∀ {b} (r : RE b) → b ≡ false → ¬Nullable (ty ⟦ r ⟧)
 re-¬Nullable εr p = Empty.rec (true≢false p)
 re-¬Nullable ⊥r p = ⊥-¬Nullable
 re-¬Nullable ⟨ c ⟩r p = literal-¬Nullable c
-re-¬Nullable anyr p = char-¬Nullable
+re-¬Nullable (satr P) p = sat-¬Nullable
 re-¬Nullable (_⊗r_ {false} {b'} r r') p =
   ⊗-¬Nullable (re-¬Nullable r refl)
 re-¬Nullable (_⊗r_ {true} {false} r r') p =
