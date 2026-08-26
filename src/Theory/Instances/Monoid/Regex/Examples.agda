@@ -139,8 +139,10 @@ _ : passes (lex at
         ↦ M.just (KW "where" ∷ [])
     -- NOT maximal munch.  `where` is tried before the identifier rule and
     -- wins on a prefix, so "wherever" splits.  A greedy lexer would give
-    -- `Ident "wherever"`.  This is the gap `Greedy/Base` exists to close;
-    -- the case is here so it stays visible.
+    -- `Ident "wherever"`.  `Automaton/Greedy` now does maximal munch --
+    -- see `Automaton/GreedyExamples`, where "abbab" matches "abb" and not
+    -- "a" -- but this ordered-choice path has not been rewired onto it,
+    -- so the case stays here, and stays wrong, until it is.
     ∷ "wherever"
         ↦ M.just (KW "where" ∷ Ident "ver" ∷ [])
     ∷ ""

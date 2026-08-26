@@ -9,11 +9,14 @@
    Actions belong to the next phase, carrying these parse trees into
    whatever the front end wants; they are not part of lexing.
 
-   What is missing is that this is not yet *greedy*.  `anyOfr` is ordered
-   choice, so the star finds *a* tokenisation rather than the
-   maximal-munch one.  That gap is exactly `Greedy` (`Greedy/Base`), which
-   needs derivative completeness -- so "the lexer is a greedy regex" is
-   one theorem away from being literally the definition below. -}
+   This lexer is not greedy: `anyOfr` is ordered choice, so the star finds
+   *a* tokenisation rather than the maximal-munch one.  That is no longer
+   an open problem -- `Automaton/Greedy` does maximal munch over a
+   deterministic automaton, in one pass and linearly -- but this path has
+   not been rewired onto it.  What is here decides via the combinator
+   engine, and the combinator engine is exponential on rejection, which
+   is the reason the automaton route exists.  Prefer
+   `Automaton/Implicit/Analysis` for anything at scale. -}
 open import Cubical.Foundations.Prelude
 import Cubical.Data.Sum as Sum
 import Cubical.Data.Empty as Empty
