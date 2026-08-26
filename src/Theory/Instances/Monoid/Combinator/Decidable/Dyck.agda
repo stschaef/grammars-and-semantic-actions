@@ -1,4 +1,7 @@
 {-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
+{- The Dyck decider.  The parser itself is `Combinator/Grammars/Dyck`,
+   written once for every answer; this module only picks `DecAnswer` and
+   runs the tests. -}
 open import Cubical.Foundations.Prelude
 open import Cubical.Algebra.Theory.Finitary
 import Cubical.Data.Empty as Empty
@@ -15,42 +18,12 @@ open import Cubical.Data.Unit using (tt)
 import Cubical.Data.Maybe as M
 
 open import Theory.Instances.Monoid.Grammars.Dyck
-  using (Br ; lp ; rp ; _≟_ ; Dyck ; done ; nest
-        ; S ; isSetS ; rollS ; unrollS ; nilTree ; semactS)
+  using (Br ; lp ; rp ; _≟_ ; Dyck ; done ; nest ; S ; nilTree ; semactS)
 open import Theory.Instances.Monoid.Combinator.Decidable.Base Br _≟_ (ℓ-suc ℓ-zero)
-
-Sset : TheorySet ℓG tt
-Sset = S , isSetS
-
-module P = Fix ℓG Sset
-
--- what the inner `S` is followed by
-afterS : TheorySet ℓG tt
-afterS = litSet rp ⊗Set Sset
-
--- what a `(` is followed by
-afterLp : TheorySet ℓG tt
-afterLp = Sset ⊗Set afterS
-
--- Using parser combinators to get a sound and complete Dyck parser
-step : ty (▷ (ParserSet ℓG ⟨□⟩ ⟨□⟩ Sset)) ⊢ Parser ℓG ⟨□⟩ ⟨□⟩ Sset
-step = mapP rollS unrollS ∘⊢ ((pmore ∘⊢ nodeP) <|> nil)
-  where
-  -- `) S`
-  tail′ : ty (▷ (ParserSet ℓG ⟨□⟩ ⟨□⟩ Sset)) ⊢ Parser ℓG ⟨▷⟩ ⟨□⟩ afterS
-  tail′ = seq Sset (tok rp) P.call
-
-  -- `S ) S`
-  mid : ty (▷ (ParserSet ℓG ⟨□⟩ ⟨□⟩ Sset)) ⊢ Parser ℓG ⟨▷⟩ ⟨▷⟩ afterLp
-  mid = seq afterS P.call (pless ∘⊢ tail′)
-
-  -- `( S ) S`
-  nodeP : ty (▷ (ParserSet ℓG ⟨□⟩ ⟨□⟩ Sset))
-    ⊢ Parser ℓG ⟨▷⟩ ⟨□⟩ (litSet lp ⊗Set afterLp)
-  nodeP = seq afterLp (tok lp) mid
+import Theory.Instances.Monoid.Combinator.Grammars.Dyck DecAnswer as G
 
 decDyck : Decidable S
-decDyck = P.decide step
+decDyck = G.dyck
 
 -- Some tests running it
 

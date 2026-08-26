@@ -41,4 +41,16 @@ record Monad : Typeω where
   join : ∀ {ℓA} {s} {A : TheoryTy ℓA s} → T (T A) ⊢ T A
   join = bind id⊢
 
+  -- ...and `fmap` is functorial, from the three laws above.  Every covariant
+  -- answer functor gets its `Ans-≅` laws from these.
+  fmap-id : ∀ {ℓA} {s} {A : TheoryTy ℓA s} → fmap (id⊢ {A = A}) ≡ id⊢
+  fmap-id = bind-η
+
+  fmap-∘ : ∀ {ℓA ℓB ℓC} {s}
+    {A : TheoryTy ℓA s} {B : TheoryTy ℓB s} {C : TheoryTy ℓC s}
+    (f : B ⊢ C) (g : A ⊢ B) → fmap f ∘⊢ fmap g ≡ fmap (f ∘⊢ g)
+  fmap-∘ f g =
+    bind-assoc (η ∘⊢ f) (η ∘⊢ g)
+    ∙ cong (λ h → bind h) (cong (_∘⊢ g) (bind-β (η ∘⊢ f)))
+
 open Monad public

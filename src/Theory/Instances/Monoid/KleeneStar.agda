@@ -1,5 +1,6 @@
 {-# OPTIONS -WnoUnsupportedIndexedMatch #-}
 open import Cubical.Foundations.Prelude
+open import Cubical.WildCat.LocallySmall.Base
 
 module Theory.Instances.Monoid.KleeneStar
   {ℓAlph}
@@ -8,11 +9,13 @@ module Theory.Instances.Monoid.KleeneStar
 open import Cubical.Data.Bool using (Bool ; true ; false ; isSetBool)
 open import Cubical.Data.FinData using (zero ; suc)
 open import Cubical.Data.List using ([] ; _∷_)
+import Cubical.Data.Sum as Sum
 import Cubical.Data.Equality as Eq
 open import Cubical.Data.Unit using (Unit ; tt ; tt*)
 
 open import Theory.Instances.Monoid.Base
 open import Theory.Instances.Monoid.Strings Alphabet isSetAlphabet
+open import Theory.Instances.Monoid.Residual Alphabet isSetAlphabet using (two-η)
 open import Theory.Type.HLevels MonEqns Alphabet (λ _ → tt) listPresentation
 open import Theory.Type.Inductive.HLevels MonEqns Alphabet (λ _ → tt) listPresentation
 
@@ -115,3 +118,56 @@ fold*r {A = A} {B = B} nil cons = rec (λ _ → StarCode A) alg tt
   alg _ = ⊕ᴰ-elim λ where
     false → nil
     true → cons
+
+------------------------------------------------------------------------
+-- `roll*`/`unroll*` are inverse, and so is the unlifted `roll↑`/`unroll↑`
+-- that a parser uses.  `Inductive/Base` gives `roll`/`unroll` at the `μ`;
+-- what is left is the wrapper, and that is `two-η` at the cons branch --
+-- `Fin 2` has no η -- and `funExt λ ()` at the nil branch, since `Fin 0`
+-- has none either.
+
+open WildCatNotation
+open WildCatIso
+
+StarSet : (A : TheorySet ℓA tt) → TheorySet (ℓF ℓA) tt
+StarSet (A , sA) = A * , isSetStar sA
+
+-- `roll*`/`unroll*` against `εTy` rather than the code's lifted one
+roll↑ : {A : TheoryTy ℓA tt} → (A ⊗ (A *)) ⊕ εTy ⊢ A *
+roll↑ = roll* ∘⊢ ⊕-elim inl (inr ∘⊢ liftTy)
+
+unroll↑ : {A : TheoryTy ℓA tt} → A * ⊢ (A ⊗ (A *)) ⊕ εTy
+unroll↑ = ⊕-elim inl (inr ∘⊢ lowerTy) ∘⊢ unroll*
+
+module _ {A : TheoryTy ℓA tt} where
+
+  unroll*∘roll* : unroll* {A = A} ∘⊢ roll* ≡ id⊢
+  unroll*∘roll* = funExt λ m → funExt λ where
+    (Sum.inl x) → refl
+    (Sum.inr x) → refl
+
+  roll*∘unroll* : roll* {A = A} ∘⊢ unroll* ≡ id⊢
+  roll*∘unroll* = funExt λ m → funExt λ where
+    (roll .m (true , z)) i →
+      roll m (true , z .fst , z .snd .fst , two-η (z .snd .snd) i)
+    (roll .m (false , (ms , e , u))) i →
+      roll m (false , ms , e , funExt {f = λ ()} {g = u} (λ ()) i)
+
+  unroll↑∘roll↑ : unroll↑ {A = A} ∘⊢ roll↑ ≡ id⊢
+  unroll↑∘roll↑ = funExt λ m → funExt λ where
+    (Sum.inl x) → refl
+    (Sum.inr x) → refl
+
+  roll↑∘unroll↑ : roll↑ {A = A} ∘⊢ unroll↑ ≡ id⊢
+  roll↑∘unroll↑ = funExt λ m → funExt λ where
+    (roll .m (true , z)) i →
+      roll m (true , z .fst , z .snd .fst , two-η (z .snd .snd) i)
+    (roll .m (false , (ms , e , u))) i →
+      roll m (false , ms , e , funExt {f = λ ()} {g = u} (λ ()) i)
+
+  -- ...so a parser relabels along an isomorphism, not a mere pair of maps.
+  roll↑≅ : ((A ⊗ (A *)) ⊕ εTy) ≅ (A *)
+  roll↑≅ .fun = roll↑
+  roll↑≅ .inv = unroll↑
+  roll↑≅ .sec = roll↑∘unroll↑
+  roll↑≅ .ret = unroll↑∘roll↑

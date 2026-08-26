@@ -1,10 +1,13 @@
 {-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
 open import Cubical.Foundations.Prelude
+open import Cubical.WildCat.LocallySmall.Base
 import Cubical.Data.Sum as Sum
 import Cubical.Data.Empty as Empty
 import Cubical.Data.Equality as Eq
 
 module Theory.Instances.Monoid.Grammars.Dyck where
+
+open WildCatNotation
 
 open import Cubical.Data.Bool using (Bool ; true ; false ; isSetBool)
 open import Cubical.Data.FinData using (zero ; suc)
@@ -30,6 +33,8 @@ open import Theory.Instances.Monoid.Types Br _≟_
 import Theory.Instances.Monoid.Examples Br isSetAlphabet as E
 open import Theory.Instances.Monoid.Residual Br isSetAlphabet
   using (⟦⊗e⟧ ; ⟦⊗e⟧⁻)
+open import Theory.Instances.Monoid.Convolution Br isSetAlphabet
+  using (⟦⊗e⟧-η)
 import Theory.Instances.Monoid.SemanticAction Br isSetAlphabet as SemAct
 
 dyckBranch : Bool → Functor ℓM Unit (λ _ → tt) tt
@@ -67,15 +72,67 @@ private
   NodeCode : TheoryTy _ tt
   NodeCode = ⟦ dyckBranch true ⟧TheoryTy (μ dyckF)
 
+  -- The production is `S → ( S ) S`, so a node nests three tensors.  Naming
+  -- its two proper suffixes -- `afterS` is `) S`, `afterLp` is `S ) S`, the
+  -- same names the parsers use -- lets the round-trip proof peel one level at
+  -- a time.  `nodeIn`/`nodeOut` are the same terms as before, so everything
+  -- downstream still computes at `refl`-time.
+  afterS : TheoryTy _ tt
+  afterS = literal rp ⊗ S
+
+  afterLp : TheoryTy _ tt
+  afterLp = S ⊗ afterS
+
+  afterSBranch afterLpBranch : Functor ℓM Unit (λ _ → tt) tt
+  afterSBranch = ⊗e _⊙_ (two (k (literal rp)) (Var tt))
+  afterLpBranch = ⊗e _⊙_ (two (Var tt) afterSBranch)
+
+  afterSCode afterLpCode : TheoryTy _ tt
+  afterSCode = ⟦ afterSBranch ⟧TheoryTy (μ dyckF)
+  afterLpCode = ⟦ afterLpBranch ⟧TheoryTy (μ dyckF)
+
+  afterSIn : afterS ⊢ afterSCode
+  afterSIn = ⟦⊗e⟧⁻ _ _ ∘⊢ (liftTy ,⊗ liftTy)
+
+  afterSOut : afterSCode ⊢ afterS
+  afterSOut = (lowerTy ,⊗ lowerTy) ∘⊢ ⟦⊗e⟧ _ _
+
+  afterLpIn : afterLp ⊢ afterLpCode
+  afterLpIn = ⟦⊗e⟧⁻ _ _ ∘⊢ (liftTy ,⊗ afterSIn)
+
+  afterLpOut : afterLpCode ⊢ afterLp
+  afterLpOut = (lowerTy ,⊗ afterSOut) ∘⊢ ⟦⊗e⟧ _ _
+
   nodeIn : Node ⊢ NodeCode
-  nodeIn =
-    ⟦⊗e⟧⁻ _ _ ∘⊢ (liftTy ,⊗ (⟦⊗e⟧⁻ _ _ ∘⊢ (liftTy ,⊗
-      (⟦⊗e⟧⁻ _ _ ∘⊢ (liftTy ,⊗ liftTy)))))
+  nodeIn = ⟦⊗e⟧⁻ _ _ ∘⊢ (liftTy ,⊗ afterLpIn)
 
   nodeOut : NodeCode ⊢ Node
-  nodeOut =
-    (lowerTy ,⊗ ((lowerTy ,⊗ ((lowerTy ,⊗ lowerTy) ∘⊢ ⟦⊗e⟧ _ _)) ∘⊢ ⟦⊗e⟧ _ _))
-    ∘⊢ ⟦⊗e⟧ _ _
+  nodeOut = (lowerTy ,⊗ afterLpOut) ∘⊢ ⟦⊗e⟧ _ _
+
+  -- The two are inverse.  One way there is nothing to prove -- the slots were
+  -- built slotwise; the other is `⟦⊗e⟧-η` once per nesting level, `⊗-map`'s
+  -- functoriality and `Lift`'s η being definitional in between.
+  nodeOut∘nodeIn : nodeOut ∘⊢ nodeIn ≡ id⊢
+  nodeOut∘nodeIn = refl
+
+  afterSIn∘Out : afterSIn ∘⊢ afterSOut ≡ id⊢
+  afterSIn∘Out = ⟦⊗e⟧-η (k (literal rp)) (Var tt)
+
+  afterLpIn∘Out : afterLpIn ∘⊢ afterLpOut ≡ id⊢
+  afterLpIn∘Out =
+    cong (λ (z : afterSCode ⊢ afterSCode) →
+            ⟦⊗e⟧⁻ (Var tt) afterSBranch ∘⊢ (id⊢ ,⊗ z)
+            ∘⊢ ⟦⊗e⟧ (Var tt) afterSBranch)
+         afterSIn∘Out
+    ∙ ⟦⊗e⟧-η (Var tt) afterSBranch
+
+  nodeIn∘nodeOut : nodeIn ∘⊢ nodeOut ≡ id⊢
+  nodeIn∘nodeOut =
+    cong (λ (z : afterLpCode ⊢ afterLpCode) →
+            ⟦⊗e⟧⁻ (k (literal lp)) afterLpBranch ∘⊢ (id⊢ ,⊗ z)
+            ∘⊢ ⟦⊗e⟧ (k (literal lp)) afterLpBranch)
+         afterLpIn∘Out
+    ∙ ⟦⊗e⟧-η (k (literal lp)) afterLpBranch
 
 rollS : Body ⊢ S
 rollS = ⊕-elim (roll ∘⊢ σ⊕ true ∘⊢ nodeIn) (roll ∘⊢ σ⊕ false ∘⊢ liftTy)
@@ -87,6 +144,24 @@ unrollS = fromF ∘⊢ unroll dyckF tt
   fromF = ⊕ᴰ-elim λ where
     true → inl ∘⊢ nodeOut
     false → inr ∘⊢ lowerTy
+
+-- ...so `rollS`/`unrollS` is an isomorphism, and a parser for `S` transports
+-- along it rather than merely mapping both ways.
+rollS∘unrollS : rollS ∘⊢ unrollS ≡ id⊢
+rollS∘unrollS = funExt λ m → funExt λ where
+  (roll .m (true , z)) i → roll m (true , funExt⁻ (funExt⁻ nodeIn∘nodeOut m) z i)
+  (roll .m (false , z)) → refl
+
+unrollS∘rollS : unrollS ∘⊢ rollS ≡ id⊢
+unrollS∘rollS = funExt λ m → funExt λ where
+  (Sum.inl x) → refl
+  (Sum.inr y) → refl
+
+rollS≅ : Body ≅ S
+rollS≅ .WildCatIso.fun = rollS
+rollS≅ .WildCatIso.inv = unrollS
+rollS≅ .WildCatIso.sec = rollS∘unrollS
+rollS≅ .WildCatIso.ret = unrollS∘rollS
 
 nilTree : S []
 nilTree = (rollS ∘⊢ inr) [] εTy-pt

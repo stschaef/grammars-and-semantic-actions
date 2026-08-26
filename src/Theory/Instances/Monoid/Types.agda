@@ -71,6 +71,20 @@ isSetDecTy sA = isSet⊕ sA (isSet⇒ isSet⊥Ty)
   → (A ⊗ C) ⊕ (B ⊗ C) ⊢ (A ⊕ B) ⊗ C
 ⊗⊕-distL⁻ = ⊕-elim (inl ,⊗ id⊢) (inr ,⊗ id⊢)
 
+-- ...and it is an inverse: neither direction touches the splitting, so
+-- both round trips are the `⊕`'s case split and nothing else.
+⊗⊕-distL⁻∘distL : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt} {C : TheoryTy ℓC tt}
+  → ⊗⊕-distL⁻ {A = A} {B = B} {C = C} ∘⊢ ⊗⊕-distL ≡ id⊢
+⊗⊕-distL⁻∘distL = funExt λ m → funExt λ where
+  (ms , e , (Sum.inl a , r)) → refl
+  (ms , e , (Sum.inr b , r)) → refl
+
+⊗⊕-distL∘distL⁻ : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt} {C : TheoryTy ℓC tt}
+  → ⊗⊕-distL {A = A} {B = B} {C = C} ∘⊢ ⊗⊕-distL⁻ ≡ id⊢
+⊗⊕-distL∘distL⁻ = funExt λ m → funExt λ where
+  (Sum.inl x) → refl
+  (Sum.inr x) → refl
+
 ------------------------------------------------------------------------
 -- ...and the grammars that carry their set-ness, which is what a guarded
 -- recursion asks of one.  `_&Set_` and `_⊕Set_` are in `HLevels`.

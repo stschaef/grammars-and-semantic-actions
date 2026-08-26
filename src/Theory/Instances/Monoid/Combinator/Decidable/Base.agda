@@ -4,7 +4,17 @@
 -- 1. Our type system ensures that these are intrinsically sound parsers
 -- 2. We are further showing below that we may have intrinsic *completeness* too
 {-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
+{- `Core`'s combinators at `Dec`.  This is the instance that fixes `Core`'s
+   shape: `DecTy A = A ⊕ ¬Ty A` is contravariant in the refutation, so
+   `Ans-dimap` needs a map each way, and there is no `CovariantAnswer` --
+   one cannot refuse to decide, so `fail` lands at `⊥Set` only.
+
+   It is also the instance where `Ans-lit` does real work: `maybe-lit⊗-at`
+   and `nd-lit⊗-at` fall through to a strength, whereas here a mismatch has
+   to be *refuted*, which is what `Precise`'s `dec-lit⊗↑` and `Λ-disjoint`
+   are for. -}
 open import Cubical.Foundations.Prelude
+open import Cubical.WildCat.LocallySmall.Base
 open import Cubical.Algebra.Theory.Finitary
 import Cubical.Data.Sum as Sum
 import Cubical.Data.Empty as Empty
@@ -22,28 +32,19 @@ module Theory.Instances.Monoid.Combinator.Decidable.Base
 open import Cubical.Data.Sigma using (_,_ ; fst ; snd)
 open import Cubical.Data.Unit using (tt)
 
-open import Theory.Instances.Monoid.Types Alphabet _≟_ public
+open import Theory.Instances.Monoid.Combinator.Core Alphabet _≟_ public
 open import Theory.Instances.Monoid.Precise Alphabet isSetAlphabet public
   using (dec-lit⊗↑ ; dec-char⊗↑)
-open import Theory.Instances.Monoid.Suffix.Base Alphabet isSetAlphabet public
 open import Theory.Instances.Monoid.Residual Alphabet isSetAlphabet
-  using (⊗ε-unit-l⁻ ; ⊗ε-unit-r ; ⊗ε-unit-r⁻ ; ⊗⊕ᴰ-distL ; &⊕ᴰ-distR)
+  using (⊗⊕ᴰ-distL ; &⊕ᴰ-distR)
+
+open WildCatNotation
+open WildCatIso
 
 private variable ℓA ℓB ℓC ℓD ℓK ℓL : Level
 
-▷dec-map : {t : ParserTag} {K : TheorySet ℓK tt} {L : TheorySet ℓL tt}
-  → ty K ⊢ ty L → ty L ⊢ ty K
-  → ty (▷? t (DecSet K)) ⊢ ty (▷? t (DecSet L))
-▷dec-map f g = ▷map (dec-map f (¬Ty-map g))
-
-▷dec-⊕& : {t : ParserTag} {K : TheorySet ℓK tt} {L : TheorySet ℓL tt}
-  → ty (▷? t (DecSet K)) & ty (▷? t (DecSet L))
-  ⊢ ty (▷? t (DecSet (K ⊕Set L)))
-▷dec-⊕& = ▷map dec-⊕& ∘⊢ ▷lax
-
-look⊗ : {K : TheorySet ℓK tt} {C : TheoryTy ℓC tt}
-  → ((o : M₁) → ty (▷ (DecSet K)) & Λ₁ o ⊢ C) → ty (▷ (DecSet K)) ⊢ C
-look⊗ br = ⊕ᴰ-elim br ∘⊢ &⊕ᴰ-distR ∘⊢ (id⊢ ,& (Λ-total ∘⊢ ⊤Ty-intro))
+ℓG : Level
+ℓG = ℓ-max ℓM ℓ
 
 dec-lit⊗-at : (c : Alphabet) {K : TheorySet ℓK tt}
   → ty (▷ (DecSet K)) ⊢ DecTy (literal c ⊗ ty K)
@@ -79,123 +80,64 @@ dec-char⊗-at {K = K} = look⊗ br
   br ε₁ = dec-no ∘⊢ ⇒-intro (ε-char ∘⊢ ((π₂ ∘⊢ π₁) ,& π₂))
   br (tk d) = dec-char⊗↑ ∘⊢ (σ⊕ d ,⊗ π₁) ∘⊢ ▷⊗r d
 
-ℓG : Level
-ℓG = ℓ-max ℓM ℓ
+------------------------------------------------------------------------
 
-ε↑Set : (ℓK : Level) → TheorySet (ℓ-max ℓM ℓK) tt
-ε↑Set ℓK = LiftTheoryTy ℓK εTy , isSetLiftTheoryTy isSetεTy
+DecAnswer : AnswerFunctor
+DecAnswer .AnswerFunctor.ℓAns ℓA = ℓA
+DecAnswer .AnswerFunctor.Ans = DecSet
+DecAnswer .AnswerFunctor.Ans-≅ φ = dec-map (φ .fun) (¬Ty-map (φ .inv))
+DecAnswer .AnswerFunctor.Ans-⊕& = dec-⊕&
+DecAnswer .AnswerFunctor.Ans-lit = dec-lit⊗-at
+DecAnswer .AnswerFunctor.Ans-any = dec-char⊗-at
+DecAnswer .AnswerFunctor.Ans-ε = dec-ε
 
-ℓ⊗ : Level → Level → Level
-ℓ⊗ ℓB ℓK = ℓ-max ℓAlph (ℓ-max ℓB ℓK)
+DecDiv : DivariantAnswer DecAnswer
+DecDiv .DivariantAnswer.Ans-dimap f g = dec-map f (¬Ty-map g)
 
--- A parser for A turns decisions on grammar K into
--- decisions on A ⊗ K
-Parser : (ℓK : Level) → ParserTag → ParserTag → TheorySet ℓA tt → TheoryTy _ tt
-Parser ℓK a c A =
-  &[ K ∈ TheorySet ℓK tt ]
-    (ty (▷? a (DecSet K)) ⇒ ty (▷? c (DecSet (A ⊗Set K))))
+-- `Dec` is not a monad here, so the laws are `⊕`'s η and a case split.
+-- `¬Ty-map id⊢ ≡ id⊢` and the two contravariant composites agree on the
+-- nose, so both branches are `refl`.
+DecLawful : LawfulAnswer DecAnswer
+DecLawful .LawfulAnswer.Ans-≅-id = ⊕-η id⊢
+DecLawful .LawfulAnswer.Ans-≅-⋆ φ ψ = funExt λ m → funExt λ where
+  (Sum.inl a) → refl
+  (Sum.inr na) → refl
 
-ParserSet : (ℓK : Level) (a c : ParserTag) → TheorySet ℓA tt → TheorySet _ tt
-ParserSet ℓK a c A =
-  Parser ℓK a c A
-  , isSet&ᴰ λ K → isSet⇒ (▷? c (DecSet (A ⊗Set K)) .snd)
+open Combinators DecAnswer public hiding (module Fix)
+open LawfulCombinators DecAnswer DecLawful public
+open DivCombinators DecAnswer DecDiv public
 
-mkP : {ℓK : Level} {a c : ParserTag} {A : TheorySet ℓA tt} {D : TheoryTy ℓD tt}
-  → (∀ (K : TheorySet ℓK tt)
-      → D & ty (▷? a (DecSet K)) ⊢ ty (▷? c (DecSet (A ⊗Set K))))
-  → D ⊢ Parser ℓK a c A
-mkP f = &ᴰ-intro λ K → ⇒-intro (f K)
+-- `Dec` transports a refutation, so this takes a map each way -- and the
+-- two need not be inverse, which is why it is *not* `Core`'s `Ans-≅`.
+▷dec-map : {t : ParserTag} {K : TheorySet ℓK tt} {L : TheorySet ℓL tt}
+  → ty K ⊢ ty L → ty L ⊢ ty K
+  → ty (▷? t (DecSet K)) ⊢ ty (▷? t (DecSet L))
+▷dec-map = ▷Ans-dimap
 
-pAt : {ℓK : Level} {a c : ParserTag} {A : TheorySet ℓA tt} {D : TheoryTy ℓD tt}
-  → D ⊢ Parser ℓK a c A → (K : TheorySet ℓK tt)
-  → D & ty (▷? a (DecSet K)) ⊢ ty (▷? c (DecSet (A ⊗Set K)))
-pAt p K = ⇒-app ∘⊢ ((π K ∘⊢ p) ,&p id⊢)
+▷dec-⊕& : {t : ParserTag} {K : TheorySet ℓK tt} {L : TheorySet ℓL tt}
+  → ty (▷? t (DecSet K)) & ty (▷? t (DecSet L))
+  ⊢ ty (▷? t (DecSet (K ⊕Set L)))
+▷dec-⊕& = ▷Ans-⊕&
 
-pmore : {ℓK : Level} {c : ParserTag} {A : TheorySet ℓA tt}
-  → Parser ℓK ⟨▷⟩ c A ⊢ Parser ℓK ⟨□⟩ c A
-pmore = mkP λ K → pAt id⊢ K ∘⊢ (id& ▷wk)
+□dec-ε : {ℓK : Level} {D : TheoryTy ℓD tt} → D ⊢ ty (□ (DecSet (ε↑Set ℓK)))
+□dec-ε = □Ans-ε
 
-pless : {ℓK : Level} {a : ParserTag} {A : TheorySet ℓA tt}
-  → Parser ℓK a ⟨□⟩ A ⊢ Parser ℓK a ⟨▷⟩ A
-pless = mkP λ K → ▷wk ∘⊢ pAt id⊢ K
-
+-- ...and so does `mapP`.  This is where the three instances genuinely
+-- differ, which is why `Core` has no `mapP`.
 mapP : {ℓK : Level} {a c : ParserTag} {A : TheorySet ℓA tt} {B : TheorySet ℓB tt}
   → ty A ⊢ ty B → ty B ⊢ ty A
   → Parser ℓK a c A ⊢ Parser ℓK a c B
-mapP f g = mkP λ K → ▷dec-map (f ,⊗ id⊢) (g ,⊗ id⊢) ∘⊢ pAt id⊢ K
+mapP = mapP±
 
-pApp : {ℓK : Level} {A : TheorySet ℓA tt} (K : TheorySet ℓK tt)
-  → ty (▷ (ParserSet ℓK ⟨□⟩ ⟨□⟩ A)) & ty (▷ (DecSet K))
-  ⊢ ty (▷ (DecSet (A ⊗Set K)))
-pApp K = ▷map (□here ∘⊢ pAt id⊢ K) ∘⊢ ▷lax ∘⊢ (id⊢ ,&p ▷δ□)
+-- ...and a parser may only give up where there is nothing to decide.
+fail : {ℓK : Level} {a c : ParserTag} {D : TheoryTy ℓD tt}
+  → D ⊢ Parser ℓK a c ⊥Set
+fail {c = c} = mkP λ K → ▷next {t = c} (dec-no ∘⊢ ⇒-intro (⊗⊥-annihL ∘⊢ π₂))
 
--- Combinators under an arbitray hypothesis D
-module _ {D : TheoryTy ℓD tt} where
-
-  infixr 15 _<|>_
-
-  seq : {ℓK ℓB : Level} {a b c : ParserTag} {A : TheorySet ℓA tt}
-    (B : TheorySet ℓB tt)
-    → D ⊢ Parser (ℓ⊗ ℓB ℓK) b c A
-    → D ⊢ Parser ℓK a b B
-    → D ⊢ Parser ℓK a c (A ⊗Set B)
-  seq B p q = mkP λ K →
-    ▷dec-map ⊗-assoc⁻ ⊗-assoc ∘⊢ pAt p (B ⊗Set K) ∘⊢ (π₁ ,& pAt q K)
-
-  _<|>_ : {ℓK : Level} {a c : ParserTag} {A : TheorySet ℓA tt}
-    {B : TheorySet ℓB tt}
-    → D ⊢ Parser ℓK a c A → D ⊢ Parser ℓK a c B
-    → D ⊢ Parser ℓK a c (A ⊕Set B)
-  (p <|> q) = mkP λ K →
-    ▷dec-map ⊗⊕-distL⁻ ⊗⊕-distL ∘⊢ ▷dec-⊕& ∘⊢ (pAt p K ,& pAt q K)
-
-  tok : {ℓK : Level} (c : Alphabet) → D ⊢ Parser ℓK ⟨▷⟩ ⟨□⟩ (litSet c)
-  tok c = mkP λ K → ▷□ (dec-lit⊗-at c) ∘⊢ π₂
-
-  anyTok : {ℓK : Level} → D ⊢ Parser ℓK ⟨▷⟩ ⟨□⟩ charSet
-  anyTok = mkP λ K → ▷□ dec-char⊗-at ∘⊢ π₂
-
-  nil : {ℓK : Level} → D ⊢ Parser ℓK ⟨□⟩ ⟨□⟩ εSet
-  nil = mkP λ K → ▷dec-map ⊗ε-unit-l⁻ ⊗-unit-l ∘⊢ π₂
-
-  fail : {ℓK : Level} {a c : ParserTag} → D ⊢ Parser ℓK a c ⊥Set
-  fail {c = c} = mkP λ K → ▷next {t = c} (dec-no ∘⊢ ⇒-intro (⊗⊥-annihL ∘⊢ π₂))
-
-  -- a closed parser is available at every suffix
-  -- TODO rename this
-  box : {ℓK : Level} {A : TheorySet ℓA tt} → ⊤Ty ⊢ Parser ℓK ⟨□⟩ ⟨□⟩ A
-    → D ⊢ Parser ℓK ⟨▷⟩ ⟨▷⟩ A
-  box p = mkP λ K → pApp K ∘⊢ (▷next {t = ⟨▷⟩} p ,&p id⊢)
-
-□dec-ε : {ℓK : Level} {D : TheoryTy ℓD tt} → D ⊢ ty (□ (DecSet (ε↑Set ℓK)))
-□dec-ε = ▷next {t = ⟨□⟩} (decLiftTheoryTy dec-ε)
-
--- A parser under the hypothesis ⊤ is sufficent for
--- buidling a decider for A
-runP : (ℓK : Level) {A : TheorySet ℓA tt}
-  → ⊤Ty ⊢ Parser (ℓ-max ℓM ℓK) ⟨□⟩ ⟨□⟩ A → Decidable (ty A)
-runP _ p =
-  dec-map (⊗ε-unit-r ∘⊢ (id⊢ ,⊗ lowerTy))
-          (¬Ty-map ((id⊢ ,⊗ liftTy) ∘⊢ ⊗ε-unit-r⁻))
-  ∘⊢ □here ∘⊢ pAt p (ε↑Set _) ∘⊢ (id⊢ ,& □dec-ε)
-
--- Build parsers as fixpoints
 module Fix {ℓA} (ℓK : Level) (A : TheorySet ℓA tt) where
-
-  -- TODO I hate script variables like this
-  ℓ𝒦 : Level
-  ℓ𝒦 = ℓ-max ℓM ℓK
-
-  -- Call the hypothetical parser on a strictly smaller suffix
-  call : ty (▷ (ParserSet ℓ𝒦 ⟨□⟩ ⟨□⟩ A)) ⊢ Parser ℓ𝒦 ⟨▷⟩ ⟨▷⟩ A
-  call = mkP pApp
-
-  -- Guarded fixpoints build closed parsers
-  fix : ty (▷ (ParserSet ℓ𝒦 ⟨□⟩ ⟨□⟩ A)) ⊢ Parser ℓ𝒦 ⟨□⟩ ⟨□⟩ A
-    → ⊤Ty ⊢ Parser ℓ𝒦 ⟨□⟩ ⟨□⟩ A
-  fix = löbG {A = ParserSet ℓ𝒦 ⟨□⟩ ⟨□⟩ A}
+  open Combinators.Fix DecAnswer ℓK A public
 
   -- ...which are then used to build deciders
   decide : ty (▷ (ParserSet ℓ𝒦 ⟨□⟩ ⟨□⟩ A)) ⊢ Parser ℓ𝒦 ⟨□⟩ ⟨□⟩ A
     → Decidable (ty A)
-  decide φ = runP ℓK (fix φ)
+  decide = runFix
