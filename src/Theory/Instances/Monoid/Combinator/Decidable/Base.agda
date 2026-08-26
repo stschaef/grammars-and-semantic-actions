@@ -85,17 +85,11 @@ dec-char⊗-at {K = K} = look⊗ br
 ε↑Set : (ℓK : Level) → TheorySet (ℓ-max ℓM ℓK) tt
 ε↑Set ℓK = LiftTheoryTy ℓK εTy , isSetLiftTheoryTy isSetεTy
 
--- the continuation level `seq` asks of its head parser
 ℓ⊗ : Level → Level → Level
 ℓ⊗ ℓB ℓK = ℓ-max ℓAlph (ℓ-max ℓB ℓK)
 
 -- A parser for A turns decisions on grammar K into
 -- decisions on A ⊗ K
--- `ℓK` is the universe the continuations range over: an end has to pick
--- one, but nothing forces the same one for every parser
--- The two tags say which resources the domain and codomain refer to
--- ▷? ⟨▷⟩ A = ▷ A
--- ▷? ⟨□⟩ A = ▷ A & A ≅ □ A
 Parser : (ℓK : Level) → ParserTag → ParserTag → TheorySet ℓA tt → TheoryTy _ tt
 Parser ℓK a c A =
   &[ K ∈ TheorySet ℓK tt ]
@@ -140,10 +134,6 @@ module _ {D : TheoryTy ℓD tt} where
 
   infixr 15 _<|>_
 
-  -- Sequencing of parsers.  `p` is run at the continuation `B ⊗Set K`, so
-  -- it is asked for at that level -- which is what makes `B`'s level free.
-  -- Only the *head* is raised; `q` stays at `ℓK`, so a recursive call in
-  -- tail position costs nothing.
   seq : {ℓK ℓB : Level} {a b c : ParserTag} {A : TheorySet ℓA tt}
     (B : TheorySet ℓB tt)
     → D ⊢ Parser (ℓ⊗ ℓB ℓK) b c A
@@ -152,7 +142,6 @@ module _ {D : TheoryTy ℓD tt} where
   seq B p q = mkP λ K →
     ▷dec-map ⊗-assoc⁻ ⊗-assoc ∘⊢ pAt p (B ⊗Set K) ∘⊢ (π₁ ,& pAt q K)
 
-  -- Alternation of parsers
   _<|>_ : {ℓK : Level} {a c : ParserTag} {A : TheorySet ℓA tt}
     {B : TheorySet ℓB tt}
     → D ⊢ Parser ℓK a c A → D ⊢ Parser ℓK a c B
@@ -160,23 +149,20 @@ module _ {D : TheoryTy ℓD tt} where
   (p <|> q) = mkP λ K →
     ▷dec-map ⊗⊕-distL⁻ ⊗⊕-distL ∘⊢ ▷dec-⊕& ∘⊢ (pAt p K ,& pAt q K)
 
-  -- Parser for each literal
   tok : {ℓK : Level} (c : Alphabet) → D ⊢ Parser ℓK ⟨▷⟩ ⟨□⟩ (litSet c)
   tok c = mkP λ K → ▷□ (dec-lit⊗-at c) ∘⊢ π₂
 
-  -- Parser for any literal
   anyTok : {ℓK : Level} → D ⊢ Parser ℓK ⟨▷⟩ ⟨□⟩ charSet
   anyTok = mkP λ K → ▷□ dec-char⊗-at ∘⊢ π₂
 
-  -- Parser for ε
   nil : {ℓK : Level} → D ⊢ Parser ℓK ⟨□⟩ ⟨□⟩ εSet
   nil = mkP λ K → ▷dec-map ⊗ε-unit-l⁻ ⊗-unit-l ∘⊢ π₂
 
-  -- Parser for ⊥
   fail : {ℓK : Level} {a c : ParserTag} → D ⊢ Parser ℓK a c ⊥Set
   fail {c = c} = mkP λ K → ▷next {t = c} (dec-no ∘⊢ ⇒-intro (⊗⊥-annihL ∘⊢ π₂))
 
   -- a closed parser is available at every suffix
+  -- TODO rename this
   box : {ℓK : Level} {A : TheorySet ℓA tt} → ⊤Ty ⊢ Parser ℓK ⟨□⟩ ⟨□⟩ A
     → D ⊢ Parser ℓK ⟨▷⟩ ⟨▷⟩ A
   box p = mkP λ K → pApp K ∘⊢ (▷next {t = ⟨▷⟩} p ,&p id⊢)
@@ -196,6 +182,7 @@ runP _ p =
 -- Build parsers as fixpoints
 module Fix {ℓA} (ℓK : Level) (A : TheorySet ℓA tt) where
 
+  -- TODO I hate script variables like this
   ℓ𝒦 : Level
   ℓ𝒦 = ℓ-max ℓM ℓK
 

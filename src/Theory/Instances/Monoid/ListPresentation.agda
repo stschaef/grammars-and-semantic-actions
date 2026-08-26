@@ -40,17 +40,11 @@ private
   ListModel : MOD MonEqns _ .ob
   ListModel = (λ s → C s , isSetC s) , listOps , listSat
 
--- The fold.  Unlike the quotient's recursor this is structural on the
--- carrier, which is the whole point of choosing this presentation.
 fold : {X : Sorts → Type ℓX} (α : Ops {σ = MonSig} X)
   → (Alphabet → X tt) → List Alphabet → X tt
 fold α ρ [] = α ε· (λ ())
 fold α ρ (c ∷ cs) = α _⊙_ (two (ρ c) (fold α ρ cs))
 
--- The equations as stated by `sat` quantify over a `Tm`, so `TmRec` builds
--- each argument tuple by recursion; `two`/`three` build it by pattern match.
--- `Fin n` has no definitional η, so every law below opens by transporting
--- across that mismatch -- pointwise refl, but not refl.
 module Laws {X : Sorts → Type ℓX} (α : Ops {σ = MonSig} X)
   (sat : (e : MonEqns .eqns)
          (ρ' : (w : vars MonEqns e) → X (MonEqns .varSort e w))
@@ -81,7 +75,6 @@ module Laws {X : Sorts → Type ℓX} (α : Ops {σ = MonSig} X)
   ⊛unitR x = cong (α _⊙_) (funExt (two refl (cong (α ε·) (funExt λ ()))))
            ∙ sat unitR (λ _ → x)
 
-  -- fold is a monoid homomorphism.
   fold-++ : (xs ys : List Alphabet)
     → fold α ρ (xs ++ ys) ≡ fold α ρ xs ⊛ fold α ρ ys
   fold-++ [] ys = sym (⊛unitL (fold α ρ ys))
@@ -89,7 +82,6 @@ module Laws {X : Sorts → Type ℓX} (α : Ops {σ = MonSig} X)
       cong (λ z → ρ c ⊛ z) (fold-++ cs ys)
     ∙ sym (⊛assoc (ρ c) (fold α ρ cs) (fold α ρ ys))
 
-  -- Any algebra map agreeing on singletons is the fold; induction on the list.
   uniq : (f : (s : Sorts) → List Alphabet → X s)
     → ((o : MonOp) (ms : arities MonSig o → List Alphabet)
         → f tt (listOps o ms) ≡ α o (λ a → f tt (ms a)))
@@ -100,9 +92,6 @@ module Laws {X : Sorts → Type ℓX} (α : Ops {σ = MonSig} X)
       homf _⊙_ (two (c ∷ []) cs)
     ∙ cong (α _⊙_) (funExt (two (fβ c) (uniq f homf fβ cs)))
 
--- The equations again in `Eq`-world.  Both recurse on the left list, so at a
--- concrete list they reduce to `Eq.refl` -- which is what lets the ⊗ rules,
--- which match on the index witness, keep firing.
 private
   ++-assocEq : (xs ys zs : List Alphabet)
     → ((xs ++ ys) ++ zs) Eq.≡ (xs ++ (ys ++ zs))

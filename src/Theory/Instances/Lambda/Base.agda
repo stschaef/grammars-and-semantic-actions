@@ -31,12 +31,9 @@ Nm = ↓M nm
 
 private variable ℓA ℓB ℓC ℓD : Level
 
--- the three constructors, as points
 mkVar : Nm → Raw
 mkVar n = op varOp λ _ → n
 
--- named, not `λ where`: two spellings of the same extended lambda never
--- compare, and these must be the very tuples the tensors are built from
 appArgs : Raw → Raw → (b : Fin 2) → ↓M (LSortOf appOp b)
 appArgs t u = two t u
 
@@ -49,8 +46,6 @@ mkApp t u = op appOp (appArgs t u)
 mkLam : Nm → Raw → Raw
 mkLam n t = op lamOp (lamArgs n t)
 
--- One level-polymorphic tensor per operation.  These operations have concrete
--- finite arities, so their argument tuples retain the levels of their slots.
 VarTy : TheoryTy ℓA nm → TheoryTy _ tm
 VarTy {ℓA = ℓA} P = ⊗[ varOp ][ (λ _ → ℓA) ] (P , tt*)
 
@@ -80,9 +75,6 @@ module _ {P : TheoryTy ℓA nm} {A : TheoryTy ℓB tm}
            → VarTy P ⊢ C
   var-elim f _ (ms , Eq.refl , p , tt*) = f ms p
 
-  -- the motive sees the argument tuple, not a pair: `appArgs (ms true)
-  -- (ms false)` is only propositionally `ms`, and paying a transport for
-  -- Bool-η in an eliminator is not worth it
   app-elim : ((ms : (b : Fin 2) → ↓M (LSortOf appOp b))
              → A (ms zero) → B (ms (suc zero)) → C (op appOp ms))
            → AppTy A B ⊢ C
