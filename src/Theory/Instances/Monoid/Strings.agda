@@ -116,6 +116,9 @@ infixr 20 _,⊗_
 ⊗⊥-annihL : {C : TheoryTy ℓC tt} → ⊥Ty ⊗ C ⊢ ⊥Ty
 ⊗⊥-annihL m (ms , e , (b , _)) = b
 
+⊗⊥-annihR : {C : TheoryTy ℓC tt} → C ⊗ ⊥Ty ⊢ ⊥Ty
+⊗⊥-annihR m (ms , e , (_ , (b , _))) = b
+
 -- Tensor coherence.  The generic `eqn→Iso` lifts a monoid equation to the
 -- *flat* convolution over one valuation of all three variables, which is a
 -- different type from the nested `(A ⊗ B) ⊗ C`; on this presentation the
@@ -487,6 +490,10 @@ private
 -- `read` is a section of the terminal map, so `String*` is a retract of
 -- `⊤Ty`.  This is the `Grammar/String/Unambiguous.agda` argument: the
 -- retract of a proposition-valued type is proposition-valued.
+-- `char` is a proposition at every word: a one-letter word has one letter.
+unambiguous-char : (m : String) → isProp (char m)
+unambiguous-char = isPropChar
+
 read-section : read ∘⊢ ⊤Ty-intro ≡ id⊢
 read-section =
   rec-section (λ _ → KleeneCode) (λ _ → ⊤Ty-intro) (λ _ → read) readSq tt

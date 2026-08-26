@@ -16,7 +16,9 @@ module Theory.Instances.Monoid.Precise
 open import Cubical.Data.FinData using (zero ; suc)
 open import Cubical.Data.List using ([] ; _∷_ ; _++_)
 import Cubical.Data.List.Properties as L
-open import Cubical.Data.Unit using (tt)
+open import Cubical.Data.Unit using (tt ; tt*)
+open import Cubical.Data.Sigma using (Σ-syntax ; _×_ ; _,_)
+import Cubical.Data.Sum as Sum
 import Cubical.Data.Empty as Empty
 import Cubical.Data.Equality as Eq
 
@@ -26,7 +28,7 @@ open import Theory.Instances.Monoid.Derivative Alphabet isSetAlphabet using (Dl)
 open import Theory.Type.Decidable.Base MonEqns Alphabet (λ _ → tt)
   listPresentation
 
-private variable ℓA ℓB : Level
+private variable ℓA ℓB ℓC ℓD : Level
 
 -- The head letter cannot be matched away -- `(c ∷ []) ++ v ≟ c ∷ as` would
 -- eliminate the reflexive equation `c = c`, which K forbids -- so the split
@@ -96,6 +98,29 @@ char⊗-precise {K = K} m (ms , e , ((d , lc) , (nk , _))) t =
         ∙ sym (flat (t .snd .snd .fst .fst) (ns zero) (ns (suc zero)) m
                  (t .snd .snd .fst .snd) (t .snd .fst))
 
+-- Two more consequences of the same precision, both used wherever two
+-- one-step unrollings are compared: a `literal`-headed word is not empty,
+-- and two such words agree on their head letter.
+ε∉lit⊗ : {A : TheoryTy ℓA tt} (c : Alphabet) → εTy & (literal c ⊗ A) ⊢ ⊥Ty
+ε∉lit⊗ c m ((ms , e , _) , (ns , f , (l , (a , _)))) =
+  Empty.rec
+    (L.¬cons≡nil
+      (flat c (ns zero) (ns (suc zero)) m l f ∙ sym (Eq.eqToPath e)))
+
+sameHead : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt} (c d : Alphabet)
+  → (literal c ⊗ A) & (literal d ⊗ B)
+  ⊢ ⊕[ _ ∈ c ≡ d ] (literal c ⊗ (A & B))
+sameHead {A = A} {B = B} c d m
+  ((ms , e , (l , (a , _))) , (ns , f , (l' , (b , _)))) =
+    L.cons-inj₁ heads , (ms , e , (l , ((a , subst B tails b) , tt*)))
+  where
+  heads : c ∷ ms (suc zero) ≡ d ∷ ns (suc zero)
+  heads = flat c (ms zero) (ms (suc zero)) m l e
+        ∙ sym (flat d (ns zero) (ns (suc zero)) m l' f)
+
+  tails : ns (suc zero) ≡ ms (suc zero)
+  tails = sym (L.cons-inj₂ heads)
+
 -- The one-token derivative as a term rather than a case split: a decision
 -- under the letter is a decision of the tensor.
 dec-lit⊗↑ : {K : TheoryTy ℓA tt} (c : Alphabet)
@@ -104,3 +129,75 @@ dec-lit⊗↑ c = ⊕-elim dec-yes (dec-no ∘⊢ lit⊗-precise c) ∘⊢ ⊗�
 
 dec-char⊗↑ : {K : TheoryTy ℓA tt} → char ⊗ DecTy K ⊢ DecTy (char ⊗ K)
 dec-char⊗↑ = ⊕-elim dec-yes (dec-no ∘⊢ char⊗-precise) ∘⊢ ⊗⊕-distR
+
+------------------------------------------------------------------------
+-- Levi's lemma, and the alignment of two splittings that it powers.
+
+-- Two factorisations of one word are nested: one left factor is the other
+-- extended by some `d`.
+levi : (u v u' v' : ↓M tt) → u ++ v ≡ u' ++ v'
+  → (Σ[ d ∈ ↓M tt ] ((u' ≡ u ++ d) × (v ≡ d ++ v')))
+    Sum.⊎ (Σ[ d ∈ ↓M tt ] ((u ≡ u' ++ d) × (v' ≡ d ++ v)))
+levi [] v u' v' p = Sum.inl (u' , refl , p)
+levi (c ∷ u) v [] v' p = Sum.inr (c ∷ u , refl , sym p)
+levi (c ∷ u) v (d ∷ u') v' p with levi u v u' v' (L.cons-inj₂ p)
+... | Sum.inl (e , q , r) = Sum.inl (e , cong₂ _∷_ (sym (L.cons-inj₁ p)) q , r)
+... | Sum.inr (e , q , r) = Sum.inr (e , cong₂ _∷_ (L.cons-inj₁ p) q , r)
+
+private
+  -- `startsWith g`, spelled out so that this module need not name it
+  headed : (g : Alphabet) (d v : ↓M tt) → v ≡ g ∷ d → (literal g ⊗ ⊤Ty) v
+  headed g d v r = two (g ∷ []) d , Eq.pathToEq (sym r) , (Eq.refl , (tt , tt*))
+
+  ⊗headed : {X : TheoryTy ℓA tt} (g : Alphabet) (x d u : ↓M tt)
+    → X x → u ≡ x ++ (g ∷ d) → (X ⊗ (literal g ⊗ ⊤Ty)) u
+  ⊗headed g x d u a q =
+    two x (g ∷ d) , Eq.pathToEq (sym q) , (a , (headed g d (g ∷ d) refl , tt*))
+
+-- Levi says the two left factors differ by a `d`; if `d` is a letter `g`
+-- then `g` both continues one left factor into the other and opens the
+-- other's right factor, so a separation hypothesis at `g` refutes it.
+-- With every proper case refuted the two splittings coincide and the
+-- factors pair up.  This is the internal replacement for the old
+-- `SplittingTrichotomy`-based `⊗&-distL≅`.
+module _ {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt}
+         {C : TheoryTy ℓC tt} {D : TheoryTy ℓD tt}
+  (sepL : (g : Alphabet)
+    → ((A ⊗ (literal g ⊗ ⊤Ty)) & C ⊢ ⊥Ty)
+      Sum.⊎ (((literal g ⊗ ⊤Ty) & B) ⊢ ⊥Ty))
+  (sepR : (g : Alphabet)
+    → ((C ⊗ (literal g ⊗ ⊤Ty)) & A ⊢ ⊥Ty)
+      Sum.⊎ (((literal g ⊗ ⊤Ty) & D) ⊢ ⊥Ty))
+  where
+  private
+    agree : (x y x' y' : ↓M tt) → A x → B y → C x' → D y'
+      → (Σ[ d ∈ ↓M tt ] ((x' ≡ x ++ d) × (y ≡ d ++ y')))
+        Sum.⊎ (Σ[ d ∈ ↓M tt ] ((x ≡ x' ++ d) × (y' ≡ d ++ y)))
+      → (x ≡ x') × (y ≡ y')
+    agree x y x' y' a b c d (Sum.inl ([] , q , r)) =
+      sym (q ∙ L.++-unit-r x) , r
+    agree x y x' y' a b c d (Sum.inl (g ∷ ds , q , r)) =
+      Sum.rec (λ h → Empty.rec (h x' (⊗headed g x ds x' a q , c) .lower))
+              (λ h → Empty.rec (h y (headed g (ds ++ y') y r , b) .lower))
+              (sepL g)
+    agree x y x' y' a b c d (Sum.inr ([] , q , r)) =
+      q ∙ L.++-unit-r x' , sym r
+    agree x y x' y' a b c d (Sum.inr (g ∷ ds , q , r)) =
+      Sum.rec (λ h → Empty.rec (h x (⊗headed g x' ds x c q , a) .lower))
+              (λ h → Empty.rec (h y' (headed g (ds ++ y) y' r , d) .lower))
+              (sepR g)
+
+  -- The two cuts coincide.  This is the whole content; `⊗&-align` below
+  -- repackages it as a term, and `unambiguous⊗` needs it as a path.
+  splitAgree : (x y x' y' : ↓M tt) → (x ++ y) ≡ (x' ++ y')
+    → A x → B y → C x' → D y' → (x ≡ x') × (y ≡ y')
+  splitAgree x y x' y' p a b c d =
+    agree x y x' y' a b c d (levi x y x' y' p)
+
+  ⊗&-align : (A ⊗ B) & (C ⊗ D) ⊢ (A & C) ⊗ (B & D)
+  ⊗&-align m ((ms , e , (a , (b , _))) , (ns , e' , (c , (d , _)))) =
+    two (ms zero) (ms (suc zero)) , e
+    , ((a , subst C (sym (pf .fst)) c) , ((b , subst D (sym (pf .snd)) d) , tt*))
+    where
+    pf = splitAgree (ms zero) (ms (suc zero)) (ns zero) (ns (suc zero))
+           (Eq.eqToPath e ∙ sym (Eq.eqToPath e')) a b c d

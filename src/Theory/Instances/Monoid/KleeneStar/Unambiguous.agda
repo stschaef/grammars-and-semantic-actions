@@ -49,6 +49,11 @@ open import Theory.Instances.Monoid.Strings Alphabet isSetAlphabet
 open import Theory.Instances.Monoid.KleeneStar Alphabet isSetAlphabet
 open import Theory.Instances.Monoid.KleeneStar.Guarded Alphabet isSetAlphabet
   using (¬Nullable)
+open import Theory.Instances.Monoid.Precise Alphabet isSetAlphabet
+  using (splitAgree)
+open import Theory.Instances.Monoid.SequentialUnambiguity.FollowLast
+  Alphabet isSetAlphabet
+  using (startsWith ; _∉First_ ; _∉FollowLast_ ; ∉First*) public
 private variable ℓA ℓB ℓX : Level
 
 -- `∀ m → isProp (A m)`, as `Theory/Type/Unambiguity/Base` states it; named
@@ -57,40 +62,13 @@ Unambig : TheoryTy ℓA tt → Type _
 Unambig A = (m : String) → isProp (A m)
 
 ------------------------------------------------------------------------
--- The two letter-set predicates, as the old `SequentialUnambiguity`
--- states them: a refutation rather than a set.
+-- The pairing the star construction demands.  `_∉First_`,
+-- `_∉FollowLast_` and `startsWith` come from `SequentialUnambiguity`; the
+-- combinatorial half -- Levi, and the clash it produces -- is
+-- `Precise.splitAgree`.
 
-startsWith : Alphabet → TheoryTy ℓM tt
-startsWith c = literal c ⊗ ⊤Ty
-
-_∉First_ : Alphabet → TheoryTy ℓA tt → Type _
-c ∉First A = startsWith c & A ⊢ ⊥Ty
-
--- `c` never continues a complete `A` into a longer `A`
-_∉FollowLast_ : Alphabet → TheoryTy ℓA tt → Type _
-c ∉FollowLast A = ((A ⊗ startsWith c) & A) ⊢ ⊥Ty
-
--- ...and the pairing the star construction actually demands
 SeqUnambig : TheoryTy ℓA tt → Type _
 SeqUnambig A = (c : Alphabet) → (c ∉FollowLast A) Sum.⊎ (c ∉First A)
-
-------------------------------------------------------------------------
--- Levi's lemma: two factorisations of one word are nested.
---
--- Not in the codebase anywhere, and it is the combinatorial half of the
--- argument -- it is what produces the letter `c` that the hypothesis
--- then contradicts.
-
-levi : (u v u' v' : String) → u ++ v ≡ u' ++ v'
-  → (Σ[ d ∈ String ] ((u' ≡ u ++ d) × (v ≡ d ++ v')))
-  Sum.⊎ (Σ[ d ∈ String ] ((u ≡ u' ++ d) × (v' ≡ d ++ v)))
-levi [] v u' v' p = Sum.inl (u' , refl , p)
-levi (c ∷ u) v [] v' p = Sum.inr (c ∷ u , refl , sym p)
-levi (c ∷ u) v (d ∷ u') v' p with levi u v u' v' (cons-inj₂ p)
-... | Sum.inl (e , q , r) =
-  Sum.inl (e , cong₂ _∷_ (sym (cons-inj₁ p)) q , r)
-... | Sum.inr (e , q , r) =
-  Sum.inr (e , cong₂ _∷_ (cons-inj₁ p) q , r)
 
 ------------------------------------------------------------------------
 -- The proof.  `A *` is a real `data`, so both arguments are matched as
@@ -114,47 +92,17 @@ module Star* {A : TheoryTy ℓA tt}
     nil-cons [] v a p = Empty.rec (nu [] (a , εTy-pt) .lower)
     nil-cons (c ∷ u) v a p = Empty.rec (¬cons≡nil p)
 
-    -- a nonempty `A` head of a word beginning `c` begins with `c`
-    headStarts : (c : Alphabet) (hd tl v : String)
-      → A hd → (hd ++ tl) ≡ (c ∷ v) → startsWith c hd
-    headStarts c [] tl v a p = Empty.rec (nu [] (a , εTy-pt) .lower)
-    headStarts c (b ∷ hd) tl v a p =
-      two (b ∷ []) hd , Eq.refl
-      , (Eq.pathToEq (cong (_∷ []) (cons-inj₁ p)) , (tt , tt*))
-
-    -- The letter just past the shorter of two first pieces.  It follows a
-    -- complete `A` inside a longer `A`, and it opens the next piece of the
-    -- other decomposition -- so `SeqUnambig` refutes it either way.
-    clash : {X : Type ℓX} (c : Alphabet) (d x v : String)
-      → (c ∉FollowLast A) Sum.⊎ (c ∉First A)
-      → A x → A (x ++ c ∷ d) → (A *) (c ∷ v) → X
-    clash c d x v (Sum.inl nfl) a a2 as =
-      Empty.rec (nfl (x ++ c ∷ d)
-        ( (two x (c ∷ d) , Eq.refl
-          , (a , ((two (c ∷ []) d , Eq.refl , (Eq.refl , (tt , tt*))) , tt*)))
-        , a2) .lower)
-    clash c d x v (Sum.inr nf) a a2 (roll ._ (false , ps , ep , _)) =
-      Empty.rec (¬nil≡cons (Eq.eqToPath ep))
-    clash c d x v (Sum.inr nf) a a2 (roll ._ (true , ps , ep , g)) =
-      Empty.rec (nf (ps zero)
-        ( headStarts c (ps zero) (ps (suc zero)) v (g zero .lower)
-            (Eq.eqToPath ep)
-        , g zero .lower) .lower)
-
-    -- Levi, with the two degenerate ends read off and the two proper ones
-    -- refuted: the first pieces, and hence the tails, agree.
-    piecesFrom : (u w u' w' : String) → A u → (A *) w → A u' → (A *) w'
-      → (Σ[ d ∈ String ] ((u' ≡ u ++ d) × (w ≡ d ++ w')))
-        Sum.⊎ (Σ[ d ∈ String ] ((u ≡ u' ++ d) × (w' ≡ d ++ w)))
+    -- the two decompositions cut in the same place: `c` would have to
+    -- both follow a complete `A` and open the next piece
+    pieces : SeqUnambig A → (u w u' w' : String)
+      → A u → (A *) w → A u' → (A *) w' → u ++ w ≡ u' ++ w'
       → (u ≡ u') × (w ≡ w')
-    piecesFrom u w u' w' a as a' as' (Sum.inl ([] , q , r)) =
-      sym (++-unit-r u) ∙ sym q , r
-    piecesFrom u w u' w' a as a' as' (Sum.inl (c ∷ d , q , r)) =
-      clash c d u (d ++ w') (su c) a (subst A q a') (subst (A *) r as)
-    piecesFrom u w u' w' a as a' as' (Sum.inr ([] , q , r)) =
-      q ∙ ++-unit-r u' , sym r
-    piecesFrom u w u' w' a as a' as' (Sum.inr (c ∷ d , q , r)) =
-      clash c d u' (d ++ w) (su c) a' (subst A q a) (subst (A *) r as')
+    pieces su u w u' w' a as a' as' p =
+      splitAgree sep sep u w u' w' p a as a' as'
+      where
+      sep : (g : Alphabet)
+        → (g ∉FollowLast A) Sum.⊎ (g ∉First (A *))
+      sep g = Sum.map (λ z → z) ∉First* (su g)
 
     -- the nil layer is nullary, and its index equation is a proposition
     isPropNil : (m : String)
@@ -187,18 +135,17 @@ module Star* {A : TheoryTy ℓA tt}
     split : ms zero ++ ms (suc zero) ≡ ns zero ++ ns (suc zero)
     split = Eq.eqToPath e ∙ sym (Eq.eqToPath e')
 
-    pieces : (ms zero ≡ ns zero) × (ms (suc zero) ≡ ns (suc zero))
-    pieces =
-      piecesFrom (ms zero) (ms (suc zero)) (ns zero) (ns (suc zero))
+    parts : (ms zero ≡ ns zero) × (ms (suc zero) ≡ ns (suc zero))
+    parts =
+      pieces su (ms zero) (ms (suc zero)) (ns zero) (ns (suc zero))
         (f zero .lower) (f (suc zero) .lower)
-        (f' zero .lower) (f' (suc zero) .lower)
-        (levi (ms zero) (ms (suc zero)) (ns zero) (ns (suc zero)) split)
+        (f' zero .lower) (f' (suc zero) .lower) split
 
     heads : ms zero ≡ ns zero
-    heads = pieces .fst
+    heads = parts .fst
 
     tails : ms (suc zero) ≡ ns (suc zero)
-    tails = pieces .snd
+    tails = parts .snd
 
     sp : ms ≡ ns
     sp = funExt λ where

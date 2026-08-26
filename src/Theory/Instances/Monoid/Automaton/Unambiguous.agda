@@ -37,7 +37,7 @@ open import Theory.Instances.Monoid.Precise Alphabet isSetAlphabet
 open import Theory.Instances.Monoid.Automaton.Deterministic
   Alphabet isSetAlphabet
 
-private variable ℓA : Level
+private variable ℓA ℓQ : Level
 
 -- a proposition at one end of a line of types fills the whole line
 isPropPathP : (T : I → Type ℓA) → isProp (T i0)
@@ -50,7 +50,7 @@ isPropεTy : (m : String) → isProp (εTy m)
 isPropεTy m =
   isPropΣ (λ f g → funExt λ ()) λ _ → isProp× isPropEqString isPropUnit*
 
-module _ {Q : Type ℓAlph} (Aut : DeterministicAutomaton Q) where
+module _ {Q : Type ℓQ} (Aut : DeterministicAutomaton Q) where
   open DeterministicAutomaton Aut
 
   unambiguous-Trace : (b : Bool) (q : Q) (w : String)
@@ -106,7 +106,7 @@ module _ {Q : Type ℓAlph} (Aut : DeterministicAutomaton Q) where
     eqP = isProp→PathP (λ i → isPropEqString) e e'
 
     -- the line of types the two tails live over
-    Fam : I → Type (ℓ-max (ℓF ℓM) ℓAlph)
+    Fam : I → Type ℓT
     Fam i = Trace b (δ q (c≡d i)) (sp i (suc zero))
 
     main : transport (λ i → Fam i) (f (suc zero) .lower) ≡ f' (suc zero) .lower
@@ -118,8 +118,9 @@ module _ {Q : Type ℓAlph} (Aut : DeterministicAutomaton Q) where
       tP = toPathP h
 
       gP : (a : Fin 2)
-        → PathP (λ i → ⟦ two (k (literal (c≡d i))) (Var (δ q (c≡d i))) a ⟧TheoryTy
-                         (Trace b) (sp i a))
+        → PathP (λ i →
+             ⟦ two (k (literal (c≡d i))) (Var (lift (δ q (c≡d i)))) a ⟧TheoryTy
+               (λ x → Trace b (x .lower)) (sp i a))
             (f a) (f' a)
       gP zero = isPropPathP _ (isOfHLevelLift 1 isPropEqString) (f zero) (f' zero)
       gP (suc zero) = λ i → lift (tP i)

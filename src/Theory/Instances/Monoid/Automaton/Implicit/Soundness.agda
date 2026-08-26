@@ -38,7 +38,11 @@ open import Theory.Instances.Monoid.KleeneStar.Guarded Alphabet isSetAlphabet
   using (¬Nullable)
 open import Theory.Instances.Monoid.KleeneStar.Unambiguous
   Alphabet isSetAlphabet
-  using (levi ; unambiguous-* ; _∉First_ ; _∉FollowLast_ ; SeqUnambig)
+  using (unambiguous-* ; _∉First_ ; _∉FollowLast_ ; SeqUnambig)
+open import Theory.Instances.Monoid.Precise Alphabet isSetAlphabet
+  using (splitAgree)
+open import Theory.Instances.Monoid.SequentialUnambiguity.First
+  Alphabet isSetAlphabet using (#→disjoint)
 open import Theory.Instances.Monoid.Residual Alphabet isSetAlphabet
   using (_⟜_ ; ⟜-intro ; ⟜-app ; ⊗ε-unit-l⁻ ; ⊗ε-unit-r⁻ ; ⊗ε-unit-r
         ; ⊗⊕ᴰ-distL ; ⊗⊕ᴰ-distR)
@@ -106,7 +110,7 @@ module Leaves where
     ⊥Alg (↑q ())
 
     ⊥Aut→ : Parse Mach ⊢ ⊥Ty
-    ⊥Aut→ = rec (TraceTy true) ⊥Alg initial
+    ⊥Aut→ = recParse Mach ⊥Alg initial
 
     ⊥Aut← : ⊥Ty ⊢ Parse Mach
     ⊥Aut← = ⊥Ty-elim
@@ -131,7 +135,7 @@ module Leaves where
     εAlg (↑q ())
 
     εAut→ : Parse Mach ⊢ εTy
-    εAut→ = rec (TraceTy true) εAlg initial
+    εAut→ = recParse Mach εAlg initial
 
     εAut← : εTy ⊢ Parse Mach
     εAut← = STOP initial ∘⊢ liftTy
@@ -166,7 +170,7 @@ module Leaves where
     litAut→ : Parse Mach ⊢ ＂ c ＂
     litAut← : ＂ c ＂ ⊢ Parse Mach
 
-    litAut→ = rec (TraceTy true) litAlg initial
+    litAut→ = recParse Mach litAlg initial
     litAut← = STEP c initial ∘⊢ (id⊢ ,⊗ atState) ∘⊢ ⊗ε-unit-r⁻
       where
       atState : εTy ⊢ Trace true (↑f→q (Mach .δᵢ c))
@@ -202,7 +206,7 @@ module Leaves where
       ∘⊢ fromCode Mach true (↑q tt*)
 
     satAut→ : Parse Mach ⊢ satG P
-    satAut→ = rec (TraceTy true) satAlg initial
+    satAut→ = recParse Mach satAlg initial
 
     satAut← : satG P ⊢ Parse Mach
     satAut← = ⊕ᴰ-elim λ x → atLetter (x .fst) (x .snd)
@@ -460,12 +464,12 @@ module Alt {Q Q' : Type ℓAlph}
       step⊕ c = DM'.STEP c (↑q q') ∘⊢ (id⊢ ,⊗ help c)
 
   ⊕Aut→ : Parse ⊕A ⊢ Parse M ⊕ Parse M'
-  ⊕Aut→ = rec (D⊕.TraceTy true) ⊕Alg initial
+  ⊕Aut→ = recParse ⊕A ⊕Alg initial
 
   ⊕Aut← : Parse M ⊕ Parse M' ⊢ Parse ⊕A
   ⊕Aut← =
-    ⊕-elim (rec (DM.TraceTy true) MAlg initial)
-           (rec (DM'.TraceTy true) M'Alg initial)
+    ⊕-elim (recParse M MAlg initial)
+           (recParse M' M'Alg initial)
 
 ------------------------------------------------------------------------
 -- Concatenation.  The left factor's trace is interpreted in continuation
@@ -587,7 +591,7 @@ module Seq {Q Q' : Type ℓAlph}
       stepM' c = D⊗.STEP c (↑q (Sum.inr q')) ∘⊢ (id⊢ ,⊗ help c)
 
     M'→⊗A : Parse M' ⊢ ⟦ initial ⟧M'
-    M'→⊗A = rec (DM'.TraceTy true) M'Alg initial
+    M'→⊗A = recParse M' M'Alg initial
 
     ------------------------------------------------------------------
     -- The left factor, in continuation-passing form.
@@ -771,10 +775,10 @@ module Seq {Q Q' : Type ℓAlph}
       step⊗ c = DM'.STEP c (↑q q') ∘⊢ (id⊢ ,⊗ help c)
 
   ⊗Aut→ : Parse ⊗A ⊢ Parse M ⊗ Parse M'
-  ⊗Aut→ = rec (D⊗.TraceTy true) ⊗Alg initial
+  ⊗Aut→ = recParse ⊗A ⊗Alg initial
 
   ⊗Aut← : Parse M ⊗ Parse M' ⊢ Parse ⊗A
-  ⊗Aut← = ⟜-app ∘⊢ (rec (DM.TraceTy true) MAlg initial ,⊗ id⊢)
+  ⊗Aut← = ⟜-app ∘⊢ (recParse M MAlg initial ,⊗ id⊢)
 
 ------------------------------------------------------------------------
 -- Star.  `Paste` is what a `KL*` needs and a `⊗` does not: a whole
@@ -891,7 +895,7 @@ module Kleene {Q : Type ℓAlph}
         stepP c = D*.STEP c (↑q q') ∘⊢ (id⊢ ,⊗ relay c)
 
       pasteAt : Parse *A ⊢ D*.Trace true (↑q q)
-      pasteAt = rec (D*.TraceTy true) pasteAlg initial
+      pasteAt = recParse *A pasteAlg initial
 
     ------------------------------------------------------------------
     -- One iteration of the body, as a continuation.
@@ -1047,7 +1051,7 @@ module Kleene {Q : Type ℓAlph}
       ...   | Sum.inl _ = stepJump c accEq
 
   *Aut→ : Parse *A ⊢ Parse M *
-  *Aut→ = rec (D*.TraceTy true) *Alg initial
+  *Aut→ = recParse *A *Alg initial
 
   *Aut← : Parse M * ⊢ Parse *A
   *Aut← = fold*r nilB consB
@@ -1059,28 +1063,12 @@ module Kleene {Q : Type ℓAlph}
     consB : ⟦ starBranch (Parse M) true ⟧TheoryTy (λ _ → Parse *A)
           ⊢ Parse *A
     consB =
-      ⟜-app ∘⊢ (rec (DM.TraceTy true) MAlg initial ,⊗ id⊢) ∘⊢ star-cons⁻
+      ⟜-app ∘⊢ (recParse M MAlg initial ,⊗ id⊢) ∘⊢ star-cons⁻
 
 ------------------------------------------------------------------------
 -- `unambiguous⊗`: the old `unambig-M⊗M'`, over the same hypothesis the
--- star lemma uses.  Levi splits the two factorisations; the letter just
--- past the shorter left factor is refuted by `SeqUnambig`.
-
-private
-  clash⊗ : {X : Type ℓX} {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt}
-    (c : Alphabet) (d x v : String)
-    → (c ∉FollowLast A) Sum.⊎ (c ∉First B)
-    → A x → A (x ++ c ∷ d) → B (c ∷ v) → X
-  clash⊗ c d x v (Sum.inl nfl) a a2 bs =
-    Empty.rec
-      (nfl (x ++ c ∷ d)
-        ( (two x (c ∷ d) , Eq.refl
-          , (a , ((two (c ∷ []) d , Eq.refl , (Eq.refl , (tt , tt*))) , tt*)))
-        , a2) .lower)
-  clash⊗ c d x v (Sum.inr nf) a a2 bs =
-    Empty.rec
-      (nf (c ∷ v)
-        ((two (c ∷ []) v , Eq.refl , (Eq.refl , (tt , tt*))) , bs) .lower)
+-- star lemma uses.  `Precise.splitAgree` does the combinatorics: the two
+-- cuts coincide, so the factors are equal by their own unambiguity.
 
 unambiguous⊗ : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt}
   → ((c : Alphabet) → (c ∉FollowLast A) Sum.⊎ (c ∉First B))
@@ -1091,27 +1079,10 @@ unambiguous⊗ {A = A} {B = B} su uA uB m
     (isPropPathP _ (uA (ms zero)) a a')
     (isPropPathP _ (uB (ms (suc zero))) b b')
   where
-  split : ms zero ++ ms (suc zero) ≡ ns zero ++ ns (suc zero)
-  split = Eq.eqToPath e ∙ sym (Eq.eqToPath f)
-
-  go : (Σ[ d ∈ String ]
-         ((ns zero ≡ ms zero ++ d) × (ms (suc zero) ≡ d ++ ns (suc zero))))
-       Sum.⊎
-       (Σ[ d ∈ String ]
-         ((ms zero ≡ ns zero ++ d) × (ns (suc zero) ≡ d ++ ms (suc zero))))
-     → (ms zero ≡ ns zero) × (ms (suc zero) ≡ ns (suc zero))
-  go (Sum.inl ([] , q , r)) = sym (++-unit-r (ms zero)) ∙ sym q , r
-  go (Sum.inl (c ∷ d , q , r)) =
-    clash⊗ c d (ms zero) (d ++ ns (suc zero)) (su c)
-      a (subst A q a') (subst B r b)
-  go (Sum.inr ([] , q , r)) = q ∙ ++-unit-r (ns zero) , sym r
-  go (Sum.inr (c ∷ d , q , r)) =
-    clash⊗ c d (ns zero) (d ++ ms (suc zero)) (su c)
-      a' (subst A q a) (subst B r b')
-
   pieces : (ms zero ≡ ns zero) × (ms (suc zero) ≡ ns (suc zero))
   pieces =
-    go (levi (ms zero) (ms (suc zero)) (ns zero) (ns (suc zero)) split)
+    splitAgree su su (ms zero) (ms (suc zero)) (ns zero) (ns (suc zero))
+      (Eq.eqToPath e ∙ sym (Eq.eqToPath f)) a b a' b'
 
   sp : ms ≡ ns
   sp = funExt λ where
@@ -1129,19 +1100,14 @@ unambiguous⊕ uA uB dis m (Sum.inr x) (Sum.inl y) =
   Empty.rec (dis m (y , x) .lower)
 unambiguous⊕ uA uB dis m (Sum.inr x) (Sum.inr y) = cong Sum.inr (uB m x y)
 
--- disjoint firsts and not both nullable is disjointness: the old
--- `#→disjoint`, done by splitting the word rather than through `⊕`.
+-- disjoint firsts and not both nullable is disjointness -- that is
+-- `SequentialUnambiguity.First`'s `#→disjoint`, and `_#_` unfolds to
+-- exactly this hypothesis.
 disjointFirsts→ : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt}
   → ((c : Alphabet) → (c ∉First A) Sum.⊎ (c ∉First B))
   → (¬Nullable A) Sum.⊎ (¬Nullable B)
   → A & B ⊢ ⊥Ty
-disjointFirsts→ fs nn [] (a , b) =
-  Sum.rec (λ nu → nu [] (a , εTy-pt)) (λ nu → nu [] (b , εTy-pt)) nn
-disjointFirsts→ fs nn (c ∷ w) (a , b) =
-  Sum.rec (λ nf → nf (c ∷ w) (sw , a)) (λ nf → nf (c ∷ w) (sw , b)) (fs c)
-  where
-  sw : (＂ c ＂ ⊗ ⊤Ty) (c ∷ w)
-  sw = two (c ∷ []) w , Eq.refl , (Eq.refl , (tt , tt*))
+disjointFirsts→ = #→disjoint
 
 unambiguous-satG : (P : Alphabet → Bool) → unambiguous (satG P)
 unambiguous-satG P m (x , p) (y , q) =

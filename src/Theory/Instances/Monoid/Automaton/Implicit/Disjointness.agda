@@ -32,7 +32,9 @@ open import Theory.Instances.Monoid.KleeneStar Alphabet isSetAlphabet
   using (starBranch ; fold*r ; readChars)
 open import Theory.Instances.Monoid.Residual Alphabet isSetAlphabet
   using (_⟜_ ; ⟜-intro ; ⟜-app ; ⊗⊕ᴰ-distL ; ⊗⊕ᴰ-distR)
-open import Theory.Instances.Monoid.Precise Alphabet isSetAlphabet using (flat)
+open import Theory.Instances.Monoid.Precise Alphabet isSetAlphabet
+  using (flat ; ε∉lit⊗ ; sameHead)
+import Theory.Instances.Monoid.Automaton.Disjoint Alphabet isSetAlphabet as D
 open import Theory.Instances.Monoid.Automaton.Deterministic
   Alphabet isSetAlphabet
 open import Theory.Instances.Monoid.Automaton.Implicit Alphabet isSetAlphabet
@@ -56,33 +58,10 @@ private variable ℓA ℓB ℓY : Level
 ⊤Ty↑-intro : {A : TheoryTy ℓA tt} → A ⊢ ⊤Ty↑ ℓB
 ⊤Ty↑-intro m a = tt*
 
--- a word starting with a letter is not empty
-ε∉lit⊗ : {A : TheoryTy ℓA tt} (c : Alphabet) → εTy & (＂ c ＂ ⊗ A) ⊢ ⊥Ty
-ε∉lit⊗ c m ((ms , e , _) , (ns , f , (l , (a , _)))) =
-  Empty.rec
-    (L.¬cons≡nil
-      (flat c (ns zero) (ns (suc zero)) m l f ∙ sym (Eq.eqToPath e)))
-
--- Two splittings of the same word whose left factors are single letters
--- agree: the letters are equal and the tails are the same word.  This is
--- `Grammar.SequentialUnambiguity`'s `same-first`, with the tails kept.
-sameHead : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt} (c d : Alphabet)
-  → (＂ c ＂ ⊗ A) & (＂ d ＂ ⊗ B) ⊢ ⊕[ _ ∈ c ≡ d ] (＂ c ＂ ⊗ (A & B))
-sameHead {A = A} {B = B} c d m
-  ((ms , e , (l , (a , _))) , (ns , f , (l' , (b , _)))) =
-    L.cons-inj₁ heads , (ms , e , (l , ((a , subst B tails b) , tt*)))
-  where
-  heads : c ∷ ms (suc zero) ≡ d ∷ ns (suc zero)
-  heads = flat c (ms zero) (ms (suc zero)) m l e
-        ∙ sym (flat d (ns zero) (ns (suc zero)) m l' f)
-
-  tails : ns (suc zero) ≡ ms (suc zero)
-  tails = sym (L.cons-inj₂ heads)
-
--- the grammar of words with a given first letter
 startsWith : Alphabet → TheoryTy ℓM tt
 startsWith c = ＂ c ＂ ⊗ ⊤Ty
 
+-- `Grammar.SequentialUnambiguity`'s `same-first`, with the tails dropped.
 same-first : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt} (c d : Alphabet)
   → (＂ c ＂ ⊗ A) & (＂ d ＂ ⊗ B) ⊢ ⊕[ _ ∈ c ≡ d ] ⊤Ty
 same-first c d = map⊕ᴰ (λ _ → ⊤Ty-intro) ∘⊢ sameHead c d
@@ -97,7 +76,8 @@ module _ {Q : Type ℓAlph} (M : ImplicitDeterministicAutomaton Q) where
   open ImplicitDeterministicAutomaton M
   open DeterministicAutomaton (IDA→DA M)
     using (Tag ; stop ; step ; TraceTy ; Trace ; STOP ; STEP
-          ; TraceLayer ; unrollTrace)
+          ; TraceLayer ; unrollTrace ; QL ; ℓT)
+  private module DA = DeterministicAutomaton (IDA→DA M)
 
   private
     Q+ : Type ℓAlph
@@ -113,24 +93,18 @@ module _ {Q : Type ℓAlph} (M : ImplicitDeterministicAutomaton Q) where
   Parse = Trace true initial
 
   ------------------------------------------------------------------
-  -- One-step observation of a *code layer*, for any carrier.  This is
-  -- `unrollTrace`'s `fromF` with the carrier left free, so an algebra can
-  -- be written against `⊗`/`⊕` rather than against the raw tuple.
-
-  CodeLayer : (A : Q+ → TheoryTy ℓA tt) (b : Bool) (q : Q+) → TheoryTy _ tt
-  CodeLayer A b q =
-    (⊕[ c ∈ Alphabet ] (＂ c ＂ ⊗ A (δ q c)))
-      ⊕ (⊕[ _ ∈ b Eq.≡ isAcc q ] LiftTheoryTy (ℓF ℓM) εTy)
-
-  fromCode : {A : Q+ → TheoryTy ℓA tt} (b : Bool) (q : Q+)
-    → ⟦ TraceTy b q ⟧TheoryTy A ⊢ CodeLayer A b q
-  fromCode b q m (stop p , x) = Sum.inr (p , lift (x .lower))
-  fromCode b q m (step c , ms , e , f) =
-    Sum.inl (c , ms , e , (f zero .lower , (f (suc zero) .lower , tt*)))
-
-  ------------------------------------------------------------------
   -- Algebras over an accepting trace.  `fail` carries no information, so
   -- the carrier is empty there and the whole `fail` branch is refuted.
+  -- `CodeLayer`/`fromCode` -- the one-step observation with the carrier
+  -- left free -- now come from `Automaton.Deterministic`.
+
+  -- re-exported so that clients keep writing `fromCode M b q`
+  CodeLayer : (A : QL → TheoryTy ℓA tt) (b : Bool) (q : Q+) → TheoryTy _ tt
+  CodeLayer = DA.CodeLayer
+
+  fromCode : {A : QL → TheoryTy ℓA tt} (b : Bool) (q : Q+)
+    → ⟦ TraceTy b (lift q) ⟧TheoryTy A ⊢ CodeLayer A b q
+  fromCode = DA.fromCode
 
   ParseAlgCarrier : (A : FreelyAddInitial Q → TheoryTy ℓA tt)
     → Q+ → TheoryTy ℓA tt
@@ -138,18 +112,35 @@ module _ {Q : Type ℓAlph} (M : ImplicitDeterministicAutomaton Q) where
   ParseAlgCarrier A initial = A initial
   ParseAlgCarrier A (↑q q) = A (↑i q)
 
+  ParseAlgCarrier↑ : (A : FreelyAddInitial Q → TheoryTy ℓA tt)
+    → QL → TheoryTy ℓA tt
+  ParseAlgCarrier↑ A x = ParseAlgCarrier A (x .lower)
+
   ParseAlg : (A : FreelyAddInitial Q → TheoryTy ℓA tt) → Type _
   ParseAlg A =
-    (x : Q+) → ⟦ TraceTy true x ⟧TheoryTy (ParseAlgCarrier A) ⊢ ParseAlgCarrier A x
+    (x : Q+) → ⟦ TraceTy true (lift x) ⟧TheoryTy (ParseAlgCarrier↑ A)
+             ⊢ ParseAlgCarrier A x
+
+  -- `rec` indexes by `QL`; algebras are written over `Q+`.  `Lift` has η,
+  -- so the adapter is invisible in every branch.
+  ParseAlg↑ : {A : FreelyAddInitial Q → TheoryTy ℓA tt} → ParseAlg A
+    → (x : QL) → ⟦ TraceTy true x ⟧TheoryTy (ParseAlgCarrier↑ A)
+               ⊢ ParseAlgCarrier↑ A x
+  ParseAlg↑ alg (lift x) = alg x
+
+  recParse : {A : FreelyAddInitial Q → TheoryTy ℓA tt} → ParseAlg A
+    → (q : Q+) → Trace true q ⊢ ParseAlgCarrier A q
+  recParse alg q = rec (TraceTy true) (ParseAlg↑ alg) (lift q)
 
   module _ {A : FreelyAddInitial Q → TheoryTy ℓA tt} where
-    ParseAlgFail' : ⟦ TraceTy true fail ⟧TheoryTy (ParseAlgCarrier A) ⊢ ⊥Ty
+    ParseAlgFail' :
+      ⟦ TraceTy true (lift fail) ⟧TheoryTy (ParseAlgCarrier↑ A) ⊢ ⊥Ty
     ParseAlgFail' =
       ⊕-elim (⊕ᴰ-elim λ c → ⊗⊥↑-annihR) (⊕ᴰ-elim λ ())
       ∘⊢ fromCode true fail
 
     ParseAlgFail : {B : TheoryTy ℓB tt}
-      → ⟦ TraceTy true fail ⟧TheoryTy (ParseAlgCarrier A) ⊢ B
+      → ⟦ TraceTy true (lift fail) ⟧TheoryTy (ParseAlgCarrier↑ A) ⊢ B
     ParseAlgFail = ⊥Ty-elim ∘⊢ ParseAlgFail'
 
   ------------------------------------------------------------------
@@ -188,69 +179,13 @@ module _ {Q : Type ℓAlph} (M : ImplicitDeterministicAutomaton Q) where
   -- ever used downstream, and the index is what an induction on one trace
   -- against a one-step unrolling of the other already gives.
 
-  module _ (b b' : Bool) where
-    private
-      Res : TheoryTy ℓ-zero tt
-      Res = ⊕[ _ ∈ b ≡ b' ] ⊤Ty
+  -- ...which is `Automaton.Disjoint.TraceDisj` at this machine's
+  -- underlying automaton; nothing in that induction is specific to the
+  -- implicit wrapper.
+  TraceDisj : (b b' : Bool) (q : Q+)
+    → Trace b q & Trace b' q ⊢ ⊕[ _ ∈ b ≡ b' ] ⊤Ty
+  TraceDisj b b' = D.TraceDisj (IDA→DA M) b b'
 
-      Carrier : Q+ → TheoryTy _ tt
-      Carrier q = Trace b' q ⇒ Res
-
-      -- two steps must step by the same letter, and then the recursive
-      -- call at the common successor state supplies the verdict
-      reState : (q : Q+) (c d : Alphabet) → c ≡ d
-        → Trace b' (δ q d) ⊢ Trace b' (δ q c)
-      reState q c d p m t = subst (λ y → Trace b' (δ q y) m) (sym p) t
-
-      stepStep : (q : Q+) (c d : Alphabet)
-        → (＂ c ＂ ⊗ Carrier (δ q c)) & (＂ d ＂ ⊗ Trace b' (δ q d)) ⊢ Res
-      stepStep q c d =
-        ⊕ᴰ-elim
-          (λ p →
-            ⊕ᴰ-elim (λ pb → σ⊕ pb ∘⊢ ⊤Ty-intro)
-            ∘⊢ ⊗⊕ᴰ-distR {C = λ _ → ⊤Ty}
-            ∘⊢ (id⊢ ,⊗ (⇒-app ∘⊢ (id⊢ ,&p reState q c d p))))
-        ∘⊢ sameHead c d
-
-      -- a step and a stop cannot describe the same word
-      stepStop : (q : Q+) (c : Alphabet)
-        → (＂ c ＂ ⊗ Carrier (δ q c))
-          & (⊕[ _ ∈ b' Eq.≡ isAcc q ] LiftTheoryTy (ℓF ℓM) εTy)
-        ⊢ Res
-      stepStop q c =
-        ⊥Ty-elim ∘⊢ ε∉lit⊗ c
-        ∘⊢ ((⊕ᴰ-elim (λ _ → lowerTy) ∘⊢ π₂) ,& π₁)
-
-      stopStep : (q : Q+)
-        → εTy & (⊕[ c ∈ Alphabet ] (＂ c ＂ ⊗ Trace b' (δ q c))) ⊢ Res
-      stopStep q = ⊥Ty-elim ∘⊢ ⊕ᴰ-elim (λ c → ε∉lit⊗ c) ∘⊢ &⊕ᴰ-distR
-
-      -- both stop: the two acceptance equations meet at `isAcc q`
-      stopStop : (q : Q+) → b Eq.≡ isAcc q
-        → εTy & (⊕[ _ ∈ b' Eq.≡ isAcc q ] LiftTheoryTy (ℓF ℓM) εTy) ⊢ Res
-      stopStop q p =
-        ⊕ᴰ-elim (λ p' → σ⊕ (Eq.eqToPath p ∙ sym (Eq.eqToPath p')) ∘⊢ ⊤Ty-intro)
-        ∘⊢ π₂
-
-      disjAlg : (q : Q+) → ⟦ TraceTy b q ⟧TheoryTy Carrier ⊢ Carrier q
-      disjAlg q =
-        ⊕-elim
-          (⊕ᴰ-elim λ c →
-            ⇒-intro
-              (⊕-elim&
-                (⊕ᴰ-elim (λ d → stepStep q c d) ∘⊢ &⊕ᴰ-distR)
-                (stepStop q c)
-              ∘⊢ (id⊢ ,&p unrollTrace b' q)))
-          (⊕ᴰ-elim λ p →
-            ⇒-intro
-              (⊕-elim& (stopStep q) (stopStop q p)
-              ∘⊢ (lowerTy ,&p unrollTrace b' q)))
-        ∘⊢ fromCode b q
-
-    TraceDisj : (q : Q+) → Trace b q & Trace b' q ⊢ ⊕[ _ ∈ b ≡ b' ] ⊤Ty
-    TraceDisj q = ⇒-intro⁻ (rec (TraceTy b) disjAlg q)
-
-  -- the two verdicts are disjoint
   TraceDisj⊥ : (b b' : Bool) → (b ≡ b' → Empty.⊥) → (q : Q+)
     → Trace b q & Trace b' q ⊢ ⊥Ty
   TraceDisj⊥ b b' ne q =
@@ -321,7 +256,7 @@ module _ {Q : Type ℓAlph} (M : ImplicitDeterministicAutomaton Q) where
 
     getFirstTransition : startsWith c & Parse ⊢ FirstRes
     getFirstTransition =
-      ⇒-intro⁻ (rec (TraceTy true) firstAlg initial) ∘⊢ &-swap
+      ⇒-intro⁻ (recParse firstAlg initial) ∘⊢ &-swap
 
   ¬FirstAut : (c : Alphabet) → fail ≡ δᵢ c → startsWith c & Parse ⊢ ⊥Ty
   ¬FirstAut c toFail =
@@ -394,7 +329,7 @@ module _ {Q : Type ℓAlph} (M : ImplicitDeterministicAutomaton Q) where
         ... | ↑f q'' = ⟜-app
 
     extendC : Parse ⊗ startsWith c ⊢ Trace false initial
-    extendC = ⟜-app ∘⊢ (rec (TraceTy true) flAlg initial ,⊗ id⊢)
+    extendC = ⟜-app ∘⊢ (recParse flAlg initial ,⊗ id⊢)
 
     ¬FollowLastAut : (Parse ⊗ startsWith c) & Parse ⊢ ⊥Ty
     ¬FollowLastAut =

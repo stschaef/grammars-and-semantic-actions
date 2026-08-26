@@ -1,5 +1,5 @@
 {-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
-{- Deterministic automata, ported from `Automata/Deterministic.agda`.
+{- Deterministic automata, ported from `Grammar/Automata/Deterministic.agda`.
 
    The interface is the old one: a state set, an initial state, an
    acceptance predicate, a transition.  Everything else is generated.
@@ -42,6 +42,8 @@ open import Theory.Instances.Monoid.KleeneStar.Guarded Alphabet isSetAlphabet
   using (char-¬Nullable ; fold*g)
 open import Theory.Instances.Monoid.Residual Alphabet isSetAlphabet
   using (⊗⊕ᴰ-distL ; ⊗⊕ᴰ-distR ; _⊸_ ; ⊸-lam)
+open import Theory.Instances.Monoid.Convolution Alphabet isSetAlphabet
+  using (⟦⊗e⟧ ; ⟦⊗e⟧⁻ ; ⟦⊗e⟧-η ; ⟦⊗e⟧⁻-nat)
 open import Theory.Instances.Monoid.Precise Alphabet isSetAlphabet using (Dl-ε ; Dl-lit⊗)
 open import Theory.Instances.Monoid.Derivative Alphabet isSetAlphabet using (Dl ; Dl-map)
 open import Theory.Instances.Monoid.Derivative.General Alphabet isSetAlphabet
@@ -50,31 +52,78 @@ open import Theory.Type.Inductive.HLevels MonEqns Alphabet (λ _ → tt)
   listPresentation
 
 
--- The state set sits at the alphabet's level.  That is forced by the code
--- language: `Functor ℓA X` keeps its variable set at or below `ℓA`, and
--- here `ℓA` is the carrier's level.  The alphabet itself stays polymorphic.
-record DeterministicAutomaton (Q : Type ℓAlph) : Type (ℓ-suc ℓAlph) where
+private variable ℓQ ℓB : Level
+
+-- The state set is level-polymorphic.  `Functor ℓA X` carries `X` at its
+-- own level, so only the *index* has to accommodate the alphabet -- the
+-- summand index `Tag` mentions `Alphabet`, and `⊕e` demands it sit at
+-- `X`'s level.  Hence `QL = Lift ℓAlph Q`; the carrier stays at `ℓM`, so
+-- no grammar in the code is lifted.
+record DeterministicAutomaton (Q : Type ℓQ)
+  : Type (ℓ-suc (ℓ-max ℓQ ℓAlph)) where
   field
     init  : Q
     isAcc : Q → Bool
     δ     : Q → Alphabet → Q
 
-  data Tag (b : Bool) (q : Q) : Type ℓAlph where
+  QL : Type (ℓ-max ℓQ ℓAlph)
+  QL = Lift ℓAlph Q
+
+  -- the level a trace lands at: `μ` adds the index's level to the code's
+  ℓT : Level
+  ℓT = ℓ-max (ℓF ℓM) (ℓ-max ℓQ ℓAlph)
+
+  data Tag (b : Bool) (q : Q) : Type (ℓ-max ℓQ ℓAlph) where
     stop : b Eq.≡ isAcc q → Tag b q
     step : Alphabet → Tag b q
 
-  TraceTy : Bool → Q → Functor ℓM Q (λ _ → tt) tt
-  TraceTy b q = ⊕e (Tag b q) λ where
+  -- the labelled summand, named so its two directions can be stated
+  stepBranch : (q : Q) (c : Alphabet) → Functor ℓM QL (λ _ → tt) tt
+  stepBranch q c = ⊗e _⊙_ (two (k (literal c)) (Var (lift (δ q c))))
+
+  TraceTy : Bool → QL → Functor ℓM QL (λ _ → tt) tt
+  TraceTy b (lift q) = ⊕e (Tag b q) λ where
     (stop _) → k εTy
-    (step c) → ⊗e _⊙_ (two (k (literal c)) (Var (δ q c)))
+    (step c) → stepBranch q c
 
   Trace : Bool → Q → TheoryTy _ tt
-  Trace b = μ (TraceTy b)
+  Trace b q = μ (TraceTy b) (lift q)
+
+  -- an algebra over the trace code, indexed as `rec` wants it
+  TraceAlg : Bool → (QL → TheoryTy ℓB tt) → Type _
+  TraceAlg b A = ∀ q → ⟦ TraceTy b q ⟧TheoryTy A ⊢ A q
+
+  -- The `step` summand, unbundled: a DSL composite rather than a tuple, so
+  -- that a labelled-transition branch never binds a model element.
+  module _ {ℓB} {A : QL → TheoryTy ℓB tt} where
+    step-out : ∀ {q} (c : Alphabet)
+      → ⟦ stepBranch q c ⟧TheoryTy A ⊢ literal c ⊗ A (lift (δ q c))
+    step-out c = ⊗-map lowerTy lowerTy ∘⊢ ⟦⊗e⟧ _ _
+
+    step-in : ∀ {q} (c : Alphabet)
+      → literal c ⊗ A (lift (δ q c)) ⊢ ⟦ stepBranch q c ⟧TheoryTy A
+    step-in c = ⟦⊗e⟧⁻ _ _ ∘⊢ ⊗-map liftTy liftTy
+
+    step-η : ∀ {q} (c : Alphabet) → step-in {q = q} c ∘⊢ step-out c ≡ id⊢
+    step-η c = ⟦⊗e⟧-η _ _
+
+  map-step : ∀ {ℓB ℓC} {A : QL → TheoryTy ℓB tt} {B : QL → TheoryTy ℓC tt}
+    (f : ∀ q → A q ⊢ B q) (q : Q) (c : Alphabet)
+    → map (stepBranch q c) f
+      ≡ step-in {A = B} c ∘⊢ ⊗-map id⊢ (f (lift (δ q c))) ∘⊢ step-out {A = A} c
+  map-step {A = A} f q c =
+    sym (cong (λ z → map (stepBranch q c) f ∘⊢ z) (⟦⊗e⟧-η _ _ {A = A}))
+    ∙ cong (λ z → z ∘⊢ ⟦⊗e⟧ {A = A} _ _) (⟦⊗e⟧⁻-nat _ _ f)
 
   ------------------------------------------------------------------
   -- Constructors: pick the tag, roll.
 
-  STOP : (q : Q) → LiftTheoryTy (ℓF ℓM) εTy ⊢ Trace (isAcc q) q
+  -- `stop` at a given bit, with the acceptance equation supplied.  The
+  -- unprimed form is the common case, `b := isAcc q`.
+  STOP' : {b : Bool} {q : Q} → b Eq.≡ isAcc q → εTy ⊢ Trace b q
+  STOP' {b = b} {q = q} p = roll ∘⊢ σ⊕ {Y = Tag b q} (stop p) ∘⊢ liftTy
+
+  STOP : (q : Q) → LiftTheoryTy ℓT εTy ⊢ Trace (isAcc q) q
   STOP q = roll ∘⊢ σ⊕ {Y = Tag (isAcc q) q} (stop Eq.refl)
 
   STEP : {b : Bool} (c : Alphabet) (q : Q)
@@ -84,7 +133,8 @@ record DeterministicAutomaton (Q : Type ℓAlph) : Type (ℓ-suc ℓAlph) where
     -- the only plumbing: a tensor's factors enter the code lifted, as in
     -- `KleeneStar.CONS-branch`
     STEP-branch : {b : Bool} → literal c ⊗ Trace b (δ q c)
-      ⊢ ⟦ ⊗e _⊙_ (two (k (literal c)) (Var (δ q c))) ⟧TheoryTy (Trace b)
+      ⊢ ⟦ ⊗e _⊙_ (two (k (literal c)) (Var (lift (δ q c)))) ⟧TheoryTy
+          (λ x → Trace b (x .lower))
     STEP-branch m (ms , e , l , t , _) = ms , e , two (lift l) (lift t)
 
   ------------------------------------------------------------------
@@ -99,15 +149,29 @@ record DeterministicAutomaton (Q : Type ℓAlph) : Type (ℓ-suc ℓAlph) where
   TraceLayer : Bool → Q → TheoryTy _ tt
   TraceLayer b q =
     (⊕[ c ∈ Alphabet ] (literal c ⊗ Trace b (δ q c)))
-      ⊕ (⊕[ _ ∈ b Eq.≡ isAcc q ] LiftTheoryTy (ℓF ℓM) εTy)
+      ⊕ (⊕[ _ ∈ b Eq.≡ isAcc q ] LiftTheoryTy ℓT εTy)
 
   unrollTrace : (b : Bool) (q : Q) → Trace b q ⊢ TraceLayer b q
-  unrollTrace b q = fromF ∘⊢ unroll (TraceTy b) q
+  unrollTrace b q = fromF ∘⊢ unroll (TraceTy b) (lift q)
     where
-    fromF : ⟦ TraceTy b q ⟧TheoryTy (Trace b) ⊢ TraceLayer b q
+    fromF : ⟦ TraceTy b (lift q) ⟧TheoryTy (λ x → Trace b (x .lower))
+          ⊢ TraceLayer b q
     fromF m (stop p , x) = Sum.inr (p , x)
     fromF m (step c , ms , e , f) =
       Sum.inl (c , ms , e , f zero .lower , f (suc zero) .lower , tt*)
+
+  -- The same one-step observation with the carrier left free, so that an
+  -- algebra can be written against `⊗`/`⊕` rather than the raw tuple.
+  CodeLayer : (A : QL → TheoryTy ℓB tt) (b : Bool) (q : Q) → TheoryTy _ tt
+  CodeLayer A b q =
+    (⊕[ c ∈ Alphabet ] (literal c ⊗ A (lift (δ q c))))
+      ⊕ (⊕[ _ ∈ b Eq.≡ isAcc q ] LiftTheoryTy ℓT εTy)
+
+  fromCode : {A : QL → TheoryTy ℓB tt} (b : Bool) (q : Q)
+    → ⟦ TraceTy b (lift q) ⟧TheoryTy A ⊢ CodeLayer A b q
+  fromCode b q m (stop p , x) = Sum.inr (p , lift (x .lower))
+  fromCode b q m (step c , ms , e , f) =
+    Sum.inl (c , ms , e , (f zero .lower , (f (suc zero) .lower , tt*)))
 
   -- `STEP` transposed along `literal c ⊗ - ⊣ literal c ⊸ -`
   Trace→∂ : (b : Bool) (q : Q) (c : Alphabet)
@@ -128,7 +192,7 @@ record DeterministicAutomaton (Q : Type ℓAlph) : Type (ℓ-suc ℓAlph) where
   Dl→Trace b q c =
     ⊕-elim
       (⊕ᴰ-elim λ d → ⊕ᴰ-elim (onState d) ∘⊢ Dl-lit⊗ c d)
-      (⊕ᴰ-elim λ _ → ⊥Ty-elim ∘⊢ Dl-ε c ∘⊢ Dl-map c (lowerTy {ℓB = ℓF ℓM} {A = εTy}))
+      (⊕ᴰ-elim λ _ → ⊥Ty-elim ∘⊢ Dl-ε c ∘⊢ Dl-map c (lowerTy {ℓB = ℓT} {A = εTy}))
     ∘⊢ Dl-map c (unrollTrace b q)
     where
     onState : (d : Alphabet) → d ≡ c → Trace b (δ q d) ⊢ Trace b (δ q c)
@@ -159,14 +223,15 @@ record DeterministicAutomaton (Q : Type ℓAlph) : Type (ℓ-suc ℓAlph) where
       ret (stop p) = refl
       ret (step c) = refl
 
-    codeIsSet : (b : Bool) (q : Q) → isSetValued (TraceTy b q)
-    codeIsSet b q .fst = lift (isSetTag b q)
-    codeIsSet b q .snd (stop _) = lift (isSet⊗ ε· _ _ λ ())
-    codeIsSet b q .snd (step c) zero = lift λ m → isProp→isSet isPropEqString
-    codeIsSet b q .snd (step c) (suc zero) = lift tt*
+    codeIsSet : (b : Bool) (q : QL) → isSetValued (TraceTy b q)
+    codeIsSet b (lift q) .fst = lift (isSetTag b q)
+    codeIsSet b (lift q) .snd (stop _) = lift (isSet⊗ ε· _ _ λ ())
+    codeIsSet b (lift q) .snd (step c) zero =
+      lift λ m → isProp→isSet isPropEqString
+    codeIsSet b (lift q) .snd (step c) (suc zero) = lift tt*
 
   isSetTrace : (b : Bool) (q : Q) → isSetTheoryTy (Trace b q)
-  isSetTrace b = isSetμ (TraceTy b) (codeIsSet b)
+  isSetTrace b q = isSetμ (TraceTy b) (codeIsSet b) (lift q)
 
   module _ (isSetQ : isSet Q) where
     private

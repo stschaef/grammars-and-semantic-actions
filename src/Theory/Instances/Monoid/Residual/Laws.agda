@@ -1,0 +1,61 @@
+{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
+{- How `⟜-intro⁻` interacts with the residual's two functorial actions.
+
+   `Residual` introduces `⟜-post` and `⟜-precomp` and says nothing about
+   uncurrying them.  Both facts below hold because `⟜-intro⁻` spends the
+   splitting's equation and `⟜-post` does not; matching that equation is the
+   whole proof, and it is the last place a model element is bound. -}
+open import Cubical.Foundations.Prelude
+open import Cubical.Foundations.HLevels
+open import Cubical.Algebra.Theory.Finitary
+open SortedSig
+open SortedEqns
+module Theory.Instances.Monoid.Residual.Laws
+  {ℓAlph}
+  (Alphabet : Type ℓAlph) (isSetAlphabet : isSet Alphabet) where
+
+open import Cubical.Data.FinData using (Fin ; zero ; suc)
+open import Cubical.Data.Unit using (Unit ; tt ; tt*)
+import Cubical.Data.Equality as Eq
+
+open import Theory.Instances.Monoid.Base
+open import Theory.Instances.Monoid.Strings Alphabet isSetAlphabet
+open import Theory.Instances.Monoid.Residual Alphabet isSetAlphabet
+  using (_⟜_ ; ⟜-intro ; ⟜-intro⁻ ; ⟜-app ; ⟜-post ; ⟜-precomp)
+
+private variable ℓ ℓ' ℓ'' ℓ''' : Level
+
+module _ {A : TheoryTy ℓ tt} {B : TheoryTy ℓ' tt} {C : TheoryTy ℓ'' tt} where
+
+  -- Post-composition survives uncurrying.  Not `refl`: the two sides apply
+  -- `X` on either side of the splitting's cast.
+  ⟜-post-intro⁻ : {C' : TheoryTy ℓ''' tt} (X : C ⊢ C') (f : A ⊢ C ⟜ B)
+    → ⟜-intro⁻ (⟜-post X ∘⊢ f) ≡ X ∘⊢ ⟜-intro⁻ f
+  ⟜-post-intro⁻ X f = funExt λ m → funExt λ where
+    (ms , Eq.refl , (a , (b , _))) → refl
+
+  -- The two together, which is the shape a client actually meets: a map out
+  -- of the residual's result and a map into its argument.
+  ⟜-post-precomp-intro⁻ : {C' : TheoryTy ℓ''' tt} {ℓ⁗ : Level}
+    {B' : TheoryTy ℓ⁗ tt} (X : C ⊢ C') (g : B' ⊢ B) (f : A ⊢ C ⟜ B)
+    → ⟜-intro⁻ (⟜-post X ∘⊢ ⟜-precomp g ∘⊢ f)
+      ≡ X ∘⊢ ⟜-intro⁻ f ∘⊢ ⊗-map id⊢ g
+  ⟜-post-precomp-intro⁻ X g f = funExt λ m → funExt λ where
+    (ms , Eq.refl , (a , (b , _))) → refl
+
+  -- Pre-composition in the argument slot is on the nose.
+  ⟜-precomp-intro⁻ : {B' : TheoryTy ℓ''' tt} (g : B' ⊢ B) (f : A ⊢ C ⟜ B)
+    → ⟜-intro⁻ {A = A} {B = B'} {C = C} (⟜-precomp g ∘⊢ f)
+      ≡ ⟜-intro⁻ f ∘⊢ ⊗-map (id⊢ {A = A}) g
+  ⟜-precomp-intro⁻ g f = refl
+
+  -- ...and so is uncurrying a pre-composition in the *result* slot.
+  ⟜-intro⁻-nat : {A' : TheoryTy ℓ''' tt} (f : A ⊢ C ⟜ B) (h : A' ⊢ A)
+    → ⟜-intro⁻ {A = A'} {B = B} {C = C} (f ∘⊢ h)
+      ≡ ⟜-intro⁻ f ∘⊢ ⊗-map h (id⊢ {A = B})
+  ⟜-intro⁻-nat f h = refl
+
+  -- `⟜-app` is `⟜-intro⁻` at the identity, so this is the previous law.
+  ⟜-app-intro⁻ : {A' : TheoryTy ℓ''' tt} (f : A' ⊢ C ⟜ B)
+    → ⟜-app {B = B} {C = C} ∘⊢ ⊗-map f id⊢ ≡ ⟜-intro⁻ f
+  ⟜-app-intro⁻ f = refl

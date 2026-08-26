@@ -148,14 +148,15 @@ module _ {Q : Type ℓAlph} (M : DeterministicAutomaton Q) where
   -- ...and recover it.  `Trace b q` is `⊕[ q' ] (b ≡ isAcc q') × TraceTo q q'`
   Trace→TraceTo : (b : Bool) (q : Q)
     → Trace b q ⊢ ⊕[ q' ∈ Q ] (⊕[ _ ∈ b Eq.≡ isAcc q' ] TraceTo q q')
-  Trace→TraceTo b q = rec (TraceTy b) alg q
+  Trace→TraceTo b q = rec (TraceTy b) alg (lift q)
     where
     Ans : Q → TheoryTy _ tt
     Ans r = ⊕[ q' ∈ Q ] (⊕[ _ ∈ b Eq.≡ isAcc q' ] TraceTo r q')
 
-    alg : (r : Q) → ⟦ TraceTy b r ⟧TheoryTy Ans ⊢ Ans r
-    alg r m (stop p , x) = r , p , STOPTo r m x
-    alg r m (step c , ms , e , f) =
+    alg : (r : QL) → ⟦ TraceTy b r ⟧TheoryTy (λ x → Ans (x .lower))
+        ⊢ Ans (r .lower)
+    alg (lift r) m (stop p , x) = r , p , STOPTo r m x
+    alg (lift r) m (step c , ms , e , f) =
       f (suc zero) .lower .fst
       , f (suc zero) .lower .snd .fst
       , STEPTo c r (f (suc zero) .lower .fst) m
