@@ -28,7 +28,7 @@ open import Cubical.Data.List using ([] ; _∷_)
 import Cubical.Data.List.Properties as L
 open import Cubical.Data.Sigma using (Σ-syntax ; _,_ ; fst ; snd)
 open import Cubical.Data.Unit using (tt)
-open import Cubical.Foundations.HLevels using (isProp→isSet ; isSetΣ)
+open import Cubical.Foundations.HLevels using (isSetΣ)
 
 open import Theory.Instances.Monoid.Combinator.Decidable.Base Alphabet _≟_ ℓ
   public
@@ -38,7 +38,6 @@ open import Theory.Instances.Monoid.Residual Alphabet isSetAlphabet
 
 private variable ℓK : Level
 
--- the letters `P` accepts, each carrying why
 Sat : (Alphabet → Bool) → Type ℓAlph
 Sat P = Σ[ c ∈ Alphabet ] (P c ≡ true)
 
@@ -51,8 +50,6 @@ satG P = ⊕[ x ∈ Sat P ] literal (x .fst)
 satSet : (P : Alphabet → Bool) → TheorySet ℓM tt
 satSet P = satG P , isSet⊕ᴰ (isSetSat P) λ x → isSetLiteral (x .fst)
 
--- `satG P` is precise for the same reason `char` is: its words are one
--- letter long, so a splitting is fixed by the whole.
 sat⊗-precise : {P : Alphabet → Bool} {K : TheoryTy ℓK tt}
   → satG P ⊗ ¬Ty K ⊢ ¬Ty (satG P ⊗ K)
 sat⊗-precise {K = K} m (ms , e , ((x , lc) , (nk , _))) t =
@@ -69,7 +66,6 @@ dec-sat⊗↑ : {P : Alphabet → Bool} {K : TheoryTy ℓK tt}
   → satG P ⊗ DecTy K ⊢ DecTy (satG P ⊗ K)
 dec-sat⊗↑ = ⊕-elim dec-yes (dec-no ∘⊢ sat⊗-precise) ∘⊢ ⊗⊕-distR
 
--- reading one accepted letter, as a decision
 dec-sat⊗-at : (P : Alphabet → Bool) {K : TheorySet ℓK tt}
   → ty (▷ (DecSet K)) ⊢ DecTy (satG P ⊗ ty K)
 dec-sat⊗-at P {K = K} = look⊗ br
@@ -94,7 +90,6 @@ dec-sat⊗-at P {K = K} = look⊗ br
     go false eq = miss (tk d) λ where
       x Eq.refl → true≢false (sym (x .snd) ∙ eq)
 
--- ...and as a parser
 satTok : {D : TheoryTy ℓK tt} (P : Alphabet → Bool) {ℓK' : Level}
   → D ⊢ Parser ℓK' ⟨▷⟩ ⟨□⟩ (satSet P)
 satTok P = mkP λ K → ▷□ (dec-sat⊗-at P) ∘⊢ π₂

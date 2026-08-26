@@ -20,7 +20,7 @@ b ≟L b = Sum.inl Eq.refl
 a ≟L b = Sum.inr λ ()
 b ≟L a = Sum.inr λ ()
 
-open import Theory.Instances.Monoid.Regex.Base L _≟L_ (ℓ-suc ℓ-zero)
+open import Theory.Instances.Monoid.Regex.Notation L _≟L_ (ℓ-suc ℓ-zero)
 
 ℓr : Level
 ℓr = ℓ-suc ℓ-zero
@@ -31,7 +31,7 @@ matches r = observe (decide-r r ℓr) (semact-dec (semact-pure tt))
 ------------------------------------------------------------------------
 -- `a b`
 
-ab : RE false
+ab : RE notNullable
 ab = ⟨ a ⟩r ⊗r ⟨ b ⟩r
 
 _ : matches ab (a ∷ b ∷ []) ≡ M.just tt
@@ -46,7 +46,7 @@ _ = refl
 ------------------------------------------------------------------------
 -- `a *`
 
-as : RE true
+as : RE nullable
 as = ⟨ a ⟩r *r
 
 _ : matches as [] ≡ M.just tt
@@ -61,7 +61,7 @@ _ = refl
 ------------------------------------------------------------------------
 -- `(a | b) *` -- alternation under a star
 
-abs : RE true
+abs : RE nullable
 abs = (⟨ a ⟩r ⊕r ⟨ b ⟩r) *r
 
 _ : matches abs [] ≡ M.just tt
@@ -74,7 +74,7 @@ _ = refl
 -- `a b *` -- a non-nullable head before a nullable tail, the case the
 -- two-tag fold exists for
 
-abs' : RE false
+abs' : RE notNullable
 abs' = ⟨ a ⟩r ⊗r (⟨ b ⟩r *r)
 
 _ : matches abs' (a ∷ []) ≡ M.just tt
@@ -89,7 +89,7 @@ _ = refl
 ------------------------------------------------------------------------
 -- `. +` -- one or more of anything
 
-anyPlus : RE false
+anyPlus : RE notNullable
 anyPlus = anyr +r
 
 _ : matches anyPlus (a ∷ b ∷ []) ≡ M.just tt
@@ -110,7 +110,7 @@ notA a = false
 notA b = true
 
 -- `[a] [^a] *`
-cls : RE false
+cls : RE notNullable
 cls = satr isA ⊗r (satr notA *r)
 
 _ : matches cls (a ∷ []) ≡ M.just tt
@@ -127,4 +127,66 @@ _ = refl
 
 -- `anyr` still works, now as a definition
 _ : matches (anyr *r) (a ∷ b ∷ a ∷ []) ≡ M.just tt
+_ = refl
+
+------------------------------------------------------------------------
+-- The surface syntax.
+
+-- `[ab] ?`
+optSet : RE nullable
+optSet = (oneOfr (a ∷ b ∷ [])) ?r
+
+_ : matches optSet [] ≡ M.just tt
+_ = refl
+
+_ : matches optSet (b ∷ []) ≡ M.just tt
+_ = refl
+
+_ : matches optSet (a ∷ b ∷ []) ≡ M.nothing
+_ = refl
+
+-- `"aba"`, a literal word
+word : RE notNullable
+word = strr (a ∷ b ∷ a ∷ [])
+
+_ : matches word (a ∷ b ∷ a ∷ []) ≡ M.just tt
+_ = refl
+
+_ : matches word (a ∷ b ∷ []) ≡ M.nothing
+_ = refl
+
+-- a{3}
+aaa : RE notNullable
+aaa = repr 3 ⟨ a ⟩r
+
+_ : matches aaa (a ∷ a ∷ a ∷ []) ≡ M.just tt
+_ = refl
+
+_ : matches aaa (a ∷ a ∷ []) ≡ M.nothing
+_ = refl
+
+-- `a{1,3}` -- one, then up to two more
+oneToThree : RE notNullable
+oneToThree = betweenr 1 2 ⟨ a ⟩r
+
+_ : matches oneToThree (a ∷ []) ≡ M.just tt
+_ = refl
+
+_ : matches oneToThree (a ∷ a ∷ a ∷ []) ≡ M.just tt
+_ = refl
+
+_ : matches oneToThree [] ≡ M.nothing
+_ = refl
+
+_ : matches oneToThree (a ∷ a ∷ a ∷ a ∷ []) ≡ M.nothing
+_ = refl
+
+-- `[^b] +`
+notBs : RE notNullable
+notBs = noneOfr (b ∷ []) +r
+
+_ : matches notBs (a ∷ a ∷ []) ≡ M.just tt
+_ = refl
+
+_ : matches notBs (a ∷ b ∷ []) ≡ M.nothing
 _ = refl

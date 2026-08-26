@@ -19,7 +19,8 @@ module Theory.Instances.Monoid.Regex.Base
   (ℓ : Level)
   where
 
-open import Cubical.Data.Bool using (Bool ; true ; false ; _and_ ; _or_ ; true≢false)
+open import Cubical.Data.Bool using (Bool ; true ; false)
+open import Cubical.Data.Unit using (Unit)
 open import Cubical.Data.Unit using (tt)
 open import Cubical.Data.Sigma using (_,_ ; fst ; snd)
 
@@ -30,33 +31,53 @@ open import Theory.Instances.Monoid.KleeneStar.Guarded Alphabet isSetAlphabet
 open import Theory.Instances.Monoid.Regex.Sat Alphabet _≟_ ℓ
   using (Sat ; satG ; satSet ; satTok) public
 
--- `b` is "may match the empty word"
-data RE : Bool → Type ℓAlph where
-  εr   : RE true
-  ⊥r   : RE false
-  ⟨_⟩r : Alphabet → RE false
-  satr : (Alphabet → Bool) → RE false
-  _⊗r_ : ∀ {b b'} → RE b → RE b' → RE (b and b')
-  _⊕r_ : ∀ {b b'} → RE b → RE b' → RE (b or b')
-  _*r  : RE false → RE true
+-- Whether a regex may match the empty word.  A `Bool` here would say
+-- nothing about which of the two truth values means what, and the
+-- operations below would be `_and_`/`_or_` with the same ambiguity.
+data Nullability : Type ℓ-zero where
+  nullable notNullable : Nullability
+
+ν≢ν̸ : nullable ≡ notNullable → Empty.⊥
+ν≢ν̸ p = subst Discern p _
+  where
+  Discern : Nullability → Type ℓ-zero
+  Discern nullable = Unit
+  Discern notNullable = Empty.⊥
+
+-- concatenation is nullable only if both sides are; alternation if either
+-- is.  Both are stated so the *left* argument drives, which is what keeps
+-- the indices reducing under a variable right argument.
+_·ν_ : Nullability → Nullability → Nullability
+notNullable ·ν _ = notNullable
+nullable ·ν y = y
+
+_+ν_ : Nullability → Nullability → Nullability
+nullable +ν _ = nullable
+notNullable +ν y = y
+
+data RE : Nullability → Type ℓAlph where
+  εr   : RE nullable
+  ⊥r   : RE notNullable
+  ⟨_⟩r : Alphabet → RE notNullable
+  satr : (Alphabet → Bool) → RE notNullable
+  _⊗r_ : ∀ {n n'} → RE n → RE n' → RE (n ·ν n')
+  _⊕r_ : ∀ {n n'} → RE n → RE n' → RE (n +ν n')
+  _*r  : RE notNullable → RE nullable
 
 infixr 20 _⊗r_
 infixr 19 _⊕r_
 infix 30 _*r
 infix 30 ⟨_⟩r
 
--- the wildcard is just the always-true class
-anyr : RE false
+anyr : RE notNullable
 anyr = satr λ _ → true
 
--- one or more
-_+r : RE false → RE false
+_+r : RE notNullable → RE notNullable
 r +r = r ⊗r (r *r)
 
 infix 30 _+r
 
--- the level of the grammar a regex denotes
-lv : ∀ {b} → RE b → Level
+lv : ∀ {n} → RE n → Level
 lv εr = ℓM
 lv ⊥r = ℓ-zero
 lv ⟨ c ⟩r = ℓM
@@ -65,8 +86,7 @@ lv (r ⊗r r') = ℓ-max ℓAlph (ℓ-max (lv r) (lv r'))
 lv (r ⊕r r') = ℓ-max (lv r) (lv r')
 lv (r *r) = ℓF (lv r)
 
--- ...and the grammar itself, carrying its set-ness
-⟦_⟧ : ∀ {b} (r : RE b) → TheorySet (lv r) tt
+⟦_⟧ : ∀ {n} (r : RE n) → TheorySet (lv r) tt
 ⟦ εr ⟧ = εSet
 ⟦ ⊥r ⟧ = ⊥Set
 ⟦ ⟨ c ⟩r ⟧ = litSet c
@@ -75,19 +95,11 @@ lv (r *r) = ℓF (lv r)
 ⟦ r ⊕r r' ⟧ = ⟦ r ⟧ ⊕Set ⟦ r' ⟧
 ⟦ r *r ⟧ = StarSet ⟦ r ⟧
 
-------------------------------------------------------------------------
--- The parser, as a fold over the regex.
---
--- Two mutually-defined interpretations, one per hypothesis tag.  `parse▷`
--- exists only for non-nullable regexes -- that is what the `RE false`
--- index buys -- and it is what `many` demands of a star's body, so the
--- guardedness of the recursion is discharged by the typing rule.
-
-parse  : ∀ {b} (r : RE b) (ℓK : Level)
+parse  : ∀ {n} (r : RE n) (ℓK : Level)
        → ⊤Ty ⊢ Parser (ℓ-max ℓM ℓK) ⟨□⟩ ⟨□⟩ ⟦ r ⟧
--- the `b ≡ false` is threaded rather than matched: Agda cannot invert
--- `_and_` in an index, so the nullability equation travels as a proof
-parse▷ : ∀ {b} (r : RE b) (ℓK : Level) → b ≡ false
+-- the equation is threaded rather than matched: Agda cannot invert
+-- `_·ν_` in an index
+parse▷ : ∀ {n} (r : RE n) (ℓK : Level) → n ≡ notNullable
        → ⊤Ty ⊢ Parser (ℓ-max ℓM ℓK) ⟨▷⟩ ⟨□⟩ ⟦ r ⟧
 
 parse εr ℓK = nil
@@ -98,44 +110,39 @@ parse (r ⊗r r') ℓK = seq ⟦ r' ⟧ (parse r (ℓ⊗ (lv r') ℓK)) (parse r
 parse (r ⊕r r') ℓK = parse r ℓK <|> parse r' ℓK
 parse (r *r) ℓK = many ℓK ⟦ r ⟧ (parse▷ r (ℓ⊗ (ℓF (lv r)) ℓK) refl)
 
-parse▷ εr ℓK p = Empty.rec (true≢false p)
+parse▷ εr ℓK p = Empty.rec (ν≢ν̸ p)
 parse▷ ⊥r ℓK p = fail
 parse▷ ⟨ c ⟩r ℓK p = tok c
 parse▷ (satr P) ℓK p = satTok P
-parse▷ (_⊗r_ {false} {b'} r r') ℓK p =
+parse▷ (_⊗r_ {notNullable} {n'} r r') ℓK p =
   seq ⟦ r' ⟧ (parse▷ r (ℓ⊗ (lv r') ℓK) refl) (box (parse r' ℓK))
-parse▷ (_⊗r_ {true} {false} r r') ℓK p =
+parse▷ (_⊗r_ {nullable} {notNullable} r r') ℓK p =
   seq ⟦ r' ⟧ (parse r (ℓ⊗ (lv r') ℓK)) (parse▷ r' ℓK refl)
-parse▷ (_⊗r_ {true} {true} r r') ℓK p = Empty.rec (true≢false p)
-parse▷ (_⊕r_ {false} {false} r r') ℓK p =
+parse▷ (_⊗r_ {nullable} {nullable} r r') ℓK p = Empty.rec (ν≢ν̸ p)
+parse▷ (_⊕r_ {notNullable} {notNullable} r r') ℓK p =
   parse▷ r ℓK refl <|> parse▷ r' ℓK refl
-parse▷ (_⊕r_ {false} {true} r r') ℓK p = Empty.rec (true≢false p)
-parse▷ (_⊕r_ {true} {b'} r r') ℓK p = Empty.rec (true≢false p)
-parse▷ (r *r) ℓK p = Empty.rec (true≢false p)
+parse▷ (_⊕r_ {notNullable} {nullable} r r') ℓK p = Empty.rec (ν≢ν̸ p)
+parse▷ (_⊕r_ {nullable} {n'} r r') ℓK p = Empty.rec (ν≢ν̸ p)
+parse▷ (r *r) ℓK p = Empty.rec (ν≢ν̸ p)
 
--- A regex, decided.
-decide-r : ∀ {b} (r : RE b) (ℓK : Level) → Decidable (ty ⟦ r ⟧)
+decide-r : ∀ {n} (r : RE n) (ℓK : Level) → Decidable (ty ⟦ r ⟧)
 decide-r r ℓK = runP ℓK (parse r ℓK)
-
-------------------------------------------------------------------------
--- The `RE false` index *is* the non-nullability witness: what the type
--- rules already forbid, the star fold no longer has to be told.
 
 sat-¬Nullable : {P : Alphabet → Bool} → ¬Nullable (satG P)
 sat-¬Nullable m ((x , lc) , eps) = literal-¬Nullable (x .fst) m (lc , eps)
 
-re-¬Nullable : ∀ {b} (r : RE b) → b ≡ false → ¬Nullable (ty ⟦ r ⟧)
-re-¬Nullable εr p = Empty.rec (true≢false p)
+re-¬Nullable : ∀ {n} (r : RE n) → n ≡ notNullable → ¬Nullable (ty ⟦ r ⟧)
+re-¬Nullable εr p = Empty.rec (ν≢ν̸ p)
 re-¬Nullable ⊥r p = ⊥-¬Nullable
 re-¬Nullable ⟨ c ⟩r p = literal-¬Nullable c
 re-¬Nullable (satr P) p = sat-¬Nullable
-re-¬Nullable (_⊗r_ {false} {b'} r r') p =
+re-¬Nullable (_⊗r_ {notNullable} {n'} r r') p =
   ⊗-¬Nullable (re-¬Nullable r refl)
-re-¬Nullable (_⊗r_ {true} {false} r r') p =
+re-¬Nullable (_⊗r_ {nullable} {notNullable} r r') p =
   ⊗-¬NullableR (re-¬Nullable r' refl)
-re-¬Nullable (_⊗r_ {true} {true} r r') p = Empty.rec (true≢false p)
-re-¬Nullable (_⊕r_ {false} {false} r r') p =
+re-¬Nullable (_⊗r_ {nullable} {nullable} r r') p = Empty.rec (ν≢ν̸ p)
+re-¬Nullable (_⊕r_ {notNullable} {notNullable} r r') p =
   ⊕-¬Nullable (re-¬Nullable r refl) (re-¬Nullable r' refl)
-re-¬Nullable (_⊕r_ {false} {true} r r') p = Empty.rec (true≢false p)
-re-¬Nullable (_⊕r_ {true} {b'} r r') p = Empty.rec (true≢false p)
-re-¬Nullable (r *r) p = Empty.rec (true≢false p)
+re-¬Nullable (_⊕r_ {notNullable} {nullable} r r') p = Empty.rec (ν≢ν̸ p)
+re-¬Nullable (_⊕r_ {nullable} {n'} r r') p = Empty.rec (ν≢ν̸ p)
+re-¬Nullable (r *r) p = Empty.rec (ν≢ν̸ p)
