@@ -128,3 +128,25 @@ deadIsNo = Sum.rec (λ _ → false) (λ _ → true) (table false)
 
 _ : deadIsNo ≡ true
 _ = refl
+
+------------------------------------------------------------------------
+-- The same automaton, without supplying the languages at all.
+--
+-- `traceAutomaton` takes only `(Q, δ, acc)` and generates `Trace q` as a
+-- least fixed point over the transition, so the derivative square is the
+-- unrolling and there is nothing left to prove.  Above, `Lang` and its
+-- four squares were written by hand; here they are not written at all.
+
+open import Theory.Instances.Monoid.Automaton.Trace L2 isSetAlphabet
+
+aStar' : DerivAutomaton ℓ-zero _
+aStar' = traceAutomaton Bool trans (λ q → q) isSetBool
+
+table' : Table aStar' input
+table' = scan aStar' input (readChars input tt)
+
+matched' : String
+matched' = Sum.rec (λ x → x .snd .fst fz) (λ _ → []) (table' true)
+
+_ : matched' ≡ a ∷ a ∷ a ∷ []
+_ = refl
