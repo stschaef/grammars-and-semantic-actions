@@ -59,23 +59,27 @@ private
   anywhere : {P : ℙ} (c : L2) → (c ∈ℙ ⊤ℙ) Sum.⊎ (c ∈ℙ P)
   anywhere c = Sum.inl tt*
 
-abStar-dr : DetReg abStar-r _ (¬ℙ ⟦ a ⟧ℙ) true
+abStar-dr : DetReg _ (¬ℙ ⟦ a ⟧ℙ) true
 abStar-dr = ＂ a ＂dr ⊗DR[ anywhere ] (＂ b ＂dr *DR[ anywhere ])
 
 ------------------------------------------------------------------------
--- Compiled.  `States abStar-r` is `Unit* ⊎ Unit*`: one position per
--- literal, and nothing merged.
+-- Compiled.  `States abStar-dr` is `Unit* ⊎ Unit*`: one position per
+-- literal, and nothing merged.  `erase` recovers the plain regular
+-- expression, which is what a semantics would be stated against.
 
-_ : States abStar-r ≡ (Unit* Sum.⊎ Unit*)
+_ : erase abStar-dr ≡ abStar-r
 _ = refl
 
-DA : DeterministicAutomaton (FreelyAddFail+Initial (States abStar-r))
+_ : States abStar-dr ≡ (Unit* Sum.⊎ Unit*)
+_ = refl
+
+DA : DeterministicAutomaton (FreelyAddFail+Initial (States abStar-dr))
 DA = compileDA discL2 abStar-dr
 
 open DeterministicAutomaton DA using (parseInit ; Trace ; init)
 
-isSetQ : isSet (FreelyAddFail+Initial (States abStar-r))
-isSetQ = isSetCompileStates discL2 abStar-r
+isSetQ : isSet (FreelyAddFail+Initial (States abStar-dr))
+isSetQ = isSetCompileStates discL2 abStar-dr
 
 ------------------------------------------------------------------------
 -- Running it.  As in `RegExpExamples`, `⊕[ b ] Trace b init` is total,

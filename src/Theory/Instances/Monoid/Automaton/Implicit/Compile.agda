@@ -89,39 +89,45 @@ infix 25 ¬ℙ_
 -- Deterministic regular expressions, ported from
 -- `Grammar/RegularExpression/Deterministic.agda`.
 --
--- Indexed by the regex, the complement of its follow-last set, the
--- complement of its first set, and the negation of its nullability --
--- negated so that the indices are propositions.  `b ≡ true` means *not*
--- nullable, which is the reading `sound¬Nullable` gave it there.
+-- Written directly, rather than as a predicate on `RegularExpression`:
+-- the constructors ARE the deterministic combinators, so a deterministic
+-- regex is one term instead of a syntax tree plus a proof about it.
+-- `erase` recovers the plain regular expression when a semantics needs
+-- it.
+--
+-- Indexed by the complement of the follow-last set, the complement of
+-- the first set, and the negation of nullability -- negated so that the
+-- indices are propositions.  `b ≡ true` means *not* nullable, which is
+-- the reading `sound¬Nullable` gave it in the old development.
 
-data DetReg : RegularExpression → ℙ → ℙ → Bool → Type (ℓ-suc ℓAlph) where
-  εdr : DetReg εr ⊤ℙ ⊤ℙ false
-  ⊥dr : DetReg ⊥r ⊤ℙ ⊤ℙ true
-  ＂_＂dr : (c : Alphabet) → DetReg (＂ c ＂r) ⊤ℙ (¬ℙ ⟦ c ⟧ℙ) true
+data DetReg : ℙ → ℙ → Bool → Type (ℓ-suc ℓAlph) where
+  εdr : DetReg ⊤ℙ ⊤ℙ false
+  ⊥dr : DetReg ⊤ℙ ⊤ℙ true
+  ＂_＂dr : (c : Alphabet) → DetReg ⊤ℙ (¬ℙ ⟦ c ⟧ℙ) true
   _⊗DR[_]_ :
     {¬FL ¬FL' ¬F ¬F' : ℙ} →
-    (dr : DetReg r ¬FL ¬F true) →
+    (dr : DetReg ¬FL ¬F true) →
     (seq-unambig : (c : Alphabet) → (c ∈ℙ ¬FL) ⊎ (c ∈ℙ ¬F')) →
-    (dr' : DetReg r' ¬FL' ¬F' b') →
-    DetReg (r ⊗r r')
+    (dr' : DetReg ¬FL' ¬F' b') →
+    DetReg
       (if b' then ¬FL' else ¬FL ∩ℙ ¬F' ∩ℙ ¬FL')
       ¬F
       true
   _⊕DR[_]_ :
     {¬FL ¬FL' ¬F ¬F' : ℙ} →
     {notBothNull : b or b' Eq.≡ true} →
-    (dr : DetReg r ¬FL ¬F b) →
+    (dr : DetReg ¬FL ¬F b) →
     (sep : (c : Alphabet) → (c ∈ℙ ¬F) ⊎ (c ∈ℙ ¬F')) →
-    (dr' : DetReg r' ¬FL' ¬F' b') →
-    DetReg (r ⊕r r')
+    (dr' : DetReg ¬FL' ¬F' b') →
+    DetReg
       (¬FL ∩ℙ ¬FL' ∩ℙ (if (b and b') then ⊤ℙ else ¬F ∩ℙ ¬F'))
       (¬F ∩ℙ ¬F')
       (b and b')
   _*DR[_] :
     {¬FL ¬F : ℙ} →
-    (dr : DetReg r ¬FL ¬F true) →
+    (dr : DetReg ¬FL ¬F true) →
     (seq-unambig : (c : Alphabet) → (c ∈ℙ ¬FL) ⊎ (c ∈ℙ ¬F)) →
-    DetReg (r *r) (¬F ∩ℙ ¬FL) ¬F false
+    DetReg (¬F ∩ℙ ¬FL) ¬F false
 
 infixr 20 _⊗DR[_]_
 infixr 20 _⊕DR[_]_
@@ -133,21 +139,30 @@ infix 30 ＂_＂dr
 -- off the *regex*, not off the `DetReg`, so two determinism proofs for
 -- the same regex compile to automata of the same type.
 
-States : RegularExpression → Type ℓAlph
-States εr = Empty.⊥*
-States ⊥r = Empty.⊥*
-States (＂ c ＂r) = Unit*
-States (r ⊗r r') = States r ⊎ States r'
-States (r ⊕r r') = States r ⊎ States r'
-States (r *r) = States r
+States : {¬FL ¬F : ℙ} {b : Bool} → DetReg ¬FL ¬F b → Type ℓAlph
+States εdr = Empty.⊥*
+States ⊥dr = Empty.⊥*
+States ＂ c ＂dr = Unit*
+States (dr ⊗DR[ _ ] dr') = States dr ⊎ States dr'
+States (dr ⊕DR[ _ ] dr') = States dr ⊎ States dr'
+States (dr *DR[ _ ]) = States dr
 
-isSetStates : (r : RegularExpression) → isSet (States r)
-isSetStates εr x = Empty.rec* x
-isSetStates ⊥r x = Empty.rec* x
-isSetStates (＂ c ＂r) = isSetUnit*
-isSetStates (r ⊗r r') = Sum.isSet⊎ (isSetStates r) (isSetStates r')
-isSetStates (r ⊕r r') = Sum.isSet⊎ (isSetStates r) (isSetStates r')
-isSetStates (r *r) = isSetStates r
+isSetStates : {¬FL ¬F : ℙ} {b : Bool} (dr : DetReg ¬FL ¬F b) → isSet (States dr)
+isSetStates εdr x = Empty.rec* x
+isSetStates ⊥dr x = Empty.rec* x
+isSetStates ＂ c ＂dr = isSetUnit*
+isSetStates (dr ⊗DR[ _ ] dr') = Sum.isSet⊎ (isSetStates dr) (isSetStates dr')
+isSetStates (dr ⊕DR[ _ ] dr') = Sum.isSet⊎ (isSetStates dr) (isSetStates dr')
+isSetStates (dr *DR[ _ ]) = isSetStates dr
+
+-- ...and the underlying regular expression, for stating semantics
+erase : {¬FL ¬F : ℙ} {b : Bool} → DetReg ¬FL ¬F b → RegularExpression
+erase εdr = εr
+erase ⊥dr = ⊥r
+erase ＂ c ＂dr = ＂ c ＂r
+erase (dr ⊗DR[ _ ] dr') = erase dr ⊗r erase dr'
+erase (dr ⊕DR[ _ ] dr') = erase dr ⊕r erase dr'
+erase (dr *DR[ _ ]) = erase dr *r
 
 ------------------------------------------------------------------------
 -- Bool scaffolding.  `if-true` is the only way the `if (M .acc q)` in
@@ -186,37 +201,37 @@ private
 module _ (discAlpha : Discrete Alphabet) where
 
   compile : {¬FL ¬F : ℙ}
-    → DetReg r ¬FL ¬F b → ImplicitDeterministicAutomaton (States r)
+    → (dr : DetReg ¬FL ¬F b) → ImplicitDeterministicAutomaton (States dr)
 
   -- `b` is the *negation* of nullability, so `null` is `not b`.
   nullOf : {¬FL ¬F : ℙ}
-    → (dr : DetReg r ¬FL ¬F b) → compile dr .null ≡ not b
+    → (dr : DetReg ¬FL ¬F b) → compile dr .null ≡ not b
 
   -- a letter outside the first set never leaves the initial state
   δᵢ-fail : {¬FL ¬F : ℙ}
-    → (dr : DetReg r ¬FL ¬F b) (c : Alphabet) → c ∈ℙ ¬F
+    → (dr : DetReg ¬FL ¬F b) (c : Alphabet) → c ∈ℙ ¬F
     → fail ≡ compile dr .δᵢ c
 
   -- ...and outside the follow-last set never leaves an accepting one
   δq-fail : {¬FL ¬F : ℙ}
-    → (dr : DetReg r ¬FL ¬F b) (c : Alphabet) → c ∈ℙ ¬FL
-    → (q : States r) → compile dr .acc q ≡ true → fail ≡ compile dr .δq q c
+    → (dr : DetReg ¬FL ¬F b) (c : Alphabet) → c ∈ℙ ¬FL
+    → (q : States dr) → compile dr .acc q ≡ true → fail ≡ compile dr .δq q c
 
   -- The two packaged side conditions, in exactly the shape `⊗Aut`,
   -- `*Aut` and `⊕Aut` ask for.
   private
     seqOf : {¬FL ¬FL' ¬F ¬F' : ℙ}
-      (dr : DetReg r ¬FL ¬F b) (dr' : DetReg r' ¬FL' ¬F' b')
+      (dr : DetReg ¬FL ¬F b) (dr' : DetReg ¬FL' ¬F' b')
       → ((c : Alphabet) → (c ∈ℙ ¬FL) ⊎ (c ∈ℙ ¬F'))
       → (c : Alphabet)
-      → ((q : States r) → compile dr .acc q ≡ true
+      → ((q : States dr) → compile dr .acc q ≡ true
            → fail ≡ compile dr .δq q c)
         ⊎ (fail ≡ compile dr' .δᵢ c)
     seqOf dr dr' su c =
       Sum.map (δq-fail dr c) (δᵢ-fail dr' c) (su c)
 
     firstsOf : {¬FL ¬FL' ¬F ¬F' : ℙ}
-      (dr : DetReg r ¬FL ¬F b) (dr' : DetReg r' ¬FL' ¬F' b')
+      (dr : DetReg ¬FL ¬F b) (dr' : DetReg ¬FL' ¬F' b')
       → ((c : Alphabet) → (c ∈ℙ ¬F) ⊎ (c ∈ℙ ¬F'))
       → (c : Alphabet)
       → (fail ≡ compile dr .δᵢ c) ⊎ (fail ≡ compile dr' .δᵢ c)
@@ -233,9 +248,8 @@ module _ (discAlpha : Discrete Alphabet) where
     ⊕Aut discAlpha (compile dr) (compile dr')
       (notBoth nbn (nullOf dr) (nullOf dr'))
       (firstsOf dr dr' sep)
-  compile (_*DR[_] {r = r} dr su) =
-    *Aut discAlpha (compile {r = r} dr) (nullOf {r = r} dr)
-      (seqOf {r = r} {r' = r} dr dr su)
+  compile (dr *DR[ su ]) =
+    *Aut discAlpha (compile dr) (nullOf dr) (seqOf dr dr su)
 
   nullOf εdr = refl
   nullOf ⊥dr = refl
@@ -319,11 +333,11 @@ module _ (discAlpha : Discrete Alphabet) where
   -- this file.
 
   compileNotNull : {¬FL ¬F : ℙ}
-    → (dr : DetReg r ¬FL ¬F true) → compile dr .null ≡ false
+    → (dr : DetReg ¬FL ¬F true) → compile dr .null ≡ false
   compileNotNull = nullOf
 
   compileNullable : {¬FL ¬F : ℙ}
-    → (dr : DetReg r ¬FL ¬F false) → compile dr .null ≡ true
+    → (dr : DetReg ¬FL ¬F false) → compile dr .null ≡ true
   compileNullable = nullOf
 
   ----------------------------------------------------------------------
@@ -331,10 +345,10 @@ module _ (discAlpha : Discrete Alphabet) where
   -- is exactly the fragment whose positions are already deterministic.
 
   compileDA : {¬FL ¬F : ℙ}
-    → DetReg r ¬FL ¬F b
-    → DeterministicAutomaton (FreelyAddFail+Initial (States r))
+    → (dr : DetReg ¬FL ¬F b)
+    → DeterministicAutomaton (FreelyAddFail+Initial (States dr))
   compileDA dr = IDA→DA (compile dr)
 
-  isSetCompileStates : (r : RegularExpression)
-    → isSet (FreelyAddFail+Initial (States r))
-  isSetCompileStates r = isSetFreelyAddFail+Initial _ (isSetStates r)
+  isSetCompileStates : {¬FL ¬F : ℙ} (dr : DetReg ¬FL ¬F b)
+    → isSet (FreelyAddFail+Initial (States dr))
+  isSetCompileStates dr = isSetFreelyAddFail+Initial _ (isSetStates dr)
