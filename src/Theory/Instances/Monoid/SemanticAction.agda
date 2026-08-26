@@ -53,6 +53,28 @@ semact-* {A = A} {X = X} a = semact-rec alg tt
     Bool.false → semact-pure []
     Bool.true → cons
 
+-- ...and the same fold, dropping the steps that emit nothing.  The recursion
+-- is still `semact-rec`; only the cons step differs, so a lexer never has to
+-- filter a token list outside the theory.
+semact-skip* : {A : TheoryTy ℓA tt} {X : Type ℓX}
+  → SemanticAction A (Maybe X) → SemanticAction (A *) (List X)
+semact-skip* {A = A} {X = X} a = semact-rec alg tt
+  where
+  push : Maybe X → List X → List X
+  push nothing ys = ys
+  push (just x) ys = x ∷ ys
+
+  cons : (⟦ (⊗e _⊙_ (two (k A) (Var tt))) ⟧TheoryTy
+            (λ _ → Δ (List X))) ⊢ Δ (List X)
+  cons m (ms , e , xs) =
+    push (a (ms zero) ((xs zero) .lower) .fst)
+         (((xs (suc zero)) .lower) .fst) , tt
+
+  alg : ∀ _ → ⟦ StarCode A ⟧TheoryTy (λ _ → Δ (List X)) ⊢ Δ (List X)
+  alg _ = ⊕ᴰ-elim λ where
+    Bool.false → semact-pure []
+    Bool.true → cons
+
 -- A structural scanner over canonical strings.  The classifier may emit one
 -- token, skip its input character, or fail; this is independent of Unicode.
 scanAction : {Token : Type ℓX}

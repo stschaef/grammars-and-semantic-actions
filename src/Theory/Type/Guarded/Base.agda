@@ -76,3 +76,22 @@ module _ {X : Type ℓX} {xs : X → S} where
       → (∀ x → A x ⊢ ⟦ F x ⟧TheoryTy A)
       → ∀ x → A x ⊢ μ F x
     unfold isSetμF c = hylo isSetμF c λ x → roll
+
+    -- ...and its dual, the recursor -- but by guarded recursion, not by
+    -- matching on `roll`.  `Inductive/Base`'s `rec` needs `TERMINATING`
+    -- because its descent runs through `map (F x)`, which Agda cannot see
+    -- into; here the descent is `löb`, which is a term, so nothing is
+    -- asserted.  The coalgebra is `unroll`, which is structural.
+    fold : {A : (x : X) → TheoryTy (ℓ-max (ℓF ℓA) ℓX) (xs x)}
+      → (∀ x m → isSet (A x m))
+      → (∀ x → ⟦ F x ⟧TheoryTy A ⊢ A x)
+      → ∀ x → μ F x ⊢ A x
+    fold isSetA α = hylo isSetA (unroll F) α
+
+    -- the β-law comes with it, rather than being a separate `refl`
+    fold-unfold : {A : (x : X) → TheoryTy (ℓ-max (ℓF ℓA) ℓX) (xs x)}
+      (isSetA : ∀ x m → isSet (A x m))
+      (α : ∀ x → ⟦ F x ⟧TheoryTy A ⊢ A x)
+      → ∀ x → fold isSetA α x
+            ≡ α x ∘⊢ map (F x) (fold isSetA α) ∘⊢ unroll F x
+    fold-unfold isSetA α = hylo-unfold isSetA (unroll F) α
