@@ -42,9 +42,11 @@ open import Cubical.Data.Equality.More using (isSet→isSetEq)
 
 open import Theory.Instances.Monoid.Base
 open import Theory.Instances.Monoid.Strings Alphabet isSetAlphabet
+open import Theory.Instances.Monoid.KleeneStar Alphabet isSetAlphabet
+  using (_* ; readChars ; unroll↑)
 open import Theory.Instances.Monoid.KleeneStar.Guarded Alphabet isSetAlphabet
   using (¬Nullable ; ¬Nullable→NonNull ; ⊗-¬Nullable ; ⊕-¬Nullable
-       ; literal-¬Nullable)
+       ; literal-¬Nullable ; char-¬Nullable)
 open import Theory.Instances.Monoid.Greedy.Base Alphabet isSetAlphabet
   using (char⁺)
 open import Theory.Instances.Monoid.Residual Alphabet isSetAlphabet
@@ -59,7 +61,10 @@ open import Theory.Instances.Monoid.Automaton.Deterministic
 open import Theory.Instances.Monoid.Automaton.Greedy Alphabet isSetAlphabet
   using (¬Nullable-map ; ⊕ᴰ-¬Nullable)
 open import Theory.Instances.Monoid.Automaton.GreedyMax Alphabet isSetAlphabet
-  using (Match ; GreedyMax ; bridge ; isSetTraceTo ; no-longer-match)
+  using (Match ; GreedyMax ; Run ; Table ; scan-nil ; scan-cons
+       ; bridge ; isSetTraceTo ; no-longer-match)
+open import Theory.Instances.Monoid.Automaton.SuffixChain
+  Alphabet isSetAlphabet using (module GuardedMemo▷)
 open import Theory.Instances.Monoid.Automaton.Lexicon Alphabet isSetAlphabet
 open import Theory.Instances.Monoid.Lookahead.Base Alphabet isSetAlphabet
   using (dec-ε)
@@ -74,7 +79,7 @@ open import Theory.Type.HLevels MonEqns Alphabet (λ _ → tt) listPresentation
 open import Theory.Type.Inductive.HLevels MonEqns Alphabet (λ _ → tt)
   listPresentation
 
-private variable ℓA : Level
+private variable ℓA ℓB : Level
 
 open DeterministicAutomaton
 
@@ -249,10 +254,26 @@ module Stream {n : ℕ} (Qs : Fin n → Type ℓAlph)
         ret nilT = refl
         ret (tokT q' w) = refl
 
-      isSetMatch : (q' : ProdQ) → isSetTheoryTy (Match Prod q₀ q')
-      isSetMatch q' =
+      -- `GreedyMax`'s own `isSetMatch`/`isSetTable` are private there
+      isSetMatchAt : (q q' : ProdQ) → isSetTheoryTy (Match Prod q q')
+      isSetMatchAt q q' =
         isSet⊕ᴰ (isProp→isSet (isSet→isSetEq isSetBool))
-          λ _ → isSetTraceTo Prod isSetProdQ q₀ q'
+          λ _ → isSetTraceTo Prod isSetProdQ q q'
+
+      isSetMatch : (q' : ProdQ) → isSetTheoryTy (Match Prod q₀ q')
+      isSetMatch = isSetMatchAt q₀
+
+      isSet⊗bin : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt}
+        → isSetTheoryTy A → isSetTheoryTy B → isSetTheoryTy (A ⊗ B)
+      isSet⊗bin sA sB = isSet⊗ _⊙_ _ _ λ where
+        zero → sA
+        (suc zero) → sB
+
+      isSetTable : isSetTheoryTy (Table Prod)
+      isSetTable = isSet&ᴰ λ q → isSet⊕
+        (isSet⊕ᴰ isSetProdQ λ q' →
+          isSet⊗bin (isSetMatchAt q q') λ m → isProp→isSet (isProp¬Ty _))
+        (λ m → isProp→isSet (isProp¬Ty _))
 
       codeIsSet : (x : SIx) → isSetValued StreamF
       codeIsSet _ .fst = lift isSetStreamTag
@@ -272,7 +293,20 @@ module Stream {n : ℕ} (Qs : Fin n → Type ℓAlph)
       isSetDecStream =
         isSet⊕ isSetTokStream λ m → isProp→isSet (isProp¬Ty _)
 
-    module GD = Guarded▷ (λ _ → DecStream) (λ _ → isSetDecStream)
+      -- What the recursion computes at every suffix.  `scan` is a fold
+      -- over the whole remaining input and it built a table at every
+      -- suffix on the way; carrying the table here makes those tables the
+      -- memo cells, so no token boundary restarts the fold.  (The scan
+      -- itself is still walked once per token: see the note at the end.)
+      Carrier : TheoryTy _ tt
+      Carrier = Table Prod & DecStream
+
+      isSetCarrier : isSetTheoryTy Carrier
+      isSetCarrier = isSet& isSetTable isSetDecStream
+
+    -- ...and the hypothesis is tabulated, not re-derived: `Suffix/Base`'s
+    -- `Guarded▷` would recompute the value at every suffix it is read at.
+    module GD = GuardedMemo▷ (λ _ → Carrier) (λ _ → isSetCarrier)
 
     private
       -- Maximal munch is unique, and that is the whole refutation: the
@@ -353,7 +387,7 @@ module Stream {n : ℕ} (Qs : Fin n → Type ℓAlph)
           (λ r → rival (r .fst .fst) (r .snd))
           (unrollStream m s)
 
-      pay : (q' : ProdQ) → PayR GD.suffixLöb {X = Match Prod q₀ q'}
+      pay : (q' : ProdQ) → PayR GD.suffixLöbMemo {X = Match Prod q₀ q'}
       pay q' = ¬Nullable→NonNull (matchNN q')
 
       -- one token: the guarded hypothesis is read at the rest, which the
@@ -364,7 +398,8 @@ module Stream {n : ℕ} (Qs : Fin n → Type ℓAlph)
         ⊕-elim (dec-yes ∘⊢ CONSs q' w) (dec-no ∘⊢ refuteExt q')
         ∘⊢ ⊗⊕-distR
         ∘⊢ (id⊢ ,⊗ &⊕-distR)
-        ∘⊢ ▷⊛r GD.suffixLöb (pay q')
+        ∘⊢ (id⊢ ,⊗ (id⊢ ,&p π₂))
+        ∘⊢ ▷⊛r GD.suffixLöbMemo (pay q')
 
       tokBranch : GD.▷ tt & Tok ⊢ DecStream
       tokBranch =
@@ -379,13 +414,37 @@ module Stream {n : ℕ} (Qs : Fin n → Type ℓAlph)
         ∘⊢ (id⊢ ,& (dec-ε ∘⊢ ⊤Ty-intro))
         ∘⊢ π₂
 
-      decStep : GD.▷ tt ⊢ DecStream
-      decStep =
+      -- the table, one letter at a time.  A letter pays for the rest, so
+      -- the hypothesis is read there, and `scan-cons` is the whole step.
+      payChar : PayR GD.suffixLöbMemo {X = char}
+      payChar = ¬Nullable→NonNull char-¬Nullable
+
+      tblCons : GD.▷ tt & (char ⊗ (char *)) ⊢ Table Prod
+      tblCons =
+        scan-cons Prod
+        ∘⊢ (id⊢ ,⊗ (π₁ ∘⊢ π₂))
+        ∘⊢ ▷⊛r GD.suffixLöbMemo payChar
+        ∘⊢ &-swap
+
+      tbl : GD.▷ tt ⊢ Table Prod
+      tbl =
+        ⊕-elim& tblCons (scan-nil Prod ∘⊢ π₂)
+        ∘⊢ (id⊢ ,& (unroll↑ ∘⊢ readChars ∘⊢ ⊤Ty-intro))
+
+      -- the decision, off that table: `lexOne` reads the greedy run at the
+      -- initial state, and no scan is restarted
+      decPart : GD.▷ tt & Table Prod ⊢ DecStream
+      decPart =
         ⊕-elim& tokBranch noneBranch
-        ∘⊢ (id⊢ ,& (lexOne ∘⊢ runInit ∘⊢ ⊤Ty-intro))
+        ∘⊢ (π₁ ,& (lexOne ∘⊢ π q₀ ∘⊢ π₂))
+
+      -- the table is built once and then read twice, so it is threaded
+      -- through the pair rather than named on both sides
+      decStep : GD.▷ tt ⊢ Carrier
+      decStep = (π₂ ,& decPart) ∘⊢ (id⊢ ,& tbl)
 
     decideStream : Decidable TokStream
-    decideStream = GD.löb (λ _ → decStep) tt
+    decideStream = π₂ ∘⊢ GD.löb (λ _ → decStep) tt
 
     ------------------------------------------------------------------
     -- 4. ...and therefore a `Phase`.
@@ -398,3 +457,18 @@ module Stream {n : ℕ} (Qs : Fin n → Type ℓAlph)
     -- the display boundary.  The `Maybe` is external, as in `Lexicon`.
     tokeniseS : String → Mb.Maybe (List (Fin n × String))
     tokeniseS = observe decideStream (semact-dec emitStream)
+
+-- COST.  Tokenising is still quadratic, and the memo above is not what is
+-- left to fix.  `GreedyMax.Run q` at a word inspects *all* of it -- there
+-- is no dead-state exit, so `stepAt q c` always forces the tail's cell --
+-- and a one-character token followed by `n` characters costs Θ(n) already
+-- through `Lexicon.lexOne`.  Tokens after the first query `Table` at the
+-- states their own runs pass through, and `Table` is a `&ᴰ`, a function:
+-- distinct states are distinct work no matter which cells are shared.
+--
+-- Linear needs one of: (a) an emptiness certificate per state, consulted
+-- by `scan-cons` before it recurses -- the compiled automata name their
+-- fail state (`FreelyAddFail+Initial`), so the certificate exists; or
+-- (b) `Table` materialised over an enumeration of the states, which
+-- shares the runs of the states two tokens have in common.  Both are
+-- changes to `Automaton/GreedyMax`.
