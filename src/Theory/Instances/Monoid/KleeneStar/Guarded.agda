@@ -112,8 +112,6 @@ module _ {A : TheoryTy ℓA tt} (B : TheorySet ℓB tt) (nu : ¬Nullable A) wher
     pay : PayR GB.suffixLöb {X = A}
     pay = ¬Nullable→NonNull nu
 
-    unroll↑ : A * ⊢ (A ⊗ (A *)) ⊕ εTy
-    unroll↑ = ⊕-elim inl (inr ∘⊢ lowerTy) ∘⊢ unroll*
 
   module _ (nil : εTy ⊢ ty B) (cons : A ⊗ ty B ⊢ ty B) where
     private
@@ -128,7 +126,6 @@ module _ {A : TheoryTy ℓA tt} (B : TheorySet ℓB tt) (nu : ¬Nullable A) wher
     fold*g : A * ⊢ ty B
     fold*g = ⇒-app ∘⊢ ((GB.löb (λ _ → ⇒-intro body) tt ∘⊢ ⊤Ty-intro) ,& id⊢)
 
-------------------------------------------------------------------------
 -- The two star actions, by löb.  `SemanticAction.semact-*` and
 -- `semact-skip*` are `rec`, so the pragma sits under every action; these
 -- are the same folds with `fold*g` underneath.
