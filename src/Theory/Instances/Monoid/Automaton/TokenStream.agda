@@ -112,9 +112,10 @@ private
 
 module Stream {n : ℕ} (Qs : Fin n → Type ℓAlph)
   (Ms : (i : Fin n) → DeterministicAutomaton (Qs i))
+  (Ds : (i : Fin n) → Deadness (Ms i))
   (sQ : (i : Fin n) → isSet (Qs i)) where
 
-  open Product Qs Ms sQ public
+  open Product Qs Ms Ds sQ public
 
   private
     q₀ : ProdQ
@@ -296,8 +297,7 @@ module Stream {n : ℕ} (Qs : Fin n → Type ℓAlph)
       -- What the recursion computes at every suffix.  `scan` is a fold
       -- over the whole remaining input and it built a table at every
       -- suffix on the way; carrying the table here makes those tables the
-      -- memo cells, so no token boundary restarts the fold.  (The scan
-      -- itself is still walked once per token: see the note at the end.)
+      -- memo cells, so no token boundary restarts the fold.
       Carrier : TheoryTy _ tt
       Carrier = Table Prod & DecStream
 
@@ -421,7 +421,7 @@ module Stream {n : ℕ} (Qs : Fin n → Type ℓAlph)
 
       tblCons : GD.▷ tt & (char ⊗ (char *)) ⊢ Table Prod
       tblCons =
-        scan-cons Prod
+        scan-cons Prod ProdDead
         ∘⊢ (id⊢ ,⊗ (π₁ ∘⊢ π₂))
         ∘⊢ ▷⊛r GD.suffixLöbMemo payChar
         ∘⊢ &-swap
@@ -458,17 +458,17 @@ module Stream {n : ℕ} (Qs : Fin n → Type ℓAlph)
     tokeniseS : String → Mb.Maybe (List (Fin n × String))
     tokeniseS = observe decideStream (semact-dec emitStream)
 
--- COST.  Tokenising is still quadratic, and the memo above is not what is
--- left to fix.  `GreedyMax.Run q` at a word inspects *all* of it -- there
--- is no dead-state exit, so `stepAt q c` always forces the tail's cell --
--- and a one-character token followed by `n` characters costs Θ(n) already
--- through `Lexicon.lexOne`.  Tokens after the first query `Table` at the
--- states their own runs pass through, and `Table` is a `&ᴰ`, a function:
--- distinct states are distinct work no matter which cells are shared.
+-- COST.  Tokenising is linear.  It took two things, both upstream of
+-- this file: `Deterministic.Deadness`, whose `dead-empty` lets
+-- `GreedyMax.scan-cons` refute a dead successor without forcing the
+-- tail's cell -- so a token costs its own length and not the remaining
+-- input -- and `Lexicon.Tup`, which makes the product state a pair
+-- rather than a function, so a component is forced once instead of
+-- re-derived at every character.
 --
--- Linear needs one of: (a) an emptiness certificate per state, consulted
--- by `scan-cons` before it recurses -- the compiled automata name their
--- fail state (`FreelyAddFail+Initial`), so the certificate exists; or
--- (b) `Table` materialised over an enumeration of the states, which
--- shares the runs of the states two tokens have in common.  Both are
--- changes to `Automaton/GreedyMax`.
+-- Measured against a baseline module that builds the five POSIX rules
+-- and tokenises nothing (marginal seconds, `x ` repeated):
+--
+--     tokens:    40    80   160   320   640
+--     before:  0.91  4.25 20.51     -     -
+--      after:  0.16  0.29  0.54  1.06  2.04

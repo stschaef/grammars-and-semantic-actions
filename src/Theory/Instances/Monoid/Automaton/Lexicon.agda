@@ -8,9 +8,11 @@
 
    So run every rule at once instead: the state is a tuple of the rules'
    states, `δ` steps each component, and the product accepts when *some*
-   rule does.  `Fin n → Qs i` keeps that at `ℓAlph`, so `Deterministic`'s
-   `parse` and `Greedy`'s `scan` apply unchanged, and maximal munch over
-   the product is longest match across the whole lexicon.
+   rule does.  `Tup Qs` keeps that at `ℓAlph`, so `Deterministic`'s
+   `parse` and `GreedyMax`'s `scan` apply unchanged, and maximal munch
+   over the product is longest match across the whole lexicon.  A product
+   state is dead when every component is, which is what lets `scan` stop
+   at the end of a token instead of at the end of the input.
 
    Priority is then a readout, not a construction: an accepting product
    state is a `Fin n → Bool`, and the winning rule is its least `true`.
@@ -25,13 +27,13 @@ module Theory.Instances.Monoid.Automaton.Lexicon
   {ℓAlph}
   (Alphabet : Type ℓAlph) (isSetAlphabet : isSet Alphabet) where
 
-open import Cubical.Data.Bool using (Bool ; true ; false ; _or_ ; true≢false)
+open import Cubical.Data.Bool using (Bool ; true ; false ; _or_ ; _and_ ; true≢false)
 open import Cubical.Data.Nat using (ℕ ; zero ; suc)
 open import Cubical.Data.Nat.Order using (_<_ ; ¬-<-zero ; pred-≤-pred)
 open import Cubical.Data.FinData using (Fin ; toℕ) renaming (zero to fz ; suc to fs)
 open import Cubical.Data.List using (List ; [] ; _∷_ ; length)
 open import Cubical.Data.Sigma using (Σ-syntax ; _×_ ; _,_ ; fst ; snd)
-open import Cubical.Data.Unit using (tt)
+open import Cubical.Data.Unit using (tt ; Unit* ; tt* ; isSetUnit*)
 import Cubical.Data.Maybe as Mb
 import Cubical.Data.Sum as Sum
 import Cubical.Data.Empty as Empty
@@ -55,7 +57,6 @@ open import Theory.Type.Decidable.Base MonEqns Alphabet (λ _ → tt)
 
 private variable ℓA : Level
 
-------------------------------------------------------------------------
 -- Priority, over `Fin n`.
 
 -- "some rule accepts": the acceptance predicate of the product, and a
@@ -80,6 +81,37 @@ anyFin-false : {n : ℕ} (p : Fin n → Bool)
 anyFin-false {n = zero} p h = refl
 anyFin-false {n = suc n} p h =
   cong₂ _or_ (h fz) (anyFin-false (λ i → p (fs i)) (λ i → h (fs i)))
+
+-- "every rule is dead": the product's deadness test, and its elimination
+allFin : {n : ℕ} → (Fin n → Bool) → Bool
+allFin {n = zero} p = true
+allFin {n = suc n} p = p fz and allFin (λ i → p (fs i))
+
+allFin-intro : {n : ℕ} (p : Fin n → Bool)
+  → ((i : Fin n) → p i Eq.≡ true) → allFin p Eq.≡ true
+allFin-intro {n = zero} p h = Eq.refl
+allFin-intro {n = suc n} p h =
+  Eq.transport (λ b → (b and allFin (λ i → p (fs i))) Eq.≡ true)
+    (Eq.sym (h fz)) (allFin-intro (λ i → p (fs i)) (λ i → h (fs i)))
+
+allFin-elim : {n : ℕ} (p : Fin n → Bool)
+  → allFin p Eq.≡ true → (i : Fin n) → p i Eq.≡ true
+allFin-elim p h fz = go (p fz) Eq.refl
+  where
+  go : (b : Bool) → p fz Eq.≡ b → p fz Eq.≡ true
+  go true e = e
+  go false e = Empty.rec (true≢false (sym (Eq.eqToPath h)
+    ∙ cong (_and allFin (λ i → p (fs i))) (Eq.eqToPath e)))
+allFin-elim p h (fs i) = allFin-elim (λ j → p (fs j)) rest i
+  where
+  rest : allFin (λ j → p (fs j)) Eq.≡ true
+  rest = go (p fz) Eq.refl
+    where
+    go : (b : Bool) → p fz Eq.≡ b → allFin (λ j → p (fs j)) Eq.≡ true
+    go true e =
+      Eq.transport (λ b → (b and allFin (λ j → p (fs j))) Eq.≡ true) e h
+    go false e = Empty.rec (true≢false (sym (Eq.eqToPath h)
+      ∙ cong (_and allFin (λ j → p (fs j))) (Eq.eqToPath e)))
 
 -- The readout, with its evidence: the least `true`, or a refutation of
 -- every index.  Priority *is* this minimality.
@@ -109,33 +141,78 @@ find {n = suc n} p = go (p fz) refl
 firstFin : {n : ℕ} → (Fin n → Bool) → Mb.Maybe (Fin n)
 firstFin p = Sum.rec (λ x → Mb.just (x .fst)) (λ _ → Mb.nothing) (find p)
 
-------------------------------------------------------------------------
+-- The product state, as a tuple rather than a function.
+--
+-- `(i : Fin n) → Qs i` recomputes the `i`th component at every access,
+-- so a scanner that inspects the state at each character re-walks that
+-- component's whole transition chain each time -- quadratic in the
+-- token, and the early exit of `GreedyMax` inspects at every character.
+-- A nested pair is a constructor: each component is forced once and the
+-- next state's is built on the forced one.
+Tup : {m : ℕ} → (Fin m → Type ℓAlph) → Type ℓAlph
+Tup {m = zero} Ps = Unit*
+Tup {m = suc m} Ps = Ps fz × Tup (λ i → Ps (fs i))
+
+_!_ : {m : ℕ} {Ps : Fin m → Type ℓAlph} → Tup Ps → (i : Fin m) → Ps i
+_!_ {m = suc m} t fz = t .fst
+_!_ {m = suc m} t (fs i) = t .snd ! i
+
+tab : {m : ℕ} {Ps : Fin m → Type ℓAlph} → ((i : Fin m) → Ps i) → Tup Ps
+tab {m = zero} f = tt*
+tab {m = suc m} f = f fz , tab (λ i → f (fs i))
+
+tab! : {m : ℕ} {Ps : Fin m → Type ℓAlph} (g : (i : Fin m) → Ps i)
+  (i : Fin m) → (tab g ! i) Eq.≡ g i
+tab! {m = suc m} g fz = Eq.refl
+tab! {m = suc m} g (fs i) = tab! (λ j → g (fs j)) i
+
+isSetTup : {m : ℕ} {Ps : Fin m → Type ℓAlph}
+  → ((i : Fin m) → isSet (Ps i)) → isSet (Tup Ps)
+isSetTup {m = zero} h = isSetUnit*
+isSetTup {m = suc m} h = isSet× (h fz) (isSetTup (λ i → h (fs i)))
+
 -- The product automaton.
 
 open DeterministicAutomaton
 
 module Product {n : ℕ} (Qs : Fin n → Type ℓAlph)
   (M : (i : Fin n) → DeterministicAutomaton (Qs i))
+  (Ds : (i : Fin n) → Deadness (M i))
   (sQ : (i : Fin n) → isSet (Qs i)) where
 
   -- `Fin n` is at level zero, so the tuple stays at `ℓAlph` -- which is
   -- what `Deterministic` demands of a state set.
   ProdQ : Type ℓAlph
-  ProdQ = (i : Fin n) → Qs i
+  ProdQ = Tup Qs
 
   isSetProdQ : isSet ProdQ
-  isSetProdQ = isSetΠ sQ
+  isSetProdQ = isSetTup sQ
 
   -- the acceptance profile of a product state: which rules accept here
   accAt : ProdQ → Fin n → Bool
-  accAt f i = isAcc (M i) (f i)
+  accAt f i = isAcc (M i) (f ! i)
 
   Prod : DeterministicAutomaton ProdQ
-  Prod .init i = init (M i)
+  Prod .init = tab λ i → init (M i)
   Prod .isAcc f = anyFin (accAt f)
-  Prod .δ f c i = δ (M i) (f i) c
+  Prod .δ f c = tab λ i → δ (M i) (f ! i) c
 
-  ------------------------------------------------------------------
+  -- a product state is dead when every component is: a finite check over
+  -- `Fin n`, and the two obligations are the components' own, pointwise
+  deadAt : ProdQ → Fin n → Bool
+  deadAt f i = Deadness.isDead (Ds i) (f ! i)
+
+  ProdDead : Deadness Prod
+  ProdDead .Deadness.isDead f = allFin (deadAt f)
+  ProdDead .Deadness.dead-δ f c d = allFin-intro _ λ i →
+    Eq.transport (λ q → Deadness.isDead (Ds i) q Eq.≡ true)
+      (Eq.sym (tab! _ i))
+      (Deadness.dead-δ (Ds i) (f ! i) c (allFin-elim (deadAt f) d i))
+  ProdDead .Deadness.dead-rej f d =
+    Eq.pathToEq (anyFin-false (accAt f) λ i →
+      Eq.eqToPath (Deadness.dead-rej (Ds i) (f ! i)
+        (allFin-elim (deadAt f) d i)))
+
   -- Priority readout at a product state.
 
   -- the priority answer at an arbitrary state, `Maybe` because an
@@ -158,16 +235,14 @@ module Product {n : ℕ} (Qs : Fin n → Type ℓAlph)
     go (Sum.inl x) = x
     go (Sum.inr h) = Empty.rec (true≢false (sym acc ∙ anyFin-false _ h))
 
-  ------------------------------------------------------------------
   -- Maximal munch over the product = longest match across the lexicon.
 
-  scanProd = scan Prod isSetProdQ
+  scanProd = scan Prod isSetProdQ ProdDead
 
   -- the greedy run of the whole input, from the initial product state
   runInit : ⊤Ty ⊢ Run Prod (init Prod)
   runInit = π (init Prod) ∘⊢ scanProd ∘⊢ readChars
 
-  ------------------------------------------------------------------
   -- A token, as a grammar.
   --
   -- `GreedyMax`'s `Match q q'` carries `true Eq.≡ isAcc q'`, so the end
@@ -206,7 +281,6 @@ module Product {n : ℕ} (Qs : Fin n → Type ℓAlph)
             {Y = true Eq.≡ isAcc Prod q'}
             {A = λ _ → TraceTo Prod (init Prod) q'}
 
-  ------------------------------------------------------------------
   -- The display boundary.
   --
   -- `semact-text` recovers the characters under *any* grammar without
@@ -240,7 +314,6 @@ module Product {n : ℕ} (Qs : Fin n → Type ℓAlph)
   lexOneS : String → Mb.Maybe (Fin n × String × String)
   lexOneS = observe runInit lexAction
 
-  ------------------------------------------------------------------
   -- The tokenising loop.  DISPLAY LAYER, not a `⊢`-term: see the note
   -- at the bottom of this file.
 

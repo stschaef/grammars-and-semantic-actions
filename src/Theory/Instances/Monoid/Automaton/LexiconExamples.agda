@@ -46,12 +46,17 @@ Ms fz = Rkw.DA
 Ms (fs fz) = Rid.DA
 Ms (fs (fs fz)) = Rnum.DA
 
+Dead : (i : Fin 3) → Deadness (Ms i)
+Dead fz = Rkw.Dead
+Dead (fs fz) = Rid.Dead
+Dead (fs (fs fz)) = Rnum.Dead
+
 sQs : (i : Fin 3) → isSet (Qs i)
 sQs fz = Rkw.isSetQ
 sQs (fs fz) = Rid.isSetQ
 sQs (fs (fs fz)) = Rnum.isSetQ
 
-module Lx = Product Qs Ms sQs
+module Lx = Product Qs Ms Dead sQs
 
 -- One token: the winning rule's index, and the text it matched.
 
@@ -106,9 +111,10 @@ _ = refl
 _ : lexS "" ≡ Mb.nothing
 _ = refl
 
--- The tokenising loop.  QUADRATIC: `scan` folds the whole remaining
--- input, so it is restarted at every token boundary -- see the note on
--- `tokenise` in `Lexicon`.
+-- The tokenising loop.  `scan` is restarted at every token boundary --
+-- see the note on `tokenise` in `Lexicon` -- but the restart now costs
+-- the token rather than the rest of the input: `GreedyMax.scan-cons`
+-- exits at a dead product state.
 
 toks : AS.String → Mb.Maybe (List (ℕ × AS.String))
 toks s = Mb.map-Maybe (L.map (λ x → toℕ (x .fst) , untext (x .snd)))

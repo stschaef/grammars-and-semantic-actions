@@ -27,13 +27,13 @@ open DeterministicAutomaton DA using (init)
 munch : String → String
 munch w =
   Sum.rec (λ x → x .snd .fst fz) (λ _ → [])
-    (scan DA isSetQ w (readChars w tt) init)
+    (scan DA isSetQ DADead w (readChars w tt) init)
 
 -- ...and the state it ended in, which the type now pins down
 munchEnd : String → Sum._⊎_ _ _
 munchEnd w =
   Sum.rec (λ x → Sum.inl (x .fst)) (λ _ → Sum.inr tt)
-    (scan DA isSetQ w (readChars w tt) init)
+    (scan DA isSetQ DADead w (readChars w tt) init)
 
 -- `a b*` on "abbab": the longest accepted prefix is "abb"
 _ : munch (a ∷ b ∷ b ∷ a ∷ b ∷ []) ≡ a ∷ b ∷ b ∷ []
@@ -57,7 +57,7 @@ _ = refl
 munchSpec : String → String
 munchSpec w =
   Sum.rec (λ x → x .fst) (λ _ → [])
-    (Run→Greedy DA init w (scan DA isSetQ w (readChars w tt) init))
+    (Run→Greedy DA init w (scan DA isSetQ DADead w (readChars w tt) init))
 
 _ : munchSpec (a ∷ b ∷ b ∷ a ∷ b ∷ []) ≡ a ∷ b ∷ b ∷ []
 _ = refl

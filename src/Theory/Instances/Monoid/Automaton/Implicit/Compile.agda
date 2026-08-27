@@ -340,6 +340,10 @@ module _ (discAlpha : Discrete Alphabet) where
     → DeterministicAutomaton (FreelyAddFail+Initial (States dr))
   compileDA dr = IDA→DA (compile dr)
 
+  -- ...and its dead state, which is the freely added `fail`
+  compileDead : {¬FL ¬F : ℙ} (dr : DetReg ¬FL ¬F b) → Deadness (compileDA dr)
+  compileDead dr = failDead (compile dr)
+
   isSetCompileStates : {¬FL ¬F : ℙ} (dr : DetReg ¬FL ¬F b)
     → isSet (FreelyAddFail+Initial (States dr))
   isSetCompileStates dr = isSetFreelyAddFail+Initial _ (isSetStates dr)

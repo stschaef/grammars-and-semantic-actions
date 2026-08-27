@@ -31,7 +31,6 @@ open import Theory.Instances.Monoid.Automaton.Implicit.AnalysisExamples
   using (module POSIX)
 open import Theory.Instances.Monoid.Automaton.Lexicon UChar isSetAlphabet
 
-------------------------------------------------------------------------
 -- 1. The rules, as POSIX source, in priority order.
 --
 -- Nothing asks these five to be disjoint, and they are not: `where`
@@ -60,6 +59,13 @@ Ms (fs (fs fz)) = Num.DA
 Ms (fs (fs (fs fz))) = Op.DA
 Ms (fs (fs (fs (fs fz)))) = Space.DA
 
+Dead : (i : Fin 5) → Deadness (Ms i)
+Dead fz = Kw.Dead
+Dead (fs fz) = Ident.Dead
+Dead (fs (fs fz)) = Num.Dead
+Dead (fs (fs (fs fz))) = Op.Dead
+Dead (fs (fs (fs (fs fz)))) = Space.Dead
+
 sQs : (i : Fin 5) → isSet (Qs i)
 sQs fz = Kw.isSetQ
 sQs (fs fz) = Ident.isSetQ
@@ -67,14 +73,13 @@ sQs (fs (fs fz)) = Num.isSetQ
 sQs (fs (fs (fs fz))) = Op.isSetQ
 sQs (fs (fs (fs (fs fz)))) = Space.isSetQ
 
-module Lex = Product Qs Ms sQs
+module Lex = Product Qs Ms Dead sQs
 
 -- rule index and matched text, as text
 lex : AS.String → Mb.Maybe (ℕ × AS.String)
 lex s = Mb.map-Maybe (λ x → toℕ (x .fst) , untext (x .snd .fst))
   (Lex.lexOneS (text s))
 
-------------------------------------------------------------------------
 -- 2. The table.  Rule 0 keyword, 1 identifier, 2 number, 3 operator,
 --    4 whitespace.
 
@@ -123,7 +128,6 @@ _ = refl
 _ : lex ""         ≡ Mb.nothing
 _ = refl
 
-------------------------------------------------------------------------
 -- 3. At scale.
 --
 -- Five automata in lockstep over a long identifier.  Timings measured

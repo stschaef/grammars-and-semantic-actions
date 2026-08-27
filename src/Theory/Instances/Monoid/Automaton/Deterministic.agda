@@ -18,7 +18,7 @@ module Theory.Instances.Monoid.Automaton.Deterministic
   {ℓAlph}
   (Alphabet : Type ℓAlph) (isSetAlphabet : isSet Alphabet) where
 
-open import Cubical.Data.Bool using (Bool ; true ; false ; isSetBool)
+open import Cubical.Data.Bool using (Bool ; true ; false ; isSetBool ; true≢false)
 open import Cubical.Data.Unit using (tt ; tt*)
 open import Cubical.Data.FinData using (zero ; suc)
 open import Cubical.Data.List using ([] ; _∷_)
@@ -247,3 +247,38 @@ record DeterministicAutomaton (Q : Type ℓQ)
 
     parseInit : char * ⊢ ⊕[ b ∈ Bool ] Trace b init
     parseInit = π init ∘⊢ parse
+
+-- Dead states.
+--
+-- A state is dead when nothing is accepted from it.  Two Boolean facts
+-- say so -- `δ` never leaves the dead set, and a dead state rejects --
+-- and `dead-empty` is then a structural recursion on the trace: `stop`
+-- contradicts `dead-rej`, `step` recurses by `dead-δ`.  A consumer that
+-- can test deadness therefore refutes a run without inspecting one.
+module _ {Q : Type ℓQ} (M : DeterministicAutomaton Q) where
+  open DeterministicAutomaton M
+
+  record Deadness : Type (ℓ-max ℓQ ℓAlph) where
+    field
+      isDead   : Q → Bool
+      dead-δ   : (q : Q) (c : Alphabet) → isDead q Eq.≡ true
+               → isDead (δ q c) Eq.≡ true
+      dead-rej : (q : Q) → isDead q Eq.≡ true → isAcc q Eq.≡ false
+
+  -- the always-available one: nothing is known dead, and nothing is
+  -- gained.  Existing users pass this and behave exactly as before.
+  noDead : Deadness
+  noDead .Deadness.isDead _ = false
+  noDead .Deadness.dead-δ _ _ ()
+  noDead .Deadness.dead-rej _ ()
+
+  module _ (D : Deadness) where
+    open Deadness D
+
+    dead-empty : (q : Q) → isDead q Eq.≡ true
+      → (w : String) → Trace true q w → Empty.⊥
+    dead-empty q d w (roll .w (stop p , x)) =
+      true≢false (Eq.eqToPath (p Eq.∙ dead-rej q d))
+    dead-empty q d w (roll .w (step c , ms , e , f)) =
+      dead-empty (δ q c) (dead-δ q c d)
+        (ms (suc zero)) (f (suc zero) .lower)

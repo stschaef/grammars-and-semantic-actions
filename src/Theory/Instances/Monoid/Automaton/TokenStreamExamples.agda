@@ -53,6 +53,13 @@ Ms (fs (fs fz)) = Num.DA
 Ms (fs (fs (fs fz))) = Op.DA
 Ms (fs (fs (fs (fs fz)))) = Space.DA
 
+Dead : (i : Fin 5) → Deadness (Ms i)
+Dead fz = Kw.Dead
+Dead (fs fz) = Ident.Dead
+Dead (fs (fs fz)) = Num.Dead
+Dead (fs (fs (fs fz))) = Op.Dead
+Dead (fs (fs (fs (fs fz)))) = Space.Dead
+
 sQs : (i : Fin 5) → isSet (Qs i)
 sQs fz = Kw.isSetQ
 sQs (fs fz) = Ident.isSetQ
@@ -60,7 +67,7 @@ sQs (fs (fs fz)) = Num.isSetQ
 sQs (fs (fs (fs fz))) = Op.isSetQ
 sQs (fs (fs (fs (fs fz)))) = Space.isSetQ
 
-module Lex = Stream Qs Ms sQs
+module Lex = Stream Qs Ms Dead sQs
 
 -- The side condition of the stream: no rule of this lexicon accepts the
 -- empty word, so every token consumes and the recursion descends.  It is

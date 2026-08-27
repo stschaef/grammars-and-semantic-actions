@@ -263,11 +263,24 @@ module _ {Q : Type ℓAlph} (M : DeterministicAutomaton Q) where
       inl ∘⊢ σ⊕ q ∘⊢ (accHere q p ,⊗ noExt-ε (L q)) ∘⊢ ε⊗-intro
     go q false p = inr ∘⊢ ¬Nullable→¬ε (⊗-¬Nullable (accN q p))
 
-  scan-cons : char ⊗ Table ⊢ Table
-  scan-cons = &ᴰ-intro λ q → ⊕ᴰ-elim (λ c → stepAt q c) ∘⊢ ⊗⊕ᴰ-distL
+  -- A dead successor is refuted without reading the table.
+  --
+  -- `dead-empty` says `Trace true q` is uninhabited, which is exactly the
+  -- hypothesis `unmatched` wants -- so a dead `δ q c` answers with no `π`
+  -- on the tail at all.  That is the early exit: forcing the tail's cell
+  -- is what makes one token cost the whole remaining input.
+  deadNo : (D : Deadness M) (q : Q)
+    → Deadness.isDead D q Eq.≡ true → ⊤Ty ⊢ ¬Ty (L q ⊗ ⊤Ty)
+  deadNo D q d m _ (ms , _ , t , _) =
+    Empty.rec (dead-empty M D q d (ms zero) t)
+
+  scan-cons : Deadness M → char ⊗ Table ⊢ Table
+  scan-cons D = &ᴰ-intro λ q → ⊕ᴰ-elim (λ c → stepAt q c) ∘⊢ ⊗⊕ᴰ-distL
     where
+    open Deadness D using (isDead)
+
     stepAt : (q : Q) (c : Alphabet) → literal c ⊗ Table ⊢ Run q
-    stepAt q c = ⊕-elim matched unmatched ∘⊢ ⊗⊕-distR ∘⊢ (id⊢ ,⊗ π (δ q c))
+    stepAt q c = alive (isDead (δ q c)) Eq.refl
       where
       -- extending the match is one `STEP`: O(1), and no derivative
       extMatch : (q' : Q) → literal c ⊗ Match (δ q c) q' ⊢ Match q q'
@@ -294,6 +307,14 @@ module _ {Q : Type ℓAlph} (M : DeterministicAutomaton Q) where
           inl ∘⊢ σ⊕ q ∘⊢ (accHere q p ,⊗ id⊢) ∘⊢ ε⊗-intro ∘⊢ noMore
         go false p =
           inr ∘⊢ ¬Ty-map ((id⊢ ,& ¬Nullable→char⁺ (accN q p)) ,⊗ id⊢) ∘⊢ noMore
+
+      -- dead: the refutation comes from the certificate, and the tail is
+      -- discarded rather than projected.  Alive: exactly the old path.
+      alive : (b : Bool) → isDead (δ q c) Eq.≡ b
+        → literal c ⊗ Table ⊢ Run q
+      alive true p = unmatched ∘⊢ (id⊢ ,⊗ (deadNo D (δ q c) p ∘⊢ ⊤Ty-intro))
+      alive false _ =
+        ⊕-elim matched unmatched ∘⊢ ⊗⊕-distR ∘⊢ (id⊢ ,⊗ π (δ q c))
 
   module _ (isSetQ : isSet Q) where
     private
@@ -341,8 +362,8 @@ module _ {Q : Type ℓAlph} (M : DeterministicAutomaton Q) where
           isSet⊗bin (isSetMatch q q') λ m → isProp→isSet (isProp¬Ty _))
         (λ m → isProp→isSet (isProp¬Ty _))
 
-    scan : char * ⊢ Table
-    scan = fold*g (Table , isSetTable) char-¬Nullable scan-nil scan-cons
+    scan : Deadness M → char * ⊢ Table
+    scan D = fold*g (Table , isSetTable) char-¬Nullable scan-nil (scan-cons D)
 
     -- ...and the bridge is an iso.
     --

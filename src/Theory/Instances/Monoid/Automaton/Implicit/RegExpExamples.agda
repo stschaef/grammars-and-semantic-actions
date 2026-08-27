@@ -65,6 +65,9 @@ abStar = ⊗Aut discL2 (litAut discL2 a) bStar refl litFollows
 DA : DeterministicAutomaton _
 DA = IDA→DA abStar
 
+DADead : Deadness DA
+DADead = failDead abStar
+
 isSetU : isSet (Unit* {ℓ-zero})
 isSetU = isProp→isSet λ _ _ → refl
 

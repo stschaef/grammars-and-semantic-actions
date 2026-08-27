@@ -56,6 +56,9 @@ module POSIX (s : AS.String)
   isSetQ : isSet Q
   isSetQ = isSetCompileStates discAlphabet (D .snd .dr)
 
+  Dead : Deadness DA
+  Dead = compileDead discAlphabet (D .snd .dr)
+
   accepts : String → Bool
   accepts w = parseInit isSetQ w (readChars w tt) .fst
 

@@ -141,3 +141,16 @@ module _ {Q : Type ℓAlph} (M : ImplicitDeterministicAutomaton Q) where
   IDA→DA .DeterministicAutomaton.init = initial
   IDA→DA .DeterministicAutomaton.isAcc = isAcc'
   IDA→DA .DeterministicAutomaton.δ = δ'
+
+  -- `fail` is the freely added sink: it rejects and it is absorbing, so
+  -- `Trace true fail w` is empty and a scan may exit there.
+  failDead : Deadness IDA→DA
+  failDead .Deadness.isDead fail = true
+  failDead .Deadness.isDead initial = false
+  failDead .Deadness.isDead (↑q _) = false
+  failDead .Deadness.dead-δ fail _ _ = Eq.refl
+  failDead .Deadness.dead-δ initial _ ()
+  failDead .Deadness.dead-δ (↑q _) _ ()
+  failDead .Deadness.dead-rej fail _ = Eq.refl
+  failDead .Deadness.dead-rej initial ()
+  failDead .Deadness.dead-rej (↑q _) ()
