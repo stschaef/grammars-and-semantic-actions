@@ -41,8 +41,9 @@ open import Theory.Instances.Monoid.KleeneStar.Unambiguous
   using (unambiguous-* ; _∉First_ ; _∉FollowLast_ ; SeqUnambig)
 open import Theory.Instances.Monoid.Precise Alphabet isSetAlphabet
   using (splitAgree)
-open import Theory.Instances.Monoid.SequentialUnambiguity.First
-  Alphabet isSetAlphabet using (#→disjoint)
+open import Theory.Instances.Monoid.SequentialUnambiguity.Base
+  Alphabet isSetAlphabet
+  using (#→disjoint ; unambiguous⊗ ; unambiguous⊕ ; disjointFirsts→)
 open import Theory.Instances.Monoid.Residual Alphabet isSetAlphabet
   using (_⟜_ ; ⟜-intro ; ⟜-app ; ⊗ε-unit-l⁻ ; ⊗ε-unit-r⁻ ; ⊗ε-unit-r
         ; ⊗⊕ᴰ-distL ; ⊗⊕ᴰ-distR)
@@ -54,7 +55,7 @@ open import Theory.Instances.Monoid.Automaton.Implicit.Disjointness
   Alphabet isSetAlphabet
 open import Theory.Instances.Monoid.Automaton.Unambiguous
   Alphabet isSetAlphabet
-  using (unambiguous-Trace ; unambiguousTrace ; isPropεTy ; isPropPathP)
+  using (unambiguous-Trace ; unambiguousTrace ; isPropεTy)
 open import Theory.Instances.Monoid.Regex.Base Alphabet _≟_ ℓ
   using (RE ; ⟦_⟧ ; εr ; ⊥r ; ⟨_⟩r ; satr ; _⊗r_ ; _⊕r_ ; _*r
         ; Sat ; satG ; satSet)
@@ -1050,49 +1051,6 @@ module Kleene {Q : Type ℓAlph}
           ⊢ Parse *A
     consB =
       ⟜-app ∘⊢ (recParse M MAlg initial ,⊗ id⊢) ∘⊢ star-cons⁻
-
--- `unambiguous⊗`: the old `unambig-M⊗M'`, over the same hypothesis the
--- star lemma uses.  `Precise.splitAgree` does the combinatorics: the two
--- cuts coincide, so the factors are equal by their own unambiguity.
-
-unambiguous⊗ : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt}
-  → ((c : Alphabet) → (c ∉FollowLast A) Sum.⊎ (c ∉First B))
-  → unambiguous A → unambiguous B → unambiguous (A ⊗ B)
-unambiguous⊗ {A = A} {B = B} su uA uB m
-  (ms , e , (a , (b , _))) (ns , f , (a' , (b' , _))) =
-  ⊗PathP' refl sp
-    (isPropPathP _ (uA (ms zero)) a a')
-    (isPropPathP _ (uB (ms (suc zero))) b b')
-  where
-  pieces : (ms zero ≡ ns zero) × (ms (suc zero) ≡ ns (suc zero))
-  pieces =
-    splitAgree su su (ms zero) (ms (suc zero)) (ns zero) (ns (suc zero))
-      (Eq.eqToPath e ∙ sym (Eq.eqToPath f)) a b a' b'
-
-  sp : ms ≡ ns
-  sp = funExt λ where
-    zero → pieces .fst
-    (suc zero) → pieces .snd
-
--- ...and the two easy companions.
-
-unambiguous⊕ : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt}
-  → unambiguous A → unambiguous B → (A & B ⊢ ⊥Ty) → unambiguous (A ⊕ B)
-unambiguous⊕ uA uB dis m (Sum.inl x) (Sum.inl y) = cong Sum.inl (uA m x y)
-unambiguous⊕ uA uB dis m (Sum.inl x) (Sum.inr y) =
-  Empty.rec (dis m (x , y) .lower)
-unambiguous⊕ uA uB dis m (Sum.inr x) (Sum.inl y) =
-  Empty.rec (dis m (y , x) .lower)
-unambiguous⊕ uA uB dis m (Sum.inr x) (Sum.inr y) = cong Sum.inr (uB m x y)
-
--- disjoint firsts and not both nullable is disjointness -- that is
--- `SequentialUnambiguity.First`'s `#→disjoint`, and `_#_` unfolds to
--- exactly this hypothesis.
-disjointFirsts→ : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt}
-  → ((c : Alphabet) → (c ∉First A) Sum.⊎ (c ∉First B))
-  → (¬Nullable A) Sum.⊎ (¬Nullable B)
-  → A & B ⊢ ⊥Ty
-disjointFirsts→ = #→disjoint
 
 unambiguous-satG : (P : Alphabet → Bool) → unambiguous (satG P)
 unambiguous-satG P m (x , p) (y , q) =

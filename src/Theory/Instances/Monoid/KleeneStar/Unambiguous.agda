@@ -31,6 +31,8 @@ import Cubical.Data.Equality as Eq
 
 open import Theory.Instances.Monoid.Base
 open import Theory.Instances.Monoid.Strings Alphabet isSetAlphabet
+open import Theory.Type.HLevels MonEqns Alphabet (λ _ → tt) listPresentation
+  using (isPropPathP) public
 open import Theory.Instances.Monoid.KleeneStar Alphabet isSetAlphabet
 open import Theory.Instances.Monoid.KleeneStar.Guarded Alphabet isSetAlphabet
   using (¬Nullable)
@@ -60,11 +62,6 @@ SeqUnambig A = (c : Alphabet) → (c ∉FollowLast A) Sum.⊎ (c ∉First A)
 -- `unambiguous-Trace` technique; the `PathP`s are built inline, so no
 -- tensor-extensionality lemma is needed after all.
 
--- a proposition at one end of a line of types fills the whole line
-isPropPathP : (T : I → Type ℓA) → isProp (T i0)
-  → (x : T i0) (y : T i1) → PathP T x y
-isPropPathP T pr =
-  isProp→PathP (λ i → transport (λ j → isProp (T (i ∧ j))) pr)
 
 module Star* {A : TheoryTy ℓA tt}
   (nu : ¬Nullable A) (su : SeqUnambig A) (ua : Unambig A) where

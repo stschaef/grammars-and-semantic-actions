@@ -22,6 +22,7 @@ open import Cubical.Data.Unit using (Unit ; tt)
 open import Cubical.Data.Bool using (Bool ; true ; false)
 import Cubical.Data.Sum as Sum
 import Cubical.Data.Empty as Empty
+import Cubical.Data.Equality as Eq
 open import Cubical.Data.FinData using (Fin ; zero ; suc)
 open import Cubical.Data.List as L using (List ; [] ; _∷_)
 open import Cubical.Data.Sigma
@@ -34,7 +35,9 @@ open import Theory.Instances.Monoid.Precise Alphabet isSetAlphabet using (flat)
 open import Theory.Instances.Monoid.Residual Alphabet isSetAlphabet
   using (&⊕ᴰ-distR ; ⊗⊕ᴰ-distL ; ⊗⊕ᴰ-distR ; &⊕-distR ; ⊗ε-unit-r)
 open import Theory.Instances.Monoid.Precise Alphabet isSetAlphabet
-  using (⊗&-align)
+  using (⊗&-align ; splitAgree)
+open import Theory.Type.HLevels MonEqns Alphabet (λ _ → tt) listPresentation
+  using (isPropPathP)
 open import Theory.Instances.Monoid.KleeneStar Alphabet isSetAlphabet
   using (NIL ; CONS)
 open import Theory.Instances.Monoid.Convolution Alphabet isSetAlphabet
@@ -394,3 +397,38 @@ module _ {A : TheoryTy ℓA tt} {c : Alphabet}
     ⇒-app
     ∘⊢ ((π₁ ∘⊢ π₂) ,& (id⊢ ,&p π₂))
     ∘⊢ (id⊢ ,&p fold*r alg-nil alg-cons)
+
+-- Unambiguity of the connectives, over the same separations.  `⊗` is the
+-- one with content: `splitAgree` makes the two cuts coincide, and then the
+-- factors agree by their own unambiguity.
+unambiguous⊗ : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt}
+  → A ⊛ B → unambiguous A → unambiguous B → unambiguous (A ⊗ B)
+unambiguous⊗ {A = A} {B = B} sep uA uB m
+  (ms , e , (a , (b , _))) (ns , f , (a' , (b' , _))) =
+  ⊗PathP' refl sp
+    (isPropPathP _ (uA (ms zero)) a a')
+    (isPropPathP _ (uB (ms (suc zero))) b b')
+  where
+  pieces : (ms zero ≡ ns zero) × (ms (suc zero) ≡ ns (suc zero))
+  pieces =
+    splitAgree sep sep (ms zero) (ms (suc zero)) (ns zero) (ns (suc zero))
+      (Eq.eqToPath e ∙ sym (Eq.eqToPath f)) a b a' b'
+
+  sp : ms ≡ ns
+  sp = funExt λ where
+    zero → pieces .fst
+    (suc zero) → pieces .snd
+
+unambiguous⊕ : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt}
+  → unambiguous A → unambiguous B → disjoint A B → unambiguous (A ⊕ B)
+unambiguous⊕ uA uB dis m (Sum.inl x) (Sum.inl y) = cong Sum.inl (uA m x y)
+unambiguous⊕ uA uB dis m (Sum.inl x) (Sum.inr y) =
+  Empty.rec (dis m (x , y) .lower)
+unambiguous⊕ uA uB dis m (Sum.inr x) (Sum.inl y) =
+  Empty.rec (dis m (y , x) .lower)
+unambiguous⊕ uA uB dis m (Sum.inr x) (Sum.inr y) = cong Sum.inr (uB m x y)
+
+-- `_#_` unfolds to exactly `#→disjoint`'s hypothesis
+disjointFirsts→ : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt}
+  → A # B → (¬Nullable A) Sum.⊎ (¬Nullable B) → disjoint A B
+disjointFirsts→ = #→disjoint

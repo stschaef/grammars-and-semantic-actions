@@ -32,6 +32,8 @@ open import Cubical.Data.Equality.More using (isSet→isSetEq)
 
 open import Theory.Instances.Monoid.Base
 open import Theory.Instances.Monoid.Strings Alphabet isSetAlphabet
+open import Theory.Type.HLevels MonEqns Alphabet (λ _ → tt) listPresentation
+  using (isPropPathP)
 open import Theory.Instances.Monoid.Precise Alphabet isSetAlphabet
   using (flat ; lit⊗-nil)
 open import Theory.Instances.Monoid.Automaton.Deterministic
@@ -39,11 +41,6 @@ open import Theory.Instances.Monoid.Automaton.Deterministic
 
 private variable ℓA ℓQ : Level
 
--- a proposition at one end of a line of types fills the whole line
-isPropPathP : (T : I → Type ℓA) → isProp (T i0)
-  → (x : T i0) (y : T i1) → PathP T x y
-isPropPathP T pr =
-  isProp→PathP (λ i → transport (λ j → isProp (T (i ∧ j))) pr)
 
 -- the empty splitting is nullary, and its index equation is a proposition
 isPropεTy : (m : String) → isProp (εTy m)

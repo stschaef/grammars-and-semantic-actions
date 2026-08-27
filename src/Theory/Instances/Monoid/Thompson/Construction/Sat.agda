@@ -40,19 +40,13 @@ open import Theory.Instances.Monoid.Residual Alphabet isSetAlphabet
 open import Theory.Instances.Monoid.Unitor Alphabet isSetAlphabet
   using (⊗-unit-r∘r⁻ ; ⊗-unit-r⁻∘r)
 open import Theory.Instances.Monoid.Automata.NFA.Base Alphabet isSetAlphabet
+open import Theory.Instances.Monoid.Sat Alphabet isSetAlphabet
+  using (Sat ; satG) public
 
 open WildCatNotation
 open WildCatIso
 open Iso
 open NFA
-
--- `Regex.Sat`'s `Sat` and `satG`, restated here so that Thompson does not
--- import the decidable-parser stack that `Regex.Base` re-exports.
-Sat : (Alphabet → Bool) → Type ℓAlph
-Sat P = Σ[ c ∈ Alphabet ] (P c ≡ true)
-
-satG : (P : Alphabet → Bool) → TheoryTy ℓM tt
-satG P = ⊕[ x ∈ Sat P ] literal (x .fst)
 
 isFinSetSat : (P : Alphabet → Bool) → isFinSet (Sat P)
 isFinSetSat P = isFinSetΣ (Alphabet , isFinSetAlphabet) λ c →

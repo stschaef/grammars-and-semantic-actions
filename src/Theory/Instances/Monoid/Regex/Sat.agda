@@ -33,22 +33,11 @@ open import Cubical.Foundations.HLevels using (isSetΣ)
 open import Theory.Instances.Monoid.Combinator.Decidable.Base Alphabet _≟_ ℓ
   public
 open import Theory.Instances.Monoid.Precise Alphabet isSetAlphabet using (flat)
+open import Theory.Instances.Monoid.Sat Alphabet isSetAlphabet public
 open import Theory.Instances.Monoid.Residual Alphabet isSetAlphabet
   using (⊗⊕ᴰ-distL ; &⊕ᴰ-distR)
 
 private variable ℓK : Level
-
-Sat : (Alphabet → Bool) → Type ℓAlph
-Sat P = Σ[ c ∈ Alphabet ] (P c ≡ true)
-
-isSetSat : (P : Alphabet → Bool) → isSet (Sat P)
-isSetSat P = isSetΣ isSetAlphabet λ _ → isProp→isSet (isSetBool _ _)
-
-satG : (P : Alphabet → Bool) → TheoryTy ℓM tt
-satG P = ⊕[ x ∈ Sat P ] literal (x .fst)
-
-satSet : (P : Alphabet → Bool) → TheorySet ℓM tt
-satSet P = satG P , isSet⊕ᴰ (isSetSat P) λ x → isSetLiteral (x .fst)
 
 sat⊗-precise : {P : Alphabet → Bool} {K : TheoryTy ℓK tt}
   → satG P ⊗ ¬Ty K ⊢ ¬Ty (satG P ⊗ K)

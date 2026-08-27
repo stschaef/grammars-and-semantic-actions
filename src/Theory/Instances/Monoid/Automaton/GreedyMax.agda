@@ -49,7 +49,7 @@ open import Theory.Instances.Monoid.Automaton.Deterministic
 open import Theory.Instances.Monoid.Convolution Alphabet isSetAlphabet
   using (⟦⊗e⟧ ; ⟦⊗e⟧⁻)
 open import Theory.Instances.Monoid.Automaton.Unambiguous
-  Alphabet isSetAlphabet using (isPropPathP ; isPropεTy ; unambiguous-Trace)
+  Alphabet isSetAlphabet using (isPropεTy ; unambiguous-Trace)
 open import Theory.Instances.Monoid.Automaton.Greedy Alphabet isSetAlphabet
   using (¬Nullable-map ; &-¬NullableR ; ⊕ᴰ-¬Nullable ; char⁺-¬Nullable
        ; ¬Nullable→¬ε ; ¬Nullable→char⁺)

@@ -30,7 +30,9 @@ open import Theory.Instances.Monoid.Precise Alphabet isSetAlphabet
 open import Theory.Instances.Monoid.Automaton.Deterministic
   Alphabet isSetAlphabet
 open import Theory.Instances.Monoid.Automaton.Unambiguous
-  Alphabet isSetAlphabet using (unambiguous-Trace ; isPropPathP)
+  Alphabet isSetAlphabet using (unambiguous-Trace)
+open import Theory.Type.HLevels MonEqns Alphabet (λ _ → tt) listPresentation
+  using (isPropPathP)
 
 private variable ℓQ : Level
 
