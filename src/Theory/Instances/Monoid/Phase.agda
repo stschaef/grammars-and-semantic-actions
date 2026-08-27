@@ -21,7 +21,32 @@
                  + a decision for it
                  + an emission into `List Out`
 
-   and `Parse (lex s)` is `run` of one phase fed to `run` of the next. -}
+   and `Parse (lex s)` is `run` of one phase fed to `run` of the next.
+
+   THREE KNOWN GAPS, found by the Dyck pilot (`Pipeline/Dyck.agda`) and
+   recorded here rather than discovered again:
+
+   1. `dec : Decidable Gr` EXCLUDES THE GREEDY LEXER, which is the one
+      thing this interface exists to feed.  `Automaton/Lexicon` decides
+      one token (`Tok ⊕ ¬Ty …`); the token *stream* is only
+      `tokeniseFuel`, a fuelled metalanguage loop returning a `Maybe`.
+      There is no `Decidable` of a greedy whole-input token grammar
+      anywhere.  So a `Phase` today must use `Lex/Regex.lexer`, i.e.
+      `decide-r`, which is ordered choice rather than maximal munch and
+      exponential on rejection.  The fix is the internal tokenising
+      fold -- a token-stream grammar whose parse tree IS the
+      tokenisation -- and until that exists, `Phase` and greedy lexing
+      are incompatible.
+
+   2. `Gr` must be TOTAL over the input.  `runPhase` observes at the
+      whole word, so there is no residue and no notion of a phase that
+      consumes a prefix.  That is a precondition, not a theorem.
+
+   3. There is no composition, and the LAST phase is not a `Phase`: it
+      emits a parse tree, not a word.  Joining two phases is currently
+      metalanguage `Maybe`-bind, which also flattens *which* phase
+      failed.  Composition wants a module over two alphabets, which this
+      single-alphabet module cannot express. -}
 open import Cubical.Foundations.Prelude
 open import Cubical.Algebra.Theory.Finitary
 open SortedSig
