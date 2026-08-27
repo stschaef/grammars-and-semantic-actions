@@ -28,15 +28,21 @@ open import Theory.Instances.Monoid.Extension
   CommEqn (λ _ → 2)
   (λ _ → node _⊙_ var) (λ _ → node _⊙_ (λ b → var (swap b)))
   El public
+  renaming ( Carrier to Bag
+           ; _⊗ₑ_ to _⊎B_ ; ⊗ₑmap to ⊎Bmap ; ε⊗ to εB
+           ; ⊗ₑ-assoc to ⊎B-assoc ; ⊗ₑ-assoc⁻ to ⊎B-assoc⁻
+           ; ⊗ₑ-unitL to ⊎B-unitL ; ⊗ₑ-unitR to ⊎B-unitR
+           ; ⊗ₑ-unitL⁻ to ⊎B-unitL⁻ ; ⊗ₑ-unitR⁻ to ⊎B-unitR⁻
+           ; ⊗ₑ-unitL⌈⌉ to ⊎B-unitL⌈⌉
+           ; _⊸ₑ_ to _⊸B_ ; ⊸ₑ-intro to ⊸B-intro ; ⊸ₑ-app to ⊸B-app
+           ; ⊸ₑ-intro⁻ to ⊸B-intro⁻
+           ; ε⊗→⌈ε⌉ to εB→⌈ε⌉ ; ⌈ε⌉→ε⊗ to ⌈ε⌉→εB
+           ; ⊗ᵘ→⊗ₑ to ⊗ᵘ→⊎B ; ⊗ₑ→⊗ᵘ to ⊎B→⊗ᵘ
+           ; K-⊗ₑ₁ to K-⊎B₁ ; K-⊗ₑ₂ to K-⊎B₂
+           ; ⊗ₑ⊕ᴰ-dist to ⊎B⊕ᴰ-dist
+           ; MonPlusEqns to BagEqns ; MonPlusEqn to BagEqn )
 
 private variable ℓA ℓB : Level
-
-Bag : Type ℓM
-Bag = Carrier
-
-infixr 20 _⊎B_
-_⊎B_ : TheoryTy ℓA tt → TheoryTy ℓB tt → TheoryTy _ tt
-_⊎B_ = _⊗ₑ_
 
 private
   fromTm : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt}
