@@ -52,4 +52,4 @@ decWindow (c ◂ w) (d ◂ w') = go (c ≟ d) (decWindow w w')
 -- the only place it does: `Route`, `routeIn`, `choose` and the fixpoint are
 -- unchanged, at every `n`.
 module PushW (n : Width) {Y : Type ℓAlph} (r : Window n → Maybe Y) =
-  PushOf (Λw {n}) (windowCover n) decWindow r
+  PushOf ℓG (Λw {n}) (windowCover n) decWindow r

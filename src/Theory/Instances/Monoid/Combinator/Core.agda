@@ -14,7 +14,15 @@
 
    `LawfulAnswer` adds the functor laws separately, since `AnswerFunctor`
    constrains types and not behaviour, and sketching a new answer should
-   not owe the proofs up front. -}
+   not owe the proofs up front.
+
+   `CommittingAnswer` is the LL layer's one requirement, and the only
+   record whose two instances are genuinely different arguments: to answer
+   from the branch a route names, `Dec` must *refute* every other cell
+   (`routeIn`, out of the cover's `disjoint`), while a covariant answer
+   simply drops them (`FromCov.committing`, out of `Ans-empty`).  Nothing
+   above it -- the table, the cover, `Choice`, the fixpoint -- mentions the
+   answer at all. -}
 open import Cubical.Foundations.Prelude
 open import Cubical.WildCat.LocallySmall.Base
 open import Cubical.Algebra.Theory.Finitary
@@ -30,14 +38,20 @@ module Theory.Instances.Monoid.Combinator.Core
   (_≟_ : (x y : Alphabet) → (x Eq.≡ y) Sum.⊎ ((x Eq.≡ y) → Empty.⊥))
   where
 
-open import Cubical.Data.Sigma using (_,_ ; fst ; snd)
+open import Cubical.Data.Sigma using (Σ-syntax ; _,_ ; fst ; snd)
 open import Cubical.Data.Unit using (tt)
 open import Cubical.Foundations.HLevels using (isSetΠ)
+open import Cubical.Relation.Nullary.Base using (yes ; no)
+open import Cubical.Relation.Nullary.Properties using (Discrete→isSet)
+-- the grammar `Maybe` of `Types` shadows this one, so it stays qualified
+import Cubical.Data.Maybe as MB
 
 open import Theory.Instances.Monoid.Types Alphabet _≟_ public
 open import Theory.Instances.Monoid.Suffix.Base Alphabet isSetAlphabet public
 open import Theory.Instances.Monoid.Residual Alphabet isSetAlphabet
-  using (⊗ε-unit-l⁻ ; ⊗ε-unit-r ; ⊗ε-unit-r⁻ ; &⊕ᴰ-distR)
+  using (⊗ε-unit-l⁻ ; ⊗ε-unit-r ; ⊗ε-unit-r⁻ ; ⊗⊕ᴰ-distL ; &⊕ᴰ-distR)
+open import Theory.Type.Decidable.Route
+  MonEqns Alphabet (λ _ → tt) listPresentation public
 open import Theory.Instances.Monoid.Unitor Alphabet isSetAlphabet
   using (⊗-assoc⁻∘⊗-assoc ; ⊗-assoc∘⊗-assoc⁻
         ; ⊗-unit-l∘l⁻ ; ⊗-unit-l⁻∘l ; ⊗-unit-r∘r⁻ ; ⊗-unit-r⁻∘r ; ⊗≅)
@@ -55,6 +69,58 @@ private variable ℓA ℓB ℓC ℓD ℓK ℓL : Level
 look⊗ : {A : TheorySet ℓA tt} {C : TheoryTy ℓC tt}
   → ((o : M₁) → ty (▷ A) & Λ₁ o ⊢ C) → ty (▷ A) ⊢ C
 look⊗ br = ⊕ᴰ-elim br ∘⊢ &⊕ᴰ-distR ∘⊢ (id⊢ ,& (Λ-total ∘⊢ ⊤Ty-intro))
+
+-- Coarsening a cover along a routing of its cells.  Nothing here mentions an
+-- answer: it is the table -- a plain `I → Maybe Y` -- and the cover it
+-- induces.  Lives here rather than in `Decidable/Routed` because every
+-- answer routes; only the *commitment* differs.
+module PushOf (ℓB : Level) {I : Type ℓAlph} (Λ : I → TheoryTy ℓM tt)
+  (cov : Cover I Λ) (decI : DiscreteEq I)
+  {Y : Type ℓAlph} (r : I → MB.Maybe Y) where
+
+  Fib : MB.Maybe Y → Type ℓAlph
+  Fib v = Σ[ b ∈ I ] (r b Eq.≡ v)
+
+  PB : MB.Maybe Y → TheoryTy (ℓ-max ℓM ℓB) tt
+  PB v = LiftTheoryTy ℓB (⊕[ f ∈ Fib v ] Λ (f .fst))
+
+  atCell : (b : I) → Λ b ⊢ PB (r b)
+  atCell b = liftTy ∘⊢ σ⊕ (b , Eq.refl)
+
+  covers : Cover (MB.Maybe Y) PB
+  covers .total =
+    ⊕ᴰ-elim (λ b → σ⊕ (r b) ∘⊢ atCell b) ∘⊢ cov .total
+  covers .disjoint v v' ne m
+    (lift ((b , p) , t) , lift ((b' , p') , t')) = go (decI b b')
+    where
+    go : (b Eq.≡ b') Sum.⊎ ((b Eq.≡ b') → Empty.⊥) → ⊥Ty m
+    go (Sum.inl Eq.refl) = Empty.rec (ne (same p p'))
+      where
+      same : {u u' : MB.Maybe Y} → r b Eq.≡ u → r b Eq.≡ u' → u Eq.≡ u'
+      same Eq.refl Eq.refl = Eq.refl
+    go (Sum.inr nb) = cov .disjoint b b' nb m (t , t')
+
+-- The `isSet` a routed sum is indexed by.  A definition rather than an
+-- inlined `Discrete→isSet` so that a grammar may name the *same* proof the
+-- `Choice` module will use: `⊕ᴰSet` is definitional in its proof.
+DiscreteEq→isSet : {ℓY : Level} {Y : Type ℓY} → DiscreteEq Y → isSet Y
+DiscreteEq→isSet decY = Discrete→isSet λ y y' → Sum.rec
+  (λ p → yes (Eq.eqToPath p)) (λ ¬p → no λ p → ¬p (Eq.pathToEq p)) (decY y y')
+
+decM₁ : DiscreteEq M₁
+decM₁ ε₁ ε₁ = Sum.inl Eq.refl
+decM₁ ε₁ (tk c) = Sum.inr λ ()
+decM₁ (tk c) ε₁ = Sum.inr λ ()
+decM₁ (tk c) (tk d) = go (c ≟ d)
+  where
+  go : (c Eq.≡ d) Sum.⊎ ((c Eq.≡ d) → Empty.⊥)
+     → (tk c Eq.≡ tk d) Sum.⊎ ((tk c Eq.≡ tk d) → Empty.⊥)
+  go (Sum.inl Eq.refl) = Sum.inl Eq.refl
+  go (Sum.inr ne) = Sum.inr λ where Eq.refl → ne Eq.refl
+
+-- ...and the one-token cover is the instance the LL(1) parsers use.
+module Push (ℓB : Level) {Y : Type ℓAlph} (r : M₁ → MB.Maybe Y) =
+  PushOf ℓB Λ₁ lookaheadCover decM₁ r
 
 -- The five isomorphisms the combinators transport along.  `Unitor` and
 -- `Types` prove the round trips; these only bundle them.
@@ -178,6 +244,25 @@ record DivariantAnswer (𝒯 : AnswerFunctor) : Typeω where
   field
     Ans-dimap : {ℓA ℓB : Level} {A : TheorySet ℓA tt} {B : TheorySet ℓB tt}
       → ty A ⊢ ty B → ty B ⊢ ty A → ty (Ans A) ⊢ ty (Ans B)
+
+-- Committing on a route.  `_<|>_` consults every alternative; a *route*
+-- names one cell of a cover and answers from the branch that cell selects.
+--
+-- This is the one place where the three answers are not interchangeable.
+-- At `Dec` the field is `routeIn`: the branch may come back `no`, and the
+-- cover's `disjoint` is what turns that refutation into a refutation of the
+-- whole sum.  A covariant answer has no refutation to turn, but it does not
+-- need one -- `Ans-empty` answers the `nothing` cell and a failed branch
+-- fails the sum -- so `FromCov.committing` derives it.  What is *not* derivable
+-- from `AnswerFunctor` alone is either half: an answer must say how it
+-- disposes of the cells it did not take.
+record CommittingAnswer (𝒯 : AnswerFunctor) : Typeω where
+  open AnswerFunctor 𝒯
+  field
+    Ans-route : {ℓY ℓA ℓB : Level} {Y : Type ℓY}
+      (sY : isSet Y) (Φ : Y → TheorySet ℓA tt)
+      → Route (λ y → ty (Φ y)) ℓB → DiscreteEq Y
+      → ty (&ᴰSet (λ y → Ans (Φ y))) ⊢ ty (Ans (⊕ᴰSet sY Φ))
 
 -- `AnswerFunctor` constrains types, not behaviour: an instance is free to
 -- define `Ans-≅ φ = <discard the answer>` and still typecheck.  These two
@@ -316,6 +401,27 @@ module Combinators (𝒯 : AnswerFunctor) where
       → ⊤Ty ⊢ ty (Ans A)
     runFix φ = runP ℓK (fix φ)
 
+  -- `Fix` with the single grammar replaced by a family: the hypothesis is a
+  -- conjunction of guarded parsers and `callAt` reads any of them at a
+  -- strict suffix.  This is what a grammar with several nonterminals ties.
+  module FixAll {ℓX ℓA} (ℓK : Level) {X : Type ℓX}
+    (A : X → TheorySet ℓA tt) where
+
+    ℓ𝒦 : Level
+    ℓ𝒦 = ℓ-max ℓM ℓK
+
+    Pall : TheorySet _ tt
+    Pall = &ᴰSet (λ x → ParserSet ℓ𝒦 ⟨□⟩ ⟨□⟩ (A x))
+
+    callAt : (x : X) → ty (▷ Pall) ⊢ Parser ℓ𝒦 ⟨▷⟩ ⟨▷⟩ (A x)
+    callAt x = mkP pApp ∘⊢ ▷map {t = ⟨▷⟩} (π x)
+
+    parsers : ty (▷ Pall) ⊢ ty Pall → ⊤Ty ⊢ ty Pall
+    parsers = löbG {A = Pall}
+
+    runAt : (ty (▷ Pall) ⊢ ty Pall) → (x : X) → ⊤Ty ⊢ ty (Ans (A x))
+    runAt step x = runP ℓK (π x ∘⊢ parsers step)
+
 -- The two combinators a covariant answer buys: `mapP` needs only the
 -- forward map, and a parser may give up at any grammar.
 module CovCombinators (𝒯 : AnswerFunctor) (cov : CovariantAnswer 𝒯) where
@@ -330,6 +436,29 @@ module CovCombinators (𝒯 : AnswerFunctor) (cov : CovariantAnswer 𝒯) where
   fail : {ℓK : Level} {a c : ParserTag} {A : TheorySet ℓA tt}
     {D : TheoryTy ℓD tt} → D ⊢ Parser ℓK a c A
   fail {c = c} = mkP λ K → ▷next {t = c} Ans-empty
+
+-- What a covariant answer is, as the other two records.  `Ans-dimap`
+-- discards the backward map, and `Ans-route` disposes of every cell it did
+-- not take by `Ans-empty` -- no refutation anywhere, which is exactly why a
+-- `Maybe` parser backtracks where a decider commits.
+module FromCov (𝒯 : AnswerFunctor) (cov : CovariantAnswer 𝒯) where
+  open AnswerFunctor 𝒯
+  open CovariantAnswer cov
+
+  div : DivariantAnswer 𝒯
+  div .DivariantAnswer.Ans-dimap f g = Ans-map f
+
+  committing : CommittingAnswer 𝒯
+  committing .CommittingAnswer.Ans-route {Y = Y} sY Φ R decY =
+    ⊕ᴰ-elim step ∘⊢ &⊕ᴰ-distR
+    ∘⊢ (id⊢ ,& (R .Route.cov .total ∘⊢ ⊤Ty-intro))
+    where
+    Ds : TheoryTy _ tt
+    Ds = ty (&ᴰSet (λ y → Ans (Φ y)))
+
+    step : (v : MB.Maybe Y) → Ds & R .Route.B v ⊢ ty (Ans (⊕ᴰSet sY Φ))
+    step MB.nothing = Ans-empty ∘⊢ ⊤Ty-intro
+    step (MB.just y₀) = Ans-map (σ⊕ y₀) ∘⊢ π y₀ ∘⊢ π₁
 
 -- ...and the one a divariant answer buys: relabelling a parser along a
 -- `roll`/`unroll` pair.  This is what makes a *grammar* answer-generic.
@@ -347,6 +476,48 @@ module DivCombinators (𝒯 : AnswerFunctor) (div : DivariantAnswer 𝒯) where
     → ty A ⊢ ty B → ty B ⊢ ty A
     → Parser ℓK a c A ⊢ Parser ℓK a c B
   mapP± f g = mkP λ K → ▷Ans-dimap (f ,⊗ id⊢) (g ,⊗ id⊢) ∘⊢ pAt id⊢ K
+
+-- Routed choice: `_<|>_` replaced by a table.  The branches are indexed by
+-- whatever indexes them -- production tags -- cells naming no branch are
+-- `nothing`, and the cover is reached only through the guide's `into`.
+-- Generic in the answer because `CommittingAnswer` is what carries the
+-- answer-specific half; the guide, the cover and `choose` are shared.
+module RoutedCombinators (𝒯 : AnswerFunctor)
+  (div : DivariantAnswer 𝒯) (com : CommittingAnswer 𝒯) where
+  open Combinators 𝒯
+  open DivCombinators 𝒯 div
+  open CommittingAnswer com
+
+  module Choice {ℓY ℓC : Level} {Y : Type ℓY} (decY : DiscreteEq Y)
+    (C : Y → TheorySet ℓC tt) where
+
+    isSetY : isSet Y
+    isSetY = DiscreteEq→isSet decY
+
+    RAlt : TheorySet _ tt
+    RAlt = ⊕ᴰSet isSetY C
+
+    -- one route per continuation: the branch a cell names, and nothing for
+    -- every cell that names none
+    Guide : Type _
+    Guide = (K : TheorySet ℓC tt) → Route (λ y → ty (C y) ⊗ ty K) ℓC
+
+    private
+      distL⁻ : (K : TheorySet ℓC tt)
+        → (⊕[ y ∈ Y ] (ty (C y) ⊗ ty K)) ⊢ ty RAlt ⊗ ty K
+      distL⁻ K = ⊕ᴰ-elim λ y → σ⊕ y ,⊗ id⊢
+
+      commit : (g : Guide) (K : TheorySet ℓC tt)
+        → ty (&ᴰSet (λ y → Ans (C y ⊗Set K))) ⊢ ty (Ans (RAlt ⊗Set K))
+      commit g K =
+        Ans-dimap (distL⁻ K) ⊗⊕ᴰ-distL
+        ∘⊢ Ans-route isSetY (λ y → C y ⊗Set K) (g K) decY
+
+    choose : {a c : ParserTag} {D : TheoryTy ℓD tt}
+      → Guide → ((y : Y) → D ⊢ Parser ℓC a c (C y)) → D ⊢ Parser ℓC a c RAlt
+    choose g p = mkP λ K →
+      ▷map (commit g K) ∘⊢ ▷laxᴰ (λ y → Ans (C y ⊗Set K))
+      ∘⊢ (&ᴰ-intro λ y → pAt (p y) K)
 
 -- What the laws buy: `Ans-≅ φ` is itself an isomorphism.  So an answer is
 -- genuinely *transported* by a combinator, never merely mapped -- which is

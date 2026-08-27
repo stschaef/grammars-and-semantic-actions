@@ -215,7 +215,7 @@ module Gram (kk : Width) where
       (PW.atCell (aThenC (more kk))
        ∘⊢ leadFlat (more kk) ∘⊢ (id⊢ ,⊗ ⊤Ty-intro))
 
-  module F = FixAll LangSet
+  module F = FixAll ℓG LangSet
 
   private
     tokL : {ℓD : Level} {D : TheoryTy ℓD tt} (c : Tok)

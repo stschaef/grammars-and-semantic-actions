@@ -100,9 +100,21 @@ MaybeLawful .LawfulAnswer.Ans-≅-id = Monad.fmap-id MaybeMonad
 MaybeLawful .LawfulAnswer.Ans-≅-⋆ φ ψ =
   sym (Monad.fmap-∘ MaybeMonad (ψ .fun) (φ .fun))
 
+-- Both derived, and both by discarding: `Ans-dimap` drops the backward map,
+-- and `Ans-route` answers `nothing` at the cell it did not take.  So a
+-- `Maybe` parser *can* be routed -- it just does not learn anything from
+-- the route that `_<|>_` would not also have found by trying.
+MaybeDiv : DivariantAnswer MaybeAnswer
+MaybeDiv = FromCov.div MaybeAnswer MaybeCov
+
+MaybeCommitting : CommittingAnswer MaybeAnswer
+MaybeCommitting = FromCov.committing MaybeAnswer MaybeCov
+
 open Combinators MaybeAnswer public hiding (module Fix)
 open LawfulCombinators MaybeAnswer MaybeLawful public
 open CovCombinators MaybeAnswer MaybeCov public
+open DivCombinators MaybeAnswer MaybeDiv public
+open RoutedCombinators MaybeAnswer MaybeDiv MaybeCommitting public
 
 ▷maybe-map : {t : ParserTag} {K : TheorySet ℓK tt} {L : TheorySet ℓL tt}
   → ty K ⊢ ty L → ty (▷? t (MaybeSet K)) ⊢ ty (▷? t (MaybeSet L))

@@ -93,6 +93,15 @@ DecAnswer .AnswerFunctor.Ans-ε = dec-ε
 DecDiv : DivariantAnswer DecAnswer
 DecDiv .DivariantAnswer.Ans-dimap f g = dec-map f (¬Ty-map g)
 
+-- The commitment, and the one field no covariant answer can supply: the
+-- branch a route names may come back `no`, and the cover's `disjoint` is
+-- what turns that refutation into a refutation of the whole sum.  `Maybe`
+-- and `ND` reach the same *shape* through `FromCov.committing`, but by
+-- discarding the other cells rather than by refuting them.
+DecCommitting : CommittingAnswer DecAnswer
+DecCommitting .CommittingAnswer.Ans-route sY Φ R decY =
+  routeIn (λ y → ty (Φ y)) R decY
+
 -- `Dec` is not a monad here, so the laws are `⊕`'s η and a case split.
 -- `¬Ty-map id⊢ ≡ id⊢` and the two contravariant composites agree on the
 -- nose, so both branches are `refl`.
@@ -102,9 +111,10 @@ DecLawful .LawfulAnswer.Ans-≅-⋆ φ ψ = funExt λ m → funExt λ where
   (Sum.inl a) → refl
   (Sum.inr na) → refl
 
-open Combinators DecAnswer public hiding (module Fix)
+open Combinators DecAnswer public hiding (module Fix ; module FixAll)
 open LawfulCombinators DecAnswer DecLawful public
 open DivCombinators DecAnswer DecDiv public
+open RoutedCombinators DecAnswer DecDiv DecCommitting public
 
 -- `Dec` transports a refutation, so this takes a map each way -- and the
 -- two need not be inverse, which is why it is *not* `Core`'s `Ans-≅`.
@@ -140,3 +150,10 @@ module Fix {ℓA} (ℓK : Level) (A : TheorySet ℓA tt) where
   decide : ty (▷ (ParserSet ℓ𝒦 ⟨□⟩ ⟨□⟩ A)) ⊢ Parser ℓ𝒦 ⟨□⟩ ⟨□⟩ A
     → Decidable (ty A)
   decide = runFix
+
+-- ...and the same for a family of nonterminals.
+module FixAll {ℓX ℓA} (ℓK : Level) {X : Type ℓX} (A : X → TheorySet ℓA tt) where
+  open Combinators.FixAll DecAnswer ℓK A public
+
+  decideAt : (ty (▷ Pall) ⊢ ty Pall) → (x : X) → Decidable (ty (A x))
+  decideAt = runAt

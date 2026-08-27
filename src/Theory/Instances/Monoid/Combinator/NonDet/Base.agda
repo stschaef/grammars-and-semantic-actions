@@ -149,9 +149,20 @@ NDLawful .LawfulAnswer.Ans-≅-id = Monad.fmap-id NDMonad
 NDLawful .LawfulAnswer.Ans-≅-⋆ φ ψ =
   sym (Monad.fmap-∘ NDMonad (ψ .fun) (φ .fun))
 
+-- ...and the same two, derived the same way.  Routing at `ND` enumerates
+-- only the branch the route names; the others are dropped, not refuted, so
+-- the enumeration is complete exactly when the route is correct.
+NDDiv : DivariantAnswer NDAnswer
+NDDiv = FromCov.div NDAnswer NDCov
+
+NDCommitting : CommittingAnswer NDAnswer
+NDCommitting = FromCov.committing NDAnswer NDCov
+
 open Combinators NDAnswer public hiding (module Fix)
 open LawfulCombinators NDAnswer NDLawful public
 open CovCombinators NDAnswer NDCov public
+open DivCombinators NDAnswer NDDiv public
+open RoutedCombinators NDAnswer NDDiv NDCommitting public
 
 Parses : TheoryTy ℓA tt → Type _
 Parses A = ⊤Ty ⊢ ND A

@@ -188,7 +188,7 @@ rE (after (just dot)) = just member
 rE (headed vid) = just idT
 rE _ = nothing
 
-module PE = PushOf BT bracketCover decClsEq rE
+module PE = PushOf ℓG BT bracketCover decClsEq rE
 module CE = Choice (decTg E) (Cb E)
 
 gE : CE.Guide
@@ -224,7 +224,7 @@ gQ K .Route.into cons =
   PQ.atCell (vid ◂ (cm ◂ ⟨⟩))
   ∘⊢ (lowerTy ,⊗ ((lowerTy ,⊗ (liftTy ∘⊢ ⊤Ty-intro)) ∘⊢ ⊗-assoc)) ∘⊢ ⊗-assoc
 
-module F = FixAll LangSet
+module F = FixAll ℓG LangSet
 
 private
   tokL : {ℓD : Level} {D : TheoryTy ℓD tt} (c : Tok)
