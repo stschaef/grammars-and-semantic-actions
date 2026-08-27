@@ -13,3 +13,7 @@ three : ∀ {ℓ} {P : Fin 3 → Type ℓ}
 three a b c zero = a
 three a b c (suc zero) = b
 three a b c (suc (suc zero)) = c
+
+swap : Fin 2 → Fin 2
+swap zero = suc zero
+swap (suc zero) = zero
