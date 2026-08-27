@@ -59,7 +59,7 @@ module Lx = Product Qs Ms sQs
 
 lexS : AS.String → Mb.Maybe (ℕ × AS.String)
 lexS s = Mb.map-Maybe (λ x → toℕ (x .fst) , untext (x .snd .fst))
-  (Lx.lexOne (text s))
+  (Lx.lexOneS (text s))
 
 -- Longest match beats first match: `where` matches a prefix, the
 -- identifier rule matches all of it.
@@ -150,7 +150,7 @@ as (suc n) = ch 'a' ∷ as n
 
 lexLen : List UChar → Mb.Maybe (ℕ × ℕ)
 lexLen w = Mb.map-Maybe (λ x → toℕ (x .fst) , L.length (x .snd .fst))
-  (Lx.lexOne w)
+  (Lx.lexOneS w)
   where import Cubical.Data.List as L
 
 _ : lexLen (as 200 ++ (ch '?' ∷ [])) ≡ Mb.just (1 , 200)

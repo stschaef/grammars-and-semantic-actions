@@ -72,7 +72,7 @@ module Lex = Product Qs Ms sQs
 -- rule index and matched text, as text
 lex : AS.String → Mb.Maybe (ℕ × AS.String)
 lex s = Mb.map-Maybe (λ x → toℕ (x .fst) , untext (x .snd .fst))
-  (Lex.lexOne (text s))
+  (Lex.lexOneS (text s))
 
 ------------------------------------------------------------------------
 -- 2. The table.  Rule 0 keyword, 1 identifier, 2 number, 3 operator,
@@ -140,5 +140,5 @@ len (Mb.just x) = length (x .snd .fst)
   where open import Cubical.Data.List using (length)
 
 -- a 3200-character identifier, matched in one pass
-_ : len (Lex.lexOne (xs 3200 ++ (ch '?' ∷ []))) ≡ 3200
+_ : len (Lex.lexOneS (xs 3200 ++ (ch '?' ∷ []))) ≡ 3200
 _ = refl

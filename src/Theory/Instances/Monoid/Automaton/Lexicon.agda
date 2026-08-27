@@ -35,15 +35,25 @@ open import Cubical.Data.Unit using (tt)
 import Cubical.Data.Maybe as Mb
 import Cubical.Data.Sum as Sum
 import Cubical.Data.Empty as Empty
+import Cubical.Data.Equality as Eq
 
 open import Theory.Instances.Monoid.Base
 open import Theory.Instances.Monoid.Strings Alphabet isSetAlphabet
 open import Theory.Instances.Monoid.KleeneStar Alphabet isSetAlphabet
-  using (readChars)
+  using (readChars ; _*)
+open import Theory.Instances.Monoid.Residual Alphabet isSetAlphabet
+  using (⊗⊕ᴰ-distL)
+open import Theory.Instances.Monoid.SemanticAction Alphabet isSetAlphabet
+  using (SemanticAction ; observe ; semact-⊕ ; semact-⊕ᴰ' ; semact-map
+       ; semact-pure ; semact-⊗₂ ; semact-string)
 open import Theory.Instances.Monoid.Automaton.Deterministic
   Alphabet isSetAlphabet
-open import Theory.Instances.Monoid.Automaton.Greedy Alphabet isSetAlphabet
-  using (scan)
+open import Theory.Instances.Monoid.Automaton.GreedyMax Alphabet isSetAlphabet
+  using (TraceTo ; Match ; GreedyMax ; Run ; Table ; scan)
+open import Theory.Type.Decidable.Base MonEqns Alphabet (λ _ → tt)
+  listPresentation using (¬Ty)
+
+private variable ℓA : Level
 
 ------------------------------------------------------------------------
 -- Priority, over `Fin n`.
@@ -128,59 +138,116 @@ module Product {n : ℕ} (Qs : Fin n → Type ℓAlph)
   ------------------------------------------------------------------
   -- Priority readout at a product state.
 
-  -- `Maybe`, not a total function: `Greedy`'s `Run q` names the end
-  -- state of the match but does not record in its type that the state
-  -- accepts, so the readout cannot assume it.
+  -- the priority answer at an arbitrary state, `Maybe` because an
+  -- arbitrary state need not accept
   winner : ProdQ → Mb.Maybe (Fin n)
   winner f = firstFin (accAt f)
 
   -- ...and where it is known, the answer is the least accepting rule.
+  -- This is `Found`'s left summand at `accAt f`, definitionally, so
+  -- `find` produces it with nothing to rebuild.
   Wins : ProdQ → Type ℓ-zero
   Wins f = Σ[ i ∈ Fin n ]
       (accAt f i ≡ true)
       × ((j : Fin n) → toℕ j < toℕ i → accAt f j ≡ false)
-      × (winner f ≡ Mb.just i)
 
   winner! : (f : ProdQ) → isAcc Prod f ≡ true → Wins f
-  winner! f acc = go (find (accAt f)) refl
+  winner! f acc = go (find (accAt f))
     where
-    go : (s : Found (accAt f)) → find (accAt f) ≡ s → Wins f
-    go (Sum.inl x) e = x .fst , x .snd .fst , x .snd .snd ,
-      cong (Sum.rec (λ y → Mb.just (y .fst)) (λ _ → Mb.nothing)) e
-    go (Sum.inr h) e = Empty.rec (true≢false (sym acc ∙ anyFin-false _ h))
+    go : Found (accAt f) → Wins f
+    go (Sum.inl x) = x
+    go (Sum.inr h) = Empty.rec (true≢false (sym acc ∙ anyFin-false _ h))
 
   ------------------------------------------------------------------
   -- Maximal munch over the product = longest match across the lexicon.
 
   scanProd = scan Prod isSetProdQ
 
-  -- The greedy match from the initial product state: the winning rule,
-  -- the token, and what is left.  `scan`'s witness already names the end
-  -- state, so the rule is read off it with no second pass.
-  lexOne : String → Mb.Maybe (Fin n × String × String)
-  lexOne w = Sum.rec
-    (λ x → Mb.map-Maybe (λ i → i , x .snd .fst fz , x .snd .fst (fs fz))
-                  (winner (x .fst)))
-    (λ _ → Mb.nothing)
-    (scanProd w (readChars w tt) (init Prod))
+  -- the greedy run of the whole input, from the initial product state
+  runInit : ⊤Ty ⊢ Run Prod (init Prod)
+  runInit = π (init Prod) ∘⊢ scanProd ∘⊢ readChars
 
   ------------------------------------------------------------------
-  -- The tokenising loop.
+  -- A token, as a grammar.
   --
-  -- QUADRATIC, and not honestly fixable from here: `scan` is a fold over
-  -- the *whole* remaining input, so restarting it at each token boundary
-  -- costs O(n) per token, O(n·k) overall.  A linear tokeniser would have
-  -- to keep the fold's intermediate tables -- `scan` computes a `Table`
-  -- at every suffix already -- and read the next token out of the table
-  -- at the previous token's end, which `Greedy` does not expose.
+  -- `GreedyMax`'s `Match q q'` carries `true Eq.≡ isAcc q'`, so the end
+  -- state of a greedy match is *known* to accept, and `winner!` applies
+  -- to it.  The winning rule is therefore a `⊕ᴰ` index computed from the
+  -- state -- automaton data -- and not something read off a parse.
   --
-  -- Fuel, not `TERMINATING`: an empty match would not shrink the input,
-  -- so it is refused rather than looped on.
+  -- `Tok` spans the whole input: the `⊗` of `GreedyMax` splits it into
+  -- the lexeme and the (refuted-as-extendable) remainder.
+
+  Tok : TheoryTy _ tt
+  Tok = ⊕[ q' ∈ ProdQ ] ⊕[ _ ∈ Wins q' ] GreedyMax Prod (init Prod) q'
+
+  -- The readout, as a `⊢`-term.  `⊗⊕ᴰ-distL` pulls the acceptance
+  -- equation out of the left factor, `winner!` turns it into the winning
+  -- rule, and the match is put back exactly as it came.
+  lexOne : Run Prod (init Prod)
+    ⊢ Tok ⊕ ¬Ty (Trace Prod true (init Prod) ⊗ ⊤Ty)
+  lexOne = ⊕-elim (inl ∘⊢ ⊕ᴰ-elim toTok) inr
+    where
+    -- `find` runs on the *state*, which is the `⊕ᴰ` tag the scan already
+    -- produced; the match's own acceptance equation is reached only in
+    -- the branch where the state rejects, which the equation refutes.
+    -- Reaching for it in the live branch instead would force the `Match`
+    -- pair at every one of the match's characters, and the readout would
+    -- be quadratic.
+    toTok : (q' : ProdQ) → GreedyMax Prod (init Prod) q' ⊢ Tok
+    toTok q' = go (find (accAt q'))
+      where
+      go : Found (accAt q') → GreedyMax Prod (init Prod) q' ⊢ Tok
+      go (Sum.inl x) = σ⊕ q' ∘⊢ σ⊕ x
+      go (Sum.inr h) =
+        ⊕ᴰ-elim (λ p → Empty.rec
+          (true≢false (Eq.eqToPath p ∙ anyFin-false (accAt q') h)))
+        ∘⊢ ⊗⊕ᴰ-distL
+            {Y = true Eq.≡ isAcc Prod q'}
+            {A = λ _ → TraceTo Prod (init Prod) q'}
+
+  ------------------------------------------------------------------
+  -- The display boundary.
+  --
+  -- `semact-text` recovers the characters under *any* grammar without
+  -- looking at its parse: `⊤Ty-intro` forgets it, `readChars` reads the
+  -- word back as a `char *`, and `semact-string` is the structural fold
+  -- on that star.
+
+  semact-text : {A : TheoryTy ℓA tt} → SemanticAction A String
+  semact-text = semact-string ∘⊢ readChars ∘⊢ ⊤Ty-intro
+
+  -- The winning rule, read at the display boundary.  `Wins q'` already
+  -- names it, but projecting it out of the `⊕ᴰ` tag re-evaluates the
+  -- state; `winner` recomputes it directly from the state instead, and
+  -- the certificate serves the branch it rules out.
+  winsIdx : (f : ProdQ) → Wins f → Fin n
+  winsIdx f w = Mb.rec (w .fst) (λ i → i) (winner f)
+
+  -- rule index, lexeme, remainder
+  tokAction : SemanticAction Tok (Fin n × String × String)
+  tokAction = semact-⊕ᴰ' λ q' → semact-⊕ᴰ' λ w →
+    semact-map (λ p → winsIdx q' w , p) (semact-⊗₂ semact-text semact-text)
+
+  lexAction : SemanticAction (Run Prod (init Prod))
+    (Mb.Maybe (Fin n × String × String))
+  lexAction =
+    semact-⊕ (semact-map Mb.just tokAction) (semact-pure Mb.nothing)
+    ∘⊢ lexOne
+
+  -- ...observed at a word.  This is the *only* place a `Maybe` appears,
+  -- and it is the external one.
+  lexOneS : String → Mb.Maybe (Fin n × String × String)
+  lexOneS = observe runInit lexAction
+
+  ------------------------------------------------------------------
+  -- The tokenising loop.  DISPLAY LAYER, not a `⊢`-term: see the note
+  -- at the bottom of this file.
 
   tokeniseFuel : ℕ → String → Mb.Maybe (List (Fin n × String))
   tokeniseFuel fuel [] = Mb.just []
   tokeniseFuel zero (c ∷ w) = Mb.nothing
-  tokeniseFuel (suc fuel) (c ∷ w) = next (lexOne (c ∷ w))
+  tokeniseFuel (suc fuel) (c ∷ w) = next (lexOneS (c ∷ w))
     where
     next : Mb.Maybe (Fin n × String × String)
       → Mb.Maybe (List (Fin n × String))
