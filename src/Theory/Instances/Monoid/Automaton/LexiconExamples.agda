@@ -29,7 +29,6 @@ open import Theory.Instances.Monoid.Automaton.Implicit.AnalysisExamples
   using (module POSIX)
 open import Theory.Instances.Monoid.Automaton.Lexicon UChar isSetAlphabet
 
-------------------------------------------------------------------------
 -- The rules, in priority order.  Each is compiled on its own; nothing
 -- asks the three of them to be disjoint, and they are not.
 
@@ -54,7 +53,6 @@ sQs (fs (fs fz)) = Rnum.isSetQ
 
 module Lx = Product Qs Ms sQs
 
-------------------------------------------------------------------------
 -- One token: the winning rule's index, and the text it matched.
 
 lexS : AS.String → Mb.Maybe (ℕ × AS.String)
@@ -108,7 +106,6 @@ _ = refl
 _ : lexS "" ≡ Mb.nothing
 _ = refl
 
-------------------------------------------------------------------------
 -- The tokenising loop.  QUADRATIC: `scan` folds the whole remaining
 -- input, so it is restarted at every token boundary -- see the note on
 -- `tokenise` in `Lexicon`.
@@ -133,7 +130,6 @@ _ = refl
 _ : toks "x?" ≡ Mb.nothing
 _ = refl
 
-------------------------------------------------------------------------
 -- ...at length.  Three automata step in lockstep, and the scan is still
 -- one pass.  Measured off-tree against the 3.2s baseline of this file:
 --
@@ -141,8 +137,11 @@ _ = refl
 --   sec:  +0.1  +0.2  +0.7  +3.3  +17.5
 --
 -- Four times the input costs three to five times the work -- the same
--- mild drift `Automaton/GreedyExamples` shows for a single automaton,
+-- mild drift `Automaton/GreedyMaxExamples` shows for a single automaton,
 -- and not the squaring that re-deriving the match would give.
+--
+-- Only the 200 row is checked here; `Automaton/Demo` carries the 3200
+-- one, over five rules rather than three.
 
 as : ℕ → List UChar
 as zero = []
@@ -154,7 +153,4 @@ lexLen w = Mb.map-Maybe (λ x → toℕ (x .fst) , L.length (x .snd .fst))
   where import Cubical.Data.List as L
 
 _ : lexLen (as 200 ++ (ch '?' ∷ [])) ≡ Mb.just (1 , 200)
-_ = refl
-
-_ : lexLen (as 3200 ++ (ch '?' ∷ [])) ≡ Mb.just (1 , 3200)
 _ = refl

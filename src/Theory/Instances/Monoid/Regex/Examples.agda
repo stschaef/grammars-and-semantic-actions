@@ -134,12 +134,13 @@ _ : passes (lex at
         ↦ M.just (Ident "x" ∷ Op "+" ∷ Num "1" ∷ [])
     ∷ "where"
         ↦ M.just (KW "where" ∷ [])
-    -- NOT maximal munch.  `where` is tried before the identifier rule and
-    -- wins on a prefix, so "wherever" splits.  A greedy lexer would give
-    -- `Ident "wherever"`.  `Automaton/Greedy` now does maximal munch --
-    -- see `Automaton/GreedyExamples`, where "abbab" matches "abb" and not
-    -- "a" -- but this ordered-choice path has not been rewired onto it,
-    -- so the case stays here, and stays wrong, until it is.
+    -- NOT maximal munch, and this file is kept for the contrast.  `where`
+    -- is tried before the identifier rule and wins on a prefix, so
+    -- "wherever" splits; a greedy lexer gives `Ident "wherever"`, and
+    -- `Automaton/Demo` does exactly that on the same five rules.  The
+    -- ordered-choice path has never been rewired onto the automaton
+    -- scan, so the case stays here, and stays wrong, as the record of
+    -- what first-match costs.
     ∷ "wherever"
         ↦ M.just (KW "where" ∷ Ident "ver" ∷ [])
     ∷ ""
@@ -148,3 +149,18 @@ _ : passes (lex at
         ↦ M.nothing
     ∷ []))
 _ = refl
+
+-- 3. The same answers taken directly instead of through `observe`.
+--    `lexer` is a decision, so its yes branch *is* a `Tokenisation` and
+--    its no branch refutes every tokenisation -- the `M.nothing` above
+--    is that refutation, narrowed to a `Maybe` for display.
+
+letx : Tokenisation lexicon (text "let x")
+letx = theYes (lexer lexicon (text "let x") tt) Eq.refl
+
+n42 : Tokenisation lexicon (text "-42")
+n42 = theYes (lexer lexicon (text "-42") tt) Eq.refl
+
+-- `?` is in no rule, so *nothing* tokenises this input
+noq : NoTokenisation lexicon (text "x?")
+noq = theNo (lexer lexicon (text "x?") tt) Eq.refl

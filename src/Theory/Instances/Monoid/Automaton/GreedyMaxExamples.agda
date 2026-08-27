@@ -1,8 +1,10 @@
 {-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
-{- `Automaton/GreedyExamples.agda`, over the scan whose type says the match
-   is maximal.  Same automaton (`a b*`), same answers, same cost: the end
-   state is now forced by `TraceTo` rather than existentially guessed, and
-   extending is a `STEP` instead of an `extendAt`. -}
+{- Maximal munch over the scan whose type SAYS the match is maximal.
+   The automaton is `a b*`; the end state is forced by `TraceTo` rather
+   than existentially guessed, and extending is a `STEP` rather than an
+   `extendAt` with its transport.  This supersedes the `GreedyAt` version
+   these numbers used to be compared against, which is why the older
+   timings appear inline below. -}
 open import Cubical.Foundations.Prelude
 
 module Theory.Instances.Monoid.Automaton.GreedyMaxExamples where
