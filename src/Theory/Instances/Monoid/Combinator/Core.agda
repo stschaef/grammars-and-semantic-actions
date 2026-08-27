@@ -3,35 +3,18 @@
 {-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
 {- The combinators, once, over the functor that says what an answer is.
 
-   `Decidable`, `Incomplete` and `NonDet` were three copies of this module
-   differing only in `Ans ∈ {DecSet, MaybeSet, NDSet}`.  What the combinators
-   actually ask of `Ans` is not a monad -- `bind` is never used -- but the
-   five fields of `AnswerFunctor`: an action on isomorphisms, a choice, a
-   token rule, a token rule for `char`, and an answer at `ε`.
+   `Decidable`, `Incomplete` and `NonDet` were three copies differing only
+   in `Ans`.  What the combinators ask of it is not a monad -- `bind` is
+   never used -- but `AnswerFunctor`: an action on *isomorphisms*, a
+   choice, two token rules, and an answer at `ε`.  Isomorphisms rather
+   than maps because a combinator only ever transports an answer along
+   the monoidal structure; variance is where the three instances differ,
+   so it belongs in their `mapP`.  `mapP` and `fail` are therefore in
+   `CovariantAnswer`, not here -- one cannot refuse to decide.
 
-   The action is on *isomorphisms*, not on maps.  A combinator never changes
-   an answer, it only transports one along the monoidal structure: the five
-   call sites below are the associator, the two unitors, distributivity and
-   `Lift`, and nothing else.  Asking for less than a map each way is what
-   keeps variance out of the shared part -- variance is exactly where the
-   three instances differ, so it belongs in their `mapP`, not here.
-
-   Two things are deliberately *not* fields, because `Dec` does not have
-   them; they live in `CovariantAnswer` instead:
-   * a one-directional `mapP`, and
-   * `fail` at an arbitrary grammar -- one cannot refuse to decide.
-
-   `mapP≅` below is what a *grammar* uses: `Grammars/Star` and
-   `Grammars/Dyck` prove their `roll`/`unroll` pairs to be isomorphisms, so
-   `Syntax`'s `many`, `Dyck`'s `step` and the regex compiler all live at
-   plain `AnswerFunctor` and are parametric in the answer.
-
-   `LawfulAnswer` adds the two functor laws.  It is separate because
-   `AnswerFunctor` alone constrains types and not behaviour -- an instance
-   may legally discard the answer on every transport -- and because
-   sketching a new answer should not owe the proofs up front.  From the laws
-   `LawfulCombinators` derives that `Ans-≅ φ` is itself an isomorphism, which
-   is the claim above ("never changes an answer") as a theorem. -}
+   `LawfulAnswer` adds the functor laws separately, since `AnswerFunctor`
+   constrains types and not behaviour, and sketching a new answer should
+   not owe the proofs up front. -}
 open import Cubical.Foundations.Prelude
 open import Cubical.WildCat.LocallySmall.Base
 open import Cubical.Algebra.Theory.Finitary
@@ -73,7 +56,6 @@ look⊗ : {A : TheorySet ℓA tt} {C : TheoryTy ℓC tt}
   → ((o : M₁) → ty (▷ A) & Λ₁ o ⊢ C) → ty (▷ A) ⊢ C
 look⊗ br = ⊕ᴰ-elim br ∘⊢ &⊕ᴰ-distR ∘⊢ (id⊢ ,& (Λ-total ∘⊢ ⊤Ty-intro))
 
-------------------------------------------------------------------------
 -- The five isomorphisms the combinators transport along.  `Unitor` and
 -- `Types` prove the round trips; these only bundle them.
 
@@ -152,7 +134,6 @@ module _ {A : TheoryTy ℓA tt} where
   ⊗ε↑-unit-r≅ .ret =
     cong (λ z → (id⊢ ,⊗ liftTy) ∘⊢ z ∘⊢ (id⊢ ,⊗ lowerTy)) ⊗-unit-r⁻∘r
 
-------------------------------------------------------------------------
 
 record AnswerFunctor : Typeω where
   field
@@ -213,7 +194,6 @@ record LawfulAnswer (𝒯 : AnswerFunctor) : Typeω where
       (φ : ty A ≅ ty B) (ψ : ty B ≅ ty C)
       → Ans-≅ (φ ⋆≅ ψ) ≡ Ans-≅ ψ ∘⊢ Ans-≅ φ
 
-------------------------------------------------------------------------
 
 module Combinators (𝒯 : AnswerFunctor) where
   open AnswerFunctor 𝒯 public

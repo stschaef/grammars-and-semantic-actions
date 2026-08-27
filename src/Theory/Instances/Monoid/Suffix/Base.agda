@@ -122,7 +122,6 @@ suffixOrder .IPtOrder.isProp< p q = isProp◂ (q .snd)
 suffixOrder .IPtOrder.trans< {q = q} {r = r} = ◂-trans (r .snd)
 suffixOrder .IPtOrder.wf< p = accPt (p .snd) (acc◂ (p .snd)) (p .fst)
 
-------------------------------------------------------------------------
 -- Guarded elimination
 
 -- the suffix world's step relation: a recursive call is entitled to a proper
@@ -173,7 +172,6 @@ module Guarded▷ {ℓA} (A : SFam ℓA) (isSetA : ∀ x m → isSet (A x m)) wh
   ▷-tok⊗ : (c : Alphabet) → ▷ tt & (literal c ⊗ ⊤Ty) ⊢ literal c ⊗ (A tt & ⊤Ty)
   ▷-tok⊗ c = ▷-⊗r c
 
-------------------------------------------------------------------------
 -- `▷` at this order, on grammars.  There is one nonterminal, so a grammar
 -- *is* a family, and the modality, its structural maps and Löb are all
 -- statements about grammars: nothing downstream names a family or a point.
@@ -241,7 +239,6 @@ private variable
 löbG : (ty (▷ A) ⊢ ty A) → ⊤Ty ⊢ ty A
 löbG {A = A} φ = Guarded▷.löb (fam A .fst) (fam A .snd) (λ _ → φ) tt
 
-------------------------------------------------------------------------
 -- The multi-nonterminal guard: the suffix order above, with the index's
 -- rank as the tiebreaker.  A drop-in alternative to `Lex`.
 

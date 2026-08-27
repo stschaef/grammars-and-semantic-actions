@@ -1,15 +1,9 @@
 {-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
-{- Reading a run back out as its input word.
-
-   `parse` and `print` are two folds over the same inductive structure --
-   `char *` one way, the trace the other -- so that their composite is the
-   run's uniqueness rather than a separate induction.
-
-   Only one direction is free.  Any two terms into `char *` agree, because
-   `char *` is a proposition at every word (`KleeneStar.Read`), so `print`
-   is *the* word of a run and needs no characterisation.  The other
-   direction, `π q ∘⊢ parse ∘⊢ print b q ≡ σ⊕ b`, is the open one; see the
-   note at the bottom. -}
+{- Reading a run back out as its input word.  `parse` and `print` are two
+   folds over the same inductive structure -- `char *` one way, the trace
+   the other -- so their composite is the run's uniqueness rather than a
+   separate induction.  Both directions come from a proposition: `char *`
+   is one (`KleeneStar/Read`), and so is `Runs q` (`Automaton/Disjoint`). -}
 open import Cubical.Foundations.Prelude
 open import Cubical.Foundations.HLevels
 open import Cubical.Algebra.Theory.Finitary
@@ -48,16 +42,13 @@ module _ {Q : Type ℓQ} (Aut : DeterministicAutomaton Q) where
   print : (b : Bool) (q : Q) → Trace b q ⊢ char *
   print b q = rec (TraceTy b) (printAlg b) (lift q)
 
-  -- `char *` is a proposition, so `print` is the *only* map a run has into
-  -- it -- there is nothing to prove about which word it produces.
+  -- `char *` is a proposition, so `print` is the only map a run has into it.
   print-unique : (b : Bool) (q : Q) (f : Trace b q ⊢ char *) → f ≡ print b q
   print-unique b q f =
     funExt λ m → funExt λ t → unambiguous-char* m (f m t) (print b q m t)
 
-  -- ...and the converse: re-parsing a printed run returns it.  Both sides
-  -- are maps into `Runs q`, which is a proposition -- each `Trace b' q` is
-  -- unambiguous and traces at different bits are disjoint -- so there is
-  -- nothing left to check.  Totality is `parse`; this is uniqueness.
+  -- ...and re-parsing a printed run returns it: both sides are maps into
+  -- `Runs q`, which is a proposition.
   module _ (isSetQ : isSet Q) where
     private
       reparse : (b : Bool) (q : Q) → Trace b q ⊢ Runs Aut q

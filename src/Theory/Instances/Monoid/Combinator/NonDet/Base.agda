@@ -48,7 +48,6 @@ private variable ℓA ℓB ℓC ℓD ℓK ℓL ℓX : Level
 ℓG : Level
 ℓG = ℓ-max ℓM ℓ
 
-------------------------------------------------------------------------
 -- `ND` as a grammar-with-set-ness, and the facts about it the combinators
 -- ask for.
 
@@ -97,7 +96,6 @@ semact-ND {A = A} {X = X} a = semact-rec alg tt
     false → semact-pure []
     true → consA
 
-------------------------------------------------------------------------
 -- The token rules.  Where `Decidable` refutes, using `Precise`, this
 -- returns the empty enumeration.
 
@@ -129,7 +127,6 @@ nd-ε = ⊕ᴰ-elim br ∘⊢ Λ-total
   br ε₁ = ηND ∘⊢ lowerTy
   br (tk c) = nilND ∘⊢ ⊤Ty-intro
 
-------------------------------------------------------------------------
 -- ...which is all `Core` asks for.  `ND` is covariant, so it also gets the
 -- one-directional `mapP` and a `fail` at any grammar.
 

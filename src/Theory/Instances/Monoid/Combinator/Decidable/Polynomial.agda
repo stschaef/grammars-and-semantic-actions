@@ -1,42 +1,21 @@
 {-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
 {- Parenthesised multivariate polynomials, as a grammar for the combinator
-   library.  Variables are drawn from any discrete `V`; a variable, a
-   numeral and an exponent are each one token, so nothing here lexes.
+   library.  Variables come from any discrete `V`; a variable, a numeral
+   and an exponent are each one token, so nothing here lexes.
 
      E ::= ( E ) K | v K | n Q | - E
      Q ::= / m K | + E | * E | ^ n K | ε
      K ::=         + E | * E | ^ n K | ε
 
-   `n / m` is the rational scalar -- a fraction of two naturals -- and `- E`
-   is what makes it (and anything else) negative.  `^ n` is exponentiation
-   by a natural: the exponent is a numeral *token*, not an expression, so
-   `x ^ (y + 1)` is not a word of the language.
+   Two constraints fix that shape.  Every production begins with a
+   terminal, because `call` answers only at proper suffixes -- so the
+   usual `E ::= T E'` factoring is inlined, and precedence is what the
+   parentheses are for.  And the grammar is left-factored, so one token
+   decides every production: `QTag` is `ℕ ⊎ KTag`, and FIRST(Q) is
+   disjoint from FOLLOW(Q), which decides the ε-production too.
 
-   Two things fix this shape.
-
-   First, every production begins with a terminal.  That is forced, not
-   stylistic: `call` answers only at *proper* suffixes, so a production
-   whose first symbol is a nonterminal has nothing to pay for the recursive
-   call.  The usual `E ::= T E'` factoring is therefore inlined, which is
-   also why `K` carries every operator rather than one precedence level.
-   Both operators associate to the right and neither binds tighter, so
-   precedence is what the parentheses are for.
-
-   Second, the grammar is left-factored, so one token decides every
-   production.  Writing the scalar as a production `n / m K` beside `n K`
-   would not be: both begin with `nat n`, and it takes a second token to
-   say which.  `Q` is the tail after a numeral -- a denominator, or
-   whatever `K` would have done -- so `QTag` is literally `ℕ ⊎ KTag` and
-   `Q`'s non-denominator half *is* `K`'s.  FIRST(Q) = {/,+,*,^} and
-   FOLLOW(Q) = FOLLOW(K) = FOLLOW(E) = {`)`, end}, which are disjoint, so
-   the ε-production is decided too.
-
-   The grammar is a functor and nothing more: `μ` of `polyCode`.  There is
-   no `Grammar` record and no production list, so the tags need only be
-   sets -- their decidability is the parser's business, not the grammar's.
-
-   This file stops at the `TheorySet`s.  What follows in `Dyck` is the
-   parser, and that is the exercise. -}
+   The grammar is `μ polyCode` and nothing more; tag decidability is the
+   parser's business, in `Dyck`. -}
 open import Cubical.Foundations.Prelude
 open import Cubical.Algebra.Theory.Finitary
 open import Cubical.Data.Sum as Sum using (_⊎_)
@@ -58,7 +37,6 @@ open import Cubical.Data.Nat.Properties using (isSetℕ ; discreteℕ)
 open import Cubical.Relation.Nullary.Base using (Discrete ; decRec ; yes ; no)
 open import Cubical.Relation.Nullary.Properties using (Discrete→isSet)
 
-------------------------------------------------------------------------
 -- The alphabet.  Brackets, the three operators, the fraction bar, and the
 -- two families of literals.
 
@@ -178,7 +156,6 @@ open import Theory.Instances.Monoid.Combinator.Decidable.Base Tok _≟_ (ℓ-suc
 open import Theory.Instances.Monoid.Residual Tok isSetAlphabet
   using (⟦⊗e⟧ ; ⟦⊗e⟧⁻)
 
-------------------------------------------------------------------------
 -- The nonterminals and their production tags.  A tag is a *sum*, not a
 -- `data`, so that `isSet` -- all a code asks of it -- is compositional;
 -- the pattern synonyms are what the productions are then written with.
@@ -228,7 +205,6 @@ isSetKTag =
 isSetQTag : isSet QTag
 isSetQTag = isSet⊎ isSetℕ isSetKTag
 
-------------------------------------------------------------------------
 -- The functor.  A body is the right-nested tensor of its symbols; `μ` of
 -- this is the grammar.
 
@@ -322,7 +298,6 @@ NumTail = Poly numTail
 isSetPoly : (n : Nt) → isSetTheoryTy (Poly n)
 isSetPoly = isSetμ polyCode sPolyCode
 
-------------------------------------------------------------------------
 -- The one unrolling, as grammars built from the combinators.  Every code
 -- leaf is a `Lift`, and `⊗e` is the arity-indexed `⊗ᵘ`; `⟦⊗e⟧` and
 -- `lowerTy` are what move across, one symbol at a time.
@@ -411,7 +386,6 @@ unrollNumTail : NumTail ⊢ ⊕[ t ∈ QTag ] BodyNumTail t
 unrollNumTail =
   ⊕ᴰ-elim (λ t → σ⊕ t ∘⊢ numTailOut t) ∘⊢ unroll polyCode numTail
 
-------------------------------------------------------------------------
 -- ...and the three grammars carrying their h-level, which is what a parser
 -- is indexed by.  From here on it is `seq`, `tok`, `_<|>_`, `nil`, `call`
 -- and `fix`, as in `Dyck`: three mutually recursive parsers, one per

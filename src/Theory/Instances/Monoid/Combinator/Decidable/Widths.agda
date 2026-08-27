@@ -38,7 +38,6 @@ open import Theory.Instances.Monoid.Combinator.Decidable.Window Tok _≟T_ (ℓ-
 open import Theory.Instances.Monoid.Residual Tok isSetAlphabet
   using (⟦⊗e⟧ ; ⟦⊗e⟧⁻)
 
-------------------------------------------------------------------------
 -- The two lookahead windows, at width `k+2`.
 
 aFill : (n : Width) → Window n
@@ -49,7 +48,6 @@ aThenC : (n : Width) → Window (more n)
 aThenC none = tc ◂ ⟨⟩
 aThenC (more n) = ta ◂ aThenC n
 
-------------------------------------------------------------------------
 -- The grammar, indexed by the width
 
 data NT : Type ℓ-zero where
@@ -76,7 +74,6 @@ pow : Width → Code → Code
 pow none F = F
 pow (more n) F = k (literal ta) ⊗c pow n F
 
-------------------------------------------------------------------------
 -- The routing.  Read `a`s down the window; the last letter decides.
 -- Structural in the width, so it computes at every `k`.
 
@@ -136,7 +133,6 @@ module Gram (kk : Width) where
   LangSet : NT → TheorySet ℓG tt
   LangSet N = Lang N , isSetμ Sys isSetSys N
 
-  ----------------------------------------------------------------------
   -- Bodies, and the one unrolling.  Both are inductions on the width.
 
   lit↑ : Tok → TheorySet ℓG tt
@@ -179,7 +175,6 @@ module Gram (kk : Width) where
   unrollN : (N : NT) → Lang N ⊢ (⊕[ t ∈ Tg N ] ty (Cb N t))
   unrollN N = ⊕ᴰ-elim (λ t → σ⊕ t ∘⊢ bodyOut N t) ∘⊢ unroll Sys N
 
-  ----------------------------------------------------------------------
   -- What each production leads with, at width `k+2`.
 
   -- every body begins with `a`, which is one unrolling
@@ -203,7 +198,6 @@ module Gram (kk : Width) where
     ∘⊢ (firstS ,⊗ id⊢) ∘⊢ (id⊢ ,⊗ ⊤Ty-intro) ∘⊢ ⊗-assoc
   leadNest (more n) = (lowerTy ,⊗ leadNest n) ∘⊢ ⊗-assoc
 
-  ----------------------------------------------------------------------
   -- The route, at width `k+2`, and the parser.
 
   module PW = PushW (more (more kk)) (rt kk)

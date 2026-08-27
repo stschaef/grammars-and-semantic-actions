@@ -32,7 +32,6 @@ private
   elemb c [] = false
   elemb c (d ∷ ds) = eqb c d or elemb c ds
 
-------------------------------------------------------------------------
 -- Character classes.  `satr` makes all of these one-liners, and the
 -- complement is no harder than the set -- which is the point of taking a
 -- predicate rather than a list of disjuncts.
@@ -45,7 +44,6 @@ oneOfr cs = satr λ c → elemb c cs
 noneOfr : List Alphabet → RE notNullable
 noneOfr cs = satr λ c → not (elemb c cs)
 
-------------------------------------------------------------------------
 -- Postfix repetition.  The disjunct order is what keeps the index
 -- reducing: `nullable +ν n` computes, `n +ν nullable` does not.
 
@@ -63,7 +61,6 @@ anyOfr (r ∷ rs@(_ ∷ _)) = r ⊕r anyOfr rs
 
 infix 30 _?r
 
-------------------------------------------------------------------------
 -- Literal words.  The index is the emptiness of the list, which `_and_`
 -- computes on the left: `notNullable ·ν n = notNullable`.
 
@@ -76,7 +73,6 @@ strr : (w : List Alphabet) → RE (nullb w)
 strr [] = εr
 strr (c ∷ w) = ⟨ c ⟩r ⊗r strr w
 
-------------------------------------------------------------------------
 -- Counted repetition.  `r{n}`, `r{,n}`, `r{n,m}`.  All are on a
 -- non-nullable body, which is what the star already demands.
 

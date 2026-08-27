@@ -44,7 +44,6 @@ private
   a : UChar
   a = ch 'a'
 
-------------------------------------------------------------------------
 -- 1. A greedy match: `a+` against "aaab".
 --
 -- The match is "aaa" and the rest is "b".  It is greedy because of the
@@ -100,7 +99,6 @@ _ = refl
 _ : untext (yield aPlus (text "aaa") (greedily .snd .snd .fst) .fst) ≡ "aaa"
 _ = refl
 
-------------------------------------------------------------------------
 -- 2. Extending a match, one character at a time.
 --
 -- `extendAt` moves a letter out of the input and into the match.  `A` is

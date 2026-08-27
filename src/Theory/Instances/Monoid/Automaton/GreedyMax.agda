@@ -1,29 +1,13 @@
 {-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
 {- Maximal munch, with maximality in the type.
 
-   `Automaton/Greedy.agda` indexes the greedy witness by a *state*,
-   `GreedyAt (L q) (L q')`, and pays O(1) per character for it -- but `q'`
-   is an unconstrained existential: nothing in the type says `q'` is the
-   state the match ended in, so the refutation can be satisfied by any
-   state with an empty language.
-
-   `TraceTo q q'` fixes that by giving the trace both endpoints:
-
-     STOP : q Eq.≡ q'                     → εTy ⊢ TraceTo q q'
-     STEP : literal c ⊗ TraceTo (δ q c) q'      ⊢ TraceTo q q'
-
-   The end state is now forced, so
-
-     Run q = (⊕[ q' ] (Match q q' ⊗ ¬Ty ((L q' & char⁺) ⊗ ⊤Ty))) ⊕ …
-
-   really does say "the match ends at `q'`, and nothing in `q'`'s language
-   extends it".  Extending is still O(1) -- it is `STEP`, one roll -- and
-   in fact the `Dl` detour of `Greedy.agda`'s `extendAt` disappears.
-
-   `GreedyMax→Greedy` cashes that in: the cheap state-indexed witness maps
-   into the self-certifying word-indexed `Greedy (L q)` of `Greedy/Base`.
-   The content is `cancel`: a `TraceTo q q'` over `u` splits any run of
-   `q` over `u ++ z` into its two halves, i.e. `δ` really is followed. -}
+   `Automaton/Greedy`'s `GreedyAt (L q) (L q')` leaves `q'` an
+   unconstrained existential, so its refutation is satisfied by any state
+   with an empty language.  `TraceTo q q'` gives the trace both endpoints,
+   which forces the end state, and extending stays O(1) -- it is `STEP`.
+   `GreedyMax→Greedy` maps the cheap state-indexed witness into
+   `Greedy/Base`'s self-certifying word-indexed one; the content is
+   `cancel`, that a `TraceTo q q'` over `u` splits any run over `u ++ z`. -}
 open import Cubical.Foundations.Prelude
 open import Cubical.Foundations.HLevels
 open import Cubical.Foundations.Isomorphism
@@ -62,6 +46,8 @@ open import Theory.Instances.Monoid.Precise Alphabet isSetAlphabet
   using (flat ; flatEq ; lit⊗-nil)
 open import Theory.Instances.Monoid.Automaton.Deterministic
   Alphabet isSetAlphabet
+open import Theory.Instances.Monoid.Convolution Alphabet isSetAlphabet
+  using (⟦⊗e⟧ ; ⟦⊗e⟧⁻)
 open import Theory.Instances.Monoid.Automaton.Unambiguous
   Alphabet isSetAlphabet using (isPropPathP ; isPropεTy ; unambiguous-Trace)
 open import Theory.Instances.Monoid.Automaton.Greedy Alphabet isSetAlphabet
@@ -82,7 +68,6 @@ module _ {Q : Type ℓAlph} (M : DeterministicAutomaton Q) where
     L : Q → TheoryTy _ tt
     L q = Trace true q
 
-  ------------------------------------------------------------------
   -- Traces with both endpoints named.
 
   -- the `Tag` of `Deterministic`, with the acceptance equation replaced
@@ -111,7 +96,7 @@ module _ {Q : Type ℓAlph} (M : DeterministicAutomaton Q) where
     branch : literal c ⊗ TraceTo (δ q c) q'
       ⊢ ⟦ ⊗e _⊙_ (two (k (literal c)) (Var (δ q c))) ⟧TheoryTy
           (μ (TraceToTy q'))
-    branch m (ms , e , l , t , _) = ms , e , two (lift l) (lift t)
+    branch = ⟦⊗e⟧⁻ _ _ ∘⊢ ⊗-map liftTy liftTy
 
   TraceToLayer : Q → Q → TheoryTy _ tt
   TraceToLayer q q' =
@@ -123,11 +108,10 @@ module _ {Q : Type ℓAlph} (M : DeterministicAutomaton Q) where
     where
     fromF : ⟦ TraceToTy q' q ⟧TheoryTy (μ (TraceToTy q'))
       ⊢ TraceToLayer q q'
-    fromF m (stop p , x) = Sum.inr (p , x)
-    fromF m (step c , ms , e , f) =
-      Sum.inl (c , ms , e , f zero .lower , f (suc zero) .lower , tt*)
+    fromF = ⊕ᴰ-elim λ where
+      (stop p) → inr ∘⊢ σ⊕ p
+      (step c) → inl ∘⊢ σ⊕ c ∘⊢ ⊗-map lowerTy lowerTy ∘⊢ ⟦⊗e⟧ _ _
 
-  ------------------------------------------------------------------
   -- The bridge to `Trace`.
 
   -- forget the end state, remembering only that it accepts
@@ -141,9 +125,9 @@ module _ {Q : Type ℓAlph} (M : DeterministicAutomaton Q) where
         (Eq.sym (pf Eq.∙ Eq.sym (Eq.ap isAcc p))) (STOP r)
 
     alg : (r : Q) → ⟦ TraceToTy q' r ⟧TheoryTy (Trace b) ⊢ Trace b r
-    alg r m (stop p , x) = stopCase r p m x
-    alg r m (step c , ms , e , f) =
-      STEP c r m (ms , e , f zero .lower , f (suc zero) .lower , tt*)
+    alg r = ⊕ᴰ-elim λ where
+      (stop p) → stopCase r p
+      (step c) → STEP c r ∘⊢ ⊗-map lowerTy lowerTy ∘⊢ ⟦⊗e⟧ _ _
 
   -- ...and recover it.  `Trace b q` is `⊕[ q' ] (b ≡ isAcc q') × TraceTo q q'`
   Trace→TraceTo : (b : Bool) (q : Q)
@@ -175,7 +159,6 @@ module _ {Q : Type ℓAlph} (M : DeterministicAutomaton Q) where
   bridge-section b q =
     funExt λ m → funExt λ t → unambiguous-Trace M b q m _ t
 
-  ------------------------------------------------------------------
   -- The end state is a function of the word: `δ*`.
 
   δ* : Q → String → Q
@@ -200,7 +183,6 @@ module _ {Q : Type ℓAlph} (M : DeterministicAutomaton Q) where
       (flatEq c (ms zero) (ms (suc zero)) w (f zero .lower) e)
       (endState (δ q c) q' (ms (suc zero)) (f (suc zero) .lower))
 
-  ------------------------------------------------------------------
   -- Cancellation: `δ` really is followed.
   --
   -- If `u` takes `q` to `q'` and `u ++ z` is a run of `q`, then `z` is a
@@ -241,7 +223,6 @@ module _ {Q : Type ℓAlph} (M : DeterministicAutomaton Q) where
       (flatEq c (ms zero) (ms (suc zero)) u (f zero .lower) e)
       (cancel b (δ q c) q' (ms (suc zero)) z (f (suc zero) .lower))
 
-  ------------------------------------------------------------------
   -- The greedy answer, with maximality typed.
 
   -- a match: a run ending at an *accepting* state
@@ -363,7 +344,6 @@ module _ {Q : Type ℓAlph} (M : DeterministicAutomaton Q) where
     scan : char * ⊢ Table
     scan = fold*g (Table , isSetTable) char-¬Nullable scan-nil scan-cons
 
-    ----------------------------------------------------------------
     -- ...and the bridge is an iso.
     --
     -- `Automaton/Unambiguous`'s induction, with the acceptance equation
@@ -465,7 +445,6 @@ module _ {Q : Type ℓAlph} (M : DeterministicAutomaton Q) where
     Trace≅TraceTo b q m .Iso.sec t = unambiguous-Trace M b q m _ t
     Trace≅TraceTo b q m .Iso.ret s = isPropBridgeTy b q m _ s
 
-  ------------------------------------------------------------------
   -- Maximality, cashed in.
   --
   -- The cheap state-indexed witness maps into the self-certifying

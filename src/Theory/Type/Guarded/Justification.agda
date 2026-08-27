@@ -234,7 +234,6 @@ module _ {X : Type ℓX} {xs : X → S} where
         ∙ cong (α x m)
             (mapG≡map (x , m) (hy isSetB c α) (F x) m (gF x m) (c x m a))
 
-  ------------------------------------------------------------------------
   -- Löb by structural recursion on a fuel.
   --
   -- `löbByMeasure` builds `▷` from the direct category's downsets, so

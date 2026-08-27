@@ -378,7 +378,6 @@ unrollString : String* ⊢ StringLayer
 unrollString = unroll (λ _ → KleeneCode) tt
 
 -- Canonical input observation
--- ---------------------------
 --
 -- The only non-formal part of `⊤Ty ≅ String*` is `read`: it has to choose a
 -- cons list at each monoid element.  On this presentation the element *is*

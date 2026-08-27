@@ -80,7 +80,6 @@ maybe-ε = ⊕ᴰ-elim br ∘⊢ Λ-total
   br ε₁ = just ∘⊢ lowerTy
   br (tk c) = nothing ∘⊢ ⊤Ty-intro
 
-------------------------------------------------------------------------
 
 MaybeAnswer : AnswerFunctor
 MaybeAnswer .AnswerFunctor.ℓAns ℓA = ℓA

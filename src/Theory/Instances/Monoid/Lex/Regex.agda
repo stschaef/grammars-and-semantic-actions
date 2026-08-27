@@ -1,22 +1,13 @@
 {-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
-{- A lexer is a regex, and its parser.
+{- A lexer is a regex, and its parser.  A lexicon is a list of token
+   regexes, the token stream is their alternation starred, and the parse
+   tree of that regex *is* the tokenisation.  Semantic actions belong to
+   the next phase.
 
-   Nothing here has a semantic action.  A lexicon is a list of token
-   regexes; the token stream is their alternation, starred; and the parse
-   tree of that regex *is* the tokenisation -- which rule matched, over
-   which characters, in order.  There is nothing left to compute.
-
-   Actions belong to the next phase, carrying these parse trees into
-   whatever the front end wants; they are not part of lexing.
-
-   This lexer is not greedy: `anyOfr` is ordered choice, so the star finds
-   *a* tokenisation rather than the maximal-munch one.  That is no longer
-   an open problem -- `Automaton/Greedy` does maximal munch over a
-   deterministic automaton, in one pass and linearly -- but this path has
-   not been rewired onto it.  What is here decides via the combinator
-   engine, and the combinator engine is exponential on rejection, which
-   is the reason the automaton route exists.  Prefer
-   `Automaton/Implicit/Analysis` for anything at scale. -}
+   Not greedy: `anyOfr` is ordered choice, so the star finds *a*
+   tokenisation, not the maximal-munch one, and the combinator engine is
+   exponential on rejection.  `Automaton/Greedy` does maximal munch in one
+   pass; this path has not been rewired onto it. -}
 open import Cubical.Foundations.Prelude
 import Cubical.Data.Sum as Sum
 import Cubical.Data.Empty as Empty
@@ -62,7 +53,6 @@ Tokenisation rs w = ty ⟦ tokensRE rs ⟧ w
 NoTokenisation : (rs : Lexicon) → String → Type (lv (tokensRE rs))
 NoTokenisation rs w = ¬Ty (ty ⟦ tokensRE rs ⟧) w
 
-------------------------------------------------------------------------
 -- Reading the tokenisation back out.
 --
 -- This is the bridge to the next phase, not part of lexing: the tree

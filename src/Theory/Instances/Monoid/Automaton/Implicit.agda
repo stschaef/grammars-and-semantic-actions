@@ -37,7 +37,6 @@ open import Theory.Instances.Monoid.Automaton.Deterministic
 
 private variable ℓ ℓ' : Level
 
-------------------------------------------------------------------------
 -- Freely adjoined states.
 
 data FreelyAddInitial (Q : Type ℓ) : Type ℓ where
@@ -114,7 +113,6 @@ module _ (Q : Type ℓ) where
       (FreelyAddFail+Initial≅Unit⊎Unit⊎ .ret)
       (Sum.isSet⊎ (Sum.isSet⊎ isSetUnit isSetUnit) isSetQ)
 
-------------------------------------------------------------------------
 -- The record, and its determinisation-free reading as a DFA.
 
 record ImplicitDeterministicAutomaton (Q : Type ℓAlph) : Type ℓAlph where

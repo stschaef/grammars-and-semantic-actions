@@ -1053,7 +1053,6 @@ parseTy = decide Ty
 parseTm : Decidable Term
 parseTm = decide Tm
 
-------------------------------------------------------------------------
 -- Raw syntax: a program is the token list these build.
 
 Src : Type ℓ-zero
@@ -1120,7 +1119,6 @@ t `$ u = kapp ∷ t ++ u
 `num zero = `zero
 `num (suc m) = `suc (`num m)
 
-------------------------------------------------------------------------
 -- Parsing.  Every `Eq.refl` is the parser running on the token list.
 
 -- types
@@ -1157,7 +1155,6 @@ addSrc = `λ vn ∶ `nat ∙ `λ vx ∶ `nat ∙
 yes-add : Term addSrc
 yes-add = theYes (parseTm addSrc tt) Eq.refl
 
-------------------------------------------------------------------------
 -- Two real programs.
 
 -- fib, by the pair trick:
@@ -1196,7 +1193,6 @@ fib-size = refl
 sum-size : length sumSrc ≡ 47
 sum-size = refl
 
-------------------------------------------------------------------------
 -- ...and the rejections, which are refutations.
 
 -- the two languages do not accept each other
@@ -1226,7 +1222,6 @@ no-kw-type = theNo (parseTy (karr ∷ knat ∷ ktrue ∷ []) tt) Eq.refl
 no-trailing : ¬Ty Term (sumSrc ++ (kzero ∷ []))
 no-trailing = theNo (parseTm (sumSrc ++ (kzero ∷ [])) tt) Eq.refl
 
-------------------------------------------------------------------------
 -- The parse tree, as data.
 
 open import Cubical.Data.Nat using (_+_)
@@ -1249,7 +1244,6 @@ fib-nodes = refl
 sum-nodes : nodes sumTree ≡ 36
 sum-nodes = refl
 
-------------------------------------------------------------------------
 -- Pass 1: the concrete tree becomes an abstract one.
 
 import Cubical.Data.Maybe as M
@@ -1317,7 +1311,6 @@ toTm (node (tk vx) []) = M.just (Nm vx)
 toTm (node (tk vxs) []) = M.just (Nm vxs)
 toTm _ = M.nothing
 
-------------------------------------------------------------------------
 -- Pass 2: scope checking.  Names become de Bruijn indices, and an unbound
 -- name is `nothing`.
 
@@ -1363,7 +1356,6 @@ scope Γ (Let x t u) =
   scope Γ t >>= λ T → scope (x ∷ Γ) u >>= λ U → M.just (BLet T U)
 scope Γ (Nm x) = idx Γ x >>= λ i → M.just (BVar i)
 
-------------------------------------------------------------------------
 -- Pass 3: type inference.  Every binder is annotated, so nothing is
 -- checked against an expected type -- inference alone suffices.
 
@@ -1431,7 +1423,6 @@ infer Γ (BFoldr f z xs) =
   go _ _ _ = M.nothing
 infer Γ (BLet t u) = infer Γ t >>= λ A → infer (A ∷ Γ) u
 
-------------------------------------------------------------------------
 -- The whole front end: token list → parse tree → AST → scoped → typed.
 
 astOf : (w : Src) → M.Maybe ATm
@@ -1447,7 +1438,6 @@ scopeOf w = astOf w >>= scope []
 tyOf : (w : Src) → M.Maybe ATy
 tyOf w = scopeOf w >>= infer []
 
-------------------------------------------------------------------------
 -- ...run on the two programs.
 
 add-type : tyOf addSrc ≡ M.just (Ar Na (Ar Na Na))
@@ -1468,7 +1458,6 @@ id-type = refl
 pair-type : tyOf (`pair `zero `true) ≡ M.just (Pr Na Bo)
 pair-type = refl
 
-------------------------------------------------------------------------
 -- ...and each pass rejects what is its business to reject.
 
 -- the parser rejects: a type is not a term
@@ -1509,7 +1498,6 @@ badCons = refl
 badFold : tyOf (`foldr idSrc `zero (`cons (`num 1) (`nil `nat))) ≡ M.nothing
 badFold = refl
 
-------------------------------------------------------------------------
 -- Pass 2, completed.  A `Maybe` says nothing when it says nothing, so the
 -- pass is made to answer with a decision: a derivation, or a refutation of
 -- every derivation.  The refutations come from inversion -- one line per
@@ -1605,7 +1593,6 @@ scoped? Γ (Lam x A t) = d1 (scoped? (x ∷ Γ) t) sLam λ where (sLam p) → p
 scoped? Γ (Let x t u) = d2 (scoped? Γ t) (scoped? (x ∷ Γ) u) sLet
   (λ where (sLet p q) → p) (λ where (sLet p q) → q)
 
-------------------------------------------------------------------------
 -- Pass 3, completed.  Same move: `Typed` is an inductive family, and the
 -- decision answers with a derivation or a refutation of all of them.  What
 -- makes the refutations available is that this calculus is fully annotated,
@@ -1945,7 +1932,6 @@ typed? Γ (Let x t u) = go (typed? Γ t)
       (_ , tLet d' e') → ¬q (shift (unique dt d') e')
     go2 (yes (B , du)) = yes (B , tLet dt du)
 
-------------------------------------------------------------------------
 -- Running the two complete passes.  `theD` extracts a derivation and
 -- `theNotD` a refutation, exactly as `theYes`/`theNo` do for the parser.
 

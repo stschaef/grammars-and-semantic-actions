@@ -46,7 +46,6 @@ Dep A ℓ' = (l : String) → A l → TheoryTy ℓ' tt
 ⊗ᴰ-const : {A : TheoryTy ℓ tt} {B : TheoryTy ℓ' tt}
   → ⊗ᴰ A (λ _ _ → B) ≡ A ⊗ B
 ⊗ᴰ-const = refl
-------------------------------------------------------------------------
 -- Associativity with a prefix-indexed right factor.
 
 -- `seq` reassociates `A ⊗ (B ⊗ K)` with `⊗-assoc`/`⊗-assoc⁻`.  The same

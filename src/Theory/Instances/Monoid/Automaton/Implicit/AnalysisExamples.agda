@@ -32,7 +32,6 @@ open import Theory.Instances.Monoid.Automaton.Deterministic UChar isSetAlphabet
 open import Theory.Instances.Monoid.Automaton.Implicit.Analysis
   UChar _≟U_ (ℓ-suc ℓ-zero)
 
-------------------------------------------------------------------------
 -- The entry point.  `p` says the pattern parses, `q` says the analysis
 -- accepted it; both are `Unit` and solved by eta on a literal, so a bad
 -- pattern is a type error at the module application.
@@ -63,7 +62,6 @@ module POSIX (s : AS.String)
   traceOf : (w : String) → Trace (accepts w) init w
   traceOf w = parseInit isSetQ w (readChars w tt) .snd
 
-------------------------------------------------------------------------
 -- `ab*`.  `Regex.Parse` builds this as `εr ⊗r ⟨a⟩r ⊗r ⟨b⟩r *r`, and the
 -- unit clauses of `detOf` are what let `⊗DR`, which refuses a nullable
 -- left factor, apply at all -- which is exactly what `erase` reports.
@@ -95,7 +93,6 @@ _ = M1.traceOf _
 _ : M1.Trace false M1.init (text "abba")
 _ = M1.traceOf _
 
-------------------------------------------------------------------------
 -- `a(b|c)*`, which exercises the other two nodes: `⊕DR` on two
 -- non-nullable branches with disjoint first sets, and `*DR` whose loop
 -- re-entry is decided against `{b, c}`.
@@ -114,7 +111,6 @@ _ = M2.traceOf _
 _ : M2.Trace false M2.init (text "bc")
 _ = M2.traceOf _
 
-------------------------------------------------------------------------
 -- Character classes.  `satdr`'s follow-last set is empty, so a class
 -- sequences and stars on the trivial side condition -- an identifier is
 -- deterministic and nothing about it is enumerated.
@@ -158,7 +154,6 @@ _ = M5.traceOf _
 _ : M5.Trace false M5.init (text "a1b")
 _ = M5.traceOf _
 
-------------------------------------------------------------------------
 -- ...and at length, to check that the side conditions did not put
 -- anything expensive on the transition path.  Each step evaluates one
 -- support of size at most two.
@@ -173,7 +168,6 @@ _ = M1.traceOf _
 _ : M1.Trace false M1.init ((ch 'a' ∷ bs 100) ++ (ch 'a' ∷ []))
 _ = M1.traceOf _
 
-------------------------------------------------------------------------
 -- What `detOf` refuses.  `IsDet m` is `⊥` exactly when `m` is `nothing`,
 -- so `λ x → x` typechecks only if the analysis rejected the pattern.
 

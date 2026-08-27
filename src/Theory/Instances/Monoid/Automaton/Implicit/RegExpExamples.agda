@@ -45,7 +45,6 @@ open import Theory.Instances.Monoid.Automaton.Implicit.RegExp L2 isSetAlphabet
 
 open ImplicitDeterministicAutomaton
 
-------------------------------------------------------------------------
 -- `a b*`, as an implicit automaton.
 
 private
@@ -74,7 +73,6 @@ isSetQ = isSetFreelyAddFail+Initial _ (Sum.isSet⊎ isSetU isSetU)
 
 open DeterministicAutomaton DA using (parseInit ; Trace ; init)
 
-------------------------------------------------------------------------
 -- Running it.  `readChars` presents the input as a `char *`.
 --
 -- `⊕[ b ] Trace b init` is total, so the parse always returns a run;
@@ -110,7 +108,6 @@ _ = traceOf _
 _ : Trace false init (a ∷ b ∷ a ∷ [])
 _ = traceOf _
 
-------------------------------------------------------------------------
 -- ...at scale.  Both directions: an accepting run of length n and a
 -- rejecting one of length n+1, built at typechecking time.
 --

@@ -29,7 +29,6 @@ import Agda.Builtin.String as AS
 
 open import Theory.Instances.Monoid.Regex.Unicode public
 
-------------------------------------------------------------------------
 -- A regex whose nullability is only known once it is built
 
 RE? : Type ℓ-zero
@@ -67,7 +66,6 @@ private
   rep? n extra (notNullable , r) = M.just (zerob n , betweenr n extra r)
   rep? n extra (nullable , _) = M.nothing
 
-------------------------------------------------------------------------
 -- A parser of characters, in the metalanguage
 
 private
@@ -122,7 +120,6 @@ private
     ...   | true = M.just (acc , c ∷ cs)
     ...   | false = M.nothing
 
-------------------------------------------------------------------------
 -- Escapes and the named classes
 
 private
@@ -161,7 +158,6 @@ private
       (try "print" isPrint (try "graph" isGraph
       (try "xdigit" isXDigit M.nothing)))))))))))
 
-------------------------------------------------------------------------
 -- Bracket expressions
 
 private
@@ -196,7 +192,6 @@ private
   bracket f cs =
     items f cs >>=? λ r → M.just ((notNullable , bracketR (r .fst)) , r .snd)
 
-------------------------------------------------------------------------
 -- The grammar proper.  `alt ::= cat ('|' cat)*`, `cat ::= piece*`,
 -- `piece ::= atom postfix*`.
 
@@ -258,7 +253,6 @@ private
   ... | false = M.just ((notNullable , charR c) , cs)
   atom (suc f) [] = M.nothing
 
-------------------------------------------------------------------------
 -- The entry point
 
 parseRE : AS.String → M.Maybe RE?

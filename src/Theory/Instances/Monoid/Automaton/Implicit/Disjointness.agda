@@ -34,6 +34,8 @@ open import Theory.Instances.Monoid.Residual Alphabet isSetAlphabet
   using (_⟜_ ; ⟜-intro ; ⟜-app ; ⊗⊕ᴰ-distL ; ⊗⊕ᴰ-distR)
 open import Theory.Instances.Monoid.Precise Alphabet isSetAlphabet
   using (flat ; ε∉lit⊗ ; sameHead)
+open import Theory.Instances.Monoid.SequentialUnambiguity.First
+  Alphabet isSetAlphabet using (startsWith)
 import Theory.Instances.Monoid.Automaton.Disjoint Alphabet isSetAlphabet as D
 open import Theory.Instances.Monoid.Automaton.Deterministic
   Alphabet isSetAlphabet
@@ -41,7 +43,6 @@ open import Theory.Instances.Monoid.Automaton.Implicit Alphabet isSetAlphabet
 
 private variable ℓA ℓB ℓY : Level
 
-------------------------------------------------------------------------
 -- Generic facts, all about `literal`: none of them mention an automaton.
 
 -- `A & -` commutes with a dependent sum, pointwise
@@ -58,19 +59,11 @@ private variable ℓA ℓB ℓY : Level
 ⊤Ty↑-intro : {A : TheoryTy ℓA tt} → A ⊢ ⊤Ty↑ ℓB
 ⊤Ty↑-intro m a = tt*
 
-startsWith : Alphabet → TheoryTy ℓM tt
-startsWith c = ＂ c ＂ ⊗ ⊤Ty
-
--- `Grammar.SequentialUnambiguity`'s `same-first`, with the tails dropped.
+-- `sameHead` with the tails dropped
 same-first : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt} (c d : Alphabet)
   → (＂ c ＂ ⊗ A) & (＂ d ＂ ⊗ B) ⊢ ⊕[ _ ∈ c ≡ d ] ⊤Ty
 same-first c d = map⊕ᴰ (λ _ → ⊤Ty-intro) ∘⊢ sameHead c d
 
--- `¬Nullable (startsWith c)`
-¬Nullable-startsWith : (c : Alphabet) → εTy & startsWith c ⊢ ⊥Ty
-¬Nullable-startsWith c = ε∉lit⊗ c
-
-------------------------------------------------------------------------
 
 module _ {Q : Type ℓAlph} (M : ImplicitDeterministicAutomaton Q) where
   open ImplicitDeterministicAutomaton M
@@ -92,7 +85,6 @@ module _ {Q : Type ℓAlph} (M : ImplicitDeterministicAutomaton Q) where
   Parse : TheoryTy _ tt
   Parse = Trace true initial
 
-  ------------------------------------------------------------------
   -- Algebras over an accepting trace.  `fail` carries no information, so
   -- the carrier is empty there and the whole `fail` branch is refuted.
   -- `CodeLayer`/`fromCode` -- the one-step observation with the carrier
@@ -143,7 +135,6 @@ module _ {Q : Type ℓAlph} (M : ImplicitDeterministicAutomaton Q) where
       → ⟦ TraceTy true (lift fail) ⟧TheoryTy (ParseAlgCarrier↑ A) ⊢ B
     ParseAlgFail = ⊥Ty-elim ∘⊢ ParseAlgFail'
 
-  ------------------------------------------------------------------
   -- Every word has a trace at `fail`, and it rejects.  `fail` loops to
   -- itself and is never accepting, so this is a fold over the input, not
   -- a run of the automaton.
@@ -170,18 +161,7 @@ module _ {Q : Type ℓAlph} (M : ImplicitDeterministicAutomaton Q) where
           ⊢ Trace false fail
     consB = ⊕ᴰ-elim (λ c → STEP c fail) ∘⊢ ⊗⊕ᴰ-distL ∘⊢ star-cons⁻
 
-  ------------------------------------------------------------------
-  -- Trace disjointness.  A word has at most one acceptance verdict from a
-  -- given state: the `Bool` indices of two traces over the same word agree.
-  --
-  -- This replaces `unambiguous-⊕Trace` of the old development, which got
-  -- the same fact out of `⊕[ b ] Trace b q ≅ string`.  Only the index is
-  -- ever used downstream, and the index is what an induction on one trace
-  -- against a one-step unrolling of the other already gives.
-
-  -- ...which is `Automaton.Disjoint.TraceDisj` at this machine's
-  -- underlying automaton; nothing in that induction is specific to the
-  -- implicit wrapper.
+  -- Trace disjointness at this machine's underlying automaton.
   TraceDisj : (b b' : Bool) (q : Q+)
     → Trace b q & Trace b' q ⊢ ⊕[ _ ∈ b ≡ b' ] ⊤Ty
   TraceDisj b b' = D.TraceDisj (IDA→DA M) b b'
@@ -191,7 +171,6 @@ module _ {Q : Type ℓAlph} (M : ImplicitDeterministicAutomaton Q) where
   TraceDisj⊥ b b' ne q =
     ⊕ᴰ-elim (λ p → Empty.rec (ne p)) ∘⊢ TraceDisj b b' q
 
-  ------------------------------------------------------------------
   -- Parsing at a state.  `⊕[ b ] Trace b q` is total, and `TraceDisj⊥`
   -- says the two summands never both hold: together, the old
   -- `AcceptingTraceParser`.
@@ -209,7 +188,6 @@ module _ {Q : Type ℓAlph} (M : ImplicitDeterministicAutomaton Q) where
     AcceptingTraceParser : (q : Q+) → Trace true q & Trace false q ⊢ ⊥Ty
     AcceptingTraceParser = TraceDisj⊥ true false true≢false
 
-  ------------------------------------------------------------------
   -- `c ∉ First (Parse)`.  An accepting run over a word beginning with `c`
   -- exhibits the initial transition on `c`, so a `fail` there refutes it.
 
@@ -233,7 +211,7 @@ module _ {Q : Type ℓAlph} (M : ImplicitDeterministicAutomaton Q) where
           (⊕ᴰ-elim help)
           (⊕ᴰ-elim λ _ →
             ⇒-intro
-              (⊥Ty-elim ∘⊢ ¬Nullable-startsWith c ∘⊢ (lowerTy ,&p id⊢)))
+              (⊥Ty-elim ∘⊢ ε∉lit⊗ {A = ⊤Ty} c ∘⊢ (lowerTy ,&p id⊢)))
         ∘⊢ fromCode true initial
         where
         help : (c' : Alphabet)
@@ -263,7 +241,6 @@ module _ {Q : Type ℓAlph} (M : ImplicitDeterministicAutomaton Q) where
     ⊕ᴰ-elim (λ x → Empty.rec (fail≢↑f (Eq.pathToEq (toFail ∙ sym (x .snd)))))
     ∘⊢ getFirstTransition c
 
-  ------------------------------------------------------------------
   -- `¬Nullable Parse`.  `STOPᵢ` is a `Trace null initial` over the empty
   -- word; a `Parse` there would give it a second verdict.
 
@@ -277,7 +254,6 @@ module _ {Q : Type ℓAlph} (M : ImplicitDeterministicAutomaton Q) where
     ∘⊢ sound-null
     ∘⊢ &-swap
 
-  ------------------------------------------------------------------
   -- `c ∉ FollowLast Parse`.  If the automaton never leaves an accepting
   -- state on `c`, then a `Parse` extended by a word beginning with `c`
   -- runs into `fail`: it is a *rejecting* trace, and the extension is

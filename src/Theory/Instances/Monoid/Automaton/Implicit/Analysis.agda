@@ -1,35 +1,14 @@
 {-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
 {- First/follow analysis: `RE` to `DetReg`.
 
-   `DetReg`'s side conditions are total functions of a letter -- e.g.
-   `(c : Alphabet) → (c ∈ℙ ¬FL) ⊎ (c ∈ℙ ¬F')` -- so over Unicode they
-   cannot be checked by enumeration.  They can be *built*, because both
-   indices are complements of small sets: a regex has finitely many
-   literals and finitely many classes.  `DetOfB` therefore carries the
-   two sets as a `Supp` -- a list of `one c` letters and `cls P`
-   predicates -- together with the witness that everything outside it is
-   in the complement, and a side condition is then discharged by
-   evaluating one `Bool`.
-
-   The check that can fail is the *global* one, `Disj`, and it is finite
-   whenever at most one of the two items compared is a `cls`: a letter
-   against a letter is `_≟_`, a letter against a class is one application
-   of the predicate.  Two classes cannot be compared, because pointwise
-   disjointness of two `Alphabet → Bool` is not decidable over a large
-   alphabet -- so `[a-z]|[0-9]` is refused although it is deterministic,
-   while `a|[0-9]` and `[a-z][a-z0-9]*` are not.
-
-   `detOf` also answers `nothing` where the fragment is genuinely not
-   deterministic (`ab|ac`, `ab*b`), and where `DetReg` cannot say it:
-   `⊗DR` demands a non-nullable left factor, so `a*b*` is out even though
-   it is deterministic.  None of those are holes; `nothing` is the
-   answer.
-
-   The leading `εr` that `Regex.Parse` builds every concatenation on top
-   of would defeat that nullability demand, so `detOf` eliminates a unit
-   on either side of a `⊗` before recurring.  `erase` reports what was
-   actually analysed; it is the bridge `DetReg → RE`, and lives here
-   because `Compile` mentions no regex syntax. -}
+   `DetReg`'s side conditions quantify over the alphabet, so over Unicode
+   they cannot be enumerated -- but they can be *built*: both indices are
+   complements of small sets, so `DetOfB` carries those sets as a `Supp`
+   and discharges a condition by evaluating one `Bool`.  The check that
+   can fail is `Disj`, finite only when at most one side is a class, so
+   `[a-z]|[0-9]` is refused though deterministic.  `detOf` answers
+   `nothing` there and wherever `DetReg` cannot express determinism
+   (`a*b*`); none of those are holes. -}
 open import Cubical.Foundations.Prelude
 import Cubical.Data.Sum as Sum
 import Cubical.Data.Empty as Empty
@@ -63,7 +42,6 @@ private variable
   n n' : Nullability
   nn nn' : Bool
 
-------------------------------------------------------------------------
 -- Decidable equality, as a `Bool` and as the two facts about it.  The
 -- `_≟_` the theory is set up with is `Eq`-valued, and `with` cannot see
 -- through a definition, so the elimination is a `where` on the sum.
@@ -95,7 +73,6 @@ eqb-true x y = go (x ≟ y)
   go (Sum.inl q) _ = Eq.eqToPath q
   go (Sum.inr _) p = Empty.rec (false≢true p)
 
-------------------------------------------------------------------------
 -- `Bool` scaffolding.  `notTrue` and the `(v : Bool) → x ≡ v` idiom are
 -- how a stuck `Bool` gets inspected *with* its equation, which `with`
 -- does not give.
@@ -113,7 +90,6 @@ private
   notTrue false _ = refl
   notTrue true h = Empty.rec (h refl)
 
-------------------------------------------------------------------------
 -- Supports.  `ℙ` is a bare predicate and its complement is not
 -- decidable; a `Supp` is what makes the complement decidable outside a
 -- small exception set, which is all the side conditions need.
@@ -147,7 +123,6 @@ memb-++-r [] t c p = p
 memb-++-r (i ∷ is) t c p =
   memb-++-r is t c (orFalse (holdsB i c) (memb (is ++ t) c) p .snd)
 
-------------------------------------------------------------------------
 -- The one check that can fail.  Everything a `DetReg` node demands
 -- reduces to this.
 
@@ -200,7 +175,6 @@ disj? (i ∷ is) t with disjClsSupp? i t
         Sum.rec (λ h → f c h q) (λ h → g c h q)
           (orTrue (holdsB i c) (memb is c) p)
 
-------------------------------------------------------------------------
 -- A `DetReg` together with the support of its two indices.
 
 record DetOfB (nn : Bool) : Type (ℓ-suc ℓAlph) where
@@ -229,7 +203,6 @@ sideCond {P = P} {Q = Q} sP sQ oP oQ dj c = go (memb sP c) refl
   go false p = Sum.inl (oP c p)
   go true p = Sum.inr (oQ c (notTrue (memb sQ c) (dj c p)))
 
-------------------------------------------------------------------------
 -- The leaves.  `litAut c` and `satAut P` never step once they have
 -- accepted, so both follow-last supports are empty.
 
@@ -252,7 +225,6 @@ satDet P = det ⊤ℙ (¬ℙ ⟦ P ⟧sat) (satdr P) [] (cls P ∷ [])
   (λ c p q → Empty.rec
     (false≢true (sym (orFalse (P c) false p .fst) ∙ lower q)))
 
-------------------------------------------------------------------------
 -- The nodes.  Each is the `DetReg` constructor, its side condition built
 -- by `sideCond`, and the support of the index the constructor announces.
 
@@ -352,7 +324,6 @@ starDet d with disj? (d .suppFL) (d .suppF)
         , d .outFL c (memb-++-r (d .suppF) _ c p))
       (d .outF))
 
-------------------------------------------------------------------------
 -- The analysis.
 --
 -- The two unit clauses are what makes `Regex.Parse`'s output usable at
@@ -376,7 +347,6 @@ detOf (r *r) with detOf r
 ... | Mb.just (true , d) = starDet d
 ... | _ = Mb.nothing
 
-------------------------------------------------------------------------
 -- The bridge back.  `Compile` mentions no regex syntax, so this is where
 -- a `DetReg` says which regular expression it is a determinism proof
 -- for.  The indices line up on the nose: `_·ν_`/`_+ν_` are left-driven
@@ -398,7 +368,6 @@ erase (_⊕DR[_]_ {b = true} dr _ dr') = erase dr ⊕r erase dr'
 erase (_⊕DR[_]_ {b = false} dr _ dr') = erase dr ⊕r erase dr'
 erase (dr *DR[ _ ]) = erase dr *r
 
-------------------------------------------------------------------------
 -- Getting the answer out.  As with `Regex.Parse`'s `⟨|_|⟩`, a regex the
 -- analysis rejects is a *type* error at the use site rather than a
 -- `nothing` to case on.

@@ -34,7 +34,6 @@ open import Theory.Instances.Monoid.Types Alphabet _≟_
 open import Theory.Instances.Monoid.Suffix.Base Alphabet isSetAlphabet
 open import Theory.Instances.Monoid.KleeneStar Alphabet isSetAlphabet
 
-------------------------------------------------------------------------
 
 infixr 30 _*r
 infixr 25 _⊗r_
@@ -67,7 +66,6 @@ private variable t : ParserTag
 ⟦ r *r ⟧ = StarSet ⟦ r ⟧
 ⟦ ↑r r ⟧ = ⟦ r ⟧
 
-------------------------------------------------------------------------
 -- The parse tree an expression admits: the expression's own shape.
 
 Tree : Reg t → Type ℓAlph

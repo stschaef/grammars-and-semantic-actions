@@ -30,7 +30,6 @@ import Theory.Instances.Monoid.Combinator.Grammars.Dyck
 import Theory.Instances.Monoid.Combinator.Grammars.Dyck
   ND.NDAnswer as GND
 
-------------------------------------------------------------------------
 -- One parser, three answers.
 
 decDyck : Dec.Decidable S
@@ -42,7 +41,6 @@ testDyck = GInc.dyck
 parsesDyck : ND.Parses S
 parsesDyck = GND.dyck
 
-------------------------------------------------------------------------
 
 open Dec using (_↦_ ; _at_ ; passes)
 

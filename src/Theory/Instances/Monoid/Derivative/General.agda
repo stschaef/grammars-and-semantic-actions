@@ -1,29 +1,16 @@
 {-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
-{- The derivative of a grammar by a grammar, and its amazing right adjoint.
-
-   `Theory/Type/Later/Derivative` already differentiates along a *function*
-   of worlds: `Derivative f B = f* B` with `√ f = Π_f` right adjoint to it.
-   That is the representable case.  Weighting by a whole grammar instead
-   (sss-00PP, sss-00PR) gives
+{- The derivative of a grammar by a grammar, and its right adjoint.
 
      (∂[ A ] B) w  ≅  Σ[ u ] (A u × B (u ++ w))
      (√[ A ] C) w  ≅  Π[ u v ] (u ++ v = w) → A u → C v
 
-   fibrationally `Σ_π₂ (π₁*A × μ*B)` and `Π_μ (π₁*A ⇒ π₂*C)`, with
-   `∂[ A ] ⊣ √[ A ]`.  Nothing below is fibrational; only the universal
-   property is, and that is what is proved.
-
-   Both formers are `opaque`.  Everything after the UMP block is therefore
-   forced through `∂-intro`/`∂-intro⁻`, which is the point: facts about
-   derivatives should be adjointness, not case analysis on splittings.
-   The one place that unfolds is the bridge at the bottom, where the
-   derivative is identified with Brzozowski's -- and, separately, with the
-   residual.  Those are theorems about *this* model, not about `∂`.
-
-   sss-00PS is the reason to keep them apart: `∂[ A ]` always has a right
-   adjoint, the residual does not, and the two agree at `⌈ w ⌉ ` only
-   because `u = w` is contractible there.  The Brzozowski derivative is a
-   derivative first and a residual by accident. -}
+   with `∂[ A ] ⊣ √[ A ]` (sss-00PP, sss-00PR).  Both formers are
+   `opaque`, so everything after the UMP goes through `∂-intro`/`∂-intro⁻`
+   rather than case analysis on splittings.  The bridges to Brzozowski's
+   derivative and to the residual unfold them; they are theorems about
+   this model.  `∂[ A ]` always has a right adjoint and the residual does
+   not -- they agree at `⌈ w ⌉` only because `u = w` is contractible
+   there (sss-00PS). -}
 open import Cubical.Foundations.Prelude
 open import Cubical.Foundations.Isomorphism
 open import Cubical.Algebra.Theory.Finitary
@@ -53,7 +40,6 @@ private
   cast : {X : String → Type ℓA} {x y : String} → x Eq.≡ y → X x → X y
   cast Eq.refl b = b
 
-------------------------------------------------------------------------
 -- The two formers, and the adjunction between them.
 
 opaque
@@ -101,7 +87,6 @@ opaque
     → A ⊢ A' → √[ A' ] C ⊢ √[ A ] C
   √-reweight f m h u v p a = h u v p (f u a)
 
-------------------------------------------------------------------------
 -- Everything below uses only the adjunction.
 
 module _ {A : TheoryTy ℓA tt} where
@@ -137,7 +122,6 @@ module _ {A : TheoryTy ℓA tt} where
   → A ⊢ A' → ∂[ A ] B ⊢ ∂[ A' ] B
 ∂-weight f = ∂-intro⁻ (√-reweight f ∘⊢ ∂-unit)
 
-------------------------------------------------------------------------
 -- The bridge: what `∂` is in this model.
 --
 -- `⌈ w ⌉ u` is `u Eq.≡ w`, a singleton, so the `Σ` and the `Π` over it

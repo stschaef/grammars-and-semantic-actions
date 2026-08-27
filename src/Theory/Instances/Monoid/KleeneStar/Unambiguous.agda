@@ -1,28 +1,13 @@
 {-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
-{- Is the star of a deterministic factor unambiguous?
+{- `unambiguous (A *)`, from `¬Nullable A`, `SeqUnambig A` and
+   `unambiguous A` -- the hypotheses `*Aut` already demands.
 
-   `*Aut≅` -- that an automaton built by `*Aut` parses exactly `KL* A` --
-   is commented out in `Automata/Implicit/RegExp/StrongEquivalences.agda`
-   with a note that it needs "an unambiguous-* external lemma akin to the
-   ⊗ one".  Nothing in either codebase has it.  This file is the attempt.
-
-   The statement, in the hypotheses `*Aut` already demands:
-
-     ¬Nullable A  →  (∀ c → c ∉FollowLast A ⊎ c ∉First A)  →  unambiguous A
-       →  unambiguous (A *)
-
-   It is TRUE, and the argument is short.  Suppose `w` has two
-   decompositions into `A`-pieces and take the first place they differ:
-   one has a piece `u`, the other a piece `u'` with `u` a proper prefix
-   of `u'`.  Write `c` for the letter of `u'` just past `u`.  Then
-
-     - the first decomposition continues after `u` with another piece,
-       which begins with `c`, so `c ∈ First A`;
-     - `u ∈ A` and `u' = u ++ c… ∈ A`, so `c ∈ FollowLast A`.
-
-   Contradiction with the hypothesis.  The two degenerate cases are
-   `¬Nullable A` (no empty piece, so nil-vs-cons is impossible) and
-   `unambiguous A` (equal pieces have equal parses). -}
+   Two decompositions of `w` into `A`-pieces that differ have a first
+   difference: one piece `u` is a proper prefix of the other `u'`.  The
+   letter `c` just past `u` then both opens the next piece (`c ∈ First A`)
+   and continues `u` into `u'` (`c ∈ FollowLast A`), which `SeqUnambig`
+   refutes.  `¬Nullable A` kills nil-vs-cons and `unambiguous A` equal
+   pieces. -}
 open import Cubical.Foundations.Prelude
 open import Cubical.Foundations.HLevels
 open import Cubical.Algebra.Theory.Finitary
@@ -61,7 +46,6 @@ private variable ℓA ℓB ℓX : Level
 Unambig : TheoryTy ℓA tt → Type _
 Unambig A = (m : String) → isProp (A m)
 
-------------------------------------------------------------------------
 -- The pairing the star construction demands.  `_∉First_`,
 -- `_∉FollowLast_` and `startsWith` come from `SequentialUnambiguity`; the
 -- combinatorial half -- Levi, and the clash it produces -- is
@@ -70,7 +54,6 @@ Unambig A = (m : String) → isProp (A m)
 SeqUnambig : TheoryTy ℓA tt → Type _
 SeqUnambig A = (c : Alphabet) → (c ∉FollowLast A) Sum.⊎ (c ∉First A)
 
-------------------------------------------------------------------------
 -- The proof.  `A *` is a real `data`, so both arguments are matched as
 -- `roll m (b , payload)` and the tail `f (suc zero) .lower` descends
 -- structurally -- no `rec`, no pragma.  This is `Automaton/Unambiguous`'s

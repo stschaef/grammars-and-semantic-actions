@@ -2,20 +2,14 @@
 {- Lookahead of a fixed width: the truncation monoid Σ*/≡ₖ and the fibres
    of its classifying map, generalising `Lookahead.Base` from n = 1.
 
-   `Window n` is the words of length at most n, and a *short* window carries
-   more information than a full one: if the window did not fill then the
-   input ended, so `Λw ⟨⟩` is `εTy` when budget remains and `⊤Ty` when it
-   does not.  That asymmetry is forced -- without it a short window and a
-   full one would overlap and there would be no cover.
+   `Window n` is the words of length at most n.  A *short* window carries
+   more information than a full one -- if it did not fill, the input ended
+   -- so `Λw ⟨⟩` is `εTy` with budget remaining and `⊤Ty` without.  Without
+   that asymmetry short and full windows overlap and there is no cover.
+   Disjointness is one induction, `Λw-sound`, not a case analysis on pairs.
 
-   Disjointness is not a case analysis on pairs of windows: it is one
-   induction, `Λw-sound`, reading the window back off the input.  Totality
-   is structural on the input, so a table built from this reduces on a
-   canonical string.
-
-   The width is its own unary type rather than `ℕ`, because
-   `Monoid.Base` re-exports `FinData`'s `zero`/`suc` and an `ℕ` pattern
-   will not resolve downstream of it. -}
+   The width is unary rather than `ℕ` because `Monoid.Base` re-exports
+   `FinData`'s `zero`/`suc`, which shadows an `ℕ` pattern downstream. -}
 open import Cubical.Foundations.Prelude
 open import Cubical.Algebra.Theory.Finitary
 open SortedSig

@@ -260,7 +260,6 @@ parse = F.decideAt step E
 L : _
 L = Lang E
 
-------------------------------------------------------------------------
 -- Accepted
 
 yes-id : L (vid ∷ [])
@@ -299,7 +298,6 @@ yes-deep =
   theYes (parse (lp ∷ lp ∷ vid ∷ cm ∷ vid ∷ rp ∷ ar ∷ vid ∷ rp ∷ dot ∷ vid ∷ [])
     tt) Eq.refl
 
-------------------------------------------------------------------------
 -- Refuted
 
 no-nil : ¬Ty L []

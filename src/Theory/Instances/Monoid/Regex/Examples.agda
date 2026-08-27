@@ -46,7 +46,6 @@ private
   show (M.just cs) = M.just (untext cs)
 
 
-------------------------------------------------------------------------
 -- 1. Each regex is named once; the table says what it consumes.
 
 ident num strLit dotted date : RE notNullable
@@ -94,7 +93,6 @@ _ : passes ((λ w → show (matched date w)) at
     ∷ []))
 _ = refl
 
-------------------------------------------------------------------------
 -- 2. A lexer is a lexicon of those.  Its parse tree *is* the
 --    tokenisation; the action below only names the rules.
 
@@ -127,7 +125,6 @@ private
             (semact-dec (semact-map (List.map name) (tokens lexicon))) (text w)
     where import Cubical.Data.List as List
 
-------------------------------------------------------------------------
 -- ...and the tokenisations, written out.
 
 _ : passes (lex at

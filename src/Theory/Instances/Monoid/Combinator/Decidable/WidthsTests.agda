@@ -16,7 +16,6 @@ open import Cubical.Data.Unit using (tt)
 open import Theory.Instances.Monoid.Combinator.Decidable.Widths
 open import Theory.Instances.Monoid.Combinator.Decidable.Window Tok _≟T_ (ℓ-suc ℓ-zero)
 
-------------------------------------------------------------------------
 -- k = 0: `S ::= a S b | a c`, separated at width 2, not at width 1.
 
 module K0 = Gram none
@@ -43,7 +42,6 @@ k0-no-unbalanced = theNo (K0.parse (ta ∷ ta ∷ tc ∷ []) tt) Eq.refl
 k0-no-extra-b : ¬Ty L0 (ta ∷ tc ∷ tb ∷ [])
 k0-no-extra-b = theNo (K0.parse (ta ∷ tc ∷ tb ∷ []) tt) Eq.refl
 
-------------------------------------------------------------------------
 -- k = 1: two leading `a`s, so width 3 is needed.
 
 module K1 = Gram (more none)
@@ -61,7 +59,6 @@ k1-no-short = theNo (K1.parse (ta ∷ tc ∷ []) tt) Eq.refl
 k1-no-b : ¬Ty L1 (ta ∷ ta ∷ tb ∷ [])
 k1-no-b = theNo (K1.parse (ta ∷ ta ∷ tb ∷ []) tt) Eq.refl
 
-------------------------------------------------------------------------
 -- k = 2: three leading `a`s, width 4.
 
 module K2 = Gram (more (more none))

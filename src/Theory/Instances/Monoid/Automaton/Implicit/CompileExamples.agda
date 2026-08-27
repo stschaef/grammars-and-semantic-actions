@@ -47,7 +47,6 @@ open import Theory.Instances.Monoid.KleeneStar L2 isSetAlphabet
 open import Theory.Instances.Monoid.Automaton.Deterministic L2 isSetAlphabet
 open import Theory.Instances.Monoid.Automaton.Implicit.Compile L2 isSetAlphabet
 
-------------------------------------------------------------------------
 -- The syntax tree, and its determinism derivation.
 
 private
@@ -59,7 +58,6 @@ private
 abStar-dr : DetReg _ (¬ℙ ⟦ a ⟧ℙ) true
 abStar-dr = ＂ a ＂dr ⊗DR[ anywhere ] (＂ b ＂dr *DR[ anywhere ])
 
-------------------------------------------------------------------------
 -- Compiled.  `States abStar-dr` is `Unit* ⊎ Unit*`: one position per
 -- literal, and nothing merged.  `erase` recovers the plain regular
 -- literal, and nothing merged.
@@ -75,7 +73,6 @@ open DeterministicAutomaton DA using (parseInit ; Trace ; init)
 isSetQ : isSet (FreelyAddFail+Initial (States abStar-dr))
 isSetQ = isSetCompileStates discL2 abStar-dr
 
-------------------------------------------------------------------------
 -- Running it.  As in `RegExpExamples`, `⊕[ b ] Trace b init` is total,
 -- so the tests exhibit the run rather than comparing a `Bool`.
 
@@ -105,7 +102,6 @@ _ = traceOf _
 _ : Trace false init (a ∷ b ∷ a ∷ [])
 _ = traceOf _
 
-------------------------------------------------------------------------
 -- ...and at scale, to check that routing the side conditions through
 -- `seqOf` did not put anything expensive on the transition path: the
 -- proofs are scrutinised by `Sum.rec`, but `seq-unambig` answers

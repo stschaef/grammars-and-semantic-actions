@@ -46,7 +46,6 @@ isNullable notNullable = false
 ∅? = notNullable , ⊥r
 ε? = nullable , εr
 
-------------------------------------------------------------------------
 -- Smart constructors.  `⊥` annihilates, `ε` is the unit; without these
 -- the derivative of a star doubles in size at every character.
 
@@ -62,9 +61,8 @@ _⊗s_ : RE? → RE? → RE?
 (n , r) ⊗s (n' , r') = n ·ν n' , r ⊗r r'
 
 _⊕s_ : RE? → RE? → RE?
-(n , r) ⊕s (n' , r') = n +ν n' , r ⊕r r' 
+(n , r) ⊕s (n' , r') = n +ν n' , r ⊕r r'
 
-------------------------------------------------------------------------
 -- The derivative itself
 
 δ : ∀ {n} → RE n → Alphabet → RE?
@@ -82,7 +80,6 @@ _⊕s_ : RE? → RE? → RE?
 δ? : RE? → Alphabet → RE?
 δ? (n , r) c = δ r c
 
-------------------------------------------------------------------------
 -- The residual after a prefix.  This is syntax-to-syntax, like `⟦_⟧` or
 -- `anyOfr`: it computes *which regex* to try next, not whether anything
 -- matched.  Nothing here decides.
@@ -91,64 +88,14 @@ residual : ∀ {n} → RE n → List Alphabet → RE?
 residual r [] = _ , r
 residual r (c ∷ w) = residual (δ r c .snd) w
 
-------------------------------------------------------------------------
--- What is still owed, and where it plugs in.
---
--- `Grammar/Greedy/Regex.agda` (branch `feat/lex`) has the shape.  Its
--- carrier is a *table*:
---
---     RunResult q = Greedy (Trace true q) ⊕ ¬G (Trace true q ⊗ ⊤)
---     scan : string ⊢ &[ q ∈ States ] RunResult q
---
--- folded once over the input -- `scan-nil` dispatching on `isAcc q` at ε,
--- `scan-cons` consulting `RunResult (δ q c)`.  One pass, whatever the
--- ambiguity, because the table holds every state at once rather than
--- every parse.
---
--- Ours is the same with the automaton deleted, indexing by the residual
--- regex instead of by a DFA state:
---
---     RunResult x = Greedy (ty ⟦ x .snd ⟧) ⊕ ¬Ty (ty ⟦ x .snd ⟧ ⊗ ⊤Ty)
---     scan : ⊤Ty ⊢ &[ x ∈ RE? ] RunResult x
---
--- All four pieces now exist:
---
---   * `scan-nil`'s dispatch is `decNullable` (Regex/Base) -- ε matches
---     exactly the nullable regexes, and the index decides which.
---   * `scan-cons`'s refutation step is `noExt-step` (Greedy/Base): a
---     nonempty prefix must start with `c`, by the precision of
---     `literal c`.
---   * `Greedy` and its projections are stated (Greedy/Base), as is
---     `GreedyAt`, which indexes by the residual instead of the matched
---     word and so extends in O(1); `Greedy/Examples` runs it.
---   * the derivative theorem is `δ-sound`/`δ-complete`, below.
---
--- The derivative theorem is stated below against `Dl`, the semantic
--- derivative.  Both directions are needed and neither is an iso: an ambiguous `r` matches ε in several ways, so
--- the two maps are a retraction, not an equivalence.  That is enough,
--- because a decision only needs the witness forward and the refutation
--- back.
---
--- What is left is assembling them into the fold.  There is deliberately
--- no `match` here.  A `Bool`-valued
--- matcher would decide in the metalanguage and carry neither witness nor
--- refutation, which is the thing this development is for.
-
-------------------------------------------------------------------------
--- The syntactic derivative computes the semantic one.
---
--- `Dl c A m = A (c ∷ m)` (Monoid/Derivative), so this says: stripping a
--- leading `c` from the language of `r` is the language of `δ r c`.  It is
--- an *iso*, which is the point -- one statement gives both the transfer
--- of witnesses and the transfer of refutations, and decidability of every
--- derivative follows from it by löb.
+-- The syntactic derivative computes the semantic one: `Dl c ⟦ r ⟧ ≅ ⟦ δ r c ⟧`.
+-- An iso, so it transfers witnesses and refutations at once.
 
 open import Theory.Instances.Monoid.Derivative Alphabet isSetAlphabet
   using (Dl)
 open import Theory.Instances.Monoid.Residual Alphabet isSetAlphabet
   using (⊗ε-unit-l⁻)
 
-------------------------------------------------------------------------
 -- The smart constructors do not change the language.  Confining the
 -- case analysis to these four lemmas is what keeps `δ-sound`/`δ-complete`
 -- structural.
@@ -170,7 +117,6 @@ open import Theory.Instances.Monoid.Residual Alphabet isSetAlphabet
 -- `Dl c A m` is `A (c ∷ m)`, so these are all statements about what a
 -- word beginning with `c` can be.
 
-------------------------------------------------------------------------
 -- The one list fact everything below rests on: a split of `c ∷ m` has
 -- either an empty left factor, or a `c`-headed one.
 
@@ -183,7 +129,6 @@ private
   uncons++ (d ∷ u) v c m e =
     Sum.inr (u , cong (_∷ u) (LP.cons-inj₁ e) , LP.cons-inj₂ e)
 
-------------------------------------------------------------------------
 -- `Dl` across the connectives.
 
 private variable ℓA ℓB : Level

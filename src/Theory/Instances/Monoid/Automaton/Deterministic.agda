@@ -1,20 +1,13 @@
 {-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
-{- Deterministic automata, ported from `Grammar/Automata/Deterministic.agda`.
-
-   The interface is the old one: a state set, an initial state, an
-   acceptance predicate, a transition.  Everything else is generated.
+{- Deterministic automata: a state set, an initial state, an acceptance
+   predicate, a transition.  Everything else is generated.
 
      Trace b q  ≅  (b ≡ isAcc q → ε)  ⊕  (⊕[ c ] literal c ⊗ Trace b (δ q c))
 
-   The `Tag` carries its own payload -- the acceptance equation, or the
-   letter -- so each functor branch is a bare `k` or `k ⊗e Var`, and the
-   constructors are `roll ∘ σ⊕ tag`, with no case analysis.
-
-   Indexing the trace by a `Bool` makes `⊕[ b ] Trace b q` *total*:
-   every word has a trace from every state, and rejection is a
-   `Trace false`, a witness rather than the absence of one.  `parse` is
-   therefore a function, and it produces the whole table -- every state
-   at once, one pass. -}
+   `Tag` carries its own payload, so each functor branch is a bare `k` or
+   `k ⊗e Var` and the constructors are `roll ∘ σ⊕ tag`.  Indexing by a
+   `Bool` makes `⊕[ b ] Trace b q` total: rejection is a `Trace false`
+   rather than the absence of a trace, so `parse` is a function. -}
 open import Cubical.Foundations.Prelude
 open import Cubical.Foundations.HLevels
 open import Cubical.Algebra.Theory.Finitary
@@ -115,7 +108,6 @@ record DeterministicAutomaton (Q : Type ℓQ)
     sym (cong (λ z → map (stepBranch q c) f ∘⊢ z) (⟦⊗e⟧-η _ _ {A = A}))
     ∙ cong (λ z → z ∘⊢ ⟦⊗e⟧ {A = A} _ _) (⟦⊗e⟧⁻-nat _ _ f)
 
-  ------------------------------------------------------------------
   -- Constructors: pick the tag, roll.
 
   -- `stop` at a given bit, with the acceptance equation supplied.  The
@@ -137,7 +129,6 @@ record DeterministicAutomaton (Q : Type ℓQ)
           (λ x → Trace b (x .lower))
     STEP-branch m (ms , e , l , t , _) = ms , e , two (lift l) (lift t)
 
-  ------------------------------------------------------------------
   -- The transition *is* the derivative.
   --
   -- Not an assumption -- there is no field asking for this, because the
@@ -202,7 +193,6 @@ record DeterministicAutomaton (Q : Type ℓQ)
     → ∂[ literal c ] (Trace b q) ⊢ Trace b (δ q c)
   ∂→Trace b q c = Dl→Trace b q c ∘⊢ ∂⌈⌉→Dl (⌈gen c ⌉) {B = Trace b q}
 
-  ------------------------------------------------------------------
   -- `parse`: the whole table, in one pass.
 
   private

@@ -67,7 +67,6 @@ private variable
   ℓA ℓB ℓX : Level
   b b' : Bool
 
-------------------------------------------------------------------------
 -- Two maps plus unambiguity of both ends is an iso: this is the old
 -- `≈→≅`, and it is why the whole development can stay logical.
 
@@ -78,7 +77,6 @@ private variable
 ≈→≅ uA uB f g .sec = unambiguous→subterminal uB _ _
 ≈→≅ uA uB f g .ret = unambiguous→subterminal uA _ _
 
-------------------------------------------------------------------------
 -- The compiler's discrete alphabet, once.
 
 disc : Discrete Alphabet
@@ -88,7 +86,6 @@ Aut : {¬FL ¬F : ℙ} (dr : DetReg ¬FL ¬F b)
   → ImplicitDeterministicAutomaton (States dr)
 Aut dr = compile disc dr
 
-------------------------------------------------------------------------
 -- The base cases.
 
 module Leaves where
@@ -221,7 +218,6 @@ module Leaves where
             (sym pd)
             (STOP (↑q tt*) ∘⊢ liftTy)
 
-------------------------------------------------------------------------
 -- Alternation.  Ported from `Automata/Implicit/RegExp/WeakEquivalences`'s
 -- `⊕Aut≈`; no lifting is needed here because every state set in this
 -- development sits at `ℓAlph`.
@@ -245,7 +241,6 @@ module Alt {Q Q' : Type ℓAlph}
     Lε : TheoryTy (ℓF ℓM) tt
     Lε = LiftTheoryTy (ℓF ℓM) εTy
 
-    ------------------------------------------------------------------
     -- Into the alternation.
 
     ⟦_⟧M : FreelyAddInitial Q → TheoryTy _ tt
@@ -374,7 +369,6 @@ module Alt {Q Q' : Type ℓAlph}
         ⊢ D⊕.Trace true (↑q (Sum.inr q'))
       stepM' c = D⊕.STEP c (↑q (Sum.inr q')) ∘⊢ (id⊢ ,⊗ conv c)
 
-    ------------------------------------------------------------------
     -- ...and back out of it.
 
     ⟦_⟧⊕ : FreelyAddInitial (Q Sum.⊎ Q') → TheoryTy _ tt
@@ -471,7 +465,6 @@ module Alt {Q Q' : Type ℓAlph}
     ⊕-elim (recParse M MAlg initial)
            (recParse M' M'Alg initial)
 
-------------------------------------------------------------------------
 -- Concatenation.  The left factor's trace is interpreted in continuation
 -- style -- `- ⟜ Parse M'` -- so the right factor is spliced in exactly
 -- where the left one accepts.
@@ -505,7 +498,6 @@ module Seq {Q Q' : Type ℓAlph}
     and-r {true} p = sym (Eq.eqToPath p)
     and-r {false} p = Empty.rec (true≢false (Eq.eqToPath p))
 
-    ------------------------------------------------------------------
     -- The right factor, as what to do once the left one has accepted.
 
     ⟦_⟧M' : FreelyAddInitial Q' → TheoryTy _ tt
@@ -593,7 +585,6 @@ module Seq {Q Q' : Type ℓAlph}
     M'→⊗A : Parse M' ⊢ ⟦ initial ⟧M'
     M'→⊗A = recParse M' M'Alg initial
 
-    ------------------------------------------------------------------
     -- The left factor, in continuation-passing form.
 
     ⟦_⟧M : FreelyAddInitial Q → TheoryTy _ tt
@@ -663,7 +654,6 @@ module Seq {Q Q' : Type ℓAlph}
         ⟜-intro
           (D⊗.STEP c (↑q (Sum.inl q)) ∘⊢ (id⊢ ,⊗ conv c) ∘⊢ ⊗-assoc)
 
-    ------------------------------------------------------------------
     -- ...and back: a trace of the concatenation splits at the join.
 
     ⟦_⟧⊗ : FreelyAddInitial (Q Sum.⊎ Q') → TheoryTy _ tt
@@ -780,7 +770,6 @@ module Seq {Q Q' : Type ℓAlph}
   ⊗Aut← : Parse M ⊗ Parse M' ⊢ Parse ⊗A
   ⊗Aut← = ⟜-app ∘⊢ (recParse M MAlg initial ,⊗ id⊢)
 
-------------------------------------------------------------------------
 -- Star.  `Paste` is what a `KL*` needs and a `⊗` does not: a whole
 -- further `Parse *A` re-entered at an accepting state of the body.
 
@@ -814,7 +803,6 @@ module Kleene {Q : Type ℓAlph}
     Lε : TheoryTy (ℓF ℓM) tt
     Lε = LiftTheoryTy (ℓF ℓM) εTy
 
-    ------------------------------------------------------------------
     -- Splicing a further run in at an accepting state.
 
     module Paste (q : Q) (accEq : true Eq.≡ M .acc q) where
@@ -897,7 +885,6 @@ module Kleene {Q : Type ℓAlph}
       pasteAt : Parse *A ⊢ D*.Trace true (↑q q)
       pasteAt = recParse *A pasteAlg initial
 
-    ------------------------------------------------------------------
     -- One iteration of the body, as a continuation.
 
     ⟦_⟧M : FreelyAddInitial Q → TheoryTy _ tt
@@ -965,7 +952,6 @@ module Kleene {Q : Type ℓAlph}
       stepM c =
         ⟜-intro (D*.STEP c (↑q q) ∘⊢ (id⊢ ,⊗ conv c) ∘⊢ ⊗-assoc)
 
-    ------------------------------------------------------------------
     -- ...and back: a run of the star is a list of runs of the body.
 
     ⟦_⟧* : FreelyAddInitial Q → TheoryTy _ tt
@@ -1065,7 +1051,6 @@ module Kleene {Q : Type ℓAlph}
     consB =
       ⟜-app ∘⊢ (recParse M MAlg initial ,⊗ id⊢) ∘⊢ star-cons⁻
 
-------------------------------------------------------------------------
 -- `unambiguous⊗`: the old `unambig-M⊗M'`, over the same hypothesis the
 -- star lemma uses.  `Precise.splitAgree` does the combinatorics: the two
 -- cuts coincide, so the factors are equal by their own unambiguity.
@@ -1123,7 +1108,6 @@ map* {A = A} {B = B} f =
   fold*r (NIL ∘⊢ liftTy ∘⊢ lowerTy ∘⊢ star-nil⁻ {A = A} {B = B *})
          (CONS ∘⊢ (f ,⊗ id⊢) ∘⊢ star-cons⁻)
 
-------------------------------------------------------------------------
 -- The three side conditions `compile` builds, replayed.  `Compile` keeps
 -- them private, and the compiled automaton is only *definitionally* the
 -- one these produce, so they have to be written again here.
@@ -1152,7 +1136,6 @@ private
   firstsOf' dr dr' sep c =
     Sum.map (δᵢ-fail disc dr c) (δᵢ-fail disc dr' c) (sep c)
 
-------------------------------------------------------------------------
 -- The two maps, by induction on the deterministic regular expression.
 
 fromAut : {¬FL ¬F : ℙ} (dr : DetReg ¬FL ¬F b)
@@ -1204,7 +1187,6 @@ toAut (dr *DR[ su ]) =
   Kleene.*Aut← (Aut dr) (nullOf disc dr) (seqOf' dr dr su)
   ∘⊢ map* (toAut dr)
 
-------------------------------------------------------------------------
 -- Unambiguity of the denotation, by the same induction.  The letter-set
 -- side conditions travel from the automaton through `toAut`; the two
 -- combinatorial lemmas are `unambiguous⊗` and `unambiguous-*`.
@@ -1262,7 +1244,6 @@ unambig-erase (_⊕DR[_]_ {b = false} {b' = false} {notBothNull = ()} dr sep dr'
 unambig-erase (dr *DR[ su ]) =
   unambiguous-* (¬NullOf dr) (seqOfTy dr dr su) (unambig-erase dr)
 
-------------------------------------------------------------------------
 -- The theorem.
 
 compile-sound : {¬FL ¬F : ℙ} (dr : DetReg ¬FL ¬F b)

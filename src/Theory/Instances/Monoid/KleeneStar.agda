@@ -119,7 +119,6 @@ fold*r {A = A} {B = B} nil cons = rec (λ _ → StarCode A) alg tt
     false → nil
     true → cons
 
-------------------------------------------------------------------------
 -- `roll*`/`unroll*` are inverse, and so is the unlifted `roll↑`/`unroll↑`
 -- that a parser uses.  `Inductive/Base` gives `roll`/`unroll` at the `μ`;
 -- what is left is the wrapper, and that is `two-η` at the cons branch --

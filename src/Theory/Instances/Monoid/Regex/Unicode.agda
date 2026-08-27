@@ -33,7 +33,6 @@ private
   eqc : AC.Char → UChar → Bool
   eqc d c = AN._==_ (AC.primCharToNat d) (code c)
 
-------------------------------------------------------------------------
 -- Predicates.  These are the real content; the regexes below are one
 -- application of `satr` each.
 
@@ -59,7 +58,6 @@ isGraph   = inRange '\x21' '\x7E'
 isPunct c = isGraph c and not (isAlnum c)
 isWord  c = isAlnum c or eqc '_' c
 
-------------------------------------------------------------------------
 -- ...and the POSIX names, each with its complement.
 
 -- `[lo-hi]`
@@ -96,7 +94,6 @@ notWordR  = satr λ c → not (isWord c)
 dotR : RE notNullable
 dotR = satr λ c → not (eqc '\n' c)
 
-------------------------------------------------------------------------
 -- Bracket expressions.  `[abc0-9[:alpha:]]` is a union of items, and its
 -- negation is the same list read through `not`.
 
@@ -122,7 +119,6 @@ bracketR is = satr (anyItem is)
 bracketNotR : List Item → RE notNullable
 bracketNotR is = satr λ c → not (anyItem is c)
 
-------------------------------------------------------------------------
 -- A literal word, written as text
 --
 --   strU "let"   rather than   strr (ch 'l' ∷ ch 'e' ∷ ch 't' ∷ [])

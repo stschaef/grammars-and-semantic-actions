@@ -17,7 +17,6 @@ open import Cubical.Data.List using (List ; [] ; _∷_)
 open import Cubical.Data.Sigma using (Σ-syntax ; _,_ ; fst ; snd)
 open import Cubical.Data.Unit using (Unit ; tt ; tt*)
 
-------------------------------------------------------------------------
 -- The alphabet
 
 data Tok : Type where
@@ -37,7 +36,6 @@ open import Theory.Instances.Monoid.Combinator.Decidable.Routed Tok _≟T_ (ℓ-
 open import Theory.Instances.Monoid.Residual Tok isSetAlphabet
   using (⟦⊗e⟧ ; ⟦⊗e⟧⁻)
 
-------------------------------------------------------------------------
 -- The grammar
 
 data NT : Type ℓ-zero where
@@ -224,7 +222,6 @@ yes-mixed = theYes (parse (lb ∷ nm ∷ pl ∷ nm ∷ rb ∷ pl ∷ nm ∷ []) 
 yes-nest : E (lb ∷ lb ∷ nm ∷ rb ∷ rb ∷ [])
 yes-nest = theYes (parse (lb ∷ lb ∷ nm ∷ rb ∷ rb ∷ []) tt) Eq.refl
 
-------------------------------------------------------------------------
 -- Rejected: each `no` is a refutation, not an absence.
 
 no-nil : ¬Ty E []
@@ -248,7 +245,6 @@ no-juxtapose = theNo (parse (nm ∷ nm ∷ []) tt) Eq.refl
 no-empty-parens : ¬Ty E (lb ∷ rb ∷ [])
 no-empty-parens = theNo (parse (lb ∷ rb ∷ []) tt) Eq.refl
 
-------------------------------------------------------------------------
 -- Scale.  `chain k` is `n + n + … + n` with k additions; `nest d` is
 -- `[[…[n]…]]` at depth d.
 

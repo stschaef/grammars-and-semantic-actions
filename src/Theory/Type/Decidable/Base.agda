@@ -59,7 +59,6 @@ dec-no = inr
   → B ⊢ A → ¬Ty A ⊢ ¬Ty B
 ¬Ty-map f m na b = na (f m b)
 
-------------------------------------------------------------------------
 -- Reading a decision at a point.  A test asks `isYes`/`isNo` and the
 -- matching projection turns the `Eq.refl` it observed into the payload.
 

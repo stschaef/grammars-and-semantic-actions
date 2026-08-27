@@ -149,7 +149,6 @@ re-¬Nullable (_⊕r_ {notNullable} {nullable} r r') p = Empty.rec (ν≢ν̸ p)
 re-¬Nullable (_⊕r_ {nullable} {n'} r r') p = Empty.rec (ν≢ν̸ p)
 re-¬Nullable (r *r) p = Empty.rec (ν≢ν̸ p)
 
-------------------------------------------------------------------------
 -- Nullability is decided, and the index is what decides it.
 --
 -- `re-¬Nullable` above gives one direction.  With the other, the syntactic

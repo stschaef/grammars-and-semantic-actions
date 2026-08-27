@@ -65,7 +65,6 @@ dot ≟T cm = Sum.inr λ ()
 dot ≟T ar = Sum.inr λ ()
 dot ≟T dot = Sum.inl Eq.refl
 
-------------------------------------------------------------------------
 -- The classes.  `after t` is "opens with a `(` whose match is followed by
 -- `t`"; `noMatch` is "opens with a `(` that never closes"; `headed c` is
 -- "does not open with a `(`"; `blank` is the empty word.
@@ -115,7 +114,6 @@ decCls blank (after t) = Sum.inr λ ()
 decCls blank noMatch = Sum.inr λ ()
 decCls blank (headed d) = Sum.inr λ ()
 
-------------------------------------------------------------------------
 -- Classifying a word.  This is a metalanguage scan on a model element, so
 -- it stays private, exactly as `Lookahead/Window`'s `win` does: it is how
 -- the cover is *justified*, and no client may reason with it.
@@ -147,7 +145,6 @@ private
   cls (ar ∷ m) = headed ar
   cls (dot ∷ m) = headed dot
 
-------------------------------------------------------------------------
 -- Bracket transparency: scanning through a word leaves the depth where it
 -- started.  This is the property a grammar owes the cover, and the only
 -- thing exported about `chase` -- the scan itself stays private.
@@ -207,7 +204,6 @@ transp-wrap {m = m} {n = n} tm tn d x =
     (Eq.sym (Eq.pathToEq (++-assoc m (rp ∷ n) x)))
     (tm (suc d) (rp ∷ (n ++ x)) Eq.∙ tn d x)
 
-------------------------------------------------------------------------
 -- ...and what the classifier then says.
 
 cls-open : {p : List Tok} → Transparent p → (t : Tok) (y : List Tok)
@@ -227,7 +223,6 @@ open import Theory.Instances.Monoid.Types Tok _≟T_
 open import Theory.Type.Decidable.Route
   MonEqns Tok (λ _ → tt) listPresentation
 
-------------------------------------------------------------------------
 -- The cover.  The parts are the fibres of `cls`.
 --
 -- This is a weaker kind of part than `Λ₁`/`Λw`, whose parts are syntactic
@@ -250,7 +245,6 @@ bracketCover .disjoint i i' ne m (lift p , lift p') =
 decClsEq : DiscreteEq Cls
 decClsEq = decCls
 
-------------------------------------------------------------------------
 -- The cover's interface, as `⊢`-terms.  Every tensor decomposition in the
 -- development happens here, beside the scan it is about; a grammar using
 -- this cover composes these and never splits a word itself.
@@ -341,7 +335,6 @@ tr-wrap m (ms , e , (lc , (rest , tt*))) =
           → Transparent d → Transparent (lp ∷ (a ++ b))
       go3 .(rp ∷ []) d Eq.refl Eq.refl td = transp-wrap ta2 td
 
-------------------------------------------------------------------------
 -- ...and the three class memberships a router needs.
 
 bt-open : (t : Tok)

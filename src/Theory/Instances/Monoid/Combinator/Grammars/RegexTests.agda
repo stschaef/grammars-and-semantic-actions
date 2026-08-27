@@ -45,7 +45,6 @@ import Theory.Instances.Monoid.Combinator.Syntax
 
 open Dec using (_↦_ ; _at_ ; passes ; String ; ⟨▷⟩ ; ⟨□⟩)
 
-------------------------------------------------------------------------
 -- The expressions.  Written once, at no answer at all.
 
 ab : Reg ⟨▷⟩
@@ -54,7 +53,6 @@ ab = ＂ a ＂r ⊗r ＂ b ＂r
 amb : Reg ⟨□⟩
 amb = (＂ a ＂r ⊕r (＂ a ＂r ⊗r ＂ a ＂r)) *r
 
-------------------------------------------------------------------------
 -- ...and the same compiler at three answers.
 
 decAmb : String → M.Maybe (Tree amb)
@@ -72,7 +70,6 @@ decAb = Dec.observe (SDec.regex ab) (Dec.semact-dec (regAct ab))
 ndAb : String → List (Tree ab)
 ndAb = ND.observe (SND.regex ab) (ND.semact-ND (regAct ab))
 
-------------------------------------------------------------------------
 -- `ab` is unambiguous, so the answers agree up to `just`/singleton.
 
 ab-dec : passes
@@ -91,7 +88,6 @@ ab-nd : passes
     ∷ [] ))
 ab-nd = refl
 
-------------------------------------------------------------------------
 -- `amb` is where they part.  Both `Dec` and `Maybe` return one chop and
 -- discard the rest; `ND` returns the whole `Fib (n+1)` fan.
 

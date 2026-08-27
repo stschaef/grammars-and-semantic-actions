@@ -27,7 +27,6 @@ open import Theory.Instances.Monoid.Automaton.Greedy L2 isSetAlphabet
 
 open DeterministicAutomaton DA using (init)
 
-------------------------------------------------------------------------
 -- The greedy scan over that automaton.
 
 munch : String → String
@@ -51,7 +50,6 @@ _ = refl
 _ : munch (b ∷ b ∷ []) ≡ []
 _ = refl
 
-------------------------------------------------------------------------
 -- ...at scale.  Measured off-tree against a ~2.9s baseline:
 --
 --     n:     0    50   200   800  3200  12800

@@ -1,18 +1,12 @@
 {-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
-{- A word has at most one acceptance verdict from a given state.
+{- A word has at most one acceptance verdict from a given state: with
+   `parse` for totality, `⊕[ b ] Trace b q` is a proposition, which is
+   what makes `parse` and `print` inverse.
 
-   The `Bool` index makes `⊕[ b ] Trace b q` total -- rejection is a
-   witness rather than the absence of one -- so totality is `parse` and
-   *uniqueness* is this file.  The two together say `⊕[ b ] Trace b q` is
-   a proposition, which is what makes `parse` and `print` inverse.
-
-   The argument is an induction on one trace against a one-step unrolling
-   of the other.  Both `step` cases must step by the same letter
-   (`Precise.sameHead`), a `step` and a `stop` cannot describe the same
-   word (`Precise.ε∉lit⊗`), and two `stop`s carry acceptance equations that
-   meet at `isAcc q`.  Nothing here is specific to any construction, which
-   is why it lives over a bare `DeterministicAutomaton`; it was previously
-   stated only for `Automaton.Implicit`'s wrapper. -}
+   An induction on one trace against a one-step unrolling of the other:
+   two `step`s agree on the letter (`Precise.sameHead`), a `step` and a
+   `stop` cannot describe one word (`Precise.ε∉lit⊗`), and two `stop`s
+   carry acceptance equations meeting at `isAcc q`. -}
 open import Cubical.Foundations.Prelude
 open import Cubical.Foundations.HLevels
 open import Cubical.Algebra.Theory.Finitary

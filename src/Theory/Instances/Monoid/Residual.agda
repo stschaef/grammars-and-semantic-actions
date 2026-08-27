@@ -64,7 +64,6 @@ two-η f = funExt λ where
       (ms , Eq.refl , (a , (b , tt*)))
 ⊗-split-η ms a b i = two-η ms i , Eq.refl , (a , (b , tt*))
 
-------------------------------------------------------------------------
 -- The right residual.  This is `Resid` at `_⊙_`'s slot `zero`, written out
 -- so that the unused focused-slot level does not show up in a `Lift`.
 
@@ -131,7 +130,6 @@ module _ {A : TheoryTy ℓ tt} {B : TheoryTy ℓ' tt} {C : TheoryTy ℓ'' tt} wh
 ⟜-unitr : {C : TheoryTy ℓ tt} → C ⟜ εTy ⊢ C
 ⟜-unitr {C = C} m f = castEq {A = C} (++-unit-rEq m) (f [] εTy-pt)
 
-------------------------------------------------------------------------
 -- The left residual: a map out of the remaining input still awaiting
 -- something on its left.
 
@@ -211,7 +209,6 @@ module _ {A : TheoryTy ℓ tt} {B : TheoryTy ℓ' tt} {C : TheoryTy ℓ'' tt} wh
   → &[ y ∈ Y ] (A y ⊸ C) ⊢ (⊕[ y ∈ Y ] A y) ⊸ C
 ⊸⊕ᴰ m f l (y , a) = f y l a
 
-------------------------------------------------------------------------
 -- Convolution plumbing.  `Fin 2` has no definitional η, so the passage
 -- between an operation's convolution and the binary tensor is stated once.
 

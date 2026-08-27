@@ -39,7 +39,6 @@ open import Theory.Instances.Monoid.Residual Alphabet isSetAlphabet
 
 private variable ℓD ℓY ℓΛ : Level
 
-------------------------------------------------------------------------
 -- Choice indexed by a cover
 
 module Predictive
@@ -106,7 +105,6 @@ module Predictive
     ▷map (commit K) ∘⊢ ▷laxᴰ (λ y → DecSet (C y ⊗Set K))
     ∘⊢ (&ᴰ-intro λ y → pAt (p y) K)
 
-------------------------------------------------------------------------
 -- Width 1: the cover of `Lookahead/Base`, and the two ways to pay `lead`
 
 Λ-cover : Cover M₁ Λ₁

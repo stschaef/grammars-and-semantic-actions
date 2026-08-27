@@ -130,7 +130,6 @@ dec-lit⊗↑ c = ⊕-elim dec-yes (dec-no ∘⊢ lit⊗-precise c) ∘⊢ ⊗�
 dec-char⊗↑ : {K : TheoryTy ℓA tt} → char ⊗ DecTy K ⊢ DecTy (char ⊗ K)
 dec-char⊗↑ = ⊕-elim dec-yes (dec-no ∘⊢ char⊗-precise) ∘⊢ ⊗⊕-distR
 
-------------------------------------------------------------------------
 -- Levi's lemma, and the alignment of two splittings that it powers.
 
 -- Two factorisations of one word are nested: one left factor is the other

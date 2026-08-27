@@ -26,7 +26,6 @@ open import Theory.Instances.Monoid.Unicode.Base
 open import Theory.Instances.Monoid.Regex.Parse using (reOf)
 open import Theory.Instances.Monoid.Lex.Regex UChar _≟U_ (ℓ-suc ℓ-zero)
 
-------------------------------------------------------------------------
 -- The lexicon, in priority order: keywords before identifiers.
 --
 --   0  let|in
@@ -46,7 +45,6 @@ lexicon =
 lexed : (w : AS.String) → Tokenisation lexicon (text w) → List (ℕ × List UChar)
 lexed w t = tokens lexicon (text w) t .fst
 
-------------------------------------------------------------------------
 -- ...and it runs, showing what it lexed to.
 
 letx : Tokenisation lexicon (text "let x")

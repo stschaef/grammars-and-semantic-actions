@@ -1,19 +1,13 @@
 {-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
 {- `readChars` is the unique `char *` witness of a word.
 
-   `Strings` proves this for `String*` (`read-section`), but `String*` is
-   `μ X. εTy ⊕ (char ⊗ X)` under `kleeneBranch` while `char *` is the same
-   code under `starBranch char`.  The two branch functions have identical
-   right-hand sides, but as functions `Bool → Functor` they never compare,
-   so `String*` and `char *` are different types and `read-section` does
-   not apply.  `Strings` cannot define `char *` either -- `KleeneStar`
-   imports it, not the other way round.
-
-   Rather than mirror `readSq'` at the other code, get it from
-   unambiguity: `char` is non-nullable, unambiguous, and sequentially
-   unambiguous with itself, so `unambiguous-*` says `char *` is a
-   proposition at every word -- and then *any* two terms into it agree,
-   `readChars ∘⊢ ⊤Ty-intro` and `id⊢` among them. -}
+   `Strings.read-section` proves this for `String*`, but `String*` and
+   `char *` are the same code under two different branch functions
+   (`kleeneBranch`, `starBranch char`), which never compare, so it does
+   not apply -- and `Strings` cannot define `char *`, since `KleeneStar`
+   imports it.  Take it from unambiguity instead: `char` is non-nullable,
+   unambiguous and sequentially unambiguous with itself, so `char *` is a
+   proposition and any two terms into it agree. -}
 open import Cubical.Foundations.Prelude
 open import Cubical.Foundations.HLevels
 open import Cubical.Algebra.Theory.Finitary

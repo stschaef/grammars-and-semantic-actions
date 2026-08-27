@@ -43,7 +43,6 @@ open import Theory.Type.Decidable.Route
 
 private variable ℓA ℓB ℓD : Level
 
-------------------------------------------------------------------------
 -- Building routes from the one-token cover: coarsen `Λ₁` along a routing
 -- of its cells.  This is the only table-shaped object in the development,
 -- and it is a plain function `M₁ → Maybe Y`.
@@ -92,7 +91,6 @@ module PushOf {I : Type ℓAlph} (Λ : I → TheoryTy ℓM tt)
 module Push {Y : Type ℓAlph} (r : M₁ → Maybe Y) =
   PushOf Λ₁ lookaheadCover decM₁ r
 
-------------------------------------------------------------------------
 -- Routed choice, over `Decidable/Base`'s parser.
 
 module Choice
@@ -130,7 +128,6 @@ module Choice
     ▷map (commit g K) ∘⊢ ▷laxᴰ (λ y → DecSet (C y ⊗Set K))
     ∘⊢ (&ᴰ-intro λ y → pAt (p y) K)
 
-------------------------------------------------------------------------
 -- The fixpoint over a family of nonterminals: the hypothesis is a
 -- conjunction of guarded parsers, and `callAt` reads any of them at a
 -- strict suffix.  `Decidable/Dyck`'s `Fix`, with the single grammar

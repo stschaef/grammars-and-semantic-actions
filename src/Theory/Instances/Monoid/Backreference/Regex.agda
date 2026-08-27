@@ -1,20 +1,14 @@
 {-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
 {- Regular expressions with capture groups and backreferences.
 
-   `REB n` is a regex in the scope of `n` captures.  Nullability is an index
-   as in `Regex.Base`, and the scope is a second index: a group is a
-   *binder*, so `grpr r kont` is "(r) followed by k", with `k` able to name
-   what `r` matched.  Captures are de Bruijn indices, so `brefr zero` is the
-   innermost enclosing group.
-
-   `Nullability` and the `RE` constructors are copied from `Regex.Base`
-   rather than imported, so that this file and the regex parser stay
-   independent.  `satr` is the one constructor not carried over: its yield
-   is a character but not a *determined* one, so it does not collapse the
-   indexed continuation the way `⟨_⟩r` does.
-
-   A backreference is nullable, because the capture may be the empty string
-   -- which is what stops `(\1)*` from being written. -}
+   `REB n` is a regex in the scope of `n` captures: nullability is an index
+   as in `Regex.Base`, and the scope is a second one.  A group is a binder,
+   so `grpr r kont` is "(r) followed by k" with `k` able to name what `r`
+   matched; captures are de Bruijn indices.  The `RE` constructors are
+   copied rather than imported so this file stays independent of the regex
+   parser.  `satr` is not carried over -- its yield is a character but not
+   a determined one, so it does not collapse the indexed continuation.  A
+   backreference is nullable, which is what stops `(\1)*`. -}
 open import Cubical.Foundations.Prelude
 open import Cubical.Algebra.Theory.Finitary
 import Cubical.Data.Sum as Sum
@@ -40,7 +34,6 @@ open import Theory.Instances.Monoid.Backreference.Parser Alphabet _≟_ ℓ publ
 
 private variable n : ℕ
 
-------------------------------------------------------------------------
 -- Nullability (copied from `Regex.Base`)
 
 data Nullability : Type ℓ-zero where
@@ -61,7 +54,6 @@ _+ν_ : Nullability → Nullability → Nullability
 nullable +ν _ = nullable
 notNullable +ν y = y
 
-------------------------------------------------------------------------
 -- The syntax
 
 data REB : ℕ → Nullability → Type ℓAlph where
@@ -104,7 +96,6 @@ lv (r *r) = ℓF (lv r)
 lv (grpr r kont) = ℓ-max ℓAlph (ℓ-max (lv r) (lv kont))
 lv (brefr i) = ℓM
 
-------------------------------------------------------------------------
 -- Semantics: a regex in scope `n` denotes a family of grammars
 
 ⟦_⟧ : ∀ {ν} (r : REB n ν) → Env n → TheorySet (lv r) tt
@@ -117,7 +108,6 @@ lv (brefr i) = ℓM
 ⟦ grpr r kont ⟧ γ = ⊗ᴰSet (⟦ r ⟧ γ) (λ l → ⟦ kont ⟧ (ext γ l))
 ⟦ brefr i ⟧ γ = ⌈ γ i ⌉Set
 
-------------------------------------------------------------------------
 -- The parser.  Only the publishing form is written: `toParser` gives the
 -- ordinary one back for free, so there is no second copy of this recursion.
 

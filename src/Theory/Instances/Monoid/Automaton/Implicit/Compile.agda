@@ -53,7 +53,6 @@ private variable
   ℓ : Level
   b b' : Bool
 
-------------------------------------------------------------------------
 -- Sets of letters.
 --
 -- `Cubical.Foundations.Powerset.More`, which the old `DetReg` used for
@@ -86,20 +85,11 @@ _∩ℙ_ : ℙ → ℙ → ℙ
 infixr 22 _∩ℙ_
 infix 25 ¬ℙ_
 
-------------------------------------------------------------------------
--- Deterministic regular expressions, ported from
--- `Grammar/RegularExpression/Deterministic.agda`.
---
--- Written directly, rather than as a predicate on a separate regex
--- datatype: the constructors ARE the deterministic combinators, so a
--- deterministic regex is one term instead of a syntax tree plus a proof
--- about it.  Nothing here mentions regex syntax at all -- the bridge to
--- `RE` lives where both are in scope.
---
--- Indexed by the complement of the follow-last set, the complement of
--- the first set, and the negation of nullability -- negated so that the
--- indices are propositions.  `b ≡ true` means *not* nullable, which is
--- the reading `sound¬Nullable` gave it in the old development.
+-- Deterministic regular expressions: the constructors are the
+-- deterministic combinators, so a `DetReg` is one term rather than a
+-- syntax tree plus a proof about it.  Indexed by the complements of the
+-- follow-last and first sets and by the negation of nullability, so that
+-- all three indices are propositions.
 
 data DetReg : ℙ → ℙ → Bool → Type (ℓ-suc ℓAlph) where
   εdr : DetReg ⊤ℙ ⊤ℙ false
@@ -141,7 +131,6 @@ infixr 20 _⊕DR[_]_
 infix 30 _*DR[_]
 infix 30 ＂_＂dr
 
-------------------------------------------------------------------------
 -- The state set is the set of positions -- one per literal.  It is read
 -- off the *regex*, not off the `DetReg`, so two determinism proofs for
 -- the same regex compile to automata of the same type.
@@ -164,7 +153,6 @@ isSetStates (dr ⊗DR[ _ ] dr') = Sum.isSet⊎ (isSetStates dr) (isSetStates dr'
 isSetStates (dr ⊕DR[ _ ] dr') = Sum.isSet⊎ (isSetStates dr) (isSetStates dr')
 isSetStates (dr *DR[ _ ]) = isSetStates dr
 
-------------------------------------------------------------------------
 -- Bool scaffolding.  `if-true` is the only way the `if (M .acc q)` in
 -- `⊗Aut`/`*Aut` gets out of the way, since `acc q ≡ true` is a path.
 
@@ -189,7 +177,6 @@ private
   notBoth {b = false} {b' = true} _ _ q = Sum.inr q
   notBoth {b = false} {b' = false} () _ _
 
-------------------------------------------------------------------------
 -- The compiler.
 --
 -- `compile` cannot be defined before the three index-reading lemmas,
@@ -329,7 +316,6 @@ module _ (discAlpha : Discrete Alphabet) where
     ... | Sum.inl _ = δᵢ-fail dr c c∉F
     ... | Sum.inr _ = δq-fail dr c c∉FL q accq
 
-  ----------------------------------------------------------------------
   -- What the semantic layer consumes.
   --
   -- `¬NullableAut`, `¬FirstAut` and `¬FollowLastAut` take precisely
@@ -346,7 +332,6 @@ module _ (discAlpha : Discrete Alphabet) where
     → (dr : DetReg ¬FL ¬F false) → compile dr .null ≡ true
   compileNullable = nullOf
 
-  ----------------------------------------------------------------------
   -- ...and the DFA, by relabelling.  No subset construction: `DetReg`
   -- is exactly the fragment whose positions are already deterministic.
 

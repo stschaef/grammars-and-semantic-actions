@@ -51,7 +51,6 @@ isSetDyckF _ .snd true (suc zero) zero = lift tt*
 isSetDyckF _ .snd true (suc zero) (suc zero) zero = lift (isSetLiteral rp)
 isSetDyckF _ .snd true (suc zero) (suc zero) (suc zero) = lift tt*
 
-------------------------------------------------------------------------
 -- The grammar as a `μ`, and the isomorphism with its unrolling.  Every
 -- parser for `S` builds its step out of `rollS`/`unrollS`, so they belong
 -- with the grammar rather than with any one parser.

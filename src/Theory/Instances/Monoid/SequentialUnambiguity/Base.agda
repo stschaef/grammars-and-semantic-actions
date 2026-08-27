@@ -179,7 +179,6 @@ factor⊗3 : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt}
   → (A ⊗ (B ⊗ C)) & (A ⊗ (B ⊗ D)) ⊢ (A & A) ⊗ ((B ⊗ C) & (B ⊗ D))
 factor⊗3 sep nu = ⊗&-distL (⊛-⊗l sep nu) (⊛-⊗l sep nu)
 
-------------------------------------------------------------------------
 -- Closure of `∉FollowLast` under the connectives.
 
 -- With `B` non-nullable the `c` is `B`'s business alone: the separation
@@ -297,20 +296,9 @@ module _ {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt} {c : Alphabet}
     ⊕-elim& (⊕-elim&L hFLA crossBA) (⊕-elim&L crossAB hFLB)
     ∘⊢ (⊗⊕-distL {A = A} {B = B} {C = startsWith c} ,&p id⊢)
 
--- The star.  Brüggemann-Klein and Wood's theorem, and the one place the
--- whole layer is needed: `c ∉FollowLast (A *)` from `c ∉First A`,
--- `c ∉FollowLast A` and `A ⊛ A`.
---
--- One unrolling does not suffice -- the `c` may sit arbitrarily deep -- so
--- the refutation is built by a fold whose carrier is
--- `¬(FollowLastTy (A *) c) & (A *)`.  At `cons` the goal is
---
---   (A ⊗ (¬(FL) & A *)) & ((A * ⊗ startsWith c) & A *) ⊢ ⊥
---
--- and the argument is: the trailing `A *` cannot be empty (that would put
--- `c` in `First (A *)`), so it is `A ⊗ A *`; then `⊗&-distL` twice pins the
--- two cuts against each other, leaving the induction hypothesis to apply
--- to the tail.
+-- Brüggemann-Klein and Wood's star theorem.  The `c` may sit arbitrarily
+-- deep, so the refutation is a fold with carrier `¬Ty (FollowLastTy (A *) c)
+-- & (A *)`; each cons step pins the two cuts with `⊗&-distL` twice.
 module _ {A : TheoryTy ℓA tt} {c : Alphabet}
   (hFA : c ∉First A) (hFLA : c ∉FollowLast A)
   (sep : A ⊛ A) (disc : Discrete Alphabet) where

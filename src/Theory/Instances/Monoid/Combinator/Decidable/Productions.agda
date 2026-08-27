@@ -1,26 +1,16 @@
 {-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
-{- A predictive parser generator.  A grammar is an indexed functor: the
-   index is the nonterminal, and that nonterminal's productions are the sum
-   its functor takes -- here tagged by `Maybe M₁`, a lookahead class or the
-   one ε-production a class table cannot name.
+{- A predictive parser generator.  A grammar is an indexed functor; the
+   index is the nonterminal, and its productions are the sum its functor
+   takes, tagged by `Maybe M₁` -- a lookahead class, or the one
+   ε-production a class table cannot name.
 
-   `Prod o` is a production *indexed by the class it predicts*, so a body
-   can only be given for the class its leading terminal names.  A table
-   therefore cannot conflict and `lead` is derivable everywhere: the LL(1)
-   condition is what a table *is*, not a side condition on one.
-
-   Several nonterminals cost nothing.  `&ᴰ` bundles their parsers into one
-   grammar and Löb is taken there, so the hypothesis is "every nonterminal,
-   at every proper suffix" and `call y` is `▷map (π y)`.  Where it is spent
-   is still what makes the step decrease: `call` answers only at strict
-   suffixes, and only `tok` restores an answer here -- which is why `led`
-   demands a leading terminal.
-
-   A nullable nonterminal is the one thing prediction cannot settle, its
-   ε-production wanting a class that belongs to the continuation.  `_<|>_`
-   settles it: the class picks the single *consuming* branch, and ε is
-   tried only if that branch refutes.  Each nonterminal has at most one
-   ε-production, which is what `nul` records. -}
+   `Prod o` is indexed by the class it predicts, so a body can only be
+   given for the class its leading terminal names: a table cannot
+   conflict, and the LL(1) condition is what a table *is*.  `&ᴰ` bundles
+   several nonterminals so Löb is taken once; `call` answers only at
+   strict suffixes and only `tok` restores an answer, which is why `led`
+   demands a leading terminal.  `_<|>_` settles nullable nonterminals --
+   the class picks the consuming branch, ε is tried only if it refutes. -}
 open import Cubical.Foundations.Prelude
 open import Cubical.Algebra.Theory.Finitary
 import Cubical.Data.Sum as Sum
@@ -80,7 +70,6 @@ data Tree : Type ℓAlph where
 module Gen {X : Type ℓAlph} (T : Table X) where
   open Table T
 
-  ------------------------------------------------------------------------
   -- The table, as an indexed functor
 
   itemCode : Item X → Functor ℓM X (λ _ → tt) tt
@@ -131,7 +120,6 @@ module Gen {X : Type ℓAlph} (T : Table X) where
   isSetF x .fst = lift (isOfHLevelMaybe 0 isSetM₁)
   isSetF x .snd = isSetTag x
 
-  ------------------------------------------------------------------------
   -- ...and as a family of grammars
 
   S : X → TheoryTy ℓG tt
@@ -159,7 +147,6 @@ module Gen {X : Type ℓAlph} (T : Table X) where
   C : (x : X) (o : M₁) → TheorySet ℓG tt
   C x o = prodSet (at x o)
 
-  ------------------------------------------------------------------------
   -- Each production claims the class its leading terminal names; a class
   -- with no production claims it vacuously.
 
@@ -186,7 +173,6 @@ module Gen {X : Type ℓAlph} (T : Table X) where
     br MB.nothing = inr
     br (MB.just o) = inl ∘⊢ σ⊕ o
 
-  ------------------------------------------------------------------------
   -- The parsers, mutually: `&ᴰ` bundles the family, Löb is taken there, and
   -- `call y` reads the y-th component at a strict suffix.
 
@@ -237,7 +223,6 @@ module Gen {X : Type ℓAlph} (T : Table X) where
   decide : (x : X) → Decidable (S x)
   decide x = runP ℓG (π x ∘⊢ parsers)
 
-  ------------------------------------------------------------------------
   -- Reading the parse tree out
 
   private

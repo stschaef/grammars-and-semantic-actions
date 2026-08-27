@@ -28,7 +28,6 @@ open import Theory.Instances.Monoid.Regex.Notation L _≟L_ (ℓ-suc ℓ-zero)
 matches : ∀ {n} (r : RE n) → String → M.Maybe Unit
 matches r = observe (decide-r r ℓr) (semact-dec (semact-pure tt))
 
-------------------------------------------------------------------------
 -- `a b`
 
 ab : RE notNullable
@@ -43,7 +42,6 @@ _ = refl
 _ : matches ab (b ∷ a ∷ []) ≡ M.nothing
 _ = refl
 
-------------------------------------------------------------------------
 -- `a *`
 
 as : RE nullable
@@ -58,7 +56,6 @@ _ = refl
 _ : matches as (a ∷ b ∷ []) ≡ M.nothing
 _ = refl
 
-------------------------------------------------------------------------
 -- `(a | b) *` -- alternation under a star
 
 abs : RE nullable
@@ -70,7 +67,6 @@ _ = refl
 _ : matches abs (a ∷ b ∷ a ∷ b ∷ []) ≡ M.just tt
 _ = refl
 
-------------------------------------------------------------------------
 -- `a b *` -- a non-nullable head before a nullable tail, the case the
 -- two-tag fold exists for
 
@@ -86,7 +82,6 @@ _ = refl
 _ : matches abs' [] ≡ M.nothing
 _ = refl
 
-------------------------------------------------------------------------
 -- `. +` -- one or more of anything
 
 anyPlus : RE notNullable
@@ -98,7 +93,6 @@ _ = refl
 _ : matches anyPlus [] ≡ M.nothing
 _ = refl
 
-------------------------------------------------------------------------
 -- Character classes, which `⟨_⟩r` and `anyr` could not express between
 -- them.  `notA` is a complement -- the case finite disjunction cannot do
 -- over a large alphabet.
@@ -129,7 +123,6 @@ _ = refl
 _ : matches (anyr *r) (a ∷ b ∷ a ∷ []) ≡ M.just tt
 _ = refl
 
-------------------------------------------------------------------------
 -- The surface syntax.
 
 -- `[ab] ?`

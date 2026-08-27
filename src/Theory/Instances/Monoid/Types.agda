@@ -45,7 +45,6 @@ open import Theory.Type.Decidable.Base MonEqns Alphabet (λ _ → tt) listPresen
 
 private variable ℓA ℓB ℓC : Level
 
-------------------------------------------------------------------------
 -- The connectives' h-levels and the distributivity `⊗⊕-distL` is missing
 -- an inverse for.  `Strings` states the connectives but does not import
 -- `HLevels`, so the set-ness of a binary `⊗` has to be said here.
@@ -85,7 +84,6 @@ isSetDecTy sA = isSet⊕ sA (isSet⇒ isSet⊥Ty)
   (Sum.inl x) → refl
   (Sum.inr x) → refl
 
-------------------------------------------------------------------------
 -- ...and the grammars that carry their set-ness, which is what a guarded
 -- recursion asks of one.  `_&Set_` and `_⊕Set_` are in `HLevels`.
 
@@ -110,7 +108,6 @@ charSet = char , isSet⊕ᴰ isSetAlphabet isSetLiteral
 εSet : TheorySet ℓM tt
 εSet = εTy , isSetεTy
 
-------------------------------------------------------------------------
 -- Deciding a lookahead class.  This is equality of classes, not a parser
 -- combinator, so it sits with the classes.
 

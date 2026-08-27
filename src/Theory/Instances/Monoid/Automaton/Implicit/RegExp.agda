@@ -73,7 +73,6 @@ module _ (discAlpha : Discrete Alphabet) where
   satAut P .δᵢ c = if P c then ↑f _ else fail
   satAut P .δq _ _ = fail
 
-  ------------------------------------------------------------------
   -- Alternation: disjoint firsts, and not both nullable.
 
   module _ {Q Q' : Type ℓAlph}
@@ -96,7 +95,6 @@ module _ (discAlpha : Discrete Alphabet) where
         (λ _ → mapFreelyAddFail Sum.inl (M .δᵢ c))
         (disjointFirsts c)
 
-  ------------------------------------------------------------------
   -- Concatenation: the left factor consumes, and its follow set is
   -- disjoint from the right's first set.
 
@@ -123,7 +121,6 @@ module _ (discAlpha : Discrete Alphabet) where
     ⊗Aut .δq (Sum.inr q') c = mapFreelyAddFail Sum.inr (M' .δq q' c)
     ⊗Aut .δᵢ c = mapFreelyAddFail Sum.inl (M .δᵢ c)
 
-  ------------------------------------------------------------------
   -- Star: the same condition against itself, so a loop is unambiguous.
 
   module _ {Q : Type ℓAlph}

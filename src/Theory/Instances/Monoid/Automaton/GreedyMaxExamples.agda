@@ -63,7 +63,6 @@ _ = refl
 _ : munchSpec (b ∷ b ∷ []) ≡ []
 _ = refl
 
-------------------------------------------------------------------------
 -- ...at scale.  Measured off-tree against a 3.0s baseline (an empty
 -- module importing this one), on the same machine as the table in
 -- `GreedyExamples`:

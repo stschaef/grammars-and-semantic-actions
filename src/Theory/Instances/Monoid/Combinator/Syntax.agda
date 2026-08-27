@@ -39,7 +39,6 @@ open Combinators 𝒯
 
 private variable ℓA ℓB ℓD ℓK : Level
 
-------------------------------------------------------------------------
 -- Repetition.
 
 module _ (ℓK : Level) (A : TheorySet ℓA tt) where
@@ -90,7 +89,6 @@ sepBy : (ℓK : Level) {A : TheorySet ℓA tt} {S : TheorySet ℓB tt}
 sepBy ℓK {A = A} {S = S} p s =
   seq (StarSet (S ⊗Set A)) p (box (many ℓK (S ⊗Set A) (seq A s (pless ∘⊢ p))))
 
-------------------------------------------------------------------------
 -- Regular expressions, compiled to parsers.  This is the counterpart of
 -- `Thompson.Base`'s `regex→NFA`: the same induction over the same six
 -- cases, landing in a parser rather than a machine -- and, unlike the

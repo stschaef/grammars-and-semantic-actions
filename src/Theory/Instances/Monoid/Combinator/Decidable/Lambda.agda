@@ -66,7 +66,6 @@ Term = S tt
 parse : Decidable Term
 parse = decide tt
 
-------------------------------------------------------------------------
 -- Every `Eq.refl` below is the parser running.
 
 yes-v : Term (v ∷ [])

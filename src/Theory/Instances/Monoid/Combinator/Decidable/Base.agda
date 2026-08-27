@@ -80,7 +80,6 @@ dec-char⊗-at {K = K} = look⊗ br
   br ε₁ = dec-no ∘⊢ ⇒-intro (ε-char ∘⊢ ((π₂ ∘⊢ π₁) ,& π₂))
   br (tk d) = dec-char⊗↑ ∘⊢ (σ⊕ d ,⊗ π₁) ∘⊢ ▷⊗r d
 
-------------------------------------------------------------------------
 
 DecAnswer : AnswerFunctor
 DecAnswer .AnswerFunctor.ℓAns ℓA = ℓA

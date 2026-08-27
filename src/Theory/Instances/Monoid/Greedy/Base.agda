@@ -91,24 +91,11 @@ noExt-step c {A = A} m (ms , e , (lc , (nk , _))) t =
           ∙ cong (_∷ ks1) (sym c≡d)
           ∙ sym (cong (_++ ks1) (Eq.eqToPath ll))
 
-------------------------------------------------------------------------
--- The same thing, indexed by the residual instead of by the matched word.
---
--- `Greedy` above names the match with `⊕[ w ] (⌈ w ⌉ & A)` so that the
--- refutation can say `A ⟜ ⌈ w ⌉` -- "what is left of A after w".  But a
--- tensor already carries its own splitting, so `⌈ w ⌉` is redundant with
--- it; the word is there only to be fed to the residual.  Name the
--- residual directly and both disappear.
---
--- The cost of extending then drops from O(n) to O(1): `extendAt` is an
--- associativity and one substitution, where `Grammar/Greedy/Automata`'s
--- `extend-Greedy` destructures `w` and rebuilds at `c ∷ w`, which is what
--- makes a match of length n cost O(n²) to build.
---
--- The price is that `R` is a parameter, so `GreedyAt A R` is only *about*
--- greediness when `R` really is A's residual after the match.  A scan
--- maintains that by construction (start at `A`, step by δ); recovering
--- the self-contained statement is `δ-sound`/`δ-complete`.
+-- `Greedy` indexed by the residual rather than the matched word, so that
+-- `extendAt` is O(1) -- an associativity and a substitution -- instead of
+-- rebuilding at `c ∷ w`.  `R` is a parameter, so this is only *about*
+-- greediness when `R` is A's residual after the match; a scan maintains
+-- that by construction, and `δ-sound`/`δ-complete` recover it.
 
 open import Theory.Instances.Monoid.Derivative Alphabet isSetAlphabet
   using (Dl)

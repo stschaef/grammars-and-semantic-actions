@@ -57,7 +57,6 @@ isSet⊗ᴰ {B = B} sA sB m =
 ⊗ᴰSet : TheorySet ℓA tt → (String → TheorySet ℓB tt) → TheorySet _ tt
 ⊗ᴰSet A B = ⊗ᴰ (ty A) (λ l _ → ty (B l)) , isSet⊗ᴰ (A .snd) (λ l → B l .snd)
 
-------------------------------------------------------------------------
 -- The publishing parser
 
 Cont : (ℓK : Level) → Type _
@@ -91,7 +90,6 @@ toParser p = mkP λ K →
   ∘⊢ pDAt p (λ _ → K)
   ∘⊢ (π₁ ,& (▷map (&ᴰ-intro λ _ → id⊢) ∘⊢ π₂))
 
-------------------------------------------------------------------------
 -- Sequencing a capture group with what follows it
 
 module _ {D : TheoryTy ℓD tt} where
@@ -171,7 +169,6 @@ pmoreD : {ℓK : Level} {c : ParserTag} {A : TheorySet ℓA tt}
   → ParserD ℓK ⟨▷⟩ c A ⊢ ParserD ℓK ⟨□⟩ c A
 pmoreD = mkPD λ C → pDAt id⊢ C ∘⊢ (id& ▷wk)
 
-------------------------------------------------------------------------
 -- Repetition at the publishing type
 
 -- `ParserD` as a `TheorySet`, so it can sit under `▷` and be Löb'd.

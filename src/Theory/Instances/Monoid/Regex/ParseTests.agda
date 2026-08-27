@@ -35,7 +35,6 @@ private
      → isNo (decide-r (reOf s {p}) ℓr (text w) tt) Eq.≡ true → No s {p} w
   no s {p} w q = theNo (decide-r (reOf s {p}) ℓr (text w) tt) q
 
-------------------------------------------------------------------------
 -- concatenation, alternation, star
 
 _ : Yes "ab" "ab"
@@ -56,7 +55,6 @@ _ = yes "(ab)*" "" Eq.refl
 _ : No "(ab)*" "aba"
 _ = no "(ab)*" "aba" Eq.refl
 
-------------------------------------------------------------------------
 -- postfix operators
 
 _ : Yes "ab?c" "ac"
@@ -83,7 +81,6 @@ _ = yes "a{2,4}" "aaa" Eq.refl
 _ : No "a{2,4}" "aaaaa"
 _ = no "a{2,4}" "aaaaa" Eq.refl
 
-------------------------------------------------------------------------
 -- classes, ranges, escapes
 
 _ : Yes "[a-z]+" "hello"
@@ -107,7 +104,6 @@ _ = yes "[[:alpha:]_][[:alnum:]_]*" "_foo42" Eq.refl
 _ : No "[[:alpha:]_][[:alnum:]_]*" "42foo"
 _ = no "[[:alpha:]_][[:alnum:]_]*" "42foo" Eq.refl
 
-------------------------------------------------------------------------
 -- the ones a real lexicon is made of
 
 _ : Yes "-?[0-9]+" "-407"
@@ -122,7 +118,6 @@ _ = no "\"[^\"]*\"" "\"unterminated" Eq.refl
 _ : Yes "[ \t\n]+" " \t "
 _ = yes "[ \t\n]+" " \t " Eq.refl
 
-------------------------------------------------------------------------
 -- Nullability is read off the elaborated regex, not asserted
 
 _ : ∥ "a*" ∥ ≡ nullable

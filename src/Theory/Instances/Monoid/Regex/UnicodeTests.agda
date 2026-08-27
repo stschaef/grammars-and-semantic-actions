@@ -37,7 +37,6 @@ private
      → isNo (decide-r r ℓr (text s) tt) Eq.≡ true → No r s
   no r s p = theNo (decide-r r ℓr (text s) tt) p
 
-------------------------------------------------------------------------
 -- `[a-z]+` -- a range, which a general alphabet cannot express
 
 lowers : RE notNullable
@@ -52,7 +51,6 @@ lowers-aBc = no lowers "aBc" Eq.refl
 lowers-ε : No lowers ""
 lowers-ε = no lowers "" Eq.refl
 
-------------------------------------------------------------------------
 -- `[[:alpha:]_][[:alnum:]_]*` -- a C identifier.  The semantic action
 -- recovers the characters, so the test says *what* was matched.
 
@@ -81,7 +79,6 @@ ident-x = yes ident "x" Eq.refl
 ident-42foo : No ident "42foo"
 ident-42foo = no ident "42foo" Eq.refl
 
-------------------------------------------------------------------------
 -- `-?[0-9]+` -- a signed integer
 
 int : RE notNullable
@@ -96,7 +93,6 @@ int-neg = yes int "-407" Eq.refl
 int-bad : No int "4-07"
 int-bad = no int "4-07" Eq.refl
 
-------------------------------------------------------------------------
 -- `"[^"]*"` -- the complement is the case a list of disjuncts could not
 -- do over a 21-bit alphabet
 
@@ -112,7 +108,6 @@ strLit-body = yes strLit "\"hi there\"" Eq.refl
 strLit-open : No strLit "\"unterminated"
 strLit-open = no strLit "\"unterminated" Eq.refl
 
-------------------------------------------------------------------------
 -- a literal word, and `[0-9]{2,4}`
 
 kw : RE notNullable

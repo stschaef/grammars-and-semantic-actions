@@ -29,7 +29,6 @@ open import Theory.Instances.Monoid.Backreference.Regex L _≟L_ (ℓ-suc ℓ-ze
 matches : ∀ {ν} (r : REB 0 ν) → String → M.Maybe Unit
 matches r = observe (decide-b r ℓr) (semact-dec (semact-pure tt))
 
-------------------------------------------------------------------------
 -- `(ab)\1`
 
 abab : REB 0 notNullable
@@ -44,7 +43,6 @@ _ = refl
 _ : matches abab (a ∷ b ∷ []) ≡ M.nothing
 _ = refl
 
-------------------------------------------------------------------------
 -- `(a|b)\1` -- the group varies, so the reference is doing work
 
 alt : REB 0 notNullable
@@ -62,7 +60,6 @@ _ = refl
 _ : matches alt (b ∷ a ∷ []) ≡ M.nothing
 _ = refl
 
-------------------------------------------------------------------------
 -- `(a)(b)\1\2` -- two groups; `brefr zero` is the innermost
 
 two-groups : REB 0 notNullable
@@ -74,7 +71,6 @@ _ = refl
 _ : matches two-groups (a ∷ b ∷ b ∷ a ∷ []) ≡ M.nothing
 _ = refl
 
-------------------------------------------------------------------------
 -- `((a)b)\1` -- a group inside a group's body, which is what `seqDᴰ` is for
 
 nested : REB 0 notNullable
@@ -86,7 +82,6 @@ _ = refl
 _ : matches nested (a ∷ a ∷ b ∷ b ∷ []) ≡ M.nothing
 _ = refl
 
-------------------------------------------------------------------------
 -- `((a|b)*)\1` -- the copy language `{ww}`, which is not context free
 
 copyRE : REB 0 nullable
