@@ -26,17 +26,15 @@
    THREE KNOWN GAPS, found by the Dyck pilot (`Pipeline/Dyck.agda`) and
    recorded here rather than discovered again:
 
-   1. `dec : Decidable Gr` EXCLUDES THE GREEDY LEXER, which is the one
-      thing this interface exists to feed.  `Automaton/Lexicon` decides
-      one token (`Tok ⊕ ¬Ty …`); the token *stream* is only
-      `tokeniseFuel`, a fuelled metalanguage loop returning a `Maybe`.
-      There is no `Decidable` of a greedy whole-input token grammar
-      anywhere.  So a `Phase` today must use `Lex/Regex.lexer`, i.e.
-      `decide-r`, which is ordered choice rather than maximal munch and
-      exponential on rejection.  The fix is the internal tokenising
-      fold -- a token-stream grammar whose parse tree IS the
-      tokenisation -- and until that exists, `Phase` and greedy lexing
-      are incompatible.
+   1. CLOSED.  `dec : Decidable Gr` used to exclude the greedy lexer --
+      the one thing this interface exists to feed -- because the token
+      stream existed only as a fuelled metalanguage loop.
+      `Automaton/TokenStream` now supplies it: a token-stream grammar
+      whose parse tree IS the tokenisation, decided by Löb with token
+      non-emptiness as the payment, and `lexPhase` fills all three
+      fields.  It carries one real side condition, that no rule of the
+      lexicon accepts ε -- a nullable rule makes empty tokens, the rest
+      is not shorter, and nothing descends.
 
    2. `Gr` must be TOTAL over the input.  `runPhase` observes at the
       whole word, so there is no residue and no notion of a phase that
