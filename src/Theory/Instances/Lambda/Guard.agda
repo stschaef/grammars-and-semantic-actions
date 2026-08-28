@@ -40,6 +40,16 @@ open import Theory.Combinator.Core λEqns Name (λ _ → nm) termPresentation pu
 
 private variable ℓX : Level
 
+-- Names for the argument positions.  `arities σ o` is `Fin (σ .arity o)`,
+-- so a slot is a numeral; these say which slot a numeral is, per operation.
+-- They are pattern synonyms, so they work on both sides of a clause:
+-- `Slots lamOp Γ ms theBody = ScopeSet (ms theBinder ∷ Γ)`.
+pattern theVar    = zero        -- varOp: the name
+pattern theFun    = zero        -- appOp: the function
+pattern theArg    = suc zero    -- appOp: the argument
+pattern theBinder = zero        -- lamOp: the bound name
+pattern theBody   = suc zero    -- lamOp: the body under it
+
 -- Constructor injectivity, by projection rather than by matching.
 private
   nameOf : Name → RawTm → Name

@@ -129,29 +129,29 @@ DerSet i = Der i , λ t → isProp→isSet (isPropDer i t)
 
 -- The three rules, as the slots of their nodes.
 Slots : (o : AOp) → Jdg → NodeArgs ℓ-zero o
-Slots varOp (Γ , A) ms a = LookSet Γ A
-Slots (appOp B) (Γ , A) ms zero = DerSet (Γ , B ⇒ A)
-Slots (appOp B) (Γ , A) ms (suc zero) = DerSet (Γ , B)
-Slots (lamOp B) (Γ , A) ms zero = ArrSet A B
-Slots (lamOp B) (Γ , A) ms (suc zero) = DerSet ((ms zero , B) ∷ Γ , cod A)
+Slots varOp (Γ , A) ms theVar = LookSet Γ A
+Slots (appOp B) (Γ , A) ms theFun = DerSet (Γ , B ⇒ A)
+Slots (appOp B) (Γ , A) ms theArg = DerSet (Γ , B)
+Slots (lamOp B) (Γ , A) ms theBinder = ArrSet A B
+Slots (lamOp B) (Γ , A) ms theBody = DerSet ((ms theBinder , B) ∷ Γ , cod A)
 
 -- One level of unfolding, both ways, as `⊢`-terms.
 rollNode : (o : AOp) (i : Jdg) → ⊗ᴰ o (Slots o i) ⊢ Der i
-rollNode varOp (Γ , A) m (ms , Eq.refl , ws) = ws zero
-rollNode (appOp B) (Γ , A) m (ms , Eq.refl , ws) = ws zero , ws (suc zero)
-rollNode (lamOp B) (Γ , A) m (ms , Eq.refl , ws) = ws zero , ws (suc zero)
+rollNode varOp (Γ , A) m (ms , Eq.refl , ws) = ws theVar
+rollNode (appOp B) (Γ , A) m (ms , Eq.refl , ws) = ws theFun , ws theArg
+rollNode (lamOp B) (Γ , A) m (ms , Eq.refl , ws) = ws theBinder , ws theBody
 
 unrollNode : (o : AOp) (i : Jdg) → Der i & NodeAt o ⊢ ⊗ᴰ o (Slots o i)
 unrollNode varOp (Γ , A) m (d , (ms , Eq.refl)) =
-  node-mk {ms = ms} λ where zero → d
+  node-mk {ms = ms} λ where theVar → d
 unrollNode (appOp B) (Γ , A) m (d , (ms , Eq.refl)) =
   node-mk {ms = ms} λ where
-    zero → d .fst
-    (suc zero) → d .snd
+    theFun → d .fst
+    theArg → d .snd
 unrollNode (lamOp B) (Γ , A) m (d , (ms , Eq.refl)) =
   node-mk {ms = ms} λ where
-    zero → d .fst
-    (suc zero) → d .snd
+    theBinder → d .fst
+    theBody → d .snd
 
 
 -- The checker, for whatever answer.
@@ -167,23 +167,23 @@ module Check (𝒯 : AnswerFunctor) where
       ⊢ ty (Ans (⊗ᴰSet o (Slots o (Γ , A))))
     nodeAns varOp m (β , (ms , Eq.refl)) =
       Ans-node varOp (preciseA varOp) {As = Slots varOp (Γ , A)} {ms = ms}
-        λ where zero → Ans-ofDec (ms zero) (decLook Γ A (ms zero) tt)
+        λ where theVar → Ans-ofDec (ms theVar) (decLook Γ A (ms theVar) tt)
     nodeAns (appOp B) m (β , (ms , Eq.refl)) =
       Ans-node (appOp B) (preciseA (appOp B))
         {As = Slots (appOp B) (Γ , A)} {ms = ms}
         λ where
-          zero → callAt (Γ , B ⇒ A)
-            (callFun {x = Γ , A} {x' = Γ , B ⇒ A} B (ms zero) (ms (suc zero))) β
-          (suc zero) → callAt (Γ , B)
-            (callArg {x = Γ , A} {x' = Γ , B} B (ms zero) (ms (suc zero))) β
+          theFun → callAt (Γ , B ⇒ A)
+            (callFun {x = Γ , A} {x' = Γ , B ⇒ A} B (ms theFun) (ms theArg)) β
+          theArg → callAt (Γ , B)
+            (callArg {x = Γ , A} {x' = Γ , B} B (ms theFun) (ms theArg)) β
     nodeAns (lamOp B) m (β , (ms , Eq.refl)) =
       Ans-node (lamOp B) (preciseA (lamOp B))
         {As = Slots (lamOp B) (Γ , A)} {ms = ms}
         λ where
-          zero → Ans-ofDec (ms zero) (decArrHead A B (ms zero) tt)
-          (suc zero) → callAt ((ms zero , B) ∷ Γ , cod A)
-            (callBody {x = Γ , A} {x' = (ms zero , B) ∷ Γ , cod A}
-              (ms zero) B (ms (suc zero))) β
+          theBinder → Ans-ofDec (ms theBinder) (decArrHead A B (ms theBinder) tt)
+          theBody → callAt ((ms theBinder , B) ∷ Γ , cod A)
+            (callBody {x = Γ , A} {x' = (ms theBinder , B) ∷ Γ , cod A}
+              (ms theBinder) B (ms theBody)) β
 
     branch : (o : AOp)
       → ▷ (AnsFam DerSet) (Γ , A) & NodeAt o ⊢ ty (Ans (DerSet (Γ , A)))

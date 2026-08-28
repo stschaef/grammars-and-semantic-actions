@@ -1044,7 +1044,7 @@ argSize&lt; o ms a = sumFin-≥ (λ b → termSize (ms b)) a .fst
 <div class="note"><span class="k">Read the cover carefully</span>
 <p><code>nodeCover</code> is fourteen lines, and it is the analogue of the string framework&rsquo;s <code>Λ-total</code> and <code>Λ-disjoint</code> &mdash; which cost a page of reasoning about how a word splits. That difference is the whole story of why term algebras are easier to predict than strings.</p></div>
 
-<figure class="src"><figcaption><span class="path">Theory/Instances/Lambda/Guard.agda</span><span class="lines">173 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
+<figure class="src"><figcaption><span class="path">Theory/Instances/Lambda/Guard.agda</span><span class="lines">183 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
 {- What the generic combinators ask of the lambda theory: that every
    operation decompose uniquely, and that the arguments of a node sit below
    it in a well-founded order.
@@ -1085,6 +1085,16 @@ open import Theory.Type.Decidable.Base λEqns Name (λ _ → nm) termPresentatio
 open import Theory.Combinator.Core λEqns Name (λ _ → nm) termPresentation public
 
 private variable ℓX : Level
+
+-- Names for the argument positions.  `arities σ o` is `Fin (σ .arity o)`,
+-- so a slot is a numeral; these say which slot a numeral is, per operation.
+-- They are pattern synonyms, so they work on both sides of a clause:
+-- `Slots lamOp Γ ms theBody = ScopeSet (ms theBinder ∷ Γ)`.
+pattern theVar    = zero        -- varOp: the name
+pattern theFun    = zero        -- appOp: the function
+pattern theArg    = suc zero    -- appOp: the argument
+pattern theBinder = zero        -- lamOp: the bound name
+pattern theBody   = suc zero    -- lamOp: the body under it
 
 -- Constructor injectivity, by projection rather than by matching.
 private
@@ -1240,7 +1250,7 @@ Scope Γ (tlam x t) = Scope (x ∷ Γ) t</code></pre>
 <p><code>rollNode</code> and <code>unrollNode</code> are the one-step unfolding, both directions, both <code>⊢</code>-terms. <code>unrollNode</code> takes the cover&rsquo;s cell as a hypothesis, for the reason given earlier: knowing the head is what makes the backward direction possible.</p>
 <p>Then <code>step</code> is three lines: <code>look</code> over the cover, and in each branch, build the node answer and relabel it. The recursive calls appear as <code>callAt</code> with a descent proof, and the <code>lam</code> case calls at a <em>different index</em> &mdash; <code>ms zero ∷ Γ</code> &mdash; which is how the binder extends the context.</p>
 
-<figure class="src"><figcaption><span class="path">Theory/Instances/Lambda/Scope.agda</span><span class="lines">153 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
+<figure class="src"><figcaption><span class="path">Theory/Instances/Lambda/Scope.agda</span><span class="lines">154 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
 {- A scope checker for untyped lambda terms, written once, for every answer.
 
    The family is indexed by the context, so `X = Ctx` and Löb is taken over
@@ -1332,29 +1342,29 @@ ScopeSet Γ = Scope Γ , λ t → isProp→isSet (isPropScope Γ t)
 -- The three productions, as the slots of their nodes.  Only `lamOp` uses
 -- the dependency on the splitting, and it is the whole reason for `⊗ᴰ`.
 Slots : (o : LOp) → Ctx → NodeArgs ℓ-zero o
-Slots varOp Γ ms a = InCtxSet Γ
-Slots appOp Γ ms a = ScopeSet Γ
-Slots lamOp Γ ms zero = ⊤Set
-Slots lamOp Γ ms (suc zero) = ScopeSet (ms zero ∷ Γ)
+Slots varOp Γ ms theVar = InCtxSet Γ
+Slots appOp Γ ms a = ScopeSet Γ            -- both slots alike, so no name
+Slots lamOp Γ ms theBinder = ⊤Set
+Slots lamOp Γ ms theBody = ScopeSet (ms theBinder ∷ Γ)
 
 -- One level of unfolding, both ways, as `⊢`-terms.  `unrollNode` needs the
 -- cell: a term is a node of `o` only where the cover says so.
 rollNode : (o : LOp) (Γ : Ctx) → ⊗ᴰ o (Slots o Γ) ⊢ Scope Γ
-rollNode varOp Γ m (ms , Eq.refl , ws) = ws zero
-rollNode appOp Γ m (ms , Eq.refl , ws) = ws zero , ws (suc zero)
-rollNode lamOp Γ m (ms , Eq.refl , ws) = ws (suc zero)
+rollNode varOp Γ m (ms , Eq.refl , ws) = ws theVar
+rollNode appOp Γ m (ms , Eq.refl , ws) = ws theFun , ws theArg
+rollNode lamOp Γ m (ms , Eq.refl , ws) = ws theBody
 
 unrollNode : (o : LOp) (Γ : Ctx) → Scope Γ &amp; NodeAt o ⊢ ⊗ᴰ o (Slots o Γ)
 unrollNode varOp Γ m (s , (ms , Eq.refl)) =
-  node-mk {ms = ms} λ where zero → s
+  node-mk {ms = ms} λ where theVar → s
 unrollNode appOp Γ m (s , (ms , Eq.refl)) =
   node-mk {ms = ms} λ where
-    zero → s .fst
-    (suc zero) → s .snd
+    theFun → s .fst
+    theArg → s .snd
 unrollNode lamOp Γ m (s , (ms , Eq.refl)) =
   node-mk {ms = ms} λ where
-    zero → tt
-    (suc zero) → s
+    theBinder → tt
+    theBody → s
 
 
 -- The checker, for whatever answer.
@@ -1371,20 +1381,21 @@ module Check (𝒯 : AnswerFunctor) where
       → ▷ (AnsFam ScopeSet) Γ &amp; NodeAt o ⊢ ty (Ans (⊗ᴰSet o (Slots o Γ)))
     nodeAns varOp m (β , (ms , Eq.refl)) =
       Ans-node varOp (preciseλ varOp) {As = Slots varOp Γ} {ms = ms}
-        λ where zero → Ans-ofDec (ms zero) (decInCtx Γ (ms zero) tt)
+        λ where theVar → Ans-ofDec (ms theVar) (decInCtx Γ (ms theVar) tt)
     nodeAns appOp m (β , (ms , Eq.refl)) =
       Ans-node appOp (preciseλ appOp) {As = Slots appOp Γ} {ms = ms}
         λ where
-          zero → callAt Γ
-            (callFun {x = Γ} {x' = Γ} (ms zero) (ms (suc zero))) β
-          (suc zero) → callAt Γ
-            (callArg {x = Γ} {x' = Γ} (ms zero) (ms (suc zero))) β
+          theFun → callAt Γ
+            (callFun {x = Γ} {x' = Γ} (ms theFun) (ms theArg)) β
+          theArg → callAt Γ
+            (callArg {x = Γ} {x' = Γ} (ms theFun) (ms theArg)) β
     nodeAns lamOp m (β , (ms , Eq.refl)) =
       Ans-node lamOp (preciseλ lamOp) {As = Slots lamOp Γ} {ms = ms}
         λ where
-          zero → Ans-ofDec (ms zero) (Sum.inl tt)
-          (suc zero) → callAt (ms zero ∷ Γ)
-            (callBody {x = Γ} {x' = ms zero ∷ Γ} (ms zero) (ms (suc zero))) β
+          theBinder → Ans-ofDec (ms theBinder) (Sum.inl tt)
+          theBody → callAt (ms theBinder ∷ Γ)
+            (callBody {x = Γ} {x' = ms theBinder ∷ Γ}
+              (ms theBinder) (ms theBody)) β
 
     branch : (o : LOp)
       → ▷ (AnsFam ScopeSet) Γ &amp; NodeAt o ⊢ ty (Ans (ScopeSet Γ))
@@ -1864,7 +1875,7 @@ aPresentation .recUniq isSetX α sat ρ f homf fβ {s} =
 <div class="note"><span class="k">An infinite cover is fine</span>
 <p><code>AOp</code> is infinite, since <code>appOp B</code> carries a type. A <code>Cover</code> does not care: <code>total</code> and <code>disjoint</code> say nothing about the size of the index. What <em>would</em> care is a sum <em>over</em> the cells &mdash; and avoiding that sum is precisely what <code>Ans-map&amp;</code>&rsquo;s hypothesis buys.</p></div>
 
-<figure class="src"><figcaption><span class="path">Theory/Instances/Annotated/Guard.agda</span><span class="lines">170 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
+<figure class="src"><figcaption><span class="path">Theory/Instances/Annotated/Guard.agda</span><span class="lines">180 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
 {- What the generic combinators ask of the annotated lambda theory:
    precision of every operation, and a well-founded order for the guard.
 
@@ -1902,6 +1913,16 @@ open import Theory.Type.Decidable.Base AEqns ℕ (λ _ → nm) aPresentation pub
 open import Theory.Combinator.Core AEqns ℕ (λ _ → nm) aPresentation public
 
 private variable ℓX : Level
+
+-- Names for the argument positions.  `arities σ o` is `Fin (σ .arity o)`,
+-- so a slot is a numeral; these say which slot a numeral is, per operation.
+-- They are pattern synonyms, so they work on both sides of a clause:
+-- `Slots (lamOp B) (Γ , A) ms theBody = DerSet ((ms theBinder , B) ∷ Γ , cod A)`.
+pattern theVar    = zero        -- varOp:   the name
+pattern theFun    = zero        -- appOp B: the function
+pattern theArg    = suc zero    -- appOp B: the argument
+pattern theBinder = zero        -- lamOp B: the bound name
+pattern theBody   = suc zero    -- lamOp B: the body under it
 
 -- Constructor injectivity, by projection.  Public, because `Typing`'s
 -- roll needs them too: matching `Eq.refl` on `op (appOp B) ms ≡ aapp B f a`
@@ -2002,12 +2023,12 @@ module Subterm {X : Type ℓX} (isSetX : isSet X) (rank : X → ℕ) where
 
 -- Argument tuples.
 appArgs : (B : Ty) → ATm → ATm → (b : Fin 2) → ↓M (SortOf (appOp B) b)
-appArgs B u v zero = u
-appArgs B u v (suc zero) = v
+appArgs B u v theFun = u
+appArgs B u v theArg = v
 
 lamArgs : (B : Ty) → ℕ → ATm → (b : Fin 2) → ↓M (SortOf (lamOp B) b)
-lamArgs B y u zero = y
-lamArgs B y u (suc zero) = u
+lamArgs B y u theBinder = y
+lamArgs B y u theBody = u
 
 -- The node cover.  `AOp` is infinite -- `appOp B` carries a type -- and a
 -- cover does not care: `total` and `disjoint` say nothing about the size of
@@ -2183,29 +2204,29 @@ DerSet i = Der i , λ t → isProp→isSet (isPropDer i t)
 
 -- The three rules, as the slots of their nodes.
 Slots : (o : AOp) → Jdg → NodeArgs ℓ-zero o
-Slots varOp (Γ , A) ms a = LookSet Γ A
-Slots (appOp B) (Γ , A) ms zero = DerSet (Γ , B ⇒ A)
-Slots (appOp B) (Γ , A) ms (suc zero) = DerSet (Γ , B)
-Slots (lamOp B) (Γ , A) ms zero = ArrSet A B
-Slots (lamOp B) (Γ , A) ms (suc zero) = DerSet ((ms zero , B) ∷ Γ , cod A)
+Slots varOp (Γ , A) ms theVar = LookSet Γ A
+Slots (appOp B) (Γ , A) ms theFun = DerSet (Γ , B ⇒ A)
+Slots (appOp B) (Γ , A) ms theArg = DerSet (Γ , B)
+Slots (lamOp B) (Γ , A) ms theBinder = ArrSet A B
+Slots (lamOp B) (Γ , A) ms theBody = DerSet ((ms theBinder , B) ∷ Γ , cod A)
 
 -- One level of unfolding, both ways, as `⊢`-terms.
 rollNode : (o : AOp) (i : Jdg) → ⊗ᴰ o (Slots o i) ⊢ Der i
-rollNode varOp (Γ , A) m (ms , Eq.refl , ws) = ws zero
-rollNode (appOp B) (Γ , A) m (ms , Eq.refl , ws) = ws zero , ws (suc zero)
-rollNode (lamOp B) (Γ , A) m (ms , Eq.refl , ws) = ws zero , ws (suc zero)
+rollNode varOp (Γ , A) m (ms , Eq.refl , ws) = ws theVar
+rollNode (appOp B) (Γ , A) m (ms , Eq.refl , ws) = ws theFun , ws theArg
+rollNode (lamOp B) (Γ , A) m (ms , Eq.refl , ws) = ws theBinder , ws theBody
 
 unrollNode : (o : AOp) (i : Jdg) → Der i &amp; NodeAt o ⊢ ⊗ᴰ o (Slots o i)
 unrollNode varOp (Γ , A) m (d , (ms , Eq.refl)) =
-  node-mk {ms = ms} λ where zero → d
+  node-mk {ms = ms} λ where theVar → d
 unrollNode (appOp B) (Γ , A) m (d , (ms , Eq.refl)) =
   node-mk {ms = ms} λ where
-    zero → d .fst
-    (suc zero) → d .snd
+    theFun → d .fst
+    theArg → d .snd
 unrollNode (lamOp B) (Γ , A) m (d , (ms , Eq.refl)) =
   node-mk {ms = ms} λ where
-    zero → d .fst
-    (suc zero) → d .snd
+    theBinder → d .fst
+    theBody → d .snd
 
 
 -- The checker, for whatever answer.
@@ -2221,23 +2242,23 @@ module Check (𝒯 : AnswerFunctor) where
       ⊢ ty (Ans (⊗ᴰSet o (Slots o (Γ , A))))
     nodeAns varOp m (β , (ms , Eq.refl)) =
       Ans-node varOp (preciseA varOp) {As = Slots varOp (Γ , A)} {ms = ms}
-        λ where zero → Ans-ofDec (ms zero) (decLook Γ A (ms zero) tt)
+        λ where theVar → Ans-ofDec (ms theVar) (decLook Γ A (ms theVar) tt)
     nodeAns (appOp B) m (β , (ms , Eq.refl)) =
       Ans-node (appOp B) (preciseA (appOp B))
         {As = Slots (appOp B) (Γ , A)} {ms = ms}
         λ where
-          zero → callAt (Γ , B ⇒ A)
-            (callFun {x = Γ , A} {x' = Γ , B ⇒ A} B (ms zero) (ms (suc zero))) β
-          (suc zero) → callAt (Γ , B)
-            (callArg {x = Γ , A} {x' = Γ , B} B (ms zero) (ms (suc zero))) β
+          theFun → callAt (Γ , B ⇒ A)
+            (callFun {x = Γ , A} {x' = Γ , B ⇒ A} B (ms theFun) (ms theArg)) β
+          theArg → callAt (Γ , B)
+            (callArg {x = Γ , A} {x' = Γ , B} B (ms theFun) (ms theArg)) β
     nodeAns (lamOp B) m (β , (ms , Eq.refl)) =
       Ans-node (lamOp B) (preciseA (lamOp B))
         {As = Slots (lamOp B) (Γ , A)} {ms = ms}
         λ where
-          zero → Ans-ofDec (ms zero) (decArrHead A B (ms zero) tt)
-          (suc zero) → callAt ((ms zero , B) ∷ Γ , cod A)
-            (callBody {x = Γ , A} {x' = (ms zero , B) ∷ Γ , cod A}
-              (ms zero) B (ms (suc zero))) β
+          theBinder → Ans-ofDec (ms theBinder) (decArrHead A B (ms theBinder) tt)
+          theBody → callAt ((ms theBinder , B) ∷ Γ , cod A)
+            (callBody {x = Γ , A} {x' = (ms theBinder , B) ∷ Γ , cod A}
+              (ms theBinder) B (ms theBody)) β
 
     branch : (o : AOp)
       → ▷ (AnsFam DerSet) (Γ , A) &amp; NodeAt o ⊢ ty (Ans (DerSet (Γ , A)))

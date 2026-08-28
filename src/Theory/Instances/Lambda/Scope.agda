@@ -90,29 +90,29 @@ ScopeSet Γ = Scope Γ , λ t → isProp→isSet (isPropScope Γ t)
 -- The three productions, as the slots of their nodes.  Only `lamOp` uses
 -- the dependency on the splitting, and it is the whole reason for `⊗ᴰ`.
 Slots : (o : LOp) → Ctx → NodeArgs ℓ-zero o
-Slots varOp Γ ms a = InCtxSet Γ
-Slots appOp Γ ms a = ScopeSet Γ
-Slots lamOp Γ ms zero = ⊤Set
-Slots lamOp Γ ms (suc zero) = ScopeSet (ms zero ∷ Γ)
+Slots varOp Γ ms theVar = InCtxSet Γ
+Slots appOp Γ ms a = ScopeSet Γ            -- both slots alike, so no name
+Slots lamOp Γ ms theBinder = ⊤Set
+Slots lamOp Γ ms theBody = ScopeSet (ms theBinder ∷ Γ)
 
 -- One level of unfolding, both ways, as `⊢`-terms.  `unrollNode` needs the
 -- cell: a term is a node of `o` only where the cover says so.
 rollNode : (o : LOp) (Γ : Ctx) → ⊗ᴰ o (Slots o Γ) ⊢ Scope Γ
-rollNode varOp Γ m (ms , Eq.refl , ws) = ws zero
-rollNode appOp Γ m (ms , Eq.refl , ws) = ws zero , ws (suc zero)
-rollNode lamOp Γ m (ms , Eq.refl , ws) = ws (suc zero)
+rollNode varOp Γ m (ms , Eq.refl , ws) = ws theVar
+rollNode appOp Γ m (ms , Eq.refl , ws) = ws theFun , ws theArg
+rollNode lamOp Γ m (ms , Eq.refl , ws) = ws theBody
 
 unrollNode : (o : LOp) (Γ : Ctx) → Scope Γ & NodeAt o ⊢ ⊗ᴰ o (Slots o Γ)
 unrollNode varOp Γ m (s , (ms , Eq.refl)) =
-  node-mk {ms = ms} λ where zero → s
+  node-mk {ms = ms} λ where theVar → s
 unrollNode appOp Γ m (s , (ms , Eq.refl)) =
   node-mk {ms = ms} λ where
-    zero → s .fst
-    (suc zero) → s .snd
+    theFun → s .fst
+    theArg → s .snd
 unrollNode lamOp Γ m (s , (ms , Eq.refl)) =
   node-mk {ms = ms} λ where
-    zero → tt
-    (suc zero) → s
+    theBinder → tt
+    theBody → s
 
 
 -- The checker, for whatever answer.
@@ -129,20 +129,21 @@ module Check (𝒯 : AnswerFunctor) where
       → ▷ (AnsFam ScopeSet) Γ & NodeAt o ⊢ ty (Ans (⊗ᴰSet o (Slots o Γ)))
     nodeAns varOp m (β , (ms , Eq.refl)) =
       Ans-node varOp (preciseλ varOp) {As = Slots varOp Γ} {ms = ms}
-        λ where zero → Ans-ofDec (ms zero) (decInCtx Γ (ms zero) tt)
+        λ where theVar → Ans-ofDec (ms theVar) (decInCtx Γ (ms theVar) tt)
     nodeAns appOp m (β , (ms , Eq.refl)) =
       Ans-node appOp (preciseλ appOp) {As = Slots appOp Γ} {ms = ms}
         λ where
-          zero → callAt Γ
-            (callFun {x = Γ} {x' = Γ} (ms zero) (ms (suc zero))) β
-          (suc zero) → callAt Γ
-            (callArg {x = Γ} {x' = Γ} (ms zero) (ms (suc zero))) β
+          theFun → callAt Γ
+            (callFun {x = Γ} {x' = Γ} (ms theFun) (ms theArg)) β
+          theArg → callAt Γ
+            (callArg {x = Γ} {x' = Γ} (ms theFun) (ms theArg)) β
     nodeAns lamOp m (β , (ms , Eq.refl)) =
       Ans-node lamOp (preciseλ lamOp) {As = Slots lamOp Γ} {ms = ms}
         λ where
-          zero → Ans-ofDec (ms zero) (Sum.inl tt)
-          (suc zero) → callAt (ms zero ∷ Γ)
-            (callBody {x = Γ} {x' = ms zero ∷ Γ} (ms zero) (ms (suc zero))) β
+          theBinder → Ans-ofDec (ms theBinder) (Sum.inl tt)
+          theBody → callAt (ms theBinder ∷ Γ)
+            (callBody {x = Γ} {x' = ms theBinder ∷ Γ}
+              (ms theBinder) (ms theBody)) β
 
     branch : (o : LOp)
       → ▷ (AnsFam ScopeSet) Γ & NodeAt o ⊢ ty (Ans (ScopeSet Γ))

@@ -37,6 +37,16 @@ open import Theory.Combinator.Core AEqns ℕ (λ _ → nm) aPresentation public
 
 private variable ℓX : Level
 
+-- Names for the argument positions.  `arities σ o` is `Fin (σ .arity o)`,
+-- so a slot is a numeral; these say which slot a numeral is, per operation.
+-- They are pattern synonyms, so they work on both sides of a clause:
+-- `Slots (lamOp B) (Γ , A) ms theBody = DerSet ((ms theBinder , B) ∷ Γ , cod A)`.
+pattern theVar    = zero        -- varOp:   the name
+pattern theFun    = zero        -- appOp B: the function
+pattern theArg    = suc zero    -- appOp B: the argument
+pattern theBinder = zero        -- lamOp B: the bound name
+pattern theBody   = suc zero    -- lamOp B: the body under it
+
 -- Constructor injectivity, by projection.  Public, because `Typing`'s
 -- roll needs them too: matching `Eq.refl` on `op (appOp B) ms ≡ aapp B f a`
 -- is stuck without K -- the annotation `B` occurs both as the operation's
@@ -136,12 +146,12 @@ module Subterm {X : Type ℓX} (isSetX : isSet X) (rank : X → ℕ) where
 
 -- Argument tuples.
 appArgs : (B : Ty) → ATm → ATm → (b : Fin 2) → ↓M (SortOf (appOp B) b)
-appArgs B u v zero = u
-appArgs B u v (suc zero) = v
+appArgs B u v theFun = u
+appArgs B u v theArg = v
 
 lamArgs : (B : Ty) → ℕ → ATm → (b : Fin 2) → ↓M (SortOf (lamOp B) b)
-lamArgs B y u zero = y
-lamArgs B y u (suc zero) = u
+lamArgs B y u theBinder = y
+lamArgs B y u theBody = u
 
 -- The node cover.  `AOp` is infinite -- `appOp B` carries a type -- and a
 -- cover does not care: `total` and `disjoint` say nothing about the size of
