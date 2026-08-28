@@ -64,12 +64,12 @@ fmapM = Monad.fmap MaybeMonad
 MaybeAnswer : AnswerFunctor
 MaybeAnswer .AnswerFunctor.ℓAns ℓA = ℓA
 MaybeAnswer .AnswerFunctor.Ans = MaybeSet
-MaybeAnswer .AnswerFunctor.Ans-mapAt f g (Sum.inl a) = Sum.inl (f a)
-MaybeAnswer .AnswerFunctor.Ans-mapAt f g (Sum.inr u) = Sum.inr u
+MaybeAnswer .AnswerFunctor.Ans-map& f g m (Sum.inl a , h) = Sum.inl (f m (a , h))
+MaybeAnswer .AnswerFunctor.Ans-map& f g m (Sum.inr u , h) = Sum.inr u
 MaybeAnswer .AnswerFunctor.Ans-⊕& =
   orElse ∘⊢ (Monad.fmap MaybeMonad inl ,&p Monad.fmap MaybeMonad inr)
-MaybeAnswer .AnswerFunctor.Ans-dec (Sum.inl a) = Sum.inl a
-MaybeAnswer .AnswerFunctor.Ans-dec (Sum.inr _) = Sum.inr tt
+MaybeAnswer .AnswerFunctor.Ans-ofDec m (Sum.inl a) = Sum.inl a
+MaybeAnswer .AnswerFunctor.Ans-ofDec m (Sum.inr _) = Sum.inr tt
 MaybeAnswer .AnswerFunctor.Ans-node o _ {ms = ms} ws = onAll (travΠFin ws)
   where
   onAll : _ → _

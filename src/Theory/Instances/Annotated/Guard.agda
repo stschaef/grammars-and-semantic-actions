@@ -21,6 +21,7 @@ import Cubical.Data.Nat.Order as NO
 open import Cubical.Data.FinData using (Fin ; zero ; suc)
 open import Cubical.Data.Sigma using (ΣPathP ; _,_ ; fst ; snd)
 import Cubical.Data.Sum as Sum
+import Cubical.Data.Empty as Empty
 import Cubical.Data.Equality as Eq
 
 open import Theory.Instances.Annotated.Base public
@@ -30,6 +31,8 @@ open import Theory.Type.Top.Base AEqns ℕ (λ _ → nm) aPresentation public
 open import Theory.Type.Bottom.Base AEqns ℕ (λ _ → nm) aPresentation public
 open import Theory.Type.Sum.Binary.Base AEqns ℕ (λ _ → nm) aPresentation public
 open import Theory.Type.Product.Binary.Base AEqns ℕ (λ _ → nm) aPresentation public
+open import Theory.Type.Cover.Base AEqns ℕ (λ _ → nm) aPresentation public
+open import Theory.Type.Decidable.Base AEqns ℕ (λ _ → nm) aPresentation public
 open import Theory.Combinator.Core AEqns ℕ (λ _ → nm) aPresentation public
 
 private variable ℓX : Level
@@ -130,3 +133,38 @@ module Subterm {X : Type ℓX} (isSetX : isSet X) (rank : X → ℕ) where
   callBody : {x x' : X} (n : ℕ) (B : Ty) (t : ATm)
     → (x' , t) < (x , alam n B t)
   callBody n B t = smaller (body< n B t)
+
+-- Argument tuples.
+appArgs : (B : Ty) → ATm → ATm → (b : Fin 2) → ↓M (SortOf (appOp B) b)
+appArgs B u v zero = u
+appArgs B u v (suc zero) = v
+
+lamArgs : (B : Ty) → ℕ → ATm → (b : Fin 2) → ↓M (SortOf (lamOp B) b)
+lamArgs B y u zero = y
+lamArgs B y u (suc zero) = u
+
+-- The node cover.  `AOp` is infinite -- `appOp B` carries a type -- and a
+-- cover does not care: `total` and `disjoint` say nothing about the size of
+-- the index.  What would care is a *sum* over the cells, which is exactly
+-- what `Core`'s `Ans-map&` avoids by conditioning on the cell instead.
+clsA : ATm → AOp
+clsA (avar _) = varOp
+clsA (aapp B _ _) = appOp B
+clsA (alam _ B _) = lamOp B
+
+clsA-node : (o : AOp) (ms : interpIn o ↓M) → clsA (op o ms) ≡ o
+clsA-node varOp ms = refl
+clsA-node (appOp B) ms = refl
+clsA-node (lamOp B) ms = refl
+
+nodeCover : Cover AOp NodeAt
+nodeCover .total (avar x) _ = varOp , ((λ _ → x) , Eq.refl)
+nodeCover .total (aapp B f a) _ = appOp B , (appArgs B f a , Eq.refl)
+nodeCover .total (alam x B t) _ = lamOp B , (lamArgs B x t , Eq.refl)
+nodeCover .disjoint o o' ne m ((ms , e) , (ms' , e')) =
+  Empty.rec (ne (Eq.pathToEq same))
+  where
+  same : o ≡ o'
+  same = sym (clsA-node o ms)
+       ∙ cong clsA (Eq.eqToPath e ∙ sym (Eq.eqToPath e'))
+       ∙ clsA-node o' ms'

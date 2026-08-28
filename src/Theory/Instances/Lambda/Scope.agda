@@ -1,18 +1,23 @@
 {-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
 {- A scope checker for untyped lambda terms, written once, for every answer.
 
-   The family is indexed by the context, so `X = Ctx` and Löb is taken at
-   `&ᴰ` over contexts -- the analogue of "one nonterminal per production" in
-   the monoid development, except that here the index is unbounded and that
-   costs nothing, since `FixAll`/`fix` asks nothing of `X`.
+   The family is indexed by the context, so `X = Ctx` and Löb is taken over
+   contexts -- the analogue of "one nonterminal per production", except
+   that the index is unbounded and that costs nothing, since `fix` asks
+   nothing of `X`.
 
    The `lam` case is why `Core`'s node is `⊗ᴰ` and not `Operation/Base`'s
    `⊗ᵘ`: the body is checked in `ms zero ∷ Γ`, and `ms zero` is the *first
-   slot's value*.  Independent slots cannot say that, so a binder is
-   literally unstateable with `⊗ᵘ`.  With the dependency it is one line.
+   slot's value*.  Independent slots cannot say that.
 
-   Nothing below mentions `Dec`, `Maybe` or `ND`.  `Check` takes the answer
-   as a parameter; `ScopeTests` instantiates it three ways. -}
+   Case analysis is `look` over `Guard`'s node cover, not a match on the
+   term: `step` is `⊕ᴰ-elim` over the cover exactly as the monoid
+   development's `look⊗` is `⊕ᴰ-elim` over the lookahead cover.  The cell
+   `NodeAt o` is also what lets `unrollNode` be a `⊢`-term -- a grammar and
+   one of its unfoldings agree only where the head is known, which is what
+   `Ans-map&` carries.
+
+   Nothing below mentions `Dec`, `Maybe` or `ND`. -}
 open import Cubical.Foundations.Prelude
 open import Cubical.Foundations.HLevels
 open import Cubical.Algebra.Theory.Finitary
@@ -51,24 +56,21 @@ memB x (y ∷ Γ) = onEq (decName x y)
   onEq (yes _) = true
   onEq (no _) = memB x Γ
 
--- ...as a grammar at sort `nm`: a predicate on names.
+-- ...as a grammar at sort `nm`, and as a decision the answer can read.
 InCtx : Ctx → TheoryTy ℓ-zero nm
 InCtx Γ x = memB x Γ ≡ true
 
 InCtxSet : Ctx → TheorySet ℓ-zero nm
 InCtxSet Γ = InCtx Γ , λ x → isProp→isSet (isSetBool _ _)
 
-decInCtx : (Γ : Ctx) (x : Name)
-  → InCtx Γ x Sum.⊎ (InCtx Γ x → Empty.⊥)
-decInCtx Γ x = onB (memB x Γ)
+decInCtx : (Γ : Ctx) → Decidable (InCtx Γ)
+decInCtx Γ x _ = onB (memB x Γ)
   where
-  onB : (b : Bool) → (b ≡ true) Sum.⊎ ((b ≡ true) → Empty.⊥)
+  onB : (b : Bool) → (b ≡ true) Sum.⊎ ((b ≡ true) → ⊥Ty x)
   onB true = Sum.inl refl
-  onB false = Sum.inr false≢true
+  onB false = Sum.inr λ p → Empty.rec (false≢true p)
 
--- The grammar.  Defined by recursion on the term, so it is a *proposition*
--- -- being in scope has no content beyond holding -- and `unambiguous` comes
--- for free rather than as a theorem.
+-- The grammar.  A proposition, so `unambiguous` is definitional.
 Scope : Ctx → TheoryTy ℓ-zero tm
 Scope Γ (tvar x) = InCtx Γ x
 Scope Γ (tapp t u) = Scope Γ t × Scope Γ u
@@ -85,41 +87,32 @@ ScopeSet Γ = Scope Γ , λ t → isProp→isSet (isPropScope Γ t)
 ⊤Set : {s : LSort} → TheorySet ℓ-zero s
 ⊤Set = ⊤Ty , isSet⊤Ty
 
--- The three productions, as nodes.  Only `LamSlots` uses the dependency on
--- the splitting -- and it is the whole reason `⊗ᴰ` exists.
-VarSlots : Ctx → NodeArgs ℓ-zero varOp
-VarSlots Γ ms a = InCtxSet Γ
+-- The three productions, as the slots of their nodes.  Only `lamOp` uses
+-- the dependency on the splitting, and it is the whole reason for `⊗ᴰ`.
+Slots : (o : LOp) → Ctx → NodeArgs ℓ-zero o
+Slots varOp Γ ms a = InCtxSet Γ
+Slots appOp Γ ms a = ScopeSet Γ
+Slots lamOp Γ ms zero = ⊤Set
+Slots lamOp Γ ms (suc zero) = ScopeSet (ms zero ∷ Γ)
 
-AppSlots : Ctx → NodeArgs ℓ-zero appOp
-AppSlots Γ ms a = ScopeSet Γ
+-- One level of unfolding, both ways, as `⊢`-terms.  `unrollNode` needs the
+-- cell: a term is a node of `o` only where the cover says so.
+rollNode : (o : LOp) (Γ : Ctx) → ⊗ᴰ o (Slots o Γ) ⊢ Scope Γ
+rollNode varOp Γ m (ms , Eq.refl , ws) = ws zero
+rollNode appOp Γ m (ms , Eq.refl , ws) = ws zero , ws (suc zero)
+rollNode lamOp Γ m (ms , Eq.refl , ws) = ws (suc zero)
 
-LamSlots : Ctx → NodeArgs ℓ-zero lamOp
-LamSlots Γ ms zero = ⊤Set
-LamSlots Γ ms (suc zero) = ScopeSet (ms zero ∷ Γ)
-
-ScopeBody : Ctx → TheorySet ℓ-zero tm
-ScopeBody Γ =
-  ⊗ᴰSet varOp (VarSlots Γ)
-    ⊕Set (⊗ᴰSet appOp (AppSlots Γ) ⊕Set ⊗ᴰSet lamOp (LamSlots Γ))
-
--- One level of unfolding, and its inverse.  This is the `roll`/`unroll`
--- pair every grammar in `Combinator/Grammars` supplies; here the sum is
--- over head constructors rather than over production tags.
-unrollScope : (Γ : Ctx) → Scope Γ ⊢ ty (ScopeBody Γ)
-unrollScope Γ (tvar x) s = Sum.inl (node-mk {ms = λ _ → x} λ _ → s)
-unrollScope Γ (tapp t u) s =
-  Sum.inr (Sum.inl (node-mk {ms = appArgs t u} λ where
+unrollNode : (o : LOp) (Γ : Ctx) → Scope Γ & NodeAt o ⊢ ⊗ᴰ o (Slots o Γ)
+unrollNode varOp Γ m (s , (ms , Eq.refl)) =
+  node-mk {ms = ms} λ where zero → s
+unrollNode appOp Γ m (s , (ms , Eq.refl)) =
+  node-mk {ms = ms} λ where
     zero → s .fst
-    (suc zero) → s .snd))
-unrollScope Γ (tlam x t) s =
-  Sum.inr (Sum.inr (node-mk {ms = lamArgs x t} λ where
+    (suc zero) → s .snd
+unrollNode lamOp Γ m (s , (ms , Eq.refl)) =
+  node-mk {ms = ms} λ where
     zero → tt
-    (suc zero) → s))
-
-rollScope : (Γ : Ctx) → ty (ScopeBody Γ) ⊢ Scope Γ
-rollScope Γ m (Sum.inl (ms , Eq.refl , ws)) = ws zero
-rollScope Γ m (Sum.inr (Sum.inl (ms , Eq.refl , ws))) = ws zero , ws (suc zero)
-rollScope Γ m (Sum.inr (Sum.inr (ms , Eq.refl , ws))) = ws (suc zero)
+    (suc zero) → s
 
 
 -- The checker, for whatever answer.
@@ -128,48 +121,33 @@ module Check (𝒯 : AnswerFunctor) where
   open Subterm {X = Ctx} isSetCtx (λ _ → 0) hiding (_<_) public
   open Combinators 𝒯 srt order public
 
-  private
-    -- the branches not taken: a node whose operation is not the term's head
-    clash : (o : LOp) (As : NodeArgs ℓ-zero o) (m : RawTm)
-      → (HdCode (hdOfOp o) (hdOf m) → Empty.⊥)
-      → ty (Ans (⊗ᴰSet o As)) m
-    clash o As m ne =
-      Ans-dec (Sum.inr λ z → headClash o m ne (z .fst) (z .snd .fst))
-
   step : Step ScopeSet
-  step Γ (tvar x) β =
-    Ans-map (rollScope Γ) (unrollScope Γ) (tvar x)
-      (Ans-⊕& (tvar x) (hit , Ans-⊕& (tvar x)
-        ( clash appOp (AppSlots Γ) (tvar x) (λ z → z)
-        , clash lamOp (LamSlots Γ) (tvar x) (λ z → z) )))
+  step Γ = look nodeCover branch
     where
-    hit : ty (Ans (⊗ᴰSet varOp (VarSlots Γ))) (tvar x)
-    hit = Ans-node varOp (preciseλ varOp) {As = VarSlots Γ} {ms = λ _ → x}
-      λ _ → Ans-dec (decInCtx Γ x)
-  step Γ (tapp t u) β =
-    Ans-map (rollScope Γ) (unrollScope Γ) (tapp t u)
-      (Ans-⊕& (tapp t u)
-        ( clash varOp (VarSlots Γ) (tapp t u) (λ z → z)
-        , Ans-⊕& (tapp t u)
-            (hit , clash lamOp (LamSlots Γ) (tapp t u) (λ z → z))))
-    where
-    hit : ty (Ans (⊗ᴰSet appOp (AppSlots Γ))) (tapp t u)
-    hit = Ans-node appOp (preciseλ appOp) {As = AppSlots Γ} {ms = appArgs t u}
-      λ where
-        zero → callAt Γ (callFun {x = Γ} {x' = Γ} t u) β
-        (suc zero) → callAt Γ (callArg {x = Γ} {x' = Γ} t u) β
-  step Γ (tlam x t) β =
-    Ans-map (rollScope Γ) (unrollScope Γ) (tlam x t)
-      (Ans-⊕& (tlam x t)
-        ( clash varOp (VarSlots Γ) (tlam x t) (λ z → z)
-        , Ans-⊕& (tlam x t)
-            (clash appOp (AppSlots Γ) (tlam x t) (λ z → z) , hit)))
-    where
-    hit : ty (Ans (⊗ᴰSet lamOp (LamSlots Γ))) (tlam x t)
-    hit = Ans-node lamOp (preciseλ lamOp) {As = LamSlots Γ} {ms = lamArgs x t}
-      λ where
-        zero → Ans-dec (Sum.inl tt)
-        (suc zero) → callAt (x ∷ Γ) (callBody {x = Γ} {x' = x ∷ Γ} x t) β
+    -- the answer at the node the cell names
+    nodeAns : (o : LOp)
+      → ▷ (AnsFam ScopeSet) Γ & NodeAt o ⊢ ty (Ans (⊗ᴰSet o (Slots o Γ)))
+    nodeAns varOp m (β , (ms , Eq.refl)) =
+      Ans-node varOp (preciseλ varOp) {As = Slots varOp Γ} {ms = ms}
+        λ where zero → Ans-ofDec (ms zero) (decInCtx Γ (ms zero) tt)
+    nodeAns appOp m (β , (ms , Eq.refl)) =
+      Ans-node appOp (preciseλ appOp) {As = Slots appOp Γ} {ms = ms}
+        λ where
+          zero → callAt Γ
+            (callFun {x = Γ} {x' = Γ} (ms zero) (ms (suc zero))) β
+          (suc zero) → callAt Γ
+            (callArg {x = Γ} {x' = Γ} (ms zero) (ms (suc zero))) β
+    nodeAns lamOp m (β , (ms , Eq.refl)) =
+      Ans-node lamOp (preciseλ lamOp) {As = Slots lamOp Γ} {ms = ms}
+        λ where
+          zero → Ans-ofDec (ms zero) (Sum.inl tt)
+          (suc zero) → callAt (ms zero ∷ Γ)
+            (callBody {x = Γ} {x' = ms zero ∷ Γ} (ms zero) (ms (suc zero))) β
+
+    branch : (o : LOp)
+      → ▷ (AnsFam ScopeSet) Γ & NodeAt o ⊢ ty (Ans (ScopeSet Γ))
+    branch o =
+      Ans-map& (rollNode o Γ ∘⊢ π₁) (unrollNode o Γ) ∘⊢ (nodeAns o ,& π₂)
 
   scoped : Checker ScopeSet
   scoped = fix step

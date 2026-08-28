@@ -3,9 +3,9 @@
    every answer.
 
    The family is indexed by `Ctx × Ty` -- a checking judgment `Γ ⊢ t ⇐ A`
-   -- and the guard descends on the term.  Each rule's premises are at
+   -- and the guard descends on the term.  Each rule's premises sit at
    indices computed from the conclusion's index and the node's own data,
-   which is exactly what `Core`'s dependent node `⊗ᴰ` provides:
+   which is what `Core`'s dependent node `⊗ᴰ` provides:
 
      var        the slot is the side condition `Γ(x) = A`
      app[B]     slot 0 at `Γ ⊢ ⇐ B ⇒ A`, slot 1 at `Γ ⊢ ⇐ B`
@@ -16,17 +16,22 @@
    its *type* are both read off the node.  With `Operation/Base`'s `⊗ᵘ` --
    independent slots -- neither is expressible.
 
+   `AOp` is infinite, since `appOp B` carries a type.  That costs nothing:
+   `Guard`'s node cover is a `Cover` over it all the same, and `step` is
+   `look` over that cover.  What an infinite index *would* cost is a sum
+   over the cells, and `Ans-map&` is what avoids it -- the relabelling is
+   conditioned on the cell rather than being a map into `⊕ᴰ AOp`.
+
    Why the application carries `B`.  Drop it and the rule becomes
 
      Γ ⊢ f a ⇐ A   iff   ∃B. Γ ⊢ f ⇐ B ⇒ A  and  Γ ⊢ a ⇐ B
 
-   an existential over an infinite index.  Deciding that is precisely what
-   `Theory/Type/Decidable/Route`'s `routeIn` is for -- a cover of the
-   alternatives, `total` saying every term synthesises a type or provably
-   none, `disjoint` saying the synthesised type is unique.  In other words
-   the annotation buys exactly the bidirectional discipline, and without it
-   a checker owes uniqueness-of-synthesis as a side theorem.  That is the
-   honest boundary of what these combinators do for you.
+   an existential over an infinite index -- and now it is a sum over the
+   cells, which is what `Theory/Type/Decidable/Route`'s `routeIn` is for:
+   `total` says every term synthesises a type or provably none, `disjoint`
+   says the synthesised type is unique.  The annotation buys exactly the
+   bidirectional discipline; without it a checker owes uniqueness of
+   synthesis as a side theorem.  That is the honest boundary.
 
    Nothing below mentions `Dec`, `Maybe` or `ND`. -}
 open import Cubical.Foundations.Prelude
@@ -42,7 +47,7 @@ open import Cubical.Data.List.Properties using (isOfHLevelList)
 open import Cubical.Data.Maybe using (Maybe ; just ; nothing)
 open import Cubical.Data.Maybe.Properties using (isOfHLevelMaybe ; discreteMaybe)
 open import Cubical.Data.Nat using (ℕ ; isSetℕ ; discreteℕ)
-open import Cubical.Data.Sigma using (_×_ ; _,_ ; fst ; snd ; ΣPathP)
+open import Cubical.Data.Sigma using (_×_ ; _,_ ; fst ; snd)
 open import Cubical.Data.Unit using (Unit ; tt)
 open import Cubical.Relation.Nullary.Base using (Dec ; yes ; no)
 import Cubical.Data.Sum as Sum
@@ -67,172 +72,124 @@ lookC ((y , A) ∷ Γ) x = onEq (discreteℕ x y)
   onEq (no _) = lookC Γ x
 
 -- The index: a context and the type being checked against.
-Idx : Type ℓ-zero
-Idx = Ctx × Ty
+Jdg : Type ℓ-zero
+Jdg = Ctx × Ty
 
-isSetIdx : isSet Idx
+isSetIdx : isSet Jdg
 isSetIdx = isSetΣ isSetCtx λ _ → isSetTyp
 
--- "A is an arrow with domain B", the `lam` rule's side condition.
+-- The two side conditions, each a grammar at sort `nm` with a decision.
 ArrHead : Ty → Ty → Type ℓ-zero
 ArrHead A B = IsArr A × (dom A ≡ B)
 
 isPropArrHead : (A B : Ty) → isProp (ArrHead A B)
 isPropArrHead A B = isProp× (isPropIsArr A) (isSetTyp _ _)
 
-decArrHead : (A B : Ty) → ArrHead A B Sum.⊎ (ArrHead A B → Empty.⊥)
-decArrHead ι B = Sum.inr λ z → z .fst
-decArrHead (B' ⇒ C) B = onDom (discreteTy B' B)
-  where
-  onDom : Dec (B' ≡ B) → ArrHead (B' ⇒ C) B Sum.⊎ (ArrHead (B' ⇒ C) B → Empty.⊥)
-  onDom (yes p) = Sum.inl (tt , p)
-  onDom (no ¬p) = Sum.inr λ z → ¬p (z .snd)
+ArrSet : Ty → Ty → TheorySet ℓ-zero nm
+ArrSet A B = (λ _ → ArrHead A B) , λ _ → isProp→isSet (isPropArrHead A B)
 
--- ...and the `var` rule's.
+decArrHead : (A B : Ty) → Decidable (ty (ArrSet A B))
+decArrHead ι B x _ = Sum.inr λ z → Empty.rec (z .fst)
+decArrHead (B' ⇒ C) B x _ = onDom (discreteTy B' B)
+  where
+  onDom : Dec (B' ≡ B) → DecTy (ty (ArrSet (B' ⇒ C) B)) x
+  onDom (yes p) = Sum.inl (tt , p)
+  onDom (no ¬p) = Sum.inr λ z → Empty.rec (¬p (z .snd))
+
 Look : Ctx → Ty → TheoryTy ℓ-zero nm
 Look Γ A x = lookC Γ x ≡ just A
 
 LookSet : Ctx → Ty → TheorySet ℓ-zero nm
 LookSet Γ A = Look Γ A , λ x → isProp→isSet (isOfHLevelMaybe 0 isSetTyp _ _)
 
-decLook : (Γ : Ctx) (A : Ty) (x : ℕ)
-  → Look Γ A x Sum.⊎ (Look Γ A x → Empty.⊥)
-decLook Γ A x = onEq (discreteMaybe discreteTy (lookC Γ x) (just A))
+decLook : (Γ : Ctx) (A : Ty) → Decidable (Look Γ A)
+decLook Γ A x _ = onEq (discreteMaybe discreteTy (lookC Γ x) (just A))
   where
-  onEq : Dec (lookC Γ x ≡ just A)
-    → Look Γ A x Sum.⊎ (Look Γ A x → Empty.⊥)
+  onEq : Dec (lookC Γ x ≡ just A) → DecTy (Look Γ A) x
   onEq (yes p) = Sum.inl p
-  onEq (no ¬p) = Sum.inr ¬p
+  onEq (no ¬p) = Sum.inr λ p → Empty.rec (¬p p)
 
--- The judgment, by recursion on the term.  Every premise's index is
--- determined, so this is a proposition: a well-typed term has exactly one
--- derivation, and `unambiguous` is definitional rather than a theorem.
-Der : Idx → TheoryTy ℓ-zero tm
+-- The judgment.  Every premise's index is determined, so this is a
+-- proposition: an annotated term has at most one derivation at a type, and
+-- `unambiguous` is definitional rather than a theorem.
+Der : Jdg → TheoryTy ℓ-zero tm
 Der (Γ , A) (avar x) = Look Γ A x
 Der (Γ , A) (aapp B f a) = Der (Γ , B ⇒ A) f × Der (Γ , B) a
 Der (Γ , A) (alam x B t) = ArrHead A B × Der ((x , B) ∷ Γ , cod A) t
 
-isPropDer : (i : Idx) (t : ATm) → isProp (Der i t)
+isPropDer : (i : Jdg) (t : ATm) → isProp (Der i t)
 isPropDer (Γ , A) (avar x) = isOfHLevelMaybe 0 isSetTyp _ _
 isPropDer (Γ , A) (aapp B f a) =
   isProp× (isPropDer (Γ , B ⇒ A) f) (isPropDer (Γ , B) a)
 isPropDer (Γ , A) (alam x B t) =
   isProp× (isPropArrHead A B) (isPropDer ((x , B) ∷ Γ , cod A) t)
 
-DerSet : Idx → TheorySet ℓ-zero tm
+DerSet : Jdg → TheorySet ℓ-zero tm
 DerSet i = Der i , λ t → isProp→isSet (isPropDer i t)
 
--- The three rules, as nodes.
-VarSlots : Idx → NodeArgs ℓ-zero varOp
-VarSlots (Γ , A) ms a = LookSet Γ A
+-- The three rules, as the slots of their nodes.
+Slots : (o : AOp) → Jdg → NodeArgs ℓ-zero o
+Slots varOp (Γ , A) ms a = LookSet Γ A
+Slots (appOp B) (Γ , A) ms zero = DerSet (Γ , B ⇒ A)
+Slots (appOp B) (Γ , A) ms (suc zero) = DerSet (Γ , B)
+Slots (lamOp B) (Γ , A) ms zero = ArrSet A B
+Slots (lamOp B) (Γ , A) ms (suc zero) = DerSet ((ms zero , B) ∷ Γ , cod A)
 
-AppSlots : (B : Ty) (i : Idx) → NodeArgs ℓ-zero (appOp B)
-AppSlots B (Γ , A) ms zero = DerSet (Γ , B ⇒ A)
-AppSlots B (Γ , A) ms (suc zero) = DerSet (Γ , B)
+-- One level of unfolding, both ways, as `⊢`-terms.
+rollNode : (o : AOp) (i : Jdg) → ⊗ᴰ o (Slots o i) ⊢ Der i
+rollNode varOp (Γ , A) m (ms , Eq.refl , ws) = ws zero
+rollNode (appOp B) (Γ , A) m (ms , Eq.refl , ws) = ws zero , ws (suc zero)
+rollNode (lamOp B) (Γ , A) m (ms , Eq.refl , ws) = ws zero , ws (suc zero)
 
-ArrSet : Ty → Ty → TheorySet ℓ-zero nm
-ArrSet A B = (λ _ → ArrHead A B) , λ _ → isProp→isSet (isPropArrHead A B)
-
-LamSlots : (B : Ty) (i : Idx) → NodeArgs ℓ-zero (lamOp B)
-LamSlots B (Γ , A) ms zero = ArrSet A B
-LamSlots B (Γ , A) ms (suc zero) = DerSet ((ms zero , B) ∷ Γ , cod A)
-
--- Argument tuples, once.
-appArgs : (B : Ty) → ATm → ATm → (b : Fin 2) → ↓M (SortOf (appOp B) b)
-appArgs B u v zero = u
-appArgs B u v (suc zero) = v
-
-lamArgs : (B : Ty) → ℕ → ATm → (b : Fin 2) → ↓M (SortOf (lamOp B) b)
-lamArgs B y u zero = y
-lamArgs B y u (suc zero) = u
-
--- One level of unfolding, at the term in hand.  Pointwise, because the
--- operation is chosen by the term -- there is no finite sum to roll into.
-rollVar : (Γ : Ctx) (A : Ty) (x : ℕ)
-  → ty (⊗ᴰSet varOp (VarSlots (Γ , A))) (avar x) → Der (Γ , A) (avar x)
-rollVar Γ A x (ms , Eq.refl , ws) = ws zero
-
-unrollVar : (Γ : Ctx) (A : Ty) (x : ℕ)
-  → Der (Γ , A) (avar x) → ty (⊗ᴰSet varOp (VarSlots (Γ , A))) (avar x)
-unrollVar Γ A x d = node-mk {ms = λ _ → x} λ _ → d
-
-rollApp : (Γ : Ctx) (A B : Ty) (f a : ATm)
-  → ty (⊗ᴰSet (appOp B) (AppSlots B (Γ , A))) (aapp B f a)
-  → Der (Γ , A) (aapp B f a)
-rollApp Γ A B f a (ms , e , ws) =
-    subst (Der (Γ , B ⇒ A)) fEq (ws zero)
-  , subst (Der (Γ , B)) aEq (ws (suc zero))
-  where
-  whole : aapp B (ms zero) (ms (suc zero)) ≡ aapp B f a
-  whole = Eq.eqToPath e
-
-  fEq : ms zero ≡ f
-  fEq = cong appFun whole
-
-  aEq : ms (suc zero) ≡ a
-  aEq = cong appArgOf whole
-
-unrollApp : (Γ : Ctx) (A B : Ty) (f a : ATm)
-  → Der (Γ , A) (aapp B f a)
-  → ty (⊗ᴰSet (appOp B) (AppSlots B (Γ , A))) (aapp B f a)
-unrollApp Γ A B f a d = node-mk {ms = appArgs B f a} λ where
-  zero → d .fst
-  (suc zero) → d .snd
-
-rollLam : (Γ : Ctx) (A B : Ty) (x : ℕ) (t : ATm)
-  → ty (⊗ᴰSet (lamOp B) (LamSlots B (Γ , A))) (alam x B t)
-  → Der (Γ , A) (alam x B t)
-rollLam Γ A B x t (ms , e , ws) =
-  ws zero , subst mot (ΣPathP (xEq , tEq)) (ws (suc zero))
-  where
-  whole : alam (ms zero) B (ms (suc zero)) ≡ alam x B t
-  whole = Eq.eqToPath e
-
-  xEq : ms zero ≡ x
-  xEq = cong (lamN (ms zero)) whole
-
-  tEq : ms (suc zero) ≡ t
-  tEq = cong lamBd whole
-
-  mot : ℕ × ATm → Type ℓ-zero
-  mot p = Der ((p .fst , B) ∷ Γ , cod A) (p .snd)
-
-unrollLam : (Γ : Ctx) (A B : Ty) (x : ℕ) (t : ATm)
-  → Der (Γ , A) (alam x B t)
-  → ty (⊗ᴰSet (lamOp B) (LamSlots B (Γ , A))) (alam x B t)
-unrollLam Γ A B x t d = node-mk {ms = lamArgs B x t} λ where
-  zero → d .fst
-  (suc zero) → d .snd
+unrollNode : (o : AOp) (i : Jdg) → Der i & NodeAt o ⊢ ⊗ᴰ o (Slots o i)
+unrollNode varOp (Γ , A) m (d , (ms , Eq.refl)) =
+  node-mk {ms = ms} λ where zero → d
+unrollNode (appOp B) (Γ , A) m (d , (ms , Eq.refl)) =
+  node-mk {ms = ms} λ where
+    zero → d .fst
+    (suc zero) → d .snd
+unrollNode (lamOp B) (Γ , A) m (d , (ms , Eq.refl)) =
+  node-mk {ms = ms} λ where
+    zero → d .fst
+    (suc zero) → d .snd
 
 
 -- The checker, for whatever answer.
 module Check (𝒯 : AnswerFunctor) where
 
-  open Subterm {X = Idx} isSetIdx (λ _ → 0) hiding (_<_) public
+  open Subterm {X = Jdg} isSetIdx (λ _ → 0) hiding (_<_) public
   open Combinators 𝒯 srt order public
 
   step : Step DerSet
-  step (Γ , A) (avar x) β =
-    Ans-mapAt (rollVar Γ A x) (unrollVar Γ A x)
-      (Ans-node varOp (preciseA varOp) {As = VarSlots (Γ , A)} {ms = λ _ → x}
-        λ _ → Ans-dec (decLook Γ A x))
-  step (Γ , A) (aapp B f a) β =
-    Ans-mapAt (rollApp Γ A B f a) (unrollApp Γ A B f a)
-      (Ans-node (appOp B) (preciseA (appOp B))
-        {As = AppSlots B (Γ , A)} {ms = appArgs B f a}
+  step (Γ , A) = look nodeCover branch
+    where
+    nodeAns : (o : AOp) → ▷ (AnsFam DerSet) (Γ , A) & NodeAt o
+      ⊢ ty (Ans (⊗ᴰSet o (Slots o (Γ , A))))
+    nodeAns varOp m (β , (ms , Eq.refl)) =
+      Ans-node varOp (preciseA varOp) {As = Slots varOp (Γ , A)} {ms = ms}
+        λ where zero → Ans-ofDec (ms zero) (decLook Γ A (ms zero) tt)
+    nodeAns (appOp B) m (β , (ms , Eq.refl)) =
+      Ans-node (appOp B) (preciseA (appOp B))
+        {As = Slots (appOp B) (Γ , A)} {ms = ms}
         λ where
           zero → callAt (Γ , B ⇒ A)
-            (callFun {x = Γ , A} {x' = Γ , B ⇒ A} B f a) β
+            (callFun {x = Γ , A} {x' = Γ , B ⇒ A} B (ms zero) (ms (suc zero))) β
           (suc zero) → callAt (Γ , B)
-            (callArg {x = Γ , A} {x' = Γ , B} B f a) β)
-  step (Γ , A) (alam x B t) β =
-    Ans-mapAt (rollLam Γ A B x t) (unrollLam Γ A B x t)
-      (Ans-node (lamOp B) (preciseA (lamOp B))
-        {As = LamSlots B (Γ , A)} {ms = lamArgs B x t}
+            (callArg {x = Γ , A} {x' = Γ , B} B (ms zero) (ms (suc zero))) β
+    nodeAns (lamOp B) m (β , (ms , Eq.refl)) =
+      Ans-node (lamOp B) (preciseA (lamOp B))
+        {As = Slots (lamOp B) (Γ , A)} {ms = ms}
         λ where
-          zero → Ans-dec (decArrHead A B)
-          (suc zero) → callAt ((x , B) ∷ Γ , cod A)
-            (callBody {x = Γ , A} {x' = (x , B) ∷ Γ , cod A} x B t) β)
+          zero → Ans-ofDec (ms zero) (decArrHead A B (ms zero) tt)
+          (suc zero) → callAt ((ms zero , B) ∷ Γ , cod A)
+            (callBody {x = Γ , A} {x' = (ms zero , B) ∷ Γ , cod A}
+              (ms zero) B (ms (suc zero))) β
+
+    branch : (o : AOp)
+      → ▷ (AnsFam DerSet) (Γ , A) & NodeAt o ⊢ ty (Ans (DerSet (Γ , A)))
+    branch o =
+      Ans-map& (rollNode o (Γ , A) ∘⊢ π₁) (unrollNode o (Γ , A))
+      ∘⊢ (nodeAns o ,& π₂)
 
   typed : Checker DerSet
   typed = fix step

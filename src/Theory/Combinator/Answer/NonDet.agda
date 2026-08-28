@@ -96,12 +96,12 @@ NDSet (A , sA) = ND A , isSetND sA
 NDAnswer : AnswerFunctor
 NDAnswer .AnswerFunctor.ℓAns = ℓF
 NDAnswer .AnswerFunctor.Ans = NDSet
-NDAnswer .AnswerFunctor.Ans-mapAt {m = m} f g x =
-  ndFromList m (mapL f (ndToList m x))
+NDAnswer .AnswerFunctor.Ans-map& f g m (x , h) =
+  ndFromList m (mapL (λ a → f m (a , h)) (ndToList m x))
 NDAnswer .AnswerFunctor.Ans-⊕& =
   appendND ∘⊢ (Monad.fmap NDMonad inl ,&p Monad.fmap NDMonad inr)
-NDAnswer .AnswerFunctor.Ans-dec {m = m} (Sum.inl a) = ηND m a
-NDAnswer .AnswerFunctor.Ans-dec {m = m} (Sum.inr _) = nilND m tt
+NDAnswer .AnswerFunctor.Ans-ofDec m (Sum.inl a) = ηND m a
+NDAnswer .AnswerFunctor.Ans-ofDec m (Sum.inr _) = nilND m tt
 NDAnswer .AnswerFunctor.Ans-node o _ {ms = ms} ws =
   ndFromList (op o ms) (mapL node-mk (allΠFin λ a → ndToList (ms a) (ws a)))
 

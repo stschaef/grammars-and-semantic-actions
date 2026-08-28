@@ -14,29 +14,34 @@
 
      * a `Checker` is `∀ x → ⊤Ty ⊢ Ans (A x)` -- no `&[ K ]` end, no
        `ParserTag`, no `pmore`/`pless`/`pw` weakening;
-     * the guard is `Theory/Type/Later/Indexed`'s `GuardedIndexed`, which
-       is already generic in the sort *and* the index, so `löb` is reused
-       verbatim rather than re-justified;
+     * the guard is `Theory/Type/Later/Indexed`'s `GuardedIndexed`, already
+       generic in the sort *and* the index, so `löb` is reused verbatim;
      * `Ans-lit`, `Ans-any` and `Ans-ε` -- three token rules that only make
-       sense for a generated free monoid -- collapse to one field,
-       `Ans-node`, which applies to every operation of every signature.
+       sense for a generated free monoid -- collapse to `Ans-node`, which
+       applies to every operation of every signature.
 
    What replaces "the alphabet is discrete" is `Precise`: an operation whose
-   decomposition is unique.  For a free term algebra that is constructor
-   injectivity and holds of every operation; for the free monoid it holds
-   only of `literal c ⊗ -`, which is exactly why the monoid version has a
-   token rule rather than a node rule.
+   decomposition is unique.  A free term algebra has it for every operation
+   (`Theory/Free/Term`); the free monoid has it only for `literal c ⊗ -`,
+   which is why that development has token rules rather than a node rule.
 
    The node is `⊗ᴰ`, not `Operation/Base`'s `⊗ᵘ`: the slot grammars are
    indexed by the *whole* splitting, so a later slot may depend on an
    earlier slot's value.  `⊗ᵘ` -- independent slots -- cannot state a
    binder, since the scope of `lam n t` is `Γ , n` and `n` is slot zero.
-   Nothing else changes: `⊗ᵘ` is the constant case.
+   `⊗ᵘ` is the constant case.
 
-   The five fields are pointwise where the monoid version is `⊢`-level.
-   That is deliberate: an answer must dispose of a *particular* term, and
-   asking for the disposal one term at a time is what makes `Ans-node`
-   instantiable at `Dec`, `Maybe` and `ND` in a handful of lines each. -}
+   Case analysis is by `look`, over a `Cover` of the model -- the sibling of
+   the monoid development's `look⊗` over the lookahead cover.  For a free
+   term algebra the cover is by head operation: `total` is the algebra's
+   induction principle and `disjoint` is no-confusion, so prediction is
+   always LL(1) and there is nothing here that resembles a window or a
+   lookahead width.
+
+   `Ans-map&` carries a hypothesis because that is what makes relabelling a
+   `⊢`-term.  A grammar and one of its unfoldings agree only where the
+   term's head is known, and the cover's cell is exactly that knowledge; a
+   naked `Ans-map` would have to be pointwise. -}
 open import Cubical.Foundations.Prelude
 open import Cubical.Foundations.HLevels
 open import Cubical.Foundations.Isomorphism
@@ -63,23 +68,51 @@ open import Theory.Base σeq V vs 𝒫
 open import Theory.Type.HLevels σeq V vs 𝒫
 open import Theory.Type.Top.Base σeq V vs 𝒫
 open import Theory.Type.Bottom.Base σeq V vs 𝒫
+open import Theory.Type.Function.Base σeq V vs 𝒫
+open import Theory.Type.Sum.Base σeq V vs 𝒫
 open import Theory.Type.Sum.Binary.Base σeq V vs 𝒫
 open import Theory.Type.Product.Binary.Base σeq V vs 𝒫
+open import Theory.Type.Cover.Base σeq V vs 𝒫
+open import Theory.Type.Decidable.Base σeq V vs 𝒫
 
-private variable ℓA ℓB ℓD ℓX ℓ< : Level
+private variable ℓA ℓB ℓC ℓD ℓH ℓX ℓY ℓΛ ℓ< : Level
 
 isPropModelEq : {s : S} {x y : ↓M s} → isProp (x Eq.≡ y)
 isPropModelEq {s} =
   isOfHLevelRetractFromIso 1 (invIso Eq.PathIsoEq) (M .fst s .snd _ _)
 
--- The decomposition of `m` along `o`, and the operations for which it is
--- unique.  `Ans-node` needs this to *refute*: a refutation of one slot is a
--- refutation of the node only when there is no other way to decompose.
-Split : (o : σ .ops) → ↓M (σ .resultSort o) → Type ℓM
-Split o m = Σ[ ms ∈ interpIn o ↓M ] (op o ms Eq.≡ m)
+DecSet : {s : S} → TheorySet ℓA s → TheorySet ℓA s
+DecSet (A , sA) = DecTy A , isSet⊕ sA (isSet⇒ isSet⊥Ty)
+
+-- Case analysis over a cover: `Λ` classifies the model, and a term is
+-- built by giving a term at each cell.  This is `look⊗` with the lookahead
+-- cover replaced by whatever cover the instance has.
+private
+  &⊕ᴰ-dist : {s : S} {Y : Type ℓY} {Λ : Y → TheoryTy ℓΛ s}
+    {D : TheoryTy ℓD s} → D & (⊕[ y ∈ Y ] Λ y) ⊢ ⊕[ y ∈ Y ] (D & Λ y)
+  &⊕ᴰ-dist m (d , (y , a)) = y , (d , a)
+
+look : {s : S} {Y : Type ℓY} {Λ : Y → TheoryTy ℓΛ s}
+  {C : TheoryTy ℓC s} {D : TheoryTy ℓD s}
+  → Cover Y Λ → ((y : Y) → D & Λ y ⊢ C) → D ⊢ C
+look cov br = ⊕ᴰ-elim br ∘⊢ &⊕ᴰ-dist ∘⊢ (id⊢ ,& (cov .total ∘⊢ ⊤Ty-intro))
+
+
+-- The decomposition of `m` along `o`, as a grammar, and the operations for
+-- which it is unique.  `NodeAt o` is the cell of the node cover; `Precise o`
+-- is what makes it a proposition, and what lets a refutation at one slot
+-- refute the whole node.
+NodeAt : (o : σ .ops) → TheoryTy ℓM (σ .resultSort o)
+NodeAt o m = Σ[ ms ∈ interpIn o ↓M ] (op o ms Eq.≡ m)
 
 Precise : (o : σ .ops) → Type ℓM
-Precise o = (m : ↓M (σ .resultSort o)) → isProp (Split o m)
+Precise o = (m : ↓M (σ .resultSort o)) → isProp (NodeAt o m)
+
+isSetNodeAt : (o : σ .ops) → Precise o → isSetTheoryTy (NodeAt o)
+isSetNodeAt o prec m = isProp→isSet (prec m)
+
+NodeAtSet : (o : σ .ops) → Precise o → TheorySet ℓM (σ .resultSort o)
+NodeAtSet o prec = NodeAt o , isSetNodeAt o prec
 
 -- The slots of a node, each a grammar at its own sort, all of them free to
 -- mention the splitting.  A binder is the case that needs the dependency.
@@ -102,20 +135,23 @@ isSet⊗ᴰ o As m =
       → TheorySet (ℓ-max ℓM ℓA) (σ .resultSort o)
 ⊗ᴰSet o As = ⊗ᴰ o As , isSet⊗ᴰ o As
 
--- The node introduction, as data: a splitting and a witness at each slot.
+-- Introduction and elimination, in the shape `Operation/Base` states them
+-- for `⊗ᵘ`: at `op o ms`, a witness in each slot.
 node-mk : {o : σ .ops} {As : NodeArgs ℓA o} {ms : interpIn o ↓M}
   → ((a : arities σ o) → ty (As ms a) (ms a))
   → ty (⊗ᴰSet o As) (op o ms)
 node-mk {ms = ms} ws = ms , Eq.refl , ws
 
--- ...and its elimination, which projects the splitting rather than matching
--- it, so nothing forces the equation.
 node-elim : {o : σ .ops} {As : NodeArgs ℓA o}
   {C : TheoryTy ℓB (σ .resultSort o)}
-  → ((m : ↓M (σ .resultSort o)) (ms : interpIn o ↓M) → op o ms Eq.≡ m
-      → ((a : arities σ o) → ty (As ms a) (ms a)) → C m)
+  → ({ms : interpIn o ↓M}
+      → ((a : arities σ o) → ty (As ms a) (ms a)) → C (op o ms))
   → ⊗ᴰ o As ⊢ C
-node-elim f m t = f m (t .fst) (t .snd .fst) (t .snd .snd)
+node-elim f _ (ms , Eq.refl , ws) = f ws
+
+-- forgetting the slots: a node is in its own cell of the node cover
+node-shape : {o : σ .ops} {As : NodeArgs ℓA o} → ⊗ᴰ o As ⊢ NodeAt o
+node-shape m t = t .fst , t .snd .fst
 
 
 record AnswerFunctor : Typeω where
@@ -123,38 +159,30 @@ record AnswerFunctor : Typeω where
     ℓAns : Level → Level
     Ans : {ℓA : Level} {s : S} → TheorySet ℓA s → TheorySet (ℓAns ℓA) s
 
-    -- Divariant, as in the monoid development's `DivariantAnswer`: `Dec`
-    -- moves a refutation backwards, the covariant answers drop the second
-    -- map.  There is no separate action on isomorphisms because nothing
-    -- here transports along a monoidal structure -- there is none.
-    --
-    -- Pointwise, not `⊢`-level, and that matters.  When an operation is
-    -- indexed by external data -- `appOp B`, an application annotated with
-    -- its argument type -- there are infinitely many operations, so a
-    -- grammar cannot unroll to a *sum* over head constructors the way
-    -- `Scope` does.  It unrolls to one node per term, and relabelling that
-    -- node needs a map only at the term in hand.  `Ans-map` below is the
-    -- uniform case.
-    Ans-mapAt : {ℓA ℓB : Level} {s : S} {A : TheorySet ℓA s} {B : TheorySet ℓB s}
-      {m : ↓M s}
-      → (ty A m → ty B m) → (ty B m → ty A m)
-      → ty (Ans A) m → ty (Ans B) m
+    -- Relabelling, under a hypothesis.  Divariant, as in the monoid
+    -- development's `DivariantAnswer`: `Dec` moves a refutation backwards
+    -- and the covariant answers drop the second map.  `H` is what a cover
+    -- cell supplies -- "this term is a node of operation `o`" -- and it is
+    -- what makes both maps `⊢`-terms.
+    Ans-map& : {ℓA ℓB ℓH : Level} {s : S}
+      {A : TheorySet ℓA s} {B : TheorySet ℓB s} {H : TheoryTy ℓH s}
+      → ty A & H ⊢ ty B → ty B & H ⊢ ty A
+      → ty (Ans A) & H ⊢ ty (Ans B)
 
     Ans-⊕& : {ℓA ℓB : Level} {s : S} {A : TheorySet ℓA s} {B : TheorySet ℓB s}
       → ty (Ans A) & ty (Ans B) ⊢ ty (Ans (A ⊕Set B))
 
-    -- Every answer can consume a decision at a point.  This is how a side
-    -- condition -- "this name is in scope", "these two types are equal" --
-    -- enters a grammar without the grammar naming an answer: the author
-    -- supplies a decision, and each backend reads it its own way (`Dec`
-    -- keeps it, `Maybe` forgets the refutation, `ND` enumerates zero or one).
-    -- `Ans-void` below is the `no` half, which is all the combinators need.
-    Ans-dec : {ℓA : Level} {s : S} {A : TheorySet ℓA s} {m : ↓M s}
-      → ty A m Sum.⊎ (ty A m → Empty.⊥) → ty (Ans A) m
+    -- Every answer can read a decision.  This is how a side condition --
+    -- "this name is in scope", "these two types agree" -- enters a grammar
+    -- without the grammar naming an answer, and it is the `⊢`-level form of
+    -- what `Dec`, `Maybe` and `ND` each do with a `yes`/`no`.
+    Ans-ofDec : {ℓA : Level} {s : S} {A : TheorySet ℓA s}
+      → ty (DecSet A) ⊢ ty (Ans A)
 
-    -- The node rule, replacing the monoid's three token rules.  Answers at
-    -- the slots give an answer at the node; `Precise o` is what lets a
-    -- refutation at one slot refute the node.
+    -- The node rule, replacing the monoid's three token rules, in the shape
+    -- `Operation/Base` states `⊗ᵘ-intro`: at `op o ms`, an answer at each
+    -- slot.  `Precise o` is what lets a refutation at one slot refute the
+    -- node.
     Ans-node : {ℓA : Level} (o : σ .ops) → Precise o
       → {As : NodeArgs ℓA o} {ms : interpIn o ↓M}
       → ((a : arities σ o) → ty (Ans (As ms a)) (ms a))
@@ -197,6 +225,11 @@ module Combinators (𝒯 : AnswerFunctor)
     → (x' , m') < (x , m) → ▷ (AnsFam A) x m → ty (Ans (A x')) m'
   callAt {A = A} x' lt β = ▷app (AnsFam A) lt β
 
+  -- relabelling with nothing assumed
+  Ans-map : {s : S} {A : TheorySet ℓA s} {B : TheorySet ℓB s}
+    → ty A ⊢ ty B → ty B ⊢ ty A → ty (Ans A) ⊢ ty (Ans B)
+  Ans-map f g = Ans-map& (f ∘⊢ π₁) (g ∘⊢ π₁) ∘⊢ (id⊢ ,& ⊤Ty-intro)
+
   module _ {s : S} {D : TheoryTy ℓD s} where
 
     infixr 15 _<|>_
@@ -205,21 +238,10 @@ module Combinators (𝒯 : AnswerFunctor)
       → D ⊢ ty (Ans A) → D ⊢ ty (Ans B) → D ⊢ ty (Ans (A ⊕Set B))
     (p <|> q) = Ans-⊕& ∘⊢ (p ,& q)
 
-    -- a grammar with no parse anywhere
-    none : {A : TheorySet ℓA s}
-      → (∀ m → ty A m → Empty.⊥) → D ⊢ ty (Ans A)
-    none f m _ = Ans-dec (Sum.inr (f m))
-
     -- a side condition, decided by the grammar and read by the answer
-    side : {A : TheorySet ℓA s}
-      → (∀ m → ty A m Sum.⊎ (ty A m → Empty.⊥)) → D ⊢ ty (Ans A)
-    side d m _ = Ans-dec (d m)
+    side : {A : TheorySet ℓA s} → Decidable (ty A) → D ⊢ ty (Ans A)
+    side d = Ans-ofDec ∘⊢ d ∘⊢ ⊤Ty-intro
 
-  -- the uniform relabelling, from the pointwise one
-  Ans-map : {s : S} {A : TheorySet ℓA s} {B : TheorySet ℓB s}
-    → ty A ⊢ ty B → ty B ⊢ ty A → ty (Ans A) ⊢ ty (Ans B)
-  Ans-map f g m = Ans-mapAt (f m) (g m)
-
-  mapA : {s : S} {A : TheorySet ℓA s} {B : TheorySet ℓB s} {D : TheoryTy ℓD s}
-    → ty A ⊢ ty B → ty B ⊢ ty A → D ⊢ ty (Ans A) → D ⊢ ty (Ans B)
-  mapA f g p = Ans-map f g ∘⊢ p
+    -- a grammar with no parse anywhere
+    none : {A : TheorySet ℓA s} → (⊤Ty ⊢ ¬Ty (ty A)) → D ⊢ ty (Ans A)
+    none n = side (dec-no ∘⊢ n)

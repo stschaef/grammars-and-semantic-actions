@@ -65,17 +65,13 @@ decΠFin {n = suc n} {P = P} d = onHead (d zero)
   onHead (Sum.inl p) = onTail p (decΠFin λ i → d (suc i))
   onHead (Sum.inr np) = Sum.inr λ f → np (f zero)
 
-DecSet : {s : S} → TheorySet ℓA s → TheorySet ℓA s
-DecSet (A , sA) = DecTy A , isSet⊕ sA (isSet⇒ isSet⊥Ty)
-
 DecAnswer : AnswerFunctor
 DecAnswer .AnswerFunctor.ℓAns ℓA = ℓA
 DecAnswer .AnswerFunctor.Ans = DecSet
-DecAnswer .AnswerFunctor.Ans-mapAt f g (Sum.inl a) = Sum.inl (f a)
-DecAnswer .AnswerFunctor.Ans-mapAt f g (Sum.inr n) = Sum.inr λ b → n (g b)
+DecAnswer .AnswerFunctor.Ans-map& f g m (Sum.inl a , h) = Sum.inl (f m (a , h))
+DecAnswer .AnswerFunctor.Ans-map& f g m (Sum.inr n , h) = Sum.inr λ b → n (g m (b , h))
 DecAnswer .AnswerFunctor.Ans-⊕& = dec-⊕&
-DecAnswer .AnswerFunctor.Ans-dec (Sum.inl a) = Sum.inl a
-DecAnswer .AnswerFunctor.Ans-dec (Sum.inr n) = Sum.inr λ a → Empty.rec (n a)
+DecAnswer .AnswerFunctor.Ans-ofDec = id⊢
 DecAnswer .AnswerFunctor.Ans-node o prec {As = As} {ms = ms} ws =
   onAll (decΠFin (λ a → strip (ws a)))
   where

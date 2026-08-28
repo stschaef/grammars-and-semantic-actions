@@ -33,6 +33,9 @@ open import Theory.Type.HLevels λEqns Name (λ _ → nm) termPresentation publi
 open import Theory.Type.Top.Base λEqns Name (λ _ → nm) termPresentation public
 open import Theory.Type.Sum.Binary.Base λEqns Name (λ _ → nm) termPresentation public
 open import Theory.Type.Product.Binary.Base λEqns Name (λ _ → nm) termPresentation public
+open import Theory.Type.Bottom.Base λEqns Name (λ _ → nm) termPresentation public
+open import Theory.Type.Cover.Base λEqns Name (λ _ → nm) termPresentation public
+open import Theory.Type.Decidable.Base λEqns Name (λ _ → nm) termPresentation public
 open import Theory.Combinator.Core λEqns Name (λ _ → nm) termPresentation public
 
 private variable ℓX : Level
@@ -140,57 +143,31 @@ module Subterm {X : Type ℓX} (isSetX : isSet X) (rank : X → ℕ) where
   callBody : {x x' : X} (n : Name) (t : RawTm) → (x' , t) < (x , tlam n t)
   callBody n t = smaller (body< n t)
 
--- No confusion.  A node's head is its operation, so a node whose operation
--- does not match the term's head constructor has no inhabitant -- which is
--- what a checker needs to *refute* the branches it did not take.  Over the
--- free monoid this is `Λ-disjoint`, a page of reasoning about splittings;
--- here it is `refl` three times.
-data Hd : Type ℓ-zero where
-  hvar happ hlam : Hd
+-- The node cover: every term is a node of exactly one operation.
+--
+-- This is the free term algebra's answer to `Λ₁`, and it is the whole of
+-- prediction here.  `total` is the algebra's induction principle and
+-- `disjoint` is no-confusion, so one constructor of lookahead is always
+-- enough -- there is no window, no width, and nothing to check.  Over the
+-- free monoid the same two fields cost `Λ-total` and `Λ-disjoint`.
+clsL : RawTm → LOp
+clsL (tvar _) = varOp
+clsL (tapp _ _) = appOp
+clsL (tlam _ _) = lamOp
 
-hdOf : RawTm → Hd
-hdOf (tvar _) = hvar
-hdOf (tapp _ _) = happ
-hdOf (tlam _ _) = hlam
+clsL-node : (o : LOp) (ms : interpIn o ↓M) → clsL (op o ms) ≡ o
+clsL-node varOp ms = refl
+clsL-node appOp ms = refl
+clsL-node lamOp ms = refl
 
-hdOfOp : LOp → Hd
-hdOfOp varOp = hvar
-hdOfOp appOp = happ
-hdOfOp lamOp = hlam
-
-hdOfNode : (o : LOp) (ms : interpIn o ↓M) → hdOf (op o ms) ≡ hdOfOp o
-hdOfNode varOp ms = refl
-hdOfNode appOp ms = refl
-hdOfNode lamOp ms = refl
-
--- `HdCode a b` is `Unit` when the heads agree and `⊥` when they differ, so
--- "these two constructors are distinct" is a definitional fact rather than
--- an appeal to an absurd pattern -- which cubical does not give for paths.
-HdCode : Hd → Hd → Type ℓ-zero
-HdCode hvar hvar = Unit
-HdCode hvar happ = Empty.⊥
-HdCode hvar hlam = Empty.⊥
-HdCode happ hvar = Empty.⊥
-HdCode happ happ = Unit
-HdCode happ hlam = Empty.⊥
-HdCode hlam hvar = Empty.⊥
-HdCode hlam happ = Empty.⊥
-HdCode hlam hlam = Unit
-
-private
-  hdRefl : (a : Hd) → HdCode a a
-  hdRefl hvar = tt
-  hdRefl happ = tt
-  hdRefl hlam = tt
-
-hdEncode : {a b : Hd} → a ≡ b → HdCode a b
-hdEncode {a = a} p = subst (HdCode a) p (hdRefl a)
-
--- `o`'s node cannot sit at a term with a different head.  Over the free
--- monoid the counterpart is `Λ-disjoint`, a page of reasoning about how a
--- word splits; here the caller passes the identity.
-headClash : (o : LOp) (m : RawTm)
-  → (HdCode (hdOfOp o) (hdOf m) → Empty.⊥)
-  → (ms : interpIn o ↓M) → op o ms Eq.≡ m → Empty.⊥
-headClash o m clash ms e =
-  clash (hdEncode (sym (hdOfNode o ms) ∙ cong hdOf (Eq.eqToPath e)))
+nodeCover : Cover LOp NodeAt
+nodeCover .total (tvar x) _ = varOp , ((λ _ → x) , Eq.refl)
+nodeCover .total (tapp t u) _ = appOp , (appArgs t u , Eq.refl)
+nodeCover .total (tlam x t) _ = lamOp , (lamArgs x t , Eq.refl)
+nodeCover .disjoint o o' ne m ((ms , e) , (ms' , e')) =
+  Empty.rec (ne (Eq.pathToEq same))
+  where
+  same : o ≡ o'
+  same = sym (clsL-node o ms)
+       ∙ cong clsL (Eq.eqToPath e ∙ sym (Eq.eqToPath e'))
+       ∙ clsL-node o' ms'

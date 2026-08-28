@@ -28,13 +28,13 @@ module CM = Check MB.MaybeAnswer
 module CN = Check NDm.NDAnswer
 
 -- the same grammar, read three ways
-decideTy : (i : Idx) → D.Decidable (Der i)
+decideTy : (i : Jdg) → D.Decidable (Der i)
 decideTy = CD.typed
 
-testTy : (i : Idx) → ⊤Ty ⊢ MB.Maybe (Der i)
+testTy : (i : Jdg) → ⊤Ty ⊢ MB.Maybe (Der i)
 testTy = CM.typed
 
-parsesTy : (i : Idx) → ⊤Ty ⊢ NDm.ND (Der i)
+parsesTy : (i : Jdg) → ⊤Ty ⊢ NDm.ND (Der i)
 parsesTy = CN.typed
 
 decB : Ctx → Ty → ATm → Bool
