@@ -1,0 +1,2461 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Combinators for an arbitrary theory</title>
+<style>
+:root{
+  --bg:#fbfaf8; --fg:#1c1a17; --muted:#6b6459; --rule:#e2ddd4;
+  --code-bg:#f4f1ec; --code-fg:#23201c; --accent:#8a5a2b; --accent-bg:#f5ece1;
+  --warn-bg:#fdf4ec; --warn-br:#d99a5b;
+  --mono:"SFMono-Regular",Menlo,Consolas,"DejaVu Sans Mono",monospace;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#16150f; --fg:#eae6dd; --muted:#a49b8c; --rule:#332f27;
+  --code-bg:#1e1c16; --code-fg:#e6e1d6; --accent:#d3a06a; --accent-bg:#241f17;
+  --warn-bg:#221b12; --warn-br:#a8752f;
+}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:1rem}
+body{margin:0;background:var(--bg);color:var(--fg);
+  font:16px/1.65 Charter,"Iowan Old Style",Georgia,serif;
+  -webkit-font-smoothing:antialiased}
+#wrap{display:grid;grid-template-columns:250px minmax(0,1fr);max-width:1400px;margin:0 auto}
+nav{position:sticky;top:0;align-self:start;max-height:100vh;overflow-y:auto;
+  padding:2rem 1rem 3rem;border-right:1px solid var(--rule);font-size:13px;line-height:1.5}
+nav b{display:block;font-size:11px;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--muted);margin:1.4rem 0 .45rem;font-weight:600}
+nav b:first-child{margin-top:0}
+nav a{display:block;color:var(--fg);text-decoration:none;padding:.16rem 0;opacity:.8}
+nav a:hover{opacity:1;color:var(--accent)}
+main{padding:2.5rem 3rem 8rem;min-width:0}
+h1{font-size:2rem;line-height:1.2;margin:0 0 .3rem;letter-spacing:-.015em}
+h2{font-size:1.4rem;margin:3.5rem 0 .6rem;padding-top:1.2rem;border-top:1px solid var(--rule);
+  letter-spacing:-.01em}
+h3{font-size:1.08rem;margin:2rem 0 .4rem;letter-spacing:-.005em}
+h4{font-size:.95rem;margin:1.3rem 0 .3rem;color:var(--accent)}
+p,li{max-width:66ch}
+.sub{color:var(--muted);font-size:1.02rem;margin:.2rem 0 1.6rem}
+code{font-family:var(--mono);font-size:.86em;background:var(--code-bg);
+  padding:.1em .32em;border-radius:3px}
+figure.src{margin:1.1rem 0 1.6rem;border:1px solid var(--rule);border-radius:6px;overflow:hidden}
+figcaption{display:flex;justify-content:space-between;align-items:center;gap:1rem;
+  background:var(--accent-bg);border-bottom:1px solid var(--rule);
+  padding:.4rem .8rem;font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+figcaption .path{color:var(--accent);font-weight:600}
+figure.src pre{margin:0;padding:.9rem 1rem;overflow-x:auto;background:var(--code-bg)}
+figure.src code{background:none;padding:0;font-size:12.4px;line-height:1.5;
+  color:var(--code-fg);white-space:pre;display:block}
+.note{border-left:3px solid var(--accent);background:var(--accent-bg);
+  padding:.7rem 1rem;margin:1.2rem 0;border-radius:0 4px 4px 0}
+.note p{margin:.35rem 0}
+.note>p:first-child{margin-top:0}.note>p:last-child{margin-bottom:0}
+.warn{border-left-color:var(--warn-br);background:var(--warn-bg)}
+.k{font-size:.82rem;letter-spacing:.07em;text-transform:uppercase;color:var(--accent);
+  font-weight:700;display:block;margin-bottom:.25rem}
+.warn .k{color:var(--warn-br)}
+table{border-collapse:collapse;margin:1.1rem 0;font-size:.92rem;width:100%;max-width:68ch}
+th,td{border-bottom:1px solid var(--rule);padding:.42rem .7rem;text-align:left;vertical-align:top}
+th{font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+td code{font-size:.84em}
+.lede{font-size:1.06rem}
+hr{border:0;border-top:1px solid var(--rule);margin:2.5rem 0}
+@media(max-width:900px){#wrap{grid-template-columns:1fr}nav{position:static;max-height:none;
+  border-right:0;border-bottom:1px solid var(--rule)}main{padding:1.5rem 1.2rem 5rem}}
+</style></head><body><div id="wrap">
+<nav>
+<b>Orientation</b>
+<a href="#what">What this is</a>
+<a href="#idea">The one idea</a>
+<a href="#glossary">Glossary</a>
+<b>The generic core</b>
+<a href="#core">Core.agda</a>
+<a href="#core-look">&nbsp;&nbsp;look &amp; covers</a>
+<a href="#core-node">&nbsp;&nbsp;nodes &amp; precision</a>
+<a href="#core-answer">&nbsp;&nbsp;AnswerFunctor</a>
+<a href="#core-comb">&nbsp;&nbsp;Combinators</a>
+<b>The three answers</b>
+<a href="#dec">Dec</a>
+<a href="#maybe">Maybe</a>
+<a href="#nd">ND</a>
+<b>Free term algebras</b>
+<a href="#term">Free/Term additions</a>
+<b>Client 1 &mdash; scope</b>
+<a href="#lguard">Lambda/Guard</a>
+<a href="#lscope">Lambda/Scope</a>
+<a href="#ltests">ScopeTests</a>
+<b>Client 2 &mdash; typing</b>
+<a href="#abase">Annotated/Base</a>
+<a href="#aguard">Annotated/Guard</a>
+<a href="#atyping">Annotated/Typing</a>
+<a href="#atests">TypingTests</a>
+<b>Reflection</b>
+<a href="#internal">Is it internal?</a>
+<a href="#trade">⊗ᴰ vs. summed indices</a>
+<a href="#boundary">Where it stops</a>
+<a href="#build">Building it</a>
+</nav>
+<main>
+
+<h1>Combinators for an arbitrary theory</h1>
+<p class="sub">A port of the parser-combinator framework off the free monoid, with a scope checker and a type checker written once and run at three different notions of &ldquo;answer&rdquo;.</p>
+
+<h2 id="what">What this is</h2>
+
+<p class="lede">The existing framework in this repository parses <em>strings</em>. This is that framework with the strings taken out, plus two clients that are not parsers at all.</p>
+
+<p>The setting is a <strong>finitary algebraic theory</strong> &mdash; a signature of operations, possibly with equations. Every such theory has a free model, and a <strong>grammar</strong> is a predicate on the elements of that model:</p>
+
+<pre><code>TheoryTy ℓ s  =  ↓M s → Type ℓ</code></pre>
+
+<p>Which model you pick decides what you are doing:</p>
+
+<table>
+<tr><th>Theory</th><th>Elements of the free model</th><th>So a &ldquo;grammar&rdquo; is&hellip;</th></tr>
+<tr><td>monoid</td><td>strings</td><td>a language, with parse trees</td></tr>
+<tr><td>commutative monoid</td><td>bags / multisets</td><td>a predicate on multisets</td></tr>
+<tr><td>a term signature</td><td>abstract syntax trees</td><td>a predicate on syntax</td></tr>
+</table>
+
+<p>The last row is what this work uses. A grammar over a lambda signature is a predicate on lambda terms &mdash; and &ldquo;is this term well-scoped?&rdquo; and &ldquo;does this term have type <code>A</code>?&rdquo; are exactly such predicates. So a scope checker and a type checker are <em>parsers</em>, in a precise sense, and they can be built from the same combinators.</p>
+
+<div class="note"><span class="k">The payoff</span>
+<p>Each client is written <strong>once</strong>, mentioning no particular notion of answer, and then instantiated three ways: as a <em>decision procedure</em> that returns a proof or a refutation, as a <em>partial function</em> that returns at most one result, and as an <em>enumerator</em> that returns every derivation. Same source text, three behaviours.</p></div>
+
+<h2 id="idea">The one idea</h2>
+
+<p>Here is the whole reason the port is smaller than the original, in two pictures.</p>
+
+<p><strong>Parsing a string.</strong> A parser eats a <em>prefix</em> and leaves a <em>suffix</em> behind. Something has to consume the leftover, so every parser is written in continuation-passing style: &ldquo;give me a way to handle the rest, and I&rsquo;ll handle the whole thing.&rdquo; That is where the original framework&rsquo;s <code>Parser ℓK a c A</code>, its quantification over all continuations, and its <code>ParserTag</code> bookkeeping come from.</p>
+
+<p><strong>Checking a term.</strong> A constructor consumes the <em>entire</em> term. <code>app f a</code> is fully accounted for by <code>f</code> and <code>a</code>; there is no leftover. So the continuation disappears, and with it the rank-2 quantification, the tags, and the three separate rules for &ldquo;consume this letter&rdquo;, &ldquo;consume any letter&rdquo; and &ldquo;consume nothing&rdquo;. They collapse into a single rule about nodes.</p>
+
+<div class="note"><span class="k">Rule of thumb</span>
+<p>Every feature of the original that mentions <em>lookahead width</em>, <em>the alphabet</em>, or <em>the leftover input</em> is monoid-specific and vanishes. Everything that mentions <em>recursion</em>, <em>alternatives</em>, or <em>what an answer is</em> survives unchanged.</p></div>
+
+<h2 id="glossary">Glossary</h2>
+
+<p>Six pieces of jargon carry most of the weight. Everything below is written in terms of them.</p>
+
+<h4>grammar (<code>TheoryTy</code>) &mdash; a predicate on model elements</h4>
+<p>Not a set of strings: a <em>proof-relevant</em> predicate. <code>A m</code> is the type of derivations showing <code>m</code> satisfies <code>A</code>. If that type has two distinct inhabitants, the grammar is ambiguous at <code>m</code>. If it is a proposition, the grammar is unambiguous &mdash; and that is a fact about the type, not a theorem you prove afterwards.</p>
+
+<h4><code>_⊢_</code> &mdash; a map of grammars</h4>
+<p><code>A ⊢ B</code> is <code>∀ m → A m → B m</code>: convert a derivation of <code>A</code> into one of <code>B</code>, at every element, uniformly. This is the language&rsquo;s notion of morphism. Writing something as a <code>⊢</code>-term rather than as an ordinary Agda function is what &ldquo;internal to the DSL&rdquo; means here.</p>
+
+<h4><code>&amp;</code>, <code>⊕</code>, <code>⊕ᴰ</code> &mdash; and, or, big-or</h4>
+<p>All computed pointwise: <code>(A &amp; B) m</code> is a pair, <code>(A ⊕ B) m</code> is a tagged union, <code>⊕ᴰ Y A</code> at <code>m</code> is a <code>y</code> together with a derivation of <code>A y</code>.</p>
+
+<h4><code>▷</code> (&ldquo;later&rdquo;) &mdash; available only at strictly smaller elements</h4>
+<p>A modality from guarded recursion. <code>▷ A</code> at <code>m</code> is &ldquo;an <code>A</code> at every element strictly below <code>m</code>&rdquo;, for some well-founded order. This is how recursion is made safe <em>by typing</em>: a recursive call is only well-typed if it descends. Left recursion is a type error, not a hang.</p>
+
+<h4><code>Cover</code> &mdash; a total, non-overlapping classification</h4>
+<p>A family <code>Λ : Y → grammar</code> with two laws: <code>total</code> (every element is in some class) and <code>disjoint</code> (no element is in two). Case analysis goes through a cover. In the string world the classes are &ldquo;starts with letter <code>c</code>&rdquo; &mdash; that is LL(1) lookahead. Here they are &ldquo;is a node of operation <code>o</code>&rdquo;.</p>
+
+<h4><code>Ans</code> &mdash; what an answer is</h4>
+<p>The parameter that makes one grammar give three checkers. Concretely one of:</p>
+<table>
+<tr><th>Answer</th><th>Meaning</th><th>At a fork it&hellip;</th></tr>
+<tr><td><code>DecTy A = A ⊕ ¬A</code></td><td>a proof or a refutation</td><td>decides both, combines</td></tr>
+<tr><td><code>Maybe A</code></td><td>at most one derivation</td><td>takes the left one</td></tr>
+<tr><td><code>ND A</code></td><td>a list of derivations</td><td>keeps both</td></tr>
+</table>
+<p><code>Dec</code> is the only one that is <em>intrinsically</em> correct: its type <em>is</em> the correctness statement. <code>ND</code> returns a list and nothing types &ldquo;that list is complete&rdquo; &mdash; a real gap, flagged in the source.</p>
+
+<h2 id="core">The generic core</h2>
+
+<p>One module, parameterised by a theory and nothing else. It defines what an answer is, what a node is, and how recursion and case analysis work. Read it in four passes; the whole file is at the end of the section.</p>
+
+<h3 id="core-look">Case analysis: <code>look</code> and covers</h3>
+
+<p>The first question any checker faces is <em>which rule applies?</em> The undisciplined way is to pattern-match on the term. The disciplined way is to go through a cover, because a cover carries the two facts that make the case split sound: the classes are exhaustive, and they do not overlap.</p>
+
+<pre><code>look : Cover Y Λ → ((y : Y) → D &amp; Λ y ⊢ C) → D ⊢ C
+look cov br = ⊕ᴰ-elim br ∘⊢ &amp;⊕ᴰ-dist ∘⊢ (id⊢ ,&amp; (cov .total ∘⊢ ⊤Ty-intro))</code></pre>
+
+<p>Read right to left: observe the element through the cover (<code>total</code>), which names a class; distribute; then run the branch for that class. Inside branch <code>y</code> you additionally <em>have</em> <code>Λ y</code> as a hypothesis &mdash; you know which class you are in, and that turns out to matter a lot later.</p>
+
+<div class="note"><span class="k">Where this comes from</span>
+<p>This is the exact sibling of <code>look⊗</code> in the string framework, which splits on the first character via the lookahead cover. Replacing that cover with any other cover is what makes the case analysis theory-generic. For a term algebra the cover is by root constructor &mdash; and since the root always determines the production, <strong>prediction over a term algebra is always LL(1)</strong>. All the machinery the string world needs for wider lookahead simply has nothing to do here.</p></div>
+
+<h3 id="core-node">Nodes and precision</h3>
+
+<p>Two definitions do the structural work.</p>
+
+<pre><code>NodeAt o m = Σ[ ms ] (op o ms ≡ m)          -- "m is built by operation o"
+Precise o  = ∀ m → isProp (NodeAt o m)      -- "...in exactly one way"</code></pre>
+
+<p><code>NodeAt o</code> is the cover&rsquo;s class. <code>Precise o</code> says the decomposition is unique, and it is what lets a checker <em>refute</em>: if one argument fails, the whole node fails &mdash; but only because there is no other way to split the term that might have worked.</p>
+
+<div class="note"><span class="k">Why this replaces &ldquo;the alphabet is discrete&rdquo;</span>
+<p>A free term algebra is precise at <em>every</em> operation: that is constructor injectivity, and it is proved once, generically, in <code>Free/Term</code>. The free monoid is precise almost nowhere &mdash; a word splits many ways &mdash; which is exactly why the string framework has three bespoke token rules instead of one node rule.</p></div>
+
+<p>Then the node itself:</p>
+
+<pre><code>NodeArgs ℓ o = (ms : interpIn o ↓M) (a : arities σ o) → TheorySet ℓ (sortOf o a)
+
+⊗ᴰ o As m = Σ[ ms ] ((op o ms ≡ m) × (∀ a → ty (As ms a) (ms a)))</code></pre>
+
+<p>&ldquo;<code>m</code> is <code>o</code> applied to arguments <code>ms</code>, and each argument satisfies its slot grammar.&rdquo; The important letter is the <code>ms</code> in <code>NodeArgs</code>: <strong>a slot&rsquo;s grammar may depend on the other slots&rsquo; values.</strong></p>
+
+<div class="note warn"><span class="k">Why the dependency is not optional</span>
+<p>The library already had an operation tensor, <code>⊗ᵘ</code>, with <em>independent</em> slots. It cannot state a binder. In <code>lam x t</code> the body <code>t</code> is checked in the context <code>Γ, x</code> &mdash; and <code>x</code> is the value in slot zero. With independent slots there is nowhere to say that. <code>⊗ᵘ</code> is the constant case of <code>⊗ᴰ</code>, so nothing is lost by generalising.</p></div>
+
+<h3 id="core-answer">The <code>AnswerFunctor</code></h3>
+
+<p>Five fields. This is the entire interface a new backend must implement.</p>
+
+<table>
+<tr><th>Field</th><th>In words</th></tr>
+<tr><td><code>Ans</code></td><td>What an answer about a grammar <em>is</em>.</td></tr>
+<tr><td><code>Ans-map&amp;</code></td><td>Relabel an answer along a renaming of grammars &mdash; given a hypothesis both directions may use.</td></tr>
+<tr><td><code>Ans-⊕&amp;</code></td><td>An answer about <code>A</code> and one about <code>B</code> combine into one about <code>A</code>&nbsp;or&nbsp;<code>B</code>. <em>This single field is the entire difference between the three backends.</em></td></tr>
+<tr><td><code>Ans-ofDec</code></td><td>Any decision is an answer. How side conditions get in.</td></tr>
+<tr><td><code>Ans-node</code></td><td>Answers at the arguments give an answer at the node.</td></tr>
+</table>
+
+<h4>Why <code>Ans-map&amp;</code> carries a hypothesis</h4>
+
+<p>A checker constantly needs to move between a grammar and its one-step unfolding &mdash; between &ldquo;<code>t</code> is well-scoped&rdquo; and &ldquo;<code>t</code> is an application whose parts are well-scoped&rdquo;. Going one way is fine. Going back is <em>not</em>: from &ldquo;<code>t</code> is well-scoped&rdquo; alone you cannot produce an application node, because <code>t</code> might be a variable.</p>
+
+<p>Unless you already know the head. Which is exactly what the cover&rsquo;s class gives you. So:</p>
+
+<pre><code>Ans-map&amp; : ty A &amp; H ⊢ ty B → ty B &amp; H ⊢ ty A → ty (Ans A) &amp; H ⊢ ty (Ans B)</code></pre>
+
+<p>with <code>H = NodeAt o</code>. Both directions become writable, and both are honest <code>⊢</code>-terms rather than one-off functions at a single element. Plain <code>Ans-map</code> falls out by taking <code>H = ⊤Ty</code>.</p>
+
+<h3 id="core-comb">The combinators</h3>
+
+<p>Parameterised by an answer, an index type <code>X</code>, and a well-founded order. <code>X</code> is &ldquo;one component per what?&rdquo; &mdash; per nonterminal in a grammar, per context in the scope checker, per (context, type) pair in the type checker. Nothing constrains it, which is why an unbounded index costs nothing.</p>
+
+<table>
+<tr><th>Name</th><th>In words</th></tr>
+<tr><td><code>Step A</code></td><td>What you write: an answer at every index, <em>given</em> answers at all strictly smaller elements.</td></tr>
+<tr><td><code>Checker A</code></td><td>What you get: an answer at every index, unconditionally.</td></tr>
+<tr><td><code>fix</code></td><td>Turns the first into the second. This is Löb induction; the guard is what makes it sound.</td></tr>
+<tr><td><code>callAt</code></td><td>The recursive call. Takes a proof that you are descending; without one it does not typecheck.</td></tr>
+<tr><td><code>_&lt;|&gt;_</code></td><td>Alternation.</td></tr>
+<tr><td><code>side</code></td><td>A decidable side condition, read by whatever the answer is.</td></tr>
+</table>
+
+<div class="note"><span class="k">Compare</span>
+<p>In the string framework the recursive call is <code>call</code>/<code>callAt</code>/<code>pApp</code>, and it has to thread a continuation through. Here, with no leftover input, it is <em>literally just</em> <code>▷app</code> &mdash; open the &ldquo;later&rdquo; box at a smaller element.</p></div>
+
+<figure class="src"><figcaption><span class="path">Theory/Combinator/Core.agda</span><span class="lines">247 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
+{- Combinators for an arbitrary finitary algebraic theory.
+
+   `Theory/Instances/Monoid/Combinator/Core` is these combinators at the
+   free monoid: there a grammar is a predicate on strings, `⊗` is
+   concatenation, and a parser is continuation-passing because a match
+   consumes a *prefix* and leaves a suffix for the continuation.
+
+   Nothing outside the monoid has that shape.  For a general signature the
+   operations are constructors, not an associative product: a node says
+   "`m` is `op o ms` and each `ms a` satisfies its slot", and there is no
+   leftover.  So the continuation-passing disappears and what is left is
+   smaller than the monoid development, not larger:
+
+     * a `Checker` is `∀ x → ⊤Ty ⊢ Ans (A x)` -- no `&amp;[ K ]` end, no
+       `ParserTag`, no `pmore`/`pless`/`pw` weakening;
+     * the guard is `Theory/Type/Later/Indexed`'s `GuardedIndexed`, already
+       generic in the sort *and* the index, so `löb` is reused verbatim;
+     * `Ans-lit`, `Ans-any` and `Ans-ε` -- three token rules that only make
+       sense for a generated free monoid -- collapse to `Ans-node`, which
+       applies to every operation of every signature.
+
+   What replaces "the alphabet is discrete" is `Precise`: an operation whose
+   decomposition is unique.  A free term algebra has it for every operation
+   (`Theory/Free/Term`); the free monoid has it only for `literal c ⊗ -`,
+   which is why that development has token rules rather than a node rule.
+
+   The node is `⊗ᴰ`, not `Operation/Base`'s `⊗ᵘ`: the slot grammars are
+   indexed by the *whole* splitting, so a later slot may depend on an
+   earlier slot's value.  `⊗ᵘ` -- independent slots -- cannot state a
+   binder, since the scope of `lam n t` is `Γ , n` and `n` is slot zero.
+   `⊗ᵘ` is the constant case.
+
+   Case analysis is by `look`, over a `Cover` of the model -- the sibling of
+   the monoid development's `look⊗` over the lookahead cover.  For a free
+   term algebra the cover is by head operation: `total` is the algebra's
+   induction principle and `disjoint` is no-confusion, so prediction is
+   always LL(1) and there is nothing here that resembles a window or a
+   lookahead width.
+
+   `Ans-map&amp;` carries a hypothesis because that is what makes relabelling a
+   `⊢`-term.  A grammar and one of its unfoldings agree only where the
+   term's head is known, and the cover's cell is exactly that knowledge; a
+   naked `Ans-map` would have to be pointwise. -}
+open import Cubical.Foundations.Prelude
+open import Cubical.Foundations.HLevels
+open import Cubical.Foundations.Isomorphism
+open import Cubical.Algebra.Theory.Finitary
+open SortedSig
+open SortedEqns
+import Theory.Free.Base as FB
+import Theory.Type.Later.Indexed as LI
+module Theory.Combinator.Core
+  {ℓ ℓ'' ℓv ℓS ℓP} {S : Type ℓS}
+  {σ : SortedSig S ℓ}
+  (σeq : SortedEqns σ ℓ'')
+  (V : Type ℓv) (vs : V → S)
+  (𝒫 : FB.FreePresentation σeq V vs ℓP)
+  where
+
+open import Cubical.Data.Sigma using (Σ-syntax ; _×_ ; _,_ ; fst ; snd)
+open import Cubical.Data.Unit using (tt)
+import Cubical.Data.Empty as Empty
+import Cubical.Data.Sum as Sum
+import Cubical.Data.Equality as Eq
+
+open import Theory.Base σeq V vs 𝒫
+open import Theory.Type.HLevels σeq V vs 𝒫
+open import Theory.Type.Top.Base σeq V vs 𝒫
+open import Theory.Type.Bottom.Base σeq V vs 𝒫
+open import Theory.Type.Function.Base σeq V vs 𝒫
+open import Theory.Type.Sum.Base σeq V vs 𝒫
+open import Theory.Type.Sum.Binary.Base σeq V vs 𝒫
+open import Theory.Type.Product.Binary.Base σeq V vs 𝒫
+open import Theory.Type.Cover.Base σeq V vs 𝒫
+open import Theory.Type.Decidable.Base σeq V vs 𝒫
+
+private variable ℓA ℓB ℓC ℓD ℓH ℓX ℓY ℓΛ ℓ&lt; : Level
+
+isPropModelEq : {s : S} {x y : ↓M s} → isProp (x Eq.≡ y)
+isPropModelEq {s} =
+  isOfHLevelRetractFromIso 1 (invIso Eq.PathIsoEq) (M .fst s .snd _ _)
+
+DecSet : {s : S} → TheorySet ℓA s → TheorySet ℓA s
+DecSet (A , sA) = DecTy A , isSet⊕ sA (isSet⇒ isSet⊥Ty)
+
+-- Case analysis over a cover: `Λ` classifies the model, and a term is
+-- built by giving a term at each cell.  This is `look⊗` with the lookahead
+-- cover replaced by whatever cover the instance has.
+private
+  &amp;⊕ᴰ-dist : {s : S} {Y : Type ℓY} {Λ : Y → TheoryTy ℓΛ s}
+    {D : TheoryTy ℓD s} → D &amp; (⊕[ y ∈ Y ] Λ y) ⊢ ⊕[ y ∈ Y ] (D &amp; Λ y)
+  &amp;⊕ᴰ-dist m (d , (y , a)) = y , (d , a)
+
+look : {s : S} {Y : Type ℓY} {Λ : Y → TheoryTy ℓΛ s}
+  {C : TheoryTy ℓC s} {D : TheoryTy ℓD s}
+  → Cover Y Λ → ((y : Y) → D &amp; Λ y ⊢ C) → D ⊢ C
+look cov br = ⊕ᴰ-elim br ∘⊢ &amp;⊕ᴰ-dist ∘⊢ (id⊢ ,&amp; (cov .total ∘⊢ ⊤Ty-intro))
+
+
+-- The decomposition of `m` along `o`, as a grammar, and the operations for
+-- which it is unique.  `NodeAt o` is the cell of the node cover; `Precise o`
+-- is what makes it a proposition, and what lets a refutation at one slot
+-- refute the whole node.
+NodeAt : (o : σ .ops) → TheoryTy ℓM (σ .resultSort o)
+NodeAt o m = Σ[ ms ∈ interpIn o ↓M ] (op o ms Eq.≡ m)
+
+Precise : (o : σ .ops) → Type ℓM
+Precise o = (m : ↓M (σ .resultSort o)) → isProp (NodeAt o m)
+
+isSetNodeAt : (o : σ .ops) → Precise o → isSetTheoryTy (NodeAt o)
+isSetNodeAt o prec m = isProp→isSet (prec m)
+
+NodeAtSet : (o : σ .ops) → Precise o → TheorySet ℓM (σ .resultSort o)
+NodeAtSet o prec = NodeAt o , isSetNodeAt o prec
+
+-- The slots of a node, each a grammar at its own sort, all of them free to
+-- mention the splitting.  A binder is the case that needs the dependency.
+NodeArgs : (ℓA : Level) (o : σ .ops) → Type _
+NodeArgs ℓA o =
+  (ms : interpIn o ↓M) (a : arities σ o) → TheorySet ℓA (σ .sortOf o a)
+
+⊗ᴰ : (o : σ .ops) → NodeArgs ℓA o
+   → TheoryTy (ℓ-max ℓM ℓA) (σ .resultSort o)
+⊗ᴰ o As m =
+  Σ[ ms ∈ interpIn o ↓M ]
+    ((op o ms Eq.≡ m) × ((a : arities σ o) → ty (As ms a) (ms a)))
+
+isSet⊗ᴰ : (o : σ .ops) (As : NodeArgs ℓA o) → isSetTheoryTy (⊗ᴰ o As)
+isSet⊗ᴰ o As m =
+  isSetΣ (isSetΠ λ a → M .fst (σ .sortOf o a) .snd) λ ms →
+  isSet× (isProp→isSet isPropModelEq) (isSetΠ λ a → isSetTy (As ms a) (ms a))
+
+⊗ᴰSet : (o : σ .ops) → NodeArgs ℓA o
+      → TheorySet (ℓ-max ℓM ℓA) (σ .resultSort o)
+⊗ᴰSet o As = ⊗ᴰ o As , isSet⊗ᴰ o As
+
+-- Introduction and elimination, in the shape `Operation/Base` states them
+-- for `⊗ᵘ`: at `op o ms`, a witness in each slot.
+node-mk : {o : σ .ops} {As : NodeArgs ℓA o} {ms : interpIn o ↓M}
+  → ((a : arities σ o) → ty (As ms a) (ms a))
+  → ty (⊗ᴰSet o As) (op o ms)
+node-mk {ms = ms} ws = ms , Eq.refl , ws
+
+node-elim : {o : σ .ops} {As : NodeArgs ℓA o}
+  {C : TheoryTy ℓB (σ .resultSort o)}
+  → ({ms : interpIn o ↓M}
+      → ((a : arities σ o) → ty (As ms a) (ms a)) → C (op o ms))
+  → ⊗ᴰ o As ⊢ C
+node-elim f _ (ms , Eq.refl , ws) = f ws
+
+-- forgetting the slots: a node is in its own cell of the node cover
+node-shape : {o : σ .ops} {As : NodeArgs ℓA o} → ⊗ᴰ o As ⊢ NodeAt o
+node-shape m t = t .fst , t .snd .fst
+
+
+record AnswerFunctor : Typeω where
+  field
+    ℓAns : Level → Level
+    Ans : {ℓA : Level} {s : S} → TheorySet ℓA s → TheorySet (ℓAns ℓA) s
+
+    -- Relabelling, under a hypothesis.  Divariant, as in the monoid
+    -- development's `DivariantAnswer`: `Dec` moves a refutation backwards
+    -- and the covariant answers drop the second map.  `H` is what a cover
+    -- cell supplies -- "this term is a node of operation `o`" -- and it is
+    -- what makes both maps `⊢`-terms.
+    Ans-map&amp; : {ℓA ℓB ℓH : Level} {s : S}
+      {A : TheorySet ℓA s} {B : TheorySet ℓB s} {H : TheoryTy ℓH s}
+      → ty A &amp; H ⊢ ty B → ty B &amp; H ⊢ ty A
+      → ty (Ans A) &amp; H ⊢ ty (Ans B)
+
+    Ans-⊕&amp; : {ℓA ℓB : Level} {s : S} {A : TheorySet ℓA s} {B : TheorySet ℓB s}
+      → ty (Ans A) &amp; ty (Ans B) ⊢ ty (Ans (A ⊕Set B))
+
+    -- Every answer can read a decision.  This is how a side condition --
+    -- "this name is in scope", "these two types agree" -- enters a grammar
+    -- without the grammar naming an answer, and it is the `⊢`-level form of
+    -- what `Dec`, `Maybe` and `ND` each do with a `yes`/`no`.
+    Ans-ofDec : {ℓA : Level} {s : S} {A : TheorySet ℓA s}
+      → ty (DecSet A) ⊢ ty (Ans A)
+
+    -- The node rule, replacing the monoid's three token rules, in the shape
+    -- `Operation/Base` states `⊗ᵘ-intro`: at `op o ms`, an answer at each
+    -- slot.  `Precise o` is what lets a refutation at one slot refute the
+    -- node.
+    Ans-node : {ℓA : Level} (o : σ .ops) → Precise o
+      → {As : NodeArgs ℓA o} {ms : interpIn o ↓M}
+      → ((a : arities σ o) → ty (Ans (As ms a)) (ms a))
+      → ty (Ans (⊗ᴰSet o As)) (op o ms)
+
+
+-- The combinators.  `X` indexes the mutually recursive family -- one
+-- component per nonterminal, per context, per (context, type) -- and `O` is
+-- the well-founded order the recursion descends on.  For the monoid that
+-- order is the proper suffix; for a term algebra the proper subterm, and
+-- `GuardedIndexed` does not care which.
+module Combinators (𝒯 : AnswerFunctor)
+  {X : Type ℓX} (xs : X → S) (O : LI.IPtOrder σeq V vs 𝒫 xs ℓ&lt;) where
+
+  open AnswerFunctor 𝒯 public
+  open LI.GuardedIndexed σeq V vs 𝒫 xs O public
+
+  Fam : (ℓA : Level) → Type _
+  Fam ℓA = (x : X) → TheorySet ℓA (xs x)
+
+  -- the family of answers, as something `▷` can delay
+  AnsFam : Fam ℓA → SetFam (ℓAns ℓA)
+  AnsFam A = (λ x → ty (Ans (A x))) , λ x m → isSetTy (Ans (A x)) m
+
+  -- What a grammar owes: an answer at every index, given delayed answers at
+  -- every strictly smaller position.
+  Step : Fam ℓA → Type _
+  Step A = ∀ x → ▷ (AnsFam A) x ⊢ ty (Ans (A x))
+
+  Checker : Fam ℓA → Type _
+  Checker A = ∀ x → ⊤Ty ⊢ ty (Ans (A x))
+
+  fix : {A : Fam ℓA} → Step A → Checker A
+  fix {A = A} φ = Fam▷.löb (AnsFam A .fst) (AnsFam A .snd) φ
+
+  -- Consulting the hypothesis at a strictly smaller position.  This is the
+  -- whole of `call`/`callAt`/`pApp` from the monoid development: with no
+  -- continuation to thread, it is `▷app`.
+  callAt : {A : Fam ℓA} (x' : X) {x : X} {m : ↓M (xs x)} {m' : ↓M (xs x')}
+    → (x' , m') &lt; (x , m) → ▷ (AnsFam A) x m → ty (Ans (A x')) m'
+  callAt {A = A} x' lt β = ▷app (AnsFam A) lt β
+
+  -- relabelling with nothing assumed
+  Ans-map : {s : S} {A : TheorySet ℓA s} {B : TheorySet ℓB s}
+    → ty A ⊢ ty B → ty B ⊢ ty A → ty (Ans A) ⊢ ty (Ans B)
+  Ans-map f g = Ans-map&amp; (f ∘⊢ π₁) (g ∘⊢ π₁) ∘⊢ (id⊢ ,&amp; ⊤Ty-intro)
+
+  module _ {s : S} {D : TheoryTy ℓD s} where
+
+    infixr 15 _&lt;|&gt;_
+
+    _&lt;|&gt;_ : {A : TheorySet ℓA s} {B : TheorySet ℓB s}
+      → D ⊢ ty (Ans A) → D ⊢ ty (Ans B) → D ⊢ ty (Ans (A ⊕Set B))
+    (p &lt;|&gt; q) = Ans-⊕&amp; ∘⊢ (p ,&amp; q)
+
+    -- a side condition, decided by the grammar and read by the answer
+    side : {A : TheorySet ℓA s} → Decidable (ty A) → D ⊢ ty (Ans A)
+    side d = Ans-ofDec ∘⊢ d ∘⊢ ⊤Ty-intro
+
+    -- a grammar with no parse anywhere
+    none : {A : TheorySet ℓA s} → (⊤Ty ⊢ ¬Ty (ty A)) → D ⊢ ty (Ans A)
+    none n = side (dec-no ∘⊢ n)
+</code></pre></figure>
+<h2 id="dec">Answer 1 &mdash; <code>Dec</code>: decide, with a refutation</h2>
+
+<p><code>DecTy A = A ⊕ ¬A</code>. The answer is a proof or a disproof, so the checker is sound <em>and</em> complete because that is what its type says. No separate theorem.</p>
+
+<p>Two things do real work. <code>decΠFin</code> decides a finite conjunction &mdash; a node holds when all its slots hold, and an operation has finitely many arguments, so this fold is the entire search a node performs. And <code>Ans-node</code>&rsquo;s <code>no</code> case is the only place <code>Precise</code> is used: to refute the node from a refuted slot you must know the term does not decompose some other way.</p>
+
+<div class="note"><span class="k">Cost</span>
+<p>Alternation at <code>Dec</code> cannot short-circuit. To build a refutation of <code>A ⊕ B</code> you genuinely need refutations of both, so <code>_&lt;|&gt;_</code> runs every branch. Nested alternation is exponential, and no choice of answer can fix that &mdash; only committing via a cover can.</p></div>
+
+<figure class="src"><figcaption><span class="path">Theory/Combinator/Answer/Decidable.agda</span><span class="lines">98 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
+{- `Combinator/Core` at `Dec`.  The intrinsically correct answer: `DecTy A`
+   *is* a decision, so a checker built from these combinators is sound and
+   complete by typing rather than by a theorem.
+
+   `Ans-node` is the only field that does real work, and `Precise o` is
+   what it needs: a refutation of one argument refutes the node only when
+   the node has no other decomposition. -}
+open import Cubical.Foundations.Prelude
+open import Cubical.Algebra.Theory.Finitary
+open SortedSig
+open SortedEqns
+import Theory.Free.Base as FB
+import Theory.Type.Later.Indexed as LI
+module Theory.Combinator.Answer.Decidable
+  {ℓ ℓ'' ℓv ℓS ℓP} {S : Type ℓS}
+  {σ : SortedSig S ℓ}
+  (σeq : SortedEqns σ ℓ'')
+  (V : Type ℓv) (vs : V → S)
+  (𝒫 : FB.FreePresentation σeq V vs ℓP)
+  where
+
+open import Cubical.Data.Nat using (ℕ ; zero ; suc)
+open import Cubical.Data.FinData using (Fin ; zero ; suc)
+open import Cubical.Data.Sigma using (_,_ ; fst ; snd)
+import Cubical.Data.Sum as Sum
+import Cubical.Data.Empty as Empty
+open import Cubical.Data.Empty using (⊥*)
+import Cubical.Data.Equality as Eq
+
+open import Theory.Base σeq V vs 𝒫
+open import Theory.Type.HLevels σeq V vs 𝒫
+open import Theory.Type.Bottom.Base σeq V vs 𝒫
+open import Theory.Type.Function.Base σeq V vs 𝒫
+open import Theory.Type.Decidable.Base σeq V vs 𝒫 public
+open import Theory.Combinator.Core σeq V vs 𝒫 public
+
+private variable ℓA : Level
+
+-- `¬Ty` lands in `⊥Ty`, which is `⊥*`; the search below speaks of `⊥`.
+strip : {ℓp : Level} {P : Type ℓp}
+  → P Sum.⊎ (P → ⊥* {ℓ-zero}) → P Sum.⊎ (P → Empty.⊥)
+strip (Sum.inl p) = Sum.inl p
+strip (Sum.inr np) = Sum.inr λ p → np p .lower
+
+-- Deciding a finite conjunction.  `arities σ o` is `Fin (σ .arity o)`, so
+-- this is the whole of the search `Ans-node` performs -- a node has no
+-- other quantifier.
+decΠFin : {ℓp : Level} {n : ℕ} {P : Fin n → Type ℓp}
+  → ((i : Fin n) → P i Sum.⊎ (P i → Empty.⊥))
+  → ((i : Fin n) → P i) Sum.⊎ (((i : Fin n) → P i) → Empty.⊥)
+decΠFin {n = zero} d = Sum.inl λ ()
+decΠFin {n = suc n} {P = P} d = onHead (d zero)
+  where
+  onTail : P zero
+    → ((i : Fin n) → P (suc i)) Sum.⊎ (((i : Fin n) → P (suc i)) → Empty.⊥)
+    → ((i : Fin (suc n)) → P i) Sum.⊎ (((i : Fin (suc n)) → P i) → Empty.⊥)
+  onTail p (Sum.inl ps) = Sum.inl λ where
+    zero → p
+    (suc i) → ps i
+  onTail p (Sum.inr nps) = Sum.inr λ f → nps λ i → f (suc i)
+
+  onHead : P zero Sum.⊎ (P zero → Empty.⊥)
+    → ((i : Fin (suc n)) → P i) Sum.⊎ (((i : Fin (suc n)) → P i) → Empty.⊥)
+  onHead (Sum.inl p) = onTail p (decΠFin λ i → d (suc i))
+  onHead (Sum.inr np) = Sum.inr λ f → np (f zero)
+
+DecAnswer : AnswerFunctor
+DecAnswer .AnswerFunctor.ℓAns ℓA = ℓA
+DecAnswer .AnswerFunctor.Ans = DecSet
+DecAnswer .AnswerFunctor.Ans-map&amp; f g m (Sum.inl a , h) = Sum.inl (f m (a , h))
+DecAnswer .AnswerFunctor.Ans-map&amp; f g m (Sum.inr n , h) = Sum.inr λ b → n (g m (b , h))
+DecAnswer .AnswerFunctor.Ans-⊕&amp; = dec-⊕&amp;
+DecAnswer .AnswerFunctor.Ans-ofDec = id⊢
+DecAnswer .AnswerFunctor.Ans-node o prec {As = As} {ms = ms} ws =
+  onAll (decΠFin (λ a → strip (ws a)))
+  where
+  Slots : interpIn o ↓M → Type _
+  Slots mz = (a : arities σ o) → ty (As mz a) (mz a)
+
+  -- Every decomposition of `op o ms` is `ms`, so a refutation of one slot
+  -- at `ms` refutes the node outright.  This is the whole use of `Precise`.
+  atMs : ty (⊗ᴰSet o As) (op o ms) → Slots ms
+  atMs (ms' , e' , ws') =
+    subst Slots (cong fst (prec (op o ms) (ms' , e') (ms , Eq.refl))) ws'
+
+  onAll : Slots ms Sum.⊎ (Slots ms → Empty.⊥)
+    → ty (DecSet (⊗ᴰSet o As)) (op o ms)
+  onAll (Sum.inl all) = Sum.inl (node-mk all)
+  onAll (Sum.inr no) = Sum.inr λ t → Empty.rec (no (atMs t))
+
+module DecCombinators {ℓX ℓ&lt;} {X : Type ℓX} (xs : X → S)
+  (O : LI.IPtOrder σeq V vs 𝒫 xs ℓ&lt;) where
+  open Combinators DecAnswer xs O public
+
+  -- what a checker at `Dec` is: a decision procedure at each index
+  decide : {A : Fam ℓA} → Step A → (x : X) → Decidable (ty (A x))
+  decide = fix
+</code></pre></figure>
+<h2 id="maybe">Answer 2 &mdash; <code>Maybe</code>: at most one</h2>
+
+<p>Returns a derivation or nothing, with no refutation. <code>Ans-⊕&amp;</code> is <code>orElse</code>, which commits to the left &mdash; so this is the PEG reading of a grammar, and an ambiguous one silently drops derivations. <code>Ans-node</code> ignores <code>Precise</code> entirely: with nothing to refute, a node is just a traversal.</p>
+
+<figure class="src"><figcaption><span class="path">Theory/Combinator/Answer/Incomplete.agda</span><span class="lines">84 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
+{- `Combinator/Core` at `Maybe`: at most one answer, no refutation.
+
+   `Ans-⊕&amp;` is `orElse`, which commits to the left -- so this is the PEG
+   reading of a grammar, and an ambiguous one silently loses derivations.
+   `Ans-node` ignores `Precise`: with nothing to refute, a node needs only
+   the traversal. -}
+open import Cubical.Foundations.Prelude
+open import Cubical.Algebra.Theory.Finitary
+open SortedSig
+open SortedEqns
+import Theory.Free.Base as FB
+import Theory.Type.Later.Indexed as LI
+module Theory.Combinator.Answer.Incomplete
+  {ℓ ℓ'' ℓv ℓS ℓP} {S : Type ℓS}
+  {σ : SortedSig S ℓ}
+  (σeq : SortedEqns σ ℓ'')
+  (V : Type ℓv) (vs : V → S)
+  (𝒫 : FB.FreePresentation σeq V vs ℓP)
+  where
+
+open import Cubical.Data.Nat using (ℕ ; zero ; suc)
+open import Cubical.Data.FinData using (Fin ; zero ; suc)
+open import Cubical.Data.Sigma using (_,_ ; fst ; snd)
+open import Cubical.Data.Unit using (Unit ; tt)
+import Cubical.Data.Sum as Sum
+
+open import Theory.Base σeq V vs 𝒫
+open import Theory.Type.HLevels σeq V vs 𝒫
+open import Theory.Type.Top.Base σeq V vs 𝒫
+open import Theory.Type.Sum.Binary.Base σeq V vs 𝒫
+open import Theory.Type.Product.Binary.Base σeq V vs 𝒫
+open import Theory.Type.Monad.Base σeq V vs 𝒫
+open import Theory.Type.Monad.Maybe σeq V vs 𝒫 public
+open import Theory.Combinator.Core σeq V vs 𝒫 public
+
+private variable ℓA : Level
+
+-- The traversal `Ans-node` performs: every slot must answer.
+travΠFin : {ℓp : Level} {n : ℕ} {P : Fin n → Type ℓp}
+  → ((i : Fin n) → P i Sum.⊎ Unit)
+  → ((i : Fin n) → P i) Sum.⊎ Unit
+travΠFin {n = zero} d = Sum.inl λ ()
+travΠFin {n = suc n} {P = P} d = onHead (d zero)
+  where
+  onTail : P zero → ((i : Fin n) → P (suc i)) Sum.⊎ Unit
+    → ((i : Fin (suc n)) → P i) Sum.⊎ Unit
+  onTail p (Sum.inl ps) = Sum.inl λ where
+    zero → p
+    (suc i) → ps i
+  onTail p (Sum.inr _) = Sum.inr tt
+
+  onHead : P zero Sum.⊎ Unit → ((i : Fin (suc n)) → P i) Sum.⊎ Unit
+  onHead (Sum.inl p) = onTail p (travΠFin λ i → d (suc i))
+  onHead (Sum.inr _) = Sum.inr tt
+
+MaybeSet : {s : S} → TheorySet ℓA s → TheorySet ℓA s
+MaybeSet (A , sA) = Maybe A , isSetMaybe sA
+
+fmapM : {s : S} {A : TheoryTy ℓA s} {B : TheoryTy ℓA s}
+  → A ⊢ B → Maybe A ⊢ Maybe B
+fmapM = Monad.fmap MaybeMonad
+
+MaybeAnswer : AnswerFunctor
+MaybeAnswer .AnswerFunctor.ℓAns ℓA = ℓA
+MaybeAnswer .AnswerFunctor.Ans = MaybeSet
+MaybeAnswer .AnswerFunctor.Ans-map&amp; f g m (Sum.inl a , h) = Sum.inl (f m (a , h))
+MaybeAnswer .AnswerFunctor.Ans-map&amp; f g m (Sum.inr u , h) = Sum.inr u
+MaybeAnswer .AnswerFunctor.Ans-⊕&amp; =
+  orElse ∘⊢ (Monad.fmap MaybeMonad inl ,&amp;p Monad.fmap MaybeMonad inr)
+MaybeAnswer .AnswerFunctor.Ans-ofDec m (Sum.inl a) = Sum.inl a
+MaybeAnswer .AnswerFunctor.Ans-ofDec m (Sum.inr _) = Sum.inr tt
+MaybeAnswer .AnswerFunctor.Ans-node o _ {ms = ms} ws = onAll (travΠFin ws)
+  where
+  onAll : _ → _
+  onAll (Sum.inl all) = Sum.inl (node-mk all)
+  onAll (Sum.inr _) = Sum.inr tt
+
+module MaybeCombinators {ℓX ℓ&lt;} {X : Type ℓX} (xs : X → S)
+  (O : LI.IPtOrder σeq V vs 𝒫 xs ℓ&lt;) where
+  open Combinators MaybeAnswer xs O public
+
+  test : {A : Fam ℓA} → Step A → (x : X) → ⊤Ty ⊢ Maybe (ty (A x))
+  test = fix
+</code></pre></figure>
+<h2 id="nd">Answer 3 &mdash; <code>ND</code>: all of them</h2>
+
+<p><code>Ans-⊕&amp;</code> is <code>appendND</code> where <code>Maybe</code>&rsquo;s is <code>orElse</code>, so nothing is dropped. <code>Ans-node</code> is the cartesian product of the slots&rsquo; enumerations &mdash; the one place the string framework&rsquo;s binary strength genuinely becomes n-ary, since an operation has as many arguments as it has.</p>
+
+<p><code>ND A</code> is a <code>μ</code>, so <code>ndToList</code>/<code>ndFromList</code> exist to reach the fold and come back.</p>
+
+<div class="note warn"><span class="k">The honest gap</span>
+<p>Completeness here is a claim about the grammar, not a consequence of the type. <code>ND A</code> is a list of derivations and nothing types &ldquo;these are all of them&rdquo;. Only <code>Dec</code> is intrinsic. An <em>exhaustive</em> answer &mdash; a list together with a proof that every derivation is in it &mdash; would close this, and would be the most interesting backend to add.</p></div>
+
+<figure class="src"><figcaption><span class="path">Theory/Combinator/Answer/NonDet.agda</span><span class="lines">113 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
+{- `Combinator/Core` at `ND`: every answer, not just one.
+
+   `Ans-⊕&amp;` is `appendND` where `Incomplete`'s is `orElse`, so an ambiguous
+   grammar keeps all its derivations.  `Ans-node` is the cartesian product
+   of the slots' enumerations -- the one place where the monoid version's
+   binary `ND⊗r` becomes genuinely n-ary, since an operation has as many
+   arguments as it has.
+
+   As in the monoid development, completeness here is a claim about the
+   grammar and not a consequence of the type: `ND A` is a list of parses
+   and nothing types "these are all of them".  Only `Dec` is intrinsic. -}
+open import Cubical.Foundations.Prelude
+open import Cubical.Algebra.Theory.Finitary
+open SortedSig
+open SortedEqns
+import Theory.Free.Base as FB
+import Theory.Type.Later.Indexed as LI
+module Theory.Combinator.Answer.NonDet
+  {ℓ ℓ'' ℓv ℓS ℓP} {S : Type ℓS}
+  {σ : SortedSig S ℓ}
+  (σeq : SortedEqns σ ℓ'')
+  (V : Type ℓv) (vs : V → S)
+  (𝒫 : FB.FreePresentation σeq V vs ℓP)
+  where
+
+open import Cubical.Data.Bool using (Bool ; true ; false ; isSetBool)
+open import Cubical.Data.Nat using (ℕ ; zero ; suc)
+open import Cubical.Data.FinData using (Fin ; zero ; suc)
+open import Cubical.Data.List using (List ; [] ; _∷_ ; _++_) renaming (map to mapL)
+open import Cubical.Data.Sigma using (_,_ ; fst ; snd)
+open import Cubical.Data.Unit using (Unit ; tt ; tt*)
+import Cubical.Data.Sum as Sum
+
+open import Theory.Base σeq V vs 𝒫
+open import Theory.Type.HLevels σeq V vs 𝒫
+open import Theory.Type.Top.Base σeq V vs 𝒫
+open import Theory.Type.Sum.Base σeq V vs 𝒫
+open import Theory.Type.Sum.Binary.Base σeq V vs 𝒫
+open import Theory.Type.Product.Binary.Base σeq V vs 𝒫
+open import Theory.Type.Inductive.Base σeq V vs 𝒫
+open import Theory.Type.Inductive.HLevels σeq V vs 𝒫
+open import Theory.Type.Monad.Base σeq V vs 𝒫
+open import Theory.Type.Monad.NonDet σeq V vs 𝒫 public
+open import Theory.Combinator.Core σeq V vs 𝒫 public
+
+private variable ℓA ℓp ℓq : Level
+
+private
+  concatMapL : {A : Type ℓp} {B : Type ℓq} → (A → List B) → List A → List B
+  concatMapL f [] = []
+  concatMapL f (a ∷ as) = f a ++ concatMapL f as
+
+-- The cartesian product of the slots.  `arities σ o` is `Fin (σ .arity o)`,
+-- so a node's enumeration is this fold over its arity.
+allΠFin : {n : ℕ} {P : Fin n → Type ℓp}
+  → ((i : Fin n) → List (P i)) → List ((i : Fin n) → P i)
+allΠFin {n = zero} f = (λ ()) ∷ []
+allΠFin {n = suc n} {P = P} f =
+  concatMapL (λ h → mapL (glue h) (allΠFin λ i → f (suc i))) (f zero)
+  where
+  glue : P zero → ((i : Fin n) → P (suc i)) → (i : Fin (suc n)) → P i
+  glue h t zero = h
+  glue h t (suc i) = t i
+
+-- `ND` is a `μ`, so its elements are lists; these two are the isomorphism,
+-- used only to reach `allΠFin` and come back.
+ndToList : {s : S} {A : TheoryTy ℓA s} → ND A ⊢ (λ m → List (A m))
+ndToList {s = s} {A = A} = rec (λ _ → ListCode A) (λ _ → alg) tt
+  where
+  Lst : Unit → TheoryTy _ s
+  Lst _ m = List (A m)
+
+  alg : ⟦ ListCode A ⟧TheoryTy Lst ⊢ Lst tt
+  alg = ⊕ᴰ-elim λ where
+    false → λ m _ → []
+    true → λ m z → z .fst .lower ∷ z .snd .lower
+
+ndFromList : {s : S} {A : TheoryTy ℓA s} (m : ↓M s) → List (A m) → ND A m
+ndFromList m [] = nilND m tt
+ndFromList m (a ∷ l) = consND m (a , ndFromList m l)
+
+isSetListCode : {s : S} {A : TheoryTy ℓA s}
+  → isSetTheoryTy A → isSetValued (ListCode A)
+isSetListCode isSetA .fst = lift isSetBool
+isSetListCode isSetA .snd false = lift (isSetLiftTheoryTy isSet⊤Ty)
+isSetListCode isSetA .snd true = lift isSetA , lift tt*
+
+isSetND : {s : S} {A : TheoryTy ℓA s} → isSetTheoryTy A → isSetTheoryTy (ND A)
+isSetND {A = A} isSetA =
+  isSetμ (λ _ → ListCode A) (λ _ → isSetListCode isSetA) tt
+
+NDSet : {s : S} → TheorySet ℓA s → TheorySet (ℓF ℓA) s
+NDSet (A , sA) = ND A , isSetND sA
+
+NDAnswer : AnswerFunctor
+NDAnswer .AnswerFunctor.ℓAns = ℓF
+NDAnswer .AnswerFunctor.Ans = NDSet
+NDAnswer .AnswerFunctor.Ans-map&amp; f g m (x , h) =
+  ndFromList m (mapL (λ a → f m (a , h)) (ndToList m x))
+NDAnswer .AnswerFunctor.Ans-⊕&amp; =
+  appendND ∘⊢ (Monad.fmap NDMonad inl ,&amp;p Monad.fmap NDMonad inr)
+NDAnswer .AnswerFunctor.Ans-ofDec m (Sum.inl a) = ηND m a
+NDAnswer .AnswerFunctor.Ans-ofDec m (Sum.inr _) = nilND m tt
+NDAnswer .AnswerFunctor.Ans-node o _ {ms = ms} ws =
+  ndFromList (op o ms) (mapL node-mk (allΠFin λ a → ndToList (ms a) (ws a)))
+
+module NDCombinators {ℓX ℓ&lt;} {X : Type ℓX} (xs : X → S)
+  (O : LI.IPtOrder σeq V vs 𝒫 xs ℓ&lt;) where
+  open Combinators NDAnswer xs O public
+
+  parses : {A : Fam ℓA} → Step A → (x : X) → ⊤Ty ⊢ ND (ty (A x))
+  parses = fix
+</code></pre></figure>
+<h2 id="term">What a free term algebra gives you for free</h2>
+
+<p>The core asks a signature for two things: precision, and a well-founded order. A free term presentation has both, for every operation, and neither depends on the signature &mdash; so they are proved once, generically, and every future client inherits them.</p>
+
+<table>
+<tr><th>Added</th><th>In words</th></tr>
+<tr><td><code>opT-inj</code></td><td>A node determines its arguments. Constructor injectivity for the indexed W-type.</td></tr>
+<tr><td><code>preciseTerm</code></td><td>&hellip;which is exactly <code>Precise o</code>, stated where the core can use it.</td></tr>
+<tr><td><code>headOpT</code></td><td>The head operation, for the no-confusion a checker needs.</td></tr>
+<tr><td><code>termSize</code>, <code>argSize&lt;</code></td><td>The measure the guard descends on, and the fact that every argument is smaller.</td></tr>
+</table>
+
+<p>Contrast the string world, which has neither: a word splits many ways, so it needs bespoke token rules; and its order is the proper-suffix relation, justified separately with a length measure.</p>
+
+<figure class="src"><figcaption><span class="path">Theory/Free/Term.agda</span><span class="lines">203 lines</span></figcaption><pre><code>-- Free model on a signature (i.e. a theory without equations)
+{-# OPTIONS -WnoUnsupportedIndexedMatch #-}
+open import Cubical.Foundations.Prelude
+open import Cubical.Foundations.HLevels
+open import Cubical.Categories.Category.Base
+open import Cubical.Algebra.Theory.Finitary
+open Category
+open SortedSig
+open SortedEqns
+open import Cubical.Data.Empty using (⊥)
+module Theory.Free.Term
+  {ℓ ℓ'' ℓv ℓS} {S : Type ℓS}
+  {σ : SortedSig S ℓ}
+  (σeq : SortedEqns σ ℓ'')
+  (V : Type ℓv) (vs : V → S)
+  (noEqns : σeq .eqns → ⊥)
+  (isSetS : isSet S) (isSetV : isSet V) (isSetOps : isSet (σ .ops))
+  where
+
+import Cubical.Data.Empty as Empty
+open import Cubical.Data.Sigma
+open import Cubical.Data.Sum using (_⊎_ ; inl ; inr ; isSet⊎)
+import Cubical.Data.Equality as Eq
+open import Cubical.Data.Equality.More using (isSet→isSetEq)
+open import Cubical.Data.W.Indexed using (IW ; node ; isOfHLevelSuc-IW)
+
+open import Theory.Free.Base σeq V vs
+
+private variable ℓX : Level
+
+ℓTerm : Level
+ℓTerm = ℓ-max ℓS (ℓ-max ℓv ℓ)
+
+private
+  Shape : S → Type ℓTerm
+  Shape s = (Σ[ v ∈ V ] (vs v Eq.≡ s)) ⊎ (Σ[ o ∈ σ .ops ] (σ .resultSort o Eq.≡ s))
+
+  Pos : (s : S) → Shape s → Type ℓ-zero
+  Pos s (inl _) = ⊥
+  Pos s (inr (o , _)) = arities σ o
+
+  sortAt : (s : S) (sh : Shape s) → Pos s sh → S
+  sortAt s (inr (o , _)) a = σ .sortOf o a
+
+  isSetShape : (s : S) → isSet (Shape s)
+  isSetShape s = isSet⊎
+    (isSetΣ isSetV λ _ → isProp→isSet (isSet→isSetEq isSetS))
+    (isSetΣ isSetOps λ _ → isProp→isSet (isSet→isSetEq isSetS))
+
+Term : S → Type ℓTerm
+Term = IW Shape Pos sortAt
+
+private
+  isSetTerm : (s : S) → isSet (Term s)
+  isSetTerm = isOfHLevelSuc-IW 1 isSetShape
+
+  termOps : Ops {σ = σ} Term
+  termOps o ms = node (inr (o , Eq.refl)) ms
+
+  termSat : (e : σeq .eqns)
+    (ρ : (w : vars σeq e) → Term (σeq .varSort e w))
+    → TmRec Term termOps ρ (σeq .lhs e) ≡ TmRec Term termOps ρ (σeq .rhs e)
+  termSat e ρ = Empty.rec (noEqns e)
+
+  TermModel : MOD σeq ℓTerm .ob
+  TermModel = (λ s → Term s , isSetTerm s) , termOps , termSat
+
+fold : {X : S → Type ℓX} (α : Ops {σ = σ} X) (ρ : (v : V) → X (vs v))
+  → {s : S} → Term s → X s
+fold {X = X} α ρ (node (inl (v , Eq.refl)) _) = ρ v
+fold {X = X} α ρ (node (inr (o , Eq.refl)) sub) =
+  α o (λ a → fold {X = X} α ρ (sub a))
+
+private
+  foldUniq : {X : S → Type ℓX} (α : Ops {σ = σ} X) (ρ : (v : V) → X (vs v))
+    (f : (s : S) → Term s → X s)
+    → ((o : σ .ops) (ms : (a : arities σ o) → Term (σ .sortOf o a))
+        → f (σ .resultSort o) (termOps o ms)
+          ≡ α o (λ a → f (σ .sortOf o a) (ms a)))
+    → ((v : V) → f (vs v) (node (inl (v , Eq.refl)) (λ ())) ≡ ρ v)
+    → {s : S} (m : Term s) → f s m ≡ fold α ρ m
+  foldUniq {X = X} α ρ f homf fβ (node (inl (v , Eq.refl)) sub) =
+    cong (λ z → f (vs v) (node (inl (v , Eq.refl)) z)) (funExt (λ ())) ∙ fβ v
+  foldUniq {X = X} α ρ f homf fβ (node (inr (o , Eq.refl)) sub) =
+      homf o sub
+    ∙ cong (α o) (funExt λ a → foldUniq {X = X} α ρ f homf fβ (sub a))
+
+termPresentation : FreePresentation ℓTerm
+termPresentation .P = TermModel
+termPresentation .gen v = node (inl (v , Eq.refl)) (λ ())
+termPresentation .satStrict e ρ = Empty.rec (noEqns e)
+termPresentation .rec isSetX α sat ρ = fold α ρ
+termPresentation .recGen isSetX α sat ρ v = refl
+termPresentation .recOp isSetX α sat ρ o ms = refl
+termPresentation .recUniq isSetX α sat ρ f homf fβ m = foldUniq α ρ f homf fβ m
+
+genT : (v : V) → Term (vs v)
+genT v = node (inl (v , Eq.refl)) (λ ())
+
+opT : (o : σ .ops) → ((a : arities σ o) → Term (σ .sortOf o a))
+    → Term (σ .resultSort o)
+opT = termOps
+
+data TermView : {s : S} → Term s → Type ℓTerm where
+  isGen : (v : V) → TermView (genT v)
+  isOp  : (o : σ .ops) (ms : (a : arities σ o) → Term (σ .sortOf o a))
+        → TermView (opT o ms)
+
+termView : {s : S} (t : Term s) → TermView t
+termView (node (inl (v , Eq.refl)) sub) = out
+  where
+  -- a generator's child tuple is empty, so it *is* `genT v`
+  noKids : (λ ()) ≡ sub
+  noKids = funExt λ ()
+
+  out : TermView (node (inl (v , Eq.refl)) sub)
+  out = subst (λ z → TermView (node (inl (v , Eq.refl)) z)) noKids (isGen v)
+termView (node (inr (o , Eq.refl)) sub) = isOp o sub
+
+elimTerm : {ℓP : Level} {P : {s : S} → Term s → Type ℓP}
+  → ((v : V) → P (genT v))
+  → ((o : σ .ops) (ms : (a : arities σ o) → Term (σ .sortOf o a))
+      → ((a : arities σ o) → P (ms a)) → P (opT o ms))
+  → {s : S} (t : Term s) → P t
+elimTerm {P = P} pg po (node (inl (v , Eq.refl)) sub) =
+  subst (λ z → P (node (inl (v , Eq.refl)) z)) (funExt λ ()) (pg v)
+elimTerm {P = P} pg po (node (inr (o , Eq.refl)) sub) =
+  po o sub λ a → elimTerm {P = P} pg po (sub a)
+
+
+-- What a free term presentation gives a combinator framework.
+--
+-- `Theory/Combinator/Core` asks a signature for two things: that each
+-- operation decompose uniquely (`Precise`), so that a refutation at one
+-- slot refutes the node; and a well-founded order for the guard.  A free
+-- term algebra has both, for *every* operation, and neither depends on the
+-- signature -- so a checker over any such theory gets them here rather than
+-- re-proving them.  (The free monoid has neither: a word splits many ways,
+-- which is why that development has token rules and a suffix order.)
+
+open import Cubical.Data.Nat using (ℕ ; zero ; suc ; _+_ ; +-assoc ; +-comm ; +-suc)
+import Cubical.Data.Nat.Order as NO
+open import Cubical.Data.FinData using (Fin ; zero ; suc)
+open import Cubical.Data.Maybe using (Maybe ; just ; nothing)
+
+private
+  shOf : {s : S} → Term s → Shape s
+  shOf (node sh _) = sh
+
+  kidsOf : {s : S} (t : Term s)
+    → (p : Pos s (shOf t)) → Term (sortAt s (shOf t) p)
+  kidsOf (node sh f) = f
+
+-- `opT o` is an embedding: the node determines its arguments.
+opT-inj : (o : σ .ops) {ms ms' : (a : arities σ o) → Term (σ .sortOf o a)}
+  → opT o ms ≡ opT o ms' → ms ≡ ms'
+opT-inj o {ms = ms} {ms' = ms'} q =
+  subst Motive (isSetShape _ _ _ (λ i → shOf (q i)) refl) (λ i → kidsOf (q i))
+  where
+  Motive : shOf (opT o ms) ≡ shOf (opT o ms) → Type ℓTerm
+  Motive r = PathP (λ i → (p : Pos _ (r i)) → Term (sortAt _ (r i) p)) ms ms'
+
+-- ...which is exactly `Precise o`, stated where `Core` can use it.
+preciseTerm : (o : σ .ops) (m : Term (σ .resultSort o))
+  → isProp (Σ[ ms ∈ ((a : arities σ o) → Term (σ .sortOf o a)) ] (opT o ms Eq.≡ m))
+preciseTerm o m (ms , e) (ms' , e') =
+  ΣPathP ( opT-inj o (Eq.eqToPath e ∙ sym (Eq.eqToPath e'))
+         , isProp→PathP (λ _ → isSet→isSetEq (isSetTerm _)) e e' )
+
+-- The head operation, for the no-confusion a checker needs when it refutes
+-- the branches it did not take.  The signature's own discrimination of
+-- operations is the instance's job; this reduces it to that.
+headOpT : {s : S} → Term s → Maybe (σ .ops)
+headOpT (node (inl _) _) = nothing
+headOpT (node (inr (o , _)) _) = just o
+
+headOpT-node : (o : σ .ops) (ms : (a : arities σ o) → Term (σ .sortOf o a))
+  → headOpT (opT o ms) ≡ just o
+headOpT-node o ms = refl
+
+-- The measure the guard descends on: a term's size.  Every argument of a
+-- node is strictly smaller, which is the whole descent obligation.
+private
+  sumFin : {n : ℕ} → (Fin n → ℕ) → ℕ
+  sumFin {zero} f = 0
+  sumFin {suc n} f = f zero + sumFin (λ i → f (suc i))
+
+  sumFin-≥ : {n : ℕ} (f : Fin n → ℕ) (i : Fin n) → f i NO.≤ sumFin f
+  sumFin-≥ {suc n} f zero = sumFin (λ j → f (suc j)) , +-comm _ (f zero)
+  sumFin-≥ {suc n} f (suc i) =
+    (f zero + sumFin-≥ (λ k → f (suc k)) i .fst)
+    , ( sym (+-assoc (f zero) (sumFin-≥ (λ k → f (suc k)) i .fst) (f (suc i)))
+      ∙ cong (f zero +_) (sumFin-≥ (λ k → f (suc k)) i .snd) )
+
+termSize : {s : S} → Term s → ℕ
+termSize (node (inl _) _) = 1
+termSize (node (inr (o , Eq.refl)) sub) = suc (sumFin λ a → termSize (sub a))
+
+argSize&lt; : (o : σ .ops) (ms : (a : arities σ o) → Term (σ .sortOf o a))
+  (a : arities σ o) → termSize (ms a) NO.&lt; termSize (opT o ms)
+argSize&lt; o ms a = sumFin-≥ (λ b → termSize (ms b)) a .fst
+  , (+-suc (sumFin-≥ (λ b → termSize (ms b)) a .fst) (termSize (ms a))
+     ∙ cong suc (sumFin-≥ (λ b → termSize (ms b)) a .snd))
+</code></pre></figure>
+<h2 id="lguard">Client 1 &mdash; the scope checker</h2>
+
+<p>&ldquo;Are all the variables in this lambda term bound?&rdquo; A predicate on terms, indexed by the context you are checking against.</p>
+
+<h3>Guard: what the theory owes</h3>
+
+<p>Three obligations, all discharged mechanically:</p>
+
+<table>
+<tr><th>Obligation</th><th>How</th></tr>
+<tr><td><code>preciseλ</code></td><td>Constructor injectivity, by <em>projection</em> rather than matching &mdash; a total function that reads a field out with a default.</td></tr>
+<tr><td><code>tmSize</code> + <code>Subterm</code></td><td>A size measure, fed to <code>ilexOrder</code>. Gives <code>callFun</code>/<code>callArg</code>/<code>callBody</code>: the descent proofs the recursive calls need.</td></tr>
+<tr><td><code>nodeCover</code></td><td>Every term is a node of exactly one operation. <code>total</code> is the term algebra&rsquo;s induction; <code>disjoint</code> is no-confusion via the head classifier <code>clsL</code>.</td></tr>
+</table>
+
+<div class="note"><span class="k">Read the cover carefully</span>
+<p><code>nodeCover</code> is fourteen lines, and it is the analogue of the string framework&rsquo;s <code>Λ-total</code> and <code>Λ-disjoint</code> &mdash; which cost a page of reasoning about how a word splits. That difference is the whole story of why term algebras are easier to predict than strings.</p></div>
+
+<figure class="src"><figcaption><span class="path">Theory/Instances/Lambda/Guard.agda</span><span class="lines">173 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
+{- What the generic combinators ask of the lambda theory: that every
+   operation decompose uniquely, and that the arguments of a node sit below
+   it in a well-founded order.
+
+   Both are easier here than their monoid counterparts.  `Precise` is
+   constructor injectivity for `RawTm` and holds of *every* operation --
+   where over the free monoid it holds only of `literal c ⊗ -`, which is
+   why that development has token rules rather than a node rule.  The order
+   is the term's size; `Instances/Monoid/Suffix/Base` needs the proper
+   suffix order and a length measure to justify the same `löb`, and
+   `Later/Indexed` is generic enough that neither is re-proved here. -}
+open import Cubical.Foundations.Prelude
+open import Cubical.Foundations.HLevels
+open import Cubical.Algebra.Theory.Finitary
+open SortedSig
+open SortedEqns
+import Theory.Type.Later.Indexed as LI
+module Theory.Instances.Lambda.Guard
+  (Name : Type ℓ-zero) (isSetName : isSet Name) where
+
+open import Cubical.Data.Nat using (ℕ ; zero ; suc ; _+_ ; +-comm ; +-suc)
+import Cubical.Data.Nat.Order as NO
+open import Cubical.Data.FinData using (Fin ; zero ; suc)
+open import Cubical.Data.Sigma using (ΣPathP ; _,_ ; fst ; snd)
+open import Cubical.Data.Unit using (Unit ; tt)
+import Cubical.Data.Empty as Empty
+import Cubical.Data.Sum as Sum
+import Cubical.Data.Equality as Eq
+
+open import Theory.Instances.Lambda.Base Name isSetName public
+open import Theory.Type.HLevels λEqns Name (λ _ → nm) termPresentation public
+open import Theory.Type.Top.Base λEqns Name (λ _ → nm) termPresentation public
+open import Theory.Type.Sum.Binary.Base λEqns Name (λ _ → nm) termPresentation public
+open import Theory.Type.Product.Binary.Base λEqns Name (λ _ → nm) termPresentation public
+open import Theory.Type.Bottom.Base λEqns Name (λ _ → nm) termPresentation public
+open import Theory.Type.Cover.Base λEqns Name (λ _ → nm) termPresentation public
+open import Theory.Type.Decidable.Base λEqns Name (λ _ → nm) termPresentation public
+open import Theory.Combinator.Core λEqns Name (λ _ → nm) termPresentation public
+
+private variable ℓX : Level
+
+-- Constructor injectivity, by projection rather than by matching.
+private
+  nameOf : Name → RawTm → Name
+  nameOf d (tvar x) = x
+  nameOf d (tapp _ _) = d
+  nameOf d (tlam _ _) = d
+
+  funOf : RawTm → RawTm
+  funOf (tvar x) = tvar x
+  funOf (tapp t _) = t
+  funOf (tlam x t) = tlam x t
+
+  argOf : RawTm → RawTm
+  argOf (tvar x) = tvar x
+  argOf (tapp _ u) = u
+  argOf (tlam x t) = tlam x t
+
+  binderOf : Name → RawTm → Name
+  binderOf d (tvar _) = d
+  binderOf d (tapp _ _) = d
+  binderOf d (tlam x _) = x
+
+  bodyOf : RawTm → RawTm
+  bodyOf (tvar x) = tvar x
+  bodyOf (tapp t u) = tapp t u
+  bodyOf (tlam _ t) = t
+
+-- Every operation of `λSig` is precise: `op o ms` determines `ms`.
+preciseλ : (o : LOp) → Precise o
+preciseλ varOp m (ms , e) (ms' , e') =
+  ΣPathP (funExt slot , isProp→PathP (λ _ → isPropModelEq) e e')
+  where
+  whole : tvar (ms zero) ≡ tvar (ms' zero)
+  whole = Eq.eqToPath e ∙ sym (Eq.eqToPath e')
+
+  slot : (a : Fin 1) → ms a ≡ ms' a
+  slot zero = cong (nameOf (ms zero)) whole
+preciseλ appOp m (ms , e) (ms' , e') =
+  ΣPathP (funExt slot , isProp→PathP (λ _ → isPropModelEq) e e')
+  where
+  whole : tapp (ms zero) (ms (suc zero)) ≡ tapp (ms' zero) (ms' (suc zero))
+  whole = Eq.eqToPath e ∙ sym (Eq.eqToPath e')
+
+  slot : (a : Fin 2) → ms a ≡ ms' a
+  slot zero = cong funOf whole
+  slot (suc zero) = cong argOf whole
+preciseλ lamOp m (ms , e) (ms' , e') =
+  ΣPathP (funExt slot , isProp→PathP (λ _ → isPropModelEq) e e')
+  where
+  whole : tlam (ms zero) (ms (suc zero)) ≡ tlam (ms' zero) (ms' (suc zero))
+  whole = Eq.eqToPath e ∙ sym (Eq.eqToPath e')
+
+  slot : (a : Fin 2) → ms a ≡ ms' a
+  slot zero = cong (binderOf (ms zero)) whole
+  slot (suc zero) = cong bodyOf whole
+
+-- The measure the recursion descends on.
+tmSize : RawTm → ℕ
+tmSize (tvar _) = 1
+tmSize (tapp t u) = suc (tmSize t + tmSize u)
+tmSize (tlam _ t) = suc (tmSize t)
+
+private
+  n&lt;sn : (n : ℕ) → n NO.&lt; suc n
+  n&lt;sn n = 0 , refl
+
+  fun&lt; : (t u : RawTm) → tmSize t NO.&lt; tmSize (tapp t u)
+  fun&lt; t u = tmSize u , (+-suc (tmSize u) (tmSize t)
+    ∙ cong suc (+-comm (tmSize u) (tmSize t)))
+
+  arg&lt; : (t u : RawTm) → tmSize u NO.&lt; tmSize (tapp t u)
+  arg&lt; t u = tmSize t , +-suc (tmSize t) (tmSize u)
+
+  body&lt; : (x : Name) (t : RawTm) → tmSize t NO.&lt; tmSize (tlam x t)
+  body&lt; x t = n&lt;sn (tmSize t)
+
+-- The subterm order, at whatever index type a checker family uses.  `rank`
+-- breaks ties between components at the same term; nothing below needs it,
+-- since every call this development makes is at a strictly smaller term.
+module Subterm {X : Type ℓX} (isSetX : isSet X) (rank : X → ℕ) where
+
+  srt : X → LSort
+  srt _ = tm
+
+  order : LI.IPtOrder λEqns Name (λ _ → nm) termPresentation srt ℓ-zero
+  order = LI.ilexOrder λEqns Name (λ _ → nm) termPresentation srt
+    isSetX (λ _ → tmSize) rank
+
+  open LI.IPtOrder order using (_&lt;_) public
+
+  smaller : {x x' : X} {t t' : RawTm}
+    → tmSize t' NO.&lt; tmSize t → (x' , t') &lt; (x , t)
+  smaller lt = lift (Sum.inl lt)
+
+  callFun : {x x' : X} (t u : RawTm) → (x' , t) &lt; (x , tapp t u)
+  callFun t u = smaller (fun&lt; t u)
+
+  callArg : {x x' : X} (t u : RawTm) → (x' , u) &lt; (x , tapp t u)
+  callArg t u = smaller (arg&lt; t u)
+
+  callBody : {x x' : X} (n : Name) (t : RawTm) → (x' , t) &lt; (x , tlam n t)
+  callBody n t = smaller (body&lt; n t)
+
+-- The node cover: every term is a node of exactly one operation.
+--
+-- This is the free term algebra's answer to `Λ₁`, and it is the whole of
+-- prediction here.  `total` is the algebra's induction principle and
+-- `disjoint` is no-confusion, so one constructor of lookahead is always
+-- enough -- there is no window, no width, and nothing to check.  Over the
+-- free monoid the same two fields cost `Λ-total` and `Λ-disjoint`.
+clsL : RawTm → LOp
+clsL (tvar _) = varOp
+clsL (tapp _ _) = appOp
+clsL (tlam _ _) = lamOp
+
+clsL-node : (o : LOp) (ms : interpIn o ↓M) → clsL (op o ms) ≡ o
+clsL-node varOp ms = refl
+clsL-node appOp ms = refl
+clsL-node lamOp ms = refl
+
+nodeCover : Cover LOp NodeAt
+nodeCover .total (tvar x) _ = varOp , ((λ _ → x) , Eq.refl)
+nodeCover .total (tapp t u) _ = appOp , (appArgs t u , Eq.refl)
+nodeCover .total (tlam x t) _ = lamOp , (lamArgs x t , Eq.refl)
+nodeCover .disjoint o o' ne m ((ms , e) , (ms' , e')) =
+  Empty.rec (ne (Eq.pathToEq same))
+  where
+  same : o ≡ o'
+  same = sym (clsL-node o ms)
+       ∙ cong clsL (Eq.eqToPath e ∙ sym (Eq.eqToPath e'))
+       ∙ clsL-node o' ms'
+</code></pre></figure>
+<h3 id="lscope">The scope checker itself</h3>
+
+<p>Nothing in this file mentions <code>Dec</code>, <code>Maybe</code> or <code>ND</code>. Read it in four parts.</p>
+
+<h4>1. Membership, as a grammar</h4>
+<p><code>memB</code> is a <code>Bool</code>, and <code>InCtx Γ x = memB x Γ ≡ true</code>. Using a boolean makes it a <em>proposition</em> and <em>decidable</em> at the same time, with no extra work. <code>decInCtx</code> packages that as a <code>Decidable</code>, which any answer can read via <code>Ans-ofDec</code>.</p>
+
+<h4>2. The grammar</h4>
+<pre><code>Scope Γ (tvar x)   = InCtx Γ x
+Scope Γ (tapp t u) = Scope Γ t × Scope Γ u
+Scope Γ (tlam x t) = Scope (x ∷ Γ) t</code></pre>
+<p>Note what falls out: this is built from propositions by products, so <code>Scope Γ t</code> is itself a proposition. <strong>Unambiguity is definitional</strong>, not a theorem &mdash; which is also why <code>ND</code> will find exactly one derivation rather than several.</p>
+
+<h4>3. Slots</h4>
+<p>One entry per operation, saying what each argument must satisfy. The <code>lamOp</code> line is the payoff of <code>⊗ᴰ</code>:</p>
+<pre><code>Slots lamOp Γ ms (suc zero) = ScopeSet (ms zero ∷ Γ)</code></pre>
+<p>The body&rsquo;s grammar mentions <code>ms zero</code> &mdash; the bound name, which is <em>slot zero&rsquo;s value</em>. With independent slots this line cannot be written at all.</p>
+
+<h4>4. Unfolding and the step</h4>
+<p><code>rollNode</code> and <code>unrollNode</code> are the one-step unfolding, both directions, both <code>⊢</code>-terms. <code>unrollNode</code> takes the cover&rsquo;s cell as a hypothesis, for the reason given earlier: knowing the head is what makes the backward direction possible.</p>
+<p>Then <code>step</code> is three lines: <code>look</code> over the cover, and in each branch, build the node answer and relabel it. The recursive calls appear as <code>callAt</code> with a descent proof, and the <code>lam</code> case calls at a <em>different index</em> &mdash; <code>ms zero ∷ Γ</code> &mdash; which is how the binder extends the context.</p>
+
+<figure class="src"><figcaption><span class="path">Theory/Instances/Lambda/Scope.agda</span><span class="lines">153 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
+{- A scope checker for untyped lambda terms, written once, for every answer.
+
+   The family is indexed by the context, so `X = Ctx` and Löb is taken over
+   contexts -- the analogue of "one nonterminal per production", except
+   that the index is unbounded and that costs nothing, since `fix` asks
+   nothing of `X`.
+
+   The `lam` case is why `Core`'s node is `⊗ᴰ` and not `Operation/Base`'s
+   `⊗ᵘ`: the body is checked in `ms zero ∷ Γ`, and `ms zero` is the *first
+   slot's value*.  Independent slots cannot say that.
+
+   Case analysis is `look` over `Guard`'s node cover, not a match on the
+   term: `step` is `⊕ᴰ-elim` over the cover exactly as the monoid
+   development's `look⊗` is `⊕ᴰ-elim` over the lookahead cover.  The cell
+   `NodeAt o` is also what lets `unrollNode` be a `⊢`-term -- a grammar and
+   one of its unfoldings agree only where the head is known, which is what
+   `Ans-map&amp;` carries.
+
+   Nothing below mentions `Dec`, `Maybe` or `ND`. -}
+open import Cubical.Foundations.Prelude
+open import Cubical.Foundations.HLevels
+open import Cubical.Algebra.Theory.Finitary
+open import Cubical.Relation.Nullary.Base using (Dec ; yes ; no)
+open SortedSig
+open SortedEqns
+module Theory.Instances.Lambda.Scope
+  (Name : Type ℓ-zero) (isSetName : isSet Name)
+  (decName : (x y : Name) → Dec (x ≡ y))
+  where
+
+open import Cubical.Data.Bool using (Bool ; true ; false ; isSetBool ; false≢true)
+open import Cubical.Data.FinData using (Fin ; zero ; suc)
+open import Cubical.Data.List using (List ; [] ; _∷_)
+open import Cubical.Data.List.Properties using (isOfHLevelList)
+open import Cubical.Data.Sigma using (_×_ ; _,_ ; fst ; snd)
+open import Cubical.Data.Unit using (Unit ; tt)
+import Cubical.Data.Sum as Sum
+import Cubical.Data.Empty as Empty
+import Cubical.Data.Equality as Eq
+
+open import Theory.Instances.Lambda.Guard Name isSetName public
+
+Ctx : Type ℓ-zero
+Ctx = List Name
+
+isSetCtx : isSet Ctx
+isSetCtx = isOfHLevelList 0 isSetName
+
+-- Membership, as a `Bool` so that it is a proposition and decidable at once.
+memB : Name → Ctx → Bool
+memB x [] = false
+memB x (y ∷ Γ) = onEq (decName x y)
+  where
+  onEq : Dec (x ≡ y) → Bool
+  onEq (yes _) = true
+  onEq (no _) = memB x Γ
+
+-- ...as a grammar at sort `nm`, and as a decision the answer can read.
+InCtx : Ctx → TheoryTy ℓ-zero nm
+InCtx Γ x = memB x Γ ≡ true
+
+InCtxSet : Ctx → TheorySet ℓ-zero nm
+InCtxSet Γ = InCtx Γ , λ x → isProp→isSet (isSetBool _ _)
+
+decInCtx : (Γ : Ctx) → Decidable (InCtx Γ)
+decInCtx Γ x _ = onB (memB x Γ)
+  where
+  onB : (b : Bool) → (b ≡ true) Sum.⊎ ((b ≡ true) → ⊥Ty x)
+  onB true = Sum.inl refl
+  onB false = Sum.inr λ p → Empty.rec (false≢true p)
+
+-- The grammar.  A proposition, so `unambiguous` is definitional.
+Scope : Ctx → TheoryTy ℓ-zero tm
+Scope Γ (tvar x) = InCtx Γ x
+Scope Γ (tapp t u) = Scope Γ t × Scope Γ u
+Scope Γ (tlam x t) = Scope (x ∷ Γ) t
+
+isPropScope : (Γ : Ctx) (t : RawTm) → isProp (Scope Γ t)
+isPropScope Γ (tvar x) = isSetBool _ _
+isPropScope Γ (tapp t u) = isProp× (isPropScope Γ t) (isPropScope Γ u)
+isPropScope Γ (tlam x t) = isPropScope (x ∷ Γ) t
+
+ScopeSet : Ctx → TheorySet ℓ-zero tm
+ScopeSet Γ = Scope Γ , λ t → isProp→isSet (isPropScope Γ t)
+
+⊤Set : {s : LSort} → TheorySet ℓ-zero s
+⊤Set = ⊤Ty , isSet⊤Ty
+
+-- The three productions, as the slots of their nodes.  Only `lamOp` uses
+-- the dependency on the splitting, and it is the whole reason for `⊗ᴰ`.
+Slots : (o : LOp) → Ctx → NodeArgs ℓ-zero o
+Slots varOp Γ ms a = InCtxSet Γ
+Slots appOp Γ ms a = ScopeSet Γ
+Slots lamOp Γ ms zero = ⊤Set
+Slots lamOp Γ ms (suc zero) = ScopeSet (ms zero ∷ Γ)
+
+-- One level of unfolding, both ways, as `⊢`-terms.  `unrollNode` needs the
+-- cell: a term is a node of `o` only where the cover says so.
+rollNode : (o : LOp) (Γ : Ctx) → ⊗ᴰ o (Slots o Γ) ⊢ Scope Γ
+rollNode varOp Γ m (ms , Eq.refl , ws) = ws zero
+rollNode appOp Γ m (ms , Eq.refl , ws) = ws zero , ws (suc zero)
+rollNode lamOp Γ m (ms , Eq.refl , ws) = ws (suc zero)
+
+unrollNode : (o : LOp) (Γ : Ctx) → Scope Γ &amp; NodeAt o ⊢ ⊗ᴰ o (Slots o Γ)
+unrollNode varOp Γ m (s , (ms , Eq.refl)) =
+  node-mk {ms = ms} λ where zero → s
+unrollNode appOp Γ m (s , (ms , Eq.refl)) =
+  node-mk {ms = ms} λ where
+    zero → s .fst
+    (suc zero) → s .snd
+unrollNode lamOp Γ m (s , (ms , Eq.refl)) =
+  node-mk {ms = ms} λ where
+    zero → tt
+    (suc zero) → s
+
+
+-- The checker, for whatever answer.
+module Check (𝒯 : AnswerFunctor) where
+
+  open Subterm {X = Ctx} isSetCtx (λ _ → 0) hiding (_&lt;_) public
+  open Combinators 𝒯 srt order public
+
+  step : Step ScopeSet
+  step Γ = look nodeCover branch
+    where
+    -- the answer at the node the cell names
+    nodeAns : (o : LOp)
+      → ▷ (AnsFam ScopeSet) Γ &amp; NodeAt o ⊢ ty (Ans (⊗ᴰSet o (Slots o Γ)))
+    nodeAns varOp m (β , (ms , Eq.refl)) =
+      Ans-node varOp (preciseλ varOp) {As = Slots varOp Γ} {ms = ms}
+        λ where zero → Ans-ofDec (ms zero) (decInCtx Γ (ms zero) tt)
+    nodeAns appOp m (β , (ms , Eq.refl)) =
+      Ans-node appOp (preciseλ appOp) {As = Slots appOp Γ} {ms = ms}
+        λ where
+          zero → callAt Γ
+            (callFun {x = Γ} {x' = Γ} (ms zero) (ms (suc zero))) β
+          (suc zero) → callAt Γ
+            (callArg {x = Γ} {x' = Γ} (ms zero) (ms (suc zero))) β
+    nodeAns lamOp m (β , (ms , Eq.refl)) =
+      Ans-node lamOp (preciseλ lamOp) {As = Slots lamOp Γ} {ms = ms}
+        λ where
+          zero → Ans-ofDec (ms zero) (Sum.inl tt)
+          (suc zero) → callAt (ms zero ∷ Γ)
+            (callBody {x = Γ} {x' = ms zero ∷ Γ} (ms zero) (ms (suc zero))) β
+
+    branch : (o : LOp)
+      → ▷ (AnsFam ScopeSet) Γ &amp; NodeAt o ⊢ ty (Ans (ScopeSet Γ))
+    branch o =
+      Ans-map&amp; (rollNode o Γ ∘⊢ π₁) (unrollNode o Γ) ∘⊢ (nodeAns o ,&amp; π₂)
+
+  scoped : Checker ScopeSet
+  scoped = fix step
+</code></pre></figure>
+<h3 id="ltests">Running it three ways</h3>
+
+<p>Every test is <code>refl</code>, so they are executed by the typechecker: the combinators, the guarded fixpoint and all three answers reduce on concrete input. Worth reading for what it demonstrates rather than for the code:</p>
+
+<table>
+<tr><th>Test</th><th>What it pins down</th></tr>
+<tr><td><code>dec-capture</code> is <code>false</code></td><td><code>λx. x y</code> is not closed &mdash; the binder does not capture <code>y</code>.</td></tr>
+<tr><td><code>dec-capture-in-ctx</code> is <code>true</code></td><td>&hellip;but it is fine with <code>y</code> in scope.</td></tr>
+<tr><td><code>dec-shadow</code> is <code>true</code></td><td><code>λx.λx. x</code> &mdash; the inner binder shadows.</td></tr>
+<tr><td><code>nd-*</code> are all <code>0</code> or <code>1</code></td><td>Never 2: <code>Scope</code> is a proposition, so the enumerator cannot find duplicates.</td></tr>
+<tr><td><code>no-open</code></td><td>At <code>Dec</code> an out-of-scope term returns an actual <em>refutation</em>, not a bit.</td></tr>
+</table>
+
+<figure class="src"><figcaption><span class="path">Theory/Instances/Lambda/ScopeTests.agda</span><span class="lines">135 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
+{- One scope checker, three answers.
+
+   `Scope.Check` is instantiated at `DecAnswer`, `MaybeAnswer` and
+   `NDAnswer`; nothing in `Scope` changes.  The tests are `refl`, so they
+   are run by the typechecker: the combinators, the guarded fixpoint and
+   the three answers all reduce. -}
+open import Cubical.Foundations.Prelude
+open import Cubical.Algebra.Theory.Finitary
+open SortedSig
+open SortedEqns
+module Theory.Instances.Lambda.ScopeTests where
+
+open import Cubical.Data.Bool using (Bool ; true ; false ; false≢true)
+import Cubical.Data.Empty as Empty
+open import Cubical.Data.List using (List ; [] ; _∷_ ; length)
+open import Cubical.Data.Nat using (ℕ ; zero ; suc ; isSetℕ ; discreteℕ)
+open import Cubical.Data.Sigma using (_,_ ; fst ; snd)
+open import Cubical.Data.Unit using (tt)
+import Cubical.Data.Sum as Sum
+
+open import Theory.Instances.Lambda.Scope ℕ isSetℕ discreteℕ
+
+import Theory.Combinator.Answer.Decidable
+  λEqns ℕ (λ _ → nm) termPresentation as D
+import Theory.Combinator.Answer.Incomplete
+  λEqns ℕ (λ _ → nm) termPresentation as MB
+import Theory.Combinator.Answer.NonDet
+  λEqns ℕ (λ _ → nm) termPresentation as NDm
+
+module CD = Check D.DecAnswer
+module CM = Check MB.MaybeAnswer
+module CN = Check NDm.NDAnswer
+
+-- the same grammar, read three ways
+decideScope : (Γ : Ctx) → D.Decidable (Scope Γ)
+decideScope = CD.scoped
+
+testScope : (Γ : Ctx) → ⊤Ty ⊢ MB.Maybe (Scope Γ)
+testScope = CM.scoped
+
+parsesScope : (Γ : Ctx) → ⊤Ty ⊢ NDm.ND (Scope Γ)
+parsesScope = CN.scoped
+
+-- readouts
+decB : (Γ : Ctx) (t : RawTm) → Bool
+decB Γ t = Sum.rec (λ _ → true) (λ _ → false) (decideScope Γ t tt)
+
+mayB : (Γ : Ctx) (t : RawTm) → Bool
+mayB Γ t = Sum.rec (λ _ → true) (λ _ → false) (testScope Γ t tt)
+
+count : (Γ : Ctx) (t : RawTm) → ℕ
+count Γ t = length (NDm.ndToList t (parsesScope Γ t tt))
+
+-- some terms
+idT : RawTm
+idT = tlam 0 (tvar 0)
+
+konst : RawTm
+konst = tlam 0 (tlam 1 (tvar 0))
+
+openT : RawTm
+openT = tvar 0
+
+capture : RawTm
+capture = tlam 0 (tapp (tvar 0) (tvar 1))
+
+selfApp : RawTm
+selfApp = tlam 0 (tapp (tvar 0) (tvar 0))
+
+-- ...and what each answer says about them
+dec-id : decB [] idT ≡ true
+dec-id = refl
+
+dec-konst : decB [] konst ≡ true
+dec-konst = refl
+
+dec-selfApp : decB [] selfApp ≡ true
+dec-selfApp = refl
+
+dec-open : decB [] openT ≡ false
+dec-open = refl
+
+dec-open-in-ctx : decB (0 ∷ []) openT ≡ true
+dec-open-in-ctx = refl
+
+-- the binder really extends the context, and only for its own body
+dec-capture : decB [] capture ≡ false
+dec-capture = refl
+
+dec-capture-in-ctx : decB (1 ∷ []) capture ≡ true
+dec-capture-in-ctx = refl
+
+-- shadowing: the inner `0` binds, so `tvar 0` is in scope
+dec-shadow : decB [] (tlam 0 (tlam 0 (tvar 0))) ≡ true
+dec-shadow = refl
+
+-- `Maybe` agrees on all of them
+may-id : mayB [] idT ≡ true
+may-id = refl
+
+may-open : mayB [] openT ≡ false
+may-open = refl
+
+may-capture : mayB [] capture ≡ false
+may-capture = refl
+
+may-capture-in-ctx : mayB (1 ∷ []) capture ≡ true
+may-capture-in-ctx = refl
+
+-- ...and `ND` enumerates exactly one derivation, because `Scope` is a
+-- proposition: being in scope has no content beyond holding.
+nd-id : count [] idT ≡ 1
+nd-id = refl
+
+nd-konst : count [] konst ≡ 1
+nd-konst = refl
+
+nd-open : count [] openT ≡ 0
+nd-open = refl
+
+nd-capture : count [] capture ≡ 0
+nd-capture = refl
+
+nd-capture-in-ctx : count (1 ∷ []) capture ≡ 1
+nd-capture-in-ctx = refl
+
+nd-selfApp : count [] selfApp ≡ 1
+nd-selfApp = refl
+
+-- The refutation is real content, not a bit: at `Dec` an out-of-scope term
+-- comes back with a proof that it cannot be scoped.
+no-open : D.¬Ty (Scope []) openT
+no-open =
+  Sum.rec (λ s → Empty.rec (false≢true s)) (λ n → n) (decideScope [] openT tt)
+</code></pre></figure>
+<h2 id="abase">Client 2 &mdash; the type checker</h2>
+
+<p>A simply typed lambda calculus, checked against a type. The interesting design decision is in the signature.</p>
+
+<h3>The signature, with annotations in the operations</h3>
+
+<p>Operations may be <em>indexed by external data</em>. Here <code>appOp B</code> is &ldquo;apply, at argument type <code>B</code>&rdquo; and <code>lamOp B</code> is &ldquo;abstract, at domain <code>B</code>&rdquo;. That is how an annotation enters a signature, and it makes the calculus syntax-directed:</p>
+
+<pre><code>Γ ⊢ var x       ⇐ A   iff  Γ(x) = A
+Γ ⊢ app[B] f a  ⇐ A   iff  Γ ⊢ f ⇐ B ⇒ A  and  Γ ⊢ a ⇐ B
+Γ ⊢ lam[B] x t  ⇐ A   iff  A = B ⇒ C      and  Γ,x:B ⊢ t ⇐ C</code></pre>
+
+<p>Every premise&rsquo;s type is determined by the conclusion&rsquo;s plus the node&rsquo;s annotation. No search, no existential.</p>
+
+<div class="note warn"><span class="k">This is the load-bearing choice</span>
+<p>Drop <code>B</code> from application and the rule becomes <code>∃B. Γ ⊢ f ⇐ B ⇒ A and Γ ⊢ a ⇐ B</code> &mdash; a search over infinitely many types. See <a href="#boundary">Where it stops</a>.</p></div>
+
+<p>Types are a plain datatype with decidable equality, deliberately: keeping them <em>outside</em> the theory means type equality is an ordinary decision rather than another grammar problem. The rest of the file is the term model &mdash; a plain <code>data</code>, chosen so everything reduces and the <code>refl</code> tests work.</p>
+
+<figure class="src"><figcaption><span class="path">Theory/Instances/Annotated/Base.agda</span><span class="lines">294 lines</span></figcaption><pre><code>{-# OPTIONS -WnoUnsupportedIndexedMatch #-}
+{- A simply typed lambda calculus with annotated application, as a theory.
+
+   Two sorts and three operations, where the operations are *indexed by
+   external data*: `appOp B` is "apply, at argument type `B`" and `lamOp B`
+   is "abstract, at domain `B`".  That is how an annotation enters a
+   signature, and it is what makes the calculus syntax-directed:
+
+     Γ ⊢ var x        ⇐ A   iff  Γ(x) = A
+     Γ ⊢ app[B] f a   ⇐ A   iff  Γ ⊢ f ⇐ B ⇒ A  and  Γ ⊢ a ⇐ B
+     Γ ⊢ lam[B] x t   ⇐ A   iff  A = B ⇒ C  and  Γ,x:B ⊢ t ⇐ C
+
+   Every premise's type is determined by the conclusion's plus the node's
+   annotation, so there is no existential and no synthesis mode.  Dropping
+   `B` from `appOp` puts one back -- `Γ ⊢ f ⇐ ? ⇒ A` -- and that is exactly
+   the point at which a checker needs `Route`; see `Typing`'s header. -}
+open import Cubical.Foundations.Prelude
+open import Cubical.Foundations.HLevels using (isOfHLevelRetract ; isSet× )
+open import Cubical.Categories.Category.Base
+open import Cubical.Algebra.Theory.Finitary
+open Category
+import Cubical.Data.Equality as Eq
+open SortedSig
+open SortedEqns
+module Theory.Instances.Annotated.Base where
+
+open import Cubical.Data.Bool using (Bool ; true ; false)
+open import Cubical.Data.Empty using (⊥)
+import Cubical.Data.Empty as Empty
+open import Cubical.Data.FinData using (Fin ; zero ; suc)
+open import Cubical.Data.FinData.Properties using (isSetFin)
+open import Cubical.Data.FinData.More using (two)
+open import Cubical.Data.Nat using (ℕ ; isSetℕ ; discreteℕ)
+open import Cubical.Data.Sigma using (_×_ ; _,_ ; fst ; snd)
+open import Cubical.Data.Sum using (_⊎_ ; inl ; inr ; isSet⊎)
+open import Cubical.Data.Unit using (Unit ; tt ; Unit* ; tt*)
+open import Cubical.Relation.Nullary.Base using (Dec ; yes ; no ; Discrete)
+open import Cubical.Relation.Nullary.Properties using (Discrete→isSet)
+open import Cubical.Data.W.Indexed using (IW ; node ; isOfHLevelSuc-IW)
+
+-- Types, external to the theory: they annotate operations rather than
+-- occupying a sort, so type equality stays a plain decidable equality.
+infixr 25 _⇒_
+data Ty : Type ℓ-zero where
+  ι : Ty
+  _⇒_ : Ty → Ty → Ty
+
+-- Viewing a type as an arrow.  `IsArr` is a proposition and `dom`/`cod`
+-- are total, so "A is an arrow with domain B" is `IsArr A × (dom A ≡ B)` --
+-- a proposition, decidable, and usable as a slot of a node.
+IsArr : Ty → Type ℓ-zero
+IsArr ι = ⊥
+IsArr (_ ⇒ _) = Unit
+
+isPropIsArr : (A : Ty) → isProp (IsArr A)
+isPropIsArr ι = λ ()
+isPropIsArr (_ ⇒ _) = λ _ _ → refl
+
+dom cod : Ty → Ty
+dom ι = ι
+dom (B ⇒ _) = B
+cod ι = ι
+cod (_ ⇒ C) = C
+
+discreteTy : Discrete Ty
+discreteTy ι ι = yes refl
+discreteTy ι (B ⇒ C) = no λ p → subst IsArr (sym p) tt
+discreteTy (B ⇒ C) ι = no λ p → subst IsArr p tt
+discreteTy (B ⇒ C) (B' ⇒ C') = onParts (discreteTy B B') (discreteTy C C')
+  where
+  onParts : Dec (B ≡ B') → Dec (C ≡ C') → Dec ((B ⇒ C) ≡ (B' ⇒ C'))
+  onParts (yes p) (yes q) = yes (cong₂ _⇒_ p q)
+  onParts (no ¬p) _ = no λ e → ¬p (cong dom e)
+  onParts _ (no ¬q) = no λ e → ¬q (cong cod e)
+
+isSetTyp : isSet Ty
+isSetTyp = Discrete→isSet discreteTy
+
+-- The signature.
+data ASort : Type ℓ-zero where
+  nm tm : ASort
+
+data AOp : Type ℓ-zero where
+  varOp : AOp
+  appOp : Ty → AOp
+  lamOp : Ty → AOp
+
+Ar : AOp → ℕ
+Ar varOp = 1
+Ar (appOp _) = 2
+Ar (lamOp _) = 2
+
+SortOf : (o : AOp) → Fin (Ar o) → ASort
+SortOf varOp _ = nm
+SortOf (appOp _) _ = tm
+SortOf (lamOp _) zero = nm
+SortOf (lamOp _) (suc zero) = tm
+
+ASig : SortedSig ASort ℓ-zero
+ASig .ops = AOp
+ASig .arity = Ar
+ASig .sortOf = SortOf
+ASig .resultSort _ = tm
+
+AEqns : SortedEqns ASig ℓ-zero
+AEqns .eqns = ⊥
+AEqns .eqnSort ()
+AEqns .varCount ()
+AEqns .varSort ()
+AEqns .lhs ()
+AEqns .rhs ()
+
+-- h-levels, for the term model.
+private
+  opRep : AOp → Unit ⊎ (Ty ⊎ Ty)
+  opRep varOp = inl tt
+  opRep (appOp B) = inr (inl B)
+  opRep (lamOp B) = inr (inr B)
+
+  opUnrep : Unit ⊎ (Ty ⊎ Ty) → AOp
+  opUnrep (inl _) = varOp
+  opUnrep (inr (inl B)) = appOp B
+  opUnrep (inr (inr B)) = lamOp B
+
+  opRet : (o : AOp) → opUnrep (opRep o) ≡ o
+  opRet varOp = refl
+  opRet (appOp B) = refl
+  opRet (lamOp B) = refl
+
+isSetAOp : isSet AOp
+isSetAOp = isOfHLevelRetract 2 opRep opUnrep opRet
+  (isSet⊎ (Discrete→isSet (λ _ _ → yes refl)) (isSet⊎ isSetTyp isSetTyp))
+
+private
+  srtRep : ASort → Bool
+  srtRep nm = true
+  srtRep tm = false
+
+  srtUnrep : Bool → ASort
+  srtUnrep true = nm
+  srtUnrep false = tm
+
+  srtRet : (s : ASort) → srtUnrep (srtRep s) ≡ s
+  srtRet nm = refl
+  srtRet tm = refl
+
+isSetASort : isSet ASort
+isSetASort = isOfHLevelRetract 2 srtRep srtUnrep srtRet
+  (Discrete→isSet dBool)
+  where
+  dBool : Discrete Bool
+  dBool true true = yes refl
+  dBool false false = yes refl
+  dBool true false = no λ p → subst (λ b → if b then Unit else ⊥) p tt
+    where open import Cubical.Data.Bool using (if_then_else_)
+  dBool false true = no λ p → subst (λ b → if b then ⊥ else Unit) p tt
+    where open import Cubical.Data.Bool using (if_then_else_)
+
+-- The term model: a plain datatype, so that everything reduces.
+data ATm : Type ℓ-zero where
+  avar : ℕ → ATm
+  aapp : Ty → ATm → ATm → ATm
+  alam : ℕ → Ty → ATm → ATm
+
+Crr : ASort → Type ℓ-zero
+Crr nm = ℕ
+Crr tm = ATm
+
+private
+  Shape : ASort → Type ℓ-zero
+  Shape nm = ℕ
+  Shape tm = AOp
+
+  Pos : (s : ASort) → Shape s → Type ℓ-zero
+  Pos nm _ = ⊥
+  Pos tm o = Fin (Ar o)
+
+  sortAt : (s : ASort) (sh : Shape s) → Pos s sh → ASort
+  sortAt tm o a = SortOf o a
+
+  W : ASort → Type ℓ-zero
+  W = IW Shape Pos sortAt
+
+  isSetW : (s : ASort) → isSet (W s)
+  isSetW = isOfHLevelSuc-IW 1 λ where
+    nm → isSetℕ
+    tm → isSetAOp
+
+  toNm : ℕ → W nm
+  toNm x = node x λ ()
+
+  toTm : ATm → W tm
+  toTm (avar x) = node varOp λ _ → toNm x
+  toTm (aapp B f a) = node (appOp B) (two (toTm f) (toTm a))
+  toTm (alam x B t) = node (lamOp B) (two (toNm x) (toTm t))
+
+  toW : (s : ASort) → Crr s → W s
+  toW nm = toNm
+  toW tm = toTm
+
+  fromNm : W nm → ℕ
+  fromNm (node x _) = x
+
+  fromTm : W tm → ATm
+  fromTm (node varOp sub) = avar (fromNm (sub zero))
+  fromTm (node (appOp B) sub) = aapp B (fromTm (sub zero)) (fromTm (sub (suc zero)))
+  fromTm (node (lamOp B) sub) = alam (fromNm (sub zero)) B (fromTm (sub (suc zero)))
+
+  fromW : (s : ASort) → W s → Crr s
+  fromW nm = fromNm
+  fromW tm = fromTm
+
+  tmRet : (t : ATm) → fromTm (toTm t) ≡ t
+  tmRet (avar x) = refl
+  tmRet (aapp B f a) = cong₂ (aapp B) (tmRet f) (tmRet a)
+  tmRet (alam x B t) = cong (alam x B) (tmRet t)
+
+  wRet : (s : ASort) (x : Crr s) → fromW s (toW s x) ≡ x
+  wRet nm x = refl
+  wRet tm = tmRet
+
+isSetCrr : (s : ASort) → isSet (Crr s)
+isSetCrr s = isOfHLevelRetract 2 (toW s) (fromW s) (wRet s) (isSetW s)
+
+open import Theory.Free.Base AEqns ℕ (λ _ → nm)
+
+private
+  aOps : Ops {σ = ASig} Crr
+  aOps varOp xs = avar (xs zero)
+  aOps (appOp B) xs = aapp B (xs zero) (xs (suc zero))
+  aOps (lamOp B) xs = alam (xs zero) B (xs (suc zero))
+
+  aSat : (e : AEqns .eqns)
+    (ρ : (w : vars AEqns e) → Crr (AEqns .varSort e w))
+    → TmRec Crr aOps ρ (AEqns .lhs e) ≡ TmRec Crr aOps ρ (AEqns .rhs e)
+  aSat () ρ
+
+  AModel : MOD AEqns ℓ-zero .ob
+  AModel = (λ s → Crr s , isSetCrr s) , aOps , aSat
+
+module Fold {ℓX} {X : ASort → Type ℓX}
+  (α : Ops {σ = ASig} X) (ρ : ℕ → X nm) where
+
+  foldTm : ATm → X tm
+  foldTm (avar x) = α varOp λ _ → ρ x
+  foldTm (aapp B f a) = α (appOp B) (two (foldTm f) (foldTm a))
+  foldTm (alam x B t) = α (lamOp B) (two (ρ x) (foldTm t))
+
+  fold : (s : ASort) → Crr s → X s
+  fold nm = ρ
+  fold tm = foldTm
+
+  foldOp : (o : AOp) (ms : (a : Fin (Ar o)) → Crr (SortOf o a))
+    → fold tm (aOps o ms) ≡ α o (λ a → fold (SortOf o a) (ms a))
+  foldOp varOp ms = cong (α varOp) (funExt λ where zero → refl)
+  foldOp (appOp B) ms = cong (α (appOp B)) (funExt λ where
+    zero → refl
+    (suc zero) → refl)
+  foldOp (lamOp B) ms = cong (α (lamOp B)) (funExt λ where
+    zero → refl
+    (suc zero) → refl)
+
+  module _ (f : (s : ASort) → Crr s → X s)
+    (homf : (o : AOp) (ms : (a : Fin (Ar o)) → Crr (SortOf o a))
+          → f tm (aOps o ms) ≡ α o (λ a → f (SortOf o a) (ms a)))
+    (fβ : (v : ℕ) → f nm v ≡ ρ v) where
+
+    foldUniqTm : (t : ATm) → f tm t ≡ foldTm t
+    foldUniqTm (avar x) =
+      homf varOp (λ _ → x) ∙ cong (α varOp) (funExt λ where zero → fβ x)
+    foldUniqTm (aapp B f' a) =
+        homf (appOp B) (two f' a)
+      ∙ cong (α (appOp B)) (funExt λ where
+          zero → foldUniqTm f'
+          (suc zero) → foldUniqTm a)
+    foldUniqTm (alam x B t) =
+        homf (lamOp B) (two x t)
+      ∙ cong (α (lamOp B)) (funExt λ where
+          zero → fβ x
+          (suc zero) → foldUniqTm t)
+
+    foldUniq : (s : ASort) (m : Crr s) → f s m ≡ fold s m
+    foldUniq nm x = fβ x
+    foldUniq tm t = foldUniqTm t
+
+aPresentation : FreePresentation ℓ-zero
+aPresentation .P = AModel
+aPresentation .satStrict () ρ
+aPresentation .gen v = v
+aPresentation .rec isSetX α sat ρ {s} = Fold.fold α ρ s
+aPresentation .recGen isSetX α sat ρ v = refl
+aPresentation .recOp isSetX α sat ρ = Fold.foldOp α ρ
+aPresentation .recUniq isSetX α sat ρ f homf fβ {s} =
+  Fold.foldUniq α ρ f homf fβ s
+</code></pre></figure>
+<h3 id="aguard">Guard</h3>
+
+<p>Identical in shape to the lambda one: precision by projection, a size measure, the subterm order, and the node cover. The classifier <code>clsA</code> returns the <em>operation</em> including its annotation, so <code>aapp ι f a</code> and <code>aapp (ι⇒ι) f a</code> land in different classes &mdash; which is right, and costs nothing.</p>
+
+<div class="note"><span class="k">An infinite cover is fine</span>
+<p><code>AOp</code> is infinite, since <code>appOp B</code> carries a type. A <code>Cover</code> does not care: <code>total</code> and <code>disjoint</code> say nothing about the size of the index. What <em>would</em> care is a sum <em>over</em> the cells &mdash; and avoiding that sum is precisely what <code>Ans-map&amp;</code>&rsquo;s hypothesis buys.</p></div>
+
+<figure class="src"><figcaption><span class="path">Theory/Instances/Annotated/Guard.agda</span><span class="lines">170 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
+{- What the generic combinators ask of the annotated lambda theory:
+   precision of every operation, and a well-founded order for the guard.
+
+   Identical in shape to `Instances/Lambda/Guard`, and for the same reason:
+   a free term algebra is precise everywhere and its subterm order is its
+   size.  There is no `headClash` here -- `Typing` unrolls a term to *one*
+   node rather than to a sum over head constructors, because the operations
+   `appOp B` and `lamOp B` are indexed by a type and so there are infinitely
+   many of them.  That is what `Core`'s pointwise `Ans-mapAt` is for. -}
+open import Cubical.Foundations.Prelude
+open import Cubical.Foundations.HLevels
+open import Cubical.Algebra.Theory.Finitary
+open SortedSig
+open SortedEqns
+import Theory.Type.Later.Indexed as LI
+module Theory.Instances.Annotated.Guard where
+
+open import Cubical.Data.Nat using (ℕ ; zero ; suc ; _+_ ; +-comm ; +-suc)
+import Cubical.Data.Nat.Order as NO
+open import Cubical.Data.FinData using (Fin ; zero ; suc)
+open import Cubical.Data.Sigma using (ΣPathP ; _,_ ; fst ; snd)
+import Cubical.Data.Sum as Sum
+import Cubical.Data.Empty as Empty
+import Cubical.Data.Equality as Eq
+
+open import Theory.Instances.Annotated.Base public
+open import Theory.Base AEqns ℕ (λ _ → nm) aPresentation public
+open import Theory.Type.HLevels AEqns ℕ (λ _ → nm) aPresentation public
+open import Theory.Type.Top.Base AEqns ℕ (λ _ → nm) aPresentation public
+open import Theory.Type.Bottom.Base AEqns ℕ (λ _ → nm) aPresentation public
+open import Theory.Type.Sum.Binary.Base AEqns ℕ (λ _ → nm) aPresentation public
+open import Theory.Type.Product.Binary.Base AEqns ℕ (λ _ → nm) aPresentation public
+open import Theory.Type.Cover.Base AEqns ℕ (λ _ → nm) aPresentation public
+open import Theory.Type.Decidable.Base AEqns ℕ (λ _ → nm) aPresentation public
+open import Theory.Combinator.Core AEqns ℕ (λ _ → nm) aPresentation public
+
+private variable ℓX : Level
+
+-- Constructor injectivity, by projection.  Public, because `Typing`'s
+-- roll needs them too: matching `Eq.refl` on `op (appOp B) ms ≡ aapp B f a`
+-- is stuck without K -- the annotation `B` occurs both as the operation's
+-- index and as a constructor argument -- so the equations are projected out
+-- rather than matched.
+varN : ℕ → ATm → ℕ
+varN d (avar x) = x
+varN d (aapp _ _ _) = d
+varN d (alam _ _ _) = d
+appFun appArgOf : ATm → ATm
+appFun (avar x) = avar x
+appFun (aapp _ f _) = f
+appFun (alam x B t) = alam x B t
+appArgOf (avar x) = avar x
+appArgOf (aapp _ _ a) = a
+appArgOf (alam x B t) = alam x B t
+
+lamN : ℕ → ATm → ℕ
+lamN d (avar _) = d
+lamN d (aapp _ _ _) = d
+lamN d (alam x _ _) = x
+
+lamBd : ATm → ATm
+lamBd (avar x) = avar x
+lamBd (aapp B f a) = aapp B f a
+lamBd (alam _ _ t) = t
+
+preciseA : (o : AOp) → Precise o
+preciseA varOp m (ms , e) (ms' , e') =
+  ΣPathP (funExt slot , isProp→PathP (λ _ → isPropModelEq) e e')
+  where
+  whole : avar (ms zero) ≡ avar (ms' zero)
+  whole = Eq.eqToPath e ∙ sym (Eq.eqToPath e')
+
+  slot : (a : Fin 1) → ms a ≡ ms' a
+  slot zero = cong (varN (ms zero)) whole
+preciseA (appOp B) m (ms , e) (ms' , e') =
+  ΣPathP (funExt slot , isProp→PathP (λ _ → isPropModelEq) e e')
+  where
+  whole : aapp B (ms zero) (ms (suc zero)) ≡ aapp B (ms' zero) (ms' (suc zero))
+  whole = Eq.eqToPath e ∙ sym (Eq.eqToPath e')
+
+  slot : (a : Fin 2) → ms a ≡ ms' a
+  slot zero = cong appFun whole
+  slot (suc zero) = cong appArgOf whole
+preciseA (lamOp B) m (ms , e) (ms' , e') =
+  ΣPathP (funExt slot , isProp→PathP (λ _ → isPropModelEq) e e')
+  where
+  whole : alam (ms zero) B (ms (suc zero)) ≡ alam (ms' zero) B (ms' (suc zero))
+  whole = Eq.eqToPath e ∙ sym (Eq.eqToPath e')
+
+  slot : (a : Fin 2) → ms a ≡ ms' a
+  slot zero = cong (lamN (ms zero)) whole
+  slot (suc zero) = cong lamBd whole
+
+-- The measure.
+aSize : ATm → ℕ
+aSize (avar _) = 1
+aSize (aapp _ f a) = suc (aSize f + aSize a)
+aSize (alam _ _ t) = suc (aSize t)
+
+private
+  fun&lt; : (B : Ty) (f a : ATm) → aSize f NO.&lt; aSize (aapp B f a)
+  fun&lt; B f a = aSize a , (+-suc (aSize a) (aSize f)
+    ∙ cong suc (+-comm (aSize a) (aSize f)))
+
+  arg&lt; : (B : Ty) (f a : ATm) → aSize a NO.&lt; aSize (aapp B f a)
+  arg&lt; B f a = aSize f , +-suc (aSize f) (aSize a)
+
+  body&lt; : (x : ℕ) (B : Ty) (t : ATm) → aSize t NO.&lt; aSize (alam x B t)
+  body&lt; x B t = 0 , refl
+
+module Subterm {X : Type ℓX} (isSetX : isSet X) (rank : X → ℕ) where
+
+  srt : X → ASort
+  srt _ = tm
+
+  order : LI.IPtOrder AEqns ℕ (λ _ → nm) aPresentation srt ℓ-zero
+  order = LI.ilexOrder AEqns ℕ (λ _ → nm) aPresentation srt
+    isSetX (λ _ → aSize) rank
+
+  open LI.IPtOrder order using (_&lt;_) public
+
+  smaller : {x x' : X} {t t' : ATm}
+    → aSize t' NO.&lt; aSize t → (x' , t') &lt; (x , t)
+  smaller lt = lift (Sum.inl lt)
+
+  callFun : {x x' : X} (B : Ty) (f a : ATm) → (x' , f) &lt; (x , aapp B f a)
+  callFun B f a = smaller (fun&lt; B f a)
+
+  callArg : {x x' : X} (B : Ty) (f a : ATm) → (x' , a) &lt; (x , aapp B f a)
+  callArg B f a = smaller (arg&lt; B f a)
+
+  callBody : {x x' : X} (n : ℕ) (B : Ty) (t : ATm)
+    → (x' , t) &lt; (x , alam n B t)
+  callBody n B t = smaller (body&lt; n B t)
+
+-- Argument tuples.
+appArgs : (B : Ty) → ATm → ATm → (b : Fin 2) → ↓M (SortOf (appOp B) b)
+appArgs B u v zero = u
+appArgs B u v (suc zero) = v
+
+lamArgs : (B : Ty) → ℕ → ATm → (b : Fin 2) → ↓M (SortOf (lamOp B) b)
+lamArgs B y u zero = y
+lamArgs B y u (suc zero) = u
+
+-- The node cover.  `AOp` is infinite -- `appOp B` carries a type -- and a
+-- cover does not care: `total` and `disjoint` say nothing about the size of
+-- the index.  What would care is a *sum* over the cells, which is exactly
+-- what `Core`'s `Ans-map&amp;` avoids by conditioning on the cell instead.
+clsA : ATm → AOp
+clsA (avar _) = varOp
+clsA (aapp B _ _) = appOp B
+clsA (alam _ B _) = lamOp B
+
+clsA-node : (o : AOp) (ms : interpIn o ↓M) → clsA (op o ms) ≡ o
+clsA-node varOp ms = refl
+clsA-node (appOp B) ms = refl
+clsA-node (lamOp B) ms = refl
+
+nodeCover : Cover AOp NodeAt
+nodeCover .total (avar x) _ = varOp , ((λ _ → x) , Eq.refl)
+nodeCover .total (aapp B f a) _ = appOp B , (appArgs B f a , Eq.refl)
+nodeCover .total (alam x B t) _ = lamOp B , (lamArgs B x t , Eq.refl)
+nodeCover .disjoint o o' ne m ((ms , e) , (ms' , e')) =
+  Empty.rec (ne (Eq.pathToEq same))
+  where
+  same : o ≡ o'
+  same = sym (clsA-node o ms)
+       ∙ cong clsA (Eq.eqToPath e ∙ sym (Eq.eqToPath e'))
+       ∙ clsA-node o' ms'
+</code></pre></figure>
+<h3 id="atyping">The type checker</h3>
+
+<p>Same four-part shape as the scope checker.</p>
+
+<h4>Index and side conditions</h4>
+<p>The index is <code>Ctx × Ty</code> &mdash; a checking judgment. Two side conditions, each a grammar with a decision: <code>Look Γ A</code> (&ldquo;this variable has type <code>A</code>&rdquo;) and <code>ArrHead A B</code> (&ldquo;<code>A</code> is an arrow with domain <code>B</code>&rdquo;). Both are propositions; both are decided by ordinary equality tests.</p>
+
+<h4>The judgment</h4>
+<p>Defined by recursion on the term, so &mdash; as with <code>Scope</code> &mdash; it is a proposition, and &ldquo;an annotated term has at most one derivation at a given type&rdquo; is definitional.</p>
+
+<h4>Slots &mdash; the dependency used twice</h4>
+<pre><code>Slots (lamOp B) (Γ , A) ms (suc zero) = DerSet ((ms zero , B) ∷ Γ , cod A)</code></pre>
+<p>The body&rsquo;s <em>context</em> is extended with <code>ms zero</code>, the bound name from slot zero; and the body&rsquo;s <em>type</em> is <code>cod A</code>, read off the index. Two dependencies in one line, neither expressible with independent slots.</p>
+
+<h4>The step</h4>
+<p>Identical structure to the scope checker: <code>look</code> over the cover, a node answer per branch, relabel. The recursive calls go to <em>different indices</em> &mdash; the function position at <code>Γ ⊢ ⇐ B ⇒ A</code>, the argument at <code>Γ ⊢ ⇐ B</code>, the lambda body at an extended context and a smaller type.</p>
+
+<figure class="src"><figcaption><span class="path">Theory/Instances/Annotated/Typing.agda</span><span class="lines">195 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
+{- A type checker for the annotated lambda calculus, written once, for
+   every answer.
+
+   The family is indexed by `Ctx × Ty` -- a checking judgment `Γ ⊢ t ⇐ A`
+   -- and the guard descends on the term.  Each rule's premises sit at
+   indices computed from the conclusion's index and the node's own data,
+   which is what `Core`'s dependent node `⊗ᴰ` provides:
+
+     var        the slot is the side condition `Γ(x) = A`
+     app[B]     slot 0 at `Γ ⊢ ⇐ B ⇒ A`, slot 1 at `Γ ⊢ ⇐ B`
+     lam[B]     slot 0 is the side condition `A = B ⇒ _`,
+                slot 1 at `(x,B),Γ ⊢ ⇐ cod A`, where `x` is slot 0's value
+
+   The `lam` rule uses the dependency twice over: the body's *context* and
+   its *type* are both read off the node.  With `Operation/Base`'s `⊗ᵘ` --
+   independent slots -- neither is expressible.
+
+   `AOp` is infinite, since `appOp B` carries a type.  That costs nothing:
+   `Guard`'s node cover is a `Cover` over it all the same, and `step` is
+   `look` over that cover.  What an infinite index *would* cost is a sum
+   over the cells, and `Ans-map&amp;` is what avoids it -- the relabelling is
+   conditioned on the cell rather than being a map into `⊕ᴰ AOp`.
+
+   Why the application carries `B`.  Drop it and the rule becomes
+
+     Γ ⊢ f a ⇐ A   iff   ∃B. Γ ⊢ f ⇐ B ⇒ A  and  Γ ⊢ a ⇐ B
+
+   an existential over an infinite index -- and now it is a sum over the
+   cells, which is what `Theory/Type/Decidable/Route`'s `routeIn` is for:
+   `total` says every term synthesises a type or provably none, `disjoint`
+   says the synthesised type is unique.  The annotation buys exactly the
+   bidirectional discipline; without it a checker owes uniqueness of
+   synthesis as a side theorem.  That is the honest boundary.
+
+   Nothing below mentions `Dec`, `Maybe` or `ND`. -}
+open import Cubical.Foundations.Prelude
+open import Cubical.Foundations.HLevels
+open import Cubical.Algebra.Theory.Finitary
+open SortedSig
+open SortedEqns
+module Theory.Instances.Annotated.Typing where
+
+open import Cubical.Data.FinData using (Fin ; zero ; suc)
+open import Cubical.Data.List using (List ; [] ; _∷_)
+open import Cubical.Data.List.Properties using (isOfHLevelList)
+open import Cubical.Data.Maybe using (Maybe ; just ; nothing)
+open import Cubical.Data.Maybe.Properties using (isOfHLevelMaybe ; discreteMaybe)
+open import Cubical.Data.Nat using (ℕ ; isSetℕ ; discreteℕ)
+open import Cubical.Data.Sigma using (_×_ ; _,_ ; fst ; snd)
+open import Cubical.Data.Unit using (Unit ; tt)
+open import Cubical.Relation.Nullary.Base using (Dec ; yes ; no)
+import Cubical.Data.Sum as Sum
+import Cubical.Data.Empty as Empty
+import Cubical.Data.Equality as Eq
+
+open import Theory.Instances.Annotated.Guard public
+
+-- Contexts and lookup.
+Ctx : Type ℓ-zero
+Ctx = List (ℕ × Ty)
+
+isSetCtx : isSet Ctx
+isSetCtx = isOfHLevelList 0 (isSetΣ isSetℕ λ _ → isSetTyp)
+
+lookC : Ctx → ℕ → Maybe Ty
+lookC [] x = nothing
+lookC ((y , A) ∷ Γ) x = onEq (discreteℕ x y)
+  where
+  onEq : Dec (x ≡ y) → Maybe Ty
+  onEq (yes _) = just A
+  onEq (no _) = lookC Γ x
+
+-- The index: a context and the type being checked against.
+Jdg : Type ℓ-zero
+Jdg = Ctx × Ty
+
+isSetIdx : isSet Jdg
+isSetIdx = isSetΣ isSetCtx λ _ → isSetTyp
+
+-- The two side conditions, each a grammar at sort `nm` with a decision.
+ArrHead : Ty → Ty → Type ℓ-zero
+ArrHead A B = IsArr A × (dom A ≡ B)
+
+isPropArrHead : (A B : Ty) → isProp (ArrHead A B)
+isPropArrHead A B = isProp× (isPropIsArr A) (isSetTyp _ _)
+
+ArrSet : Ty → Ty → TheorySet ℓ-zero nm
+ArrSet A B = (λ _ → ArrHead A B) , λ _ → isProp→isSet (isPropArrHead A B)
+
+decArrHead : (A B : Ty) → Decidable (ty (ArrSet A B))
+decArrHead ι B x _ = Sum.inr λ z → Empty.rec (z .fst)
+decArrHead (B' ⇒ C) B x _ = onDom (discreteTy B' B)
+  where
+  onDom : Dec (B' ≡ B) → DecTy (ty (ArrSet (B' ⇒ C) B)) x
+  onDom (yes p) = Sum.inl (tt , p)
+  onDom (no ¬p) = Sum.inr λ z → Empty.rec (¬p (z .snd))
+
+Look : Ctx → Ty → TheoryTy ℓ-zero nm
+Look Γ A x = lookC Γ x ≡ just A
+
+LookSet : Ctx → Ty → TheorySet ℓ-zero nm
+LookSet Γ A = Look Γ A , λ x → isProp→isSet (isOfHLevelMaybe 0 isSetTyp _ _)
+
+decLook : (Γ : Ctx) (A : Ty) → Decidable (Look Γ A)
+decLook Γ A x _ = onEq (discreteMaybe discreteTy (lookC Γ x) (just A))
+  where
+  onEq : Dec (lookC Γ x ≡ just A) → DecTy (Look Γ A) x
+  onEq (yes p) = Sum.inl p
+  onEq (no ¬p) = Sum.inr λ p → Empty.rec (¬p p)
+
+-- The judgment.  Every premise's index is determined, so this is a
+-- proposition: an annotated term has at most one derivation at a type, and
+-- `unambiguous` is definitional rather than a theorem.
+Der : Jdg → TheoryTy ℓ-zero tm
+Der (Γ , A) (avar x) = Look Γ A x
+Der (Γ , A) (aapp B f a) = Der (Γ , B ⇒ A) f × Der (Γ , B) a
+Der (Γ , A) (alam x B t) = ArrHead A B × Der ((x , B) ∷ Γ , cod A) t
+
+isPropDer : (i : Jdg) (t : ATm) → isProp (Der i t)
+isPropDer (Γ , A) (avar x) = isOfHLevelMaybe 0 isSetTyp _ _
+isPropDer (Γ , A) (aapp B f a) =
+  isProp× (isPropDer (Γ , B ⇒ A) f) (isPropDer (Γ , B) a)
+isPropDer (Γ , A) (alam x B t) =
+  isProp× (isPropArrHead A B) (isPropDer ((x , B) ∷ Γ , cod A) t)
+
+DerSet : Jdg → TheorySet ℓ-zero tm
+DerSet i = Der i , λ t → isProp→isSet (isPropDer i t)
+
+-- The three rules, as the slots of their nodes.
+Slots : (o : AOp) → Jdg → NodeArgs ℓ-zero o
+Slots varOp (Γ , A) ms a = LookSet Γ A
+Slots (appOp B) (Γ , A) ms zero = DerSet (Γ , B ⇒ A)
+Slots (appOp B) (Γ , A) ms (suc zero) = DerSet (Γ , B)
+Slots (lamOp B) (Γ , A) ms zero = ArrSet A B
+Slots (lamOp B) (Γ , A) ms (suc zero) = DerSet ((ms zero , B) ∷ Γ , cod A)
+
+-- One level of unfolding, both ways, as `⊢`-terms.
+rollNode : (o : AOp) (i : Jdg) → ⊗ᴰ o (Slots o i) ⊢ Der i
+rollNode varOp (Γ , A) m (ms , Eq.refl , ws) = ws zero
+rollNode (appOp B) (Γ , A) m (ms , Eq.refl , ws) = ws zero , ws (suc zero)
+rollNode (lamOp B) (Γ , A) m (ms , Eq.refl , ws) = ws zero , ws (suc zero)
+
+unrollNode : (o : AOp) (i : Jdg) → Der i &amp; NodeAt o ⊢ ⊗ᴰ o (Slots o i)
+unrollNode varOp (Γ , A) m (d , (ms , Eq.refl)) =
+  node-mk {ms = ms} λ where zero → d
+unrollNode (appOp B) (Γ , A) m (d , (ms , Eq.refl)) =
+  node-mk {ms = ms} λ where
+    zero → d .fst
+    (suc zero) → d .snd
+unrollNode (lamOp B) (Γ , A) m (d , (ms , Eq.refl)) =
+  node-mk {ms = ms} λ where
+    zero → d .fst
+    (suc zero) → d .snd
+
+
+-- The checker, for whatever answer.
+module Check (𝒯 : AnswerFunctor) where
+
+  open Subterm {X = Jdg} isSetIdx (λ _ → 0) hiding (_&lt;_) public
+  open Combinators 𝒯 srt order public
+
+  step : Step DerSet
+  step (Γ , A) = look nodeCover branch
+    where
+    nodeAns : (o : AOp) → ▷ (AnsFam DerSet) (Γ , A) &amp; NodeAt o
+      ⊢ ty (Ans (⊗ᴰSet o (Slots o (Γ , A))))
+    nodeAns varOp m (β , (ms , Eq.refl)) =
+      Ans-node varOp (preciseA varOp) {As = Slots varOp (Γ , A)} {ms = ms}
+        λ where zero → Ans-ofDec (ms zero) (decLook Γ A (ms zero) tt)
+    nodeAns (appOp B) m (β , (ms , Eq.refl)) =
+      Ans-node (appOp B) (preciseA (appOp B))
+        {As = Slots (appOp B) (Γ , A)} {ms = ms}
+        λ where
+          zero → callAt (Γ , B ⇒ A)
+            (callFun {x = Γ , A} {x' = Γ , B ⇒ A} B (ms zero) (ms (suc zero))) β
+          (suc zero) → callAt (Γ , B)
+            (callArg {x = Γ , A} {x' = Γ , B} B (ms zero) (ms (suc zero))) β
+    nodeAns (lamOp B) m (β , (ms , Eq.refl)) =
+      Ans-node (lamOp B) (preciseA (lamOp B))
+        {As = Slots (lamOp B) (Γ , A)} {ms = ms}
+        λ where
+          zero → Ans-ofDec (ms zero) (decArrHead A B (ms zero) tt)
+          (suc zero) → callAt ((ms zero , B) ∷ Γ , cod A)
+            (callBody {x = Γ , A} {x' = (ms zero , B) ∷ Γ , cod A}
+              (ms zero) B (ms (suc zero))) β
+
+    branch : (o : AOp)
+      → ▷ (AnsFam DerSet) (Γ , A) &amp; NodeAt o ⊢ ty (Ans (DerSet (Γ , A)))
+    branch o =
+      Ans-map&amp; (rollNode o (Γ , A) ∘⊢ π₁) (unrollNode o (Γ , A))
+      ∘⊢ (nodeAns o ,&amp; π₂)
+
+  typed : Checker DerSet
+  typed = fix step
+</code></pre></figure>
+<h3 id="atests">Running it three ways</h3>
+
+<table>
+<tr><th>Test</th><th>What it pins down</th></tr>
+<tr><td><code>dec-id-wrong-dom</code> is <code>false</code></td><td>The annotation must match the type being checked against.</td></tr>
+<tr><td><code>dec-id-not-arrow</code> is <code>false</code></td><td>A lambda cannot have a base type.</td></tr>
+<tr><td><code>dec-konst-wrong</code> is <code>false</code></td><td>Shadowing resolves the way it should.</td></tr>
+<tr><td><code>dec-bad-dom</code> is <code>false</code></td><td>The application&rsquo;s annotation and the function&rsquo;s must agree.</td></tr>
+<tr><td><code>dec-nested</code> is <code>true</code></td><td><code>λf:ι⇒ι. λx:ι. f x</code> &mdash; nesting, application and lookup together.</td></tr>
+<tr><td><code>nd-*</code> are <code>0</code> or <code>1</code></td><td>Typing is a proposition, so no duplicate derivations.</td></tr>
+</table>
+
+<figure class="src"><figcaption><span class="path">Theory/Instances/Annotated/TypingTests.agda</span><span class="lines">126 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
+{- One type checker, three answers.  The tests are `refl`, so the
+   typechecker runs them. -}
+open import Cubical.Foundations.Prelude
+open import Cubical.Algebra.Theory.Finitary
+open SortedSig
+open SortedEqns
+module Theory.Instances.Annotated.TypingTests where
+
+open import Cubical.Data.Bool using (Bool ; true ; false)
+open import Cubical.Data.List using (List ; [] ; _∷_ ; length)
+open import Cubical.Data.Nat using (ℕ ; zero ; suc)
+open import Cubical.Data.Sigma using (_,_ ; fst ; snd)
+open import Cubical.Data.Unit using (tt)
+import Cubical.Data.Sum as Sum
+
+open import Theory.Instances.Annotated.Typing
+
+import Theory.Combinator.Answer.Decidable
+  AEqns ℕ (λ _ → nm) aPresentation as D
+import Theory.Combinator.Answer.Incomplete
+  AEqns ℕ (λ _ → nm) aPresentation as MB
+import Theory.Combinator.Answer.NonDet
+  AEqns ℕ (λ _ → nm) aPresentation as NDm
+
+module CD = Check D.DecAnswer
+module CM = Check MB.MaybeAnswer
+module CN = Check NDm.NDAnswer
+
+-- the same grammar, read three ways
+decideTy : (i : Jdg) → D.Decidable (Der i)
+decideTy = CD.typed
+
+testTy : (i : Jdg) → ⊤Ty ⊢ MB.Maybe (Der i)
+testTy = CM.typed
+
+parsesTy : (i : Jdg) → ⊤Ty ⊢ NDm.ND (Der i)
+parsesTy = CN.typed
+
+decB : Ctx → Ty → ATm → Bool
+decB Γ A t = Sum.rec (λ _ → true) (λ _ → false) (decideTy (Γ , A) t tt)
+
+mayB : Ctx → Ty → ATm → Bool
+mayB Γ A t = Sum.rec (λ _ → true) (λ _ → false) (testTy (Γ , A) t tt)
+
+count : Ctx → Ty → ATm → ℕ
+count Γ A t = length (NDm.ndToList t (parsesTy (Γ , A) t tt))
+
+-- terms
+idT : Ty → ATm
+idT B = alam 0 B (avar 0)
+
+konst : ATm
+konst = alam 0 ι (alam 1 ι (avar 0))
+
+selfId : ATm                                 -- (λx:ι. x) y
+selfId = aapp ι (idT ι) (avar 1)
+
+badDom : ATm                                 -- (λx:ι⇒ι. x) y   with y : ι
+badDom = aapp ι (alam 0 (ι ⇒ ι) (avar 0)) (avar 1)
+
+nested : ATm                                 -- λf:ι⇒ι. λx:ι. f x
+nested = alam 0 (ι ⇒ ι) (alam 1 ι (aapp ι (avar 0) (avar 1)))
+
+-- ...and the checks
+dec-id : decB [] (ι ⇒ ι) (idT ι) ≡ true
+dec-id = refl
+
+dec-id-poly : decB [] ((ι ⇒ ι) ⇒ (ι ⇒ ι)) (idT (ι ⇒ ι)) ≡ true
+dec-id-poly = refl
+
+-- the annotation must match the type checked against
+dec-id-wrong-dom : decB [] ((ι ⇒ ι) ⇒ (ι ⇒ ι)) (idT ι) ≡ false
+dec-id-wrong-dom = refl
+
+-- ...and the result type must be an arrow at all
+dec-id-not-arrow : decB [] ι (idT ι) ≡ false
+dec-id-not-arrow = refl
+
+dec-konst : decB [] (ι ⇒ ι ⇒ ι) konst ≡ true
+dec-konst = refl
+
+-- shadowing: `konst`'s body returns the *outer* binder, so the type is
+-- `ι ⇒ ι ⇒ ι` and not something else
+dec-konst-wrong : decB [] (ι ⇒ (ι ⇒ ι) ⇒ ι) konst ≡ false
+dec-konst-wrong = refl
+
+dec-app : decB ((1 , ι) ∷ []) ι selfId ≡ true
+dec-app = refl
+
+dec-app-open : decB [] ι selfId ≡ false
+dec-app-open = refl
+
+-- the function's domain annotation disagrees with the application's
+dec-bad-dom : decB ((1 , ι) ∷ []) ι badDom ≡ false
+dec-bad-dom = refl
+
+dec-nested : decB [] ((ι ⇒ ι) ⇒ ι ⇒ ι) nested ≡ true
+dec-nested = refl
+
+-- `Maybe` agrees
+may-id : mayB [] (ι ⇒ ι) (idT ι) ≡ true
+may-id = refl
+
+may-nested : mayB [] ((ι ⇒ ι) ⇒ ι ⇒ ι) nested ≡ true
+may-nested = refl
+
+may-bad-dom : mayB ((1 , ι) ∷ []) ι badDom ≡ false
+may-bad-dom = refl
+
+-- ...and `ND` finds exactly one derivation, since typing is a proposition:
+-- an annotated term has at most one derivation at a given type.
+nd-id : count [] (ι ⇒ ι) (idT ι) ≡ 1
+nd-id = refl
+
+nd-nested : count [] ((ι ⇒ ι) ⇒ ι ⇒ ι) nested ≡ 1
+nd-nested = refl
+
+nd-app : count ((1 , ι) ∷ []) ι selfId ≡ 1
+nd-app = refl
+
+nd-bad-dom : count ((1 , ι) ∷ []) ι badDom ≡ 0
+nd-bad-dom = refl
+
+nd-not-arrow : count [] ι (idT ι) ≡ 0
+nd-not-arrow = refl
+</code></pre></figure>
+<h2 id="internal">Reflection: is this internal to the DSL?</h2>
+
+<p>A fair question to ask of any embedded language: is the code written <em>in</em> the language, or does it keep dropping into the host? The first version of this port dropped out in three places. All three were the same leak.</p>
+
+<table>
+<tr><th></th><th>Before</th><th>Now</th></tr>
+<tr><td>Case analysis</td><td><code>step</code> matched on the term</td><td><code>look</code> over a <code>Cover</code></td></tr>
+<tr><td>Relabelling</td><td><code>Ans-mapAt</code>, pointwise</td><td><code>Ans-map&amp;</code>, a <code>⊢</code>-term</td></tr>
+<tr><td>Side conditions</td><td><code>Ans-dec</code>, a raw sum</td><td><code>Ans-ofDec : DecSet A ⊢ Ans A</code></td></tr>
+</table>
+
+<p>They were connected: matching on the term is what made a pointwise relabelling necessary, and a pointwise relabelling is what let a term unroll to <em>one</em> node instead of a sum over head constructors &mdash; which is how the obligation discussed below got dodged rather than paid.</p>
+
+<p>Fixing the first fixed the rest. Once the head comes from a cover cell, that cell is available as a hypothesis, and the backward map becomes writable. Deleting the metalevel head machinery removed about 60 lines.</p>
+
+<h4>What is deliberately still in the host language</h4>
+<p><code>Scope</code> and <code>Der</code> are defined by recursion on the term rather than as <code>μ</code> of a functor code. That is a choice, not an omission &mdash; see the next section. And the <em>justifications</em> &mdash; precision proofs, size measures, the classifier &mdash; live outside, exactly as their counterparts do in the string framework. Those are properties of the theory, not programs in the language.</p>
+
+<h2 id="trade">A real design choice: dependent slots vs. summed indices</h2>
+
+<p>Binders can be expressed two ways, and the difference is instructive.</p>
+
+<h4>Option A &mdash; the dependency (what this code does)</h4>
+<pre><code>Slots lamOp Γ ms (suc zero) = ScopeSet (ms zero ∷ Γ)</code></pre>
+<p>&ldquo;This slot&rsquo;s index is <em>determined</em> by that slot&rsquo;s value.&rdquo; Needs <code>⊗ᴰ</code>. Nothing is searched.</p>
+
+<h4>Option B &mdash; sum over the binder, pin it with a representable</h4>
+<pre><code>⊕e Name λ n → ⊗e lamOp (two (k ⌈ n ⌉) (Var (n ∷ Γ)))</code></pre>
+<p>&ldquo;It is <em>one of</em> infinitely many, and here is a constraint saying which.&rdquo; This works with the codes the library already has, so the grammar becomes a genuine <code>μ</code> &mdash; first-class data, with <code>roll</code>/<code>unroll</code> and a recursor for free.</p>
+
+<div class="note"><span class="k">The trade</span>
+<p>Option B is more uniform and reifies the grammar. But it converts a <em>determined</em> index into a <em>searched</em> one, so the answer then owes a routing argument for the binder name &mdash; and for the type annotation, in the typing client. Option A says instead that the index is determined, which is true, and costs nothing.</p>
+<p>Given both judgments here are propositions (no parse trees to extract, so the recursor is not needed), Option A wins on this evidence. If you wanted the grammars reified, Option B is a contained change and needs no new machinery.</p></div>
+
+<h2 id="boundary">Where it stops</h2>
+
+<p>The annotation on application is not laziness. Remove it and the rule reads</p>
+
+<pre><code>Γ ⊢ f a ⇐ A   iff   ∃B. Γ ⊢ f ⇐ B ⇒ A  and  Γ ⊢ a ⇐ B</code></pre>
+
+<p>an existential over an infinite index. Deciding that is exactly what the library&rsquo;s <code>Route</code> is for &mdash; a cover of the alternatives, where</p>
+
+<table>
+<tr><th><code>Route</code> field</th><th>Bidirectional typing</th></tr>
+<tr><td><code>B : Maybe Y → grammar</code></td><td><code>Maybe Ty</code> — <code>nothing</code> is &ldquo;does not synthesise&rdquo;</td></tr>
+<tr><td><code>cov .total</code></td><td>every term synthesises a type, or provably none</td></tr>
+<tr><td><code>cov .disjoint</code></td><td><strong>uniqueness of synthesis</strong></td></tr>
+<tr><td><code>into</code></td><td>each rule lands in the class its conclusion claims</td></tr>
+</table>
+
+<p>So &ldquo;the grammar is LL(1)&rdquo; and &ldquo;the calculus is bidirectionally typeable&rdquo; are the same condition, discharged by the same record. The annotation buys precisely that discipline; without it, a checker owes uniqueness-of-synthesis as a side theorem, and the combinators will not supply it.</p>
+
+<h4>Other limits, stated plainly</h4>
+<table>
+<tr><th>Limit</th><th>Why</th></tr>
+<tr><td>No left recursion</td><td>The guard is on the term. A rule that recurses without descending is a type error &mdash; the right failure, but a failure.</td></tr>
+<tr><td>Alternation does not short-circuit at <code>Dec</code></td><td>Building a refutation of <code>A ⊕ B</code> needs refutations of both.</td></tr>
+<tr><td><code>ND</code>&rsquo;s completeness is not typed</td><td>A list of derivations, with no proof it is exhaustive.</td></tr>
+<tr><td>Quotiented theories lose the cover</td><td>For bags, &ldquo;contains <code>c</code>&rdquo; is total but <em>not</em> disjoint &mdash; <code>{a,b}</code> is in two classes at once. The node cover, and with it prediction, needs a chosen head.</td></tr>
+</table>
+
+<h2 id="build">Building it</h2>
+
+<p>Everything above typechecks under Agda 2.9.0 with <code>cubical</code> and <code>cubical-categorical-logic</code>. The tests are <code>refl</code>, so <em>typechecking the test files runs them</em>.</p>
+
+<pre><code>cd src
+agda Theory/Instances/Lambda/ScopeTests.agda
+agda Theory/Instances/Annotated/TypingTests.agda</code></pre>
+
+<p>This page is generated from the sources by <code>docs/build.sh</code>, so the code shown is always the code that compiles. Re-run it after any change.</p>
+
+</main></div></body></html>
