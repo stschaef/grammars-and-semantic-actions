@@ -28,6 +28,8 @@ open import Cubical.Data.Maybe using (Maybe ; just ; nothing)
 open import Cubical.Data.Nat using (ℕ)
 open import Cubical.Data.FinData using (zero ; suc)
 open import Cubical.Data.Sigma using (_,_)
+open import Cubical.Data.Bool using (Bool ; true ; false)
+import Cubical.Data.Sum as Sum
 
 open import Theory.Instances.Infer.Elaborate
 import Theory.Instances.Unify.Check as U
@@ -109,6 +111,21 @@ no-unbound = refl
 
 no-unbound-shape : scopeOnly (closed openT) openT ≡ nothing
 no-unbound-shape = refl
+
+-- ...and the same run read as a VERDICT.  `shapeVerdict` is total, so the
+-- `false` here is `Base`'s `genCell` contraposed -- NO intrinsically typed
+-- core term erases to `tvar 7`, at any types over any scope -- and not
+-- merely a `nothing` that could have meant the checker gave up.
+verdictSide : (i : Goal) → RawTm → Bool
+verdictSide i t = Sum.rec (λ _ → true) (λ _ → false) (shapeVerdict i t)
+
+no-unbound-verdict : verdictSide (closed openT) openT ≡ false
+no-unbound-verdict = refl
+
+-- ...whereas `λx. x x` is well scoped, which is where the verdict stops
+-- and the side condition begins.
+selfApp-verdict : verdictSide (closed selfApp) selfApp ≡ true
+selfApp-verdict = refl
 
 
 -- REFUSAL TWO: THE SIDE CONDITION.  `λx. x x` has a perfectly good shape

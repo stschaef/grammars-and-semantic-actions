@@ -261,3 +261,18 @@ verified n ps d = mgu n ps d , mguUnifies n ps d
 -- Tm m`, where restriction is composition and the map goes through.  That
 -- is a different development: `mgu` would return a function, and the
 -- `refl` tests, which compare chains, would have nothing to compare.
+--
+-- `Solvable` takes that escape without taking the development.  It does
+-- not change what a DERIVATION carries -- `mgu` still returns a chain and
+-- the tests still compare chains -- it changes only what the SPECIFICATION
+-- quantifies over, from `AList n` to `Fin n → Tm m`.  Under that reading
+-- all three obligations above are discharged: `flatComp` is CLASH, stated
+-- over `bind ρ` rather than over an abstract `f`, since only a
+-- substitution is known to fix `leaf`; `flatNoSelf` is OCCURS, proving
+-- rather than assuming that `flatA` never pushes `x ≟ var x`, so `Flex`
+-- does not have to be strengthened and `Term` does not move; and
+-- `restrict` is RESTRICTION, which was never blocked for a substitution.
+-- The `n = 1` counterexample survives exactly as stated -- it refutes the
+-- restricted answer being REPRESENTABLE as a chain -- and refutes nothing
+-- about the premise being solvable, which is the distinction this file did
+-- not have the vocabulary to draw.

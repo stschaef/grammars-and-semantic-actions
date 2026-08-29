@@ -67,42 +67,56 @@
                           completeness `Bidir` and `Annotated` had, and has
                           it for the same reason: nothing is being guessed.
 
-     `no` at `infM i`  =  either the above, or the machine `Unify`'s `Sol`
-                          describes does not run to completion on the
-                          generated stack.  THIS IS NOT COMPLETENESS, and
-                          the gap is not one this client introduces:
-                          `Unify/Correct` proves `Sol → Unifier` and its
-                          closing comment says precisely why the converse
-                          is not available -- `Ans-map&`'s backward map
-                          would have to restrict an `AList (suc n)` to an
-                          `AList n`, and an `AList` is a CHAIN of
-                          scope-dropping assignments, which restriction
-                          does not preserve.  So a refusal here means "the
-                          composite machine failed", and every step from
-                          there to "this term is untypable" is unproved.
+     `no` at `infM i`  =  either the above, or NO SUBSTITUTION WHATEVER
+                          unifies the stack `gen` produced.  That second
+                          disjunct used to read "the machine stopped", and
+                          the difference is `Unify/Solvable`, whose
+                          `complete` is the converse of `Correct`'s
+                          `mguUnifies`; `Unify/Cover` packages the two as a
+                          cover of the stack model whose cells are
+                          solvability and its refutation.  So the side
+                          condition refuses for a reason about
+                          substitutions and not about the algorithm.
 
-   THREE STEPS ARE MISSING, and naming them is the point of the paragraph.
-   (i) that a term with a solvable constraint set has a `Sol` derivation --
-   McBride's algorithm is complete in the literature, but nothing in this
-   development says so; (ii) that `gen` is complete, i.e. that a typing
-   derivation for `t` yields a substitution solving `gen`, which is `sound`
-   run backwards and would need `mvar` to be injective -- true, and
-   unformalised, see `Base`; (iii) that a most general solution exists,
-   which is (i) again.  None of the three is hard in the sense of being
-   open; all three are absent, and the composite's `no` is exactly as
-   strong as the weakest of them, which is to say: it is the machine's
-   verdict and not the specification's.
+   ONE STEP IS STILL MISSING, and naming it is the point of the paragraph.
+   Three were named here before.  (i) that a term with a solvable
+   constraint set has a `Sol` derivation, and (iii) that a most general
+   solution exists, are `Unify/Solvable`'s `complete`, and are done.  (ii)
+   is not: that `gen` is COMPLETE, i.e. that a typing derivation for `t`
+   yields a substitution solving `gen n Γ A nx t`.  That is `Base`'s
+   `sound` run backwards, and it is the one place `mvar`'s injectivity
+   would be load-bearing -- a collision makes the generated constraint set
+   STRONGER, which cannot cost soundness and can cost exactly this.  See
+   `Base`'s header, which declines to formalise the clamp's
+   unreachability.  So the composite's `no` is one named theorem short of
+   the specification's, rather than three.
 
-   Worth stating generally, since it is the structural fact and not an
-   accident of effort.  A judgment refuted NODE BY NODE -- `Annotated`,
-   `Bidir`, `Gen` above -- gets completeness from the cover's `total`, free.
-   A judgment whose refutation is an existential over SUBSTITUTIONS gets
-   nothing from the cover, because no cover of the term model splits by
-   solvability.  The framework's `Ans-map&` is what would force the issue,
-   and this client answers it by putting the existential in a side
-   condition, where `Ans-ofDec` asks for a decision and not for a
-   characterisation.  That is the honest boundary, and it is the same
-   boundary `Unify` reached from the other side.
+   Worth restating, since the general claim made here was wrong.  A
+   judgment refuted NODE BY NODE -- `Annotated`, `Bidir`, `Gen` above --
+   gets completeness from the cover's `total`, free.  A judgment whose
+   refutation is an existential over SUBSTITUTIONS was said to get nothing
+   from the cover, because no cover of the term model splits by
+   solvability.  It does: `Unify/Cover`'s `solvabilityCover` is one.  What
+   is true is weaker and more specific.  Such a cover is not obtainable
+   from the node cover and no-confusion, because solvability is not a
+   property of the head equation; it costs the algorithm's completeness
+   proof, three lemmas long.  And the reason it looked unobtainable is that
+   the obstruction `Correct` documents is about the CARRIED ANSWER being a
+   chain, not about the premise being solvable -- restriction along
+   `thin x` is composition for a substitution and is not an operation on
+   `AList`s at all.  Putting the existential in a side condition, where
+   `Ans-ofDec` asks for a decision and not for a characterisation, remains
+   the right factorisation; it is no longer the boundary of what is proved.
+
+   The cover reading of the OTHER conjunct is `Base`'s `genCell`, and it
+   comes with the limit of the idiom.  Completeness at `genM` is a MAP INTO
+   A CELL -- `Cor Γ ⊢ Gen n Γ A nx` -- and `refuteCor` below is the cover's
+   `disjoint` contraposing it.  What cannot be done is to make `Gen` and
+   `¬ Cor` the two cells of a cover so that `total` IS completeness:
+   `disjoint` would then be `Gen → Cor`, and `Base`'s `noCorXX` refutes it
+   at `x x`.  So the identification `Combinator/Complete` offers is
+   available here in its map-into-a-cell form and not in its `total` form,
+   and the induction `genOf` stays.
 
    Nothing below mentions `Dec`, `Maybe` or `ND` for its OWN answer.
    `decSolv` mentions the decidable answer of the OTHER client, and that
@@ -215,6 +229,29 @@ decSolv (n , Γ , A , nx) t _ = U.CD.unify n (gen n Γ A nx t) tt
 -- that `Ans-&&` produces this and not something isomorphic to it.
 InfSet : Goal → TheorySet ℓ-zero tm
 InfSet i = GenSet i &Set SolvSet i
+
+-- COMPLETENESS AT `genM`, AS THE MAP INTO A CELL IT IS.  `Base`'s
+-- `genCell` is a `⊢`-term into the affirming cell of `DecCover (GenSet i)`,
+-- so contraposing it -- which is what `disjoint` amounts to for a two-cell
+-- cover -- turns the checker's refusal into a statement about CORE TERMS.
+-- `¬Ty-map` is the whole derivation; see `Base` for why the other reading,
+-- with `¬ Cor` as a cell, does not exist.
+CorTy : (i : Goal) → TheoryTy ℓ-zero tm
+CorTy (n , Γ , A , nx) = Cor Γ
+
+genInto : (i : Goal) → CorTy i ⊢ ty (GenSet i)
+genInto (n , Γ , A , nx) t z = genCell n Γ A nx t z
+
+refuteCor : (i : Goal) → ¬Ty (ty (GenSet i)) ⊢ ¬Ty (CorTy i)
+refuteCor i = ¬Ty-map (genInto i)
+
+-- ...and the verdict the shape checker therefore delivers, once an answer
+-- has been chosen: a derivation, or no core term at all.
+GenOrNoCor : (i : Goal) → TheoryTy ℓ-zero tm
+GenOrNoCor i = ty (GenSet i) ⊕ ¬Ty (CorTy i)
+
+genVerdict : (i : Goal) → DecTy (ty (GenSet i)) ⊢ GenOrNoCor i
+genVerdict i = ⊕-elim inl (inr ∘⊢ refuteCor i)
 
 
 -- The two modes.  `infM` is the larger, because it is DEFINED as `genM`
