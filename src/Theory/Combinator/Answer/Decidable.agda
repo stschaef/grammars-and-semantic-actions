@@ -33,6 +33,7 @@ open import Theory.Type.HLevels σeq V vs 𝒫
 open import Theory.Type.Bottom.Base σeq V vs 𝒫
 open import Theory.Type.Function.Base σeq V vs 𝒫
 open import Theory.Type.Decidable.Base σeq V vs 𝒫 public
+open import Theory.Type.Decidable.Route σeq V vs 𝒫 public
 open import Theory.Combinator.Core σeq V vs 𝒫 public
 
 private variable ℓA : Level
@@ -91,6 +92,17 @@ DecAnswer .AnswerFunctor.Ans-node o prec {As = As} {ms = ms} ws =
     → ty (DecSet (⊗ᴰSet o As)) (op o ms)
   onAll (Sum.inl all) = Sum.inl (node-mk all)
   onAll (Sum.inr no) = Sum.inr λ t → Empty.rec (no (atMs t))
+
+-- Committing at `Dec`, which is exactly `routeIn`.  `Maybe` and `ND` reach
+-- the same shape through `FromCov.committing`, but by the opposite
+-- argument: they drop the cells they did not take, and this one refutes
+-- them.  `DecAnswer` has no `CovariantAnswer` -- `Ans-empty` would be a
+-- uniform decision procedure at every grammar -- so the derivation is not
+-- available and the field is discharged directly.
+DecCommitting : CommittingAnswer DecAnswer
+DecCommitting .CommittingAnswer.Ans-route sY Φ R decY =
+  routeIn (λ y → ty (Φ y)) R decY
+
 
 module DecCombinators {ℓX ℓ<} {X : Type ℓX} (xs : X → S)
   (O : LI.IPtOrder σeq V vs 𝒫 xs ℓ<) where

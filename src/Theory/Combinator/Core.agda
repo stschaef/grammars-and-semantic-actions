@@ -60,6 +60,10 @@ module Theory.Combinator.Core
 
 open import Cubical.Data.Sigma using (Σ-syntax ; _×_ ; _,_ ; fst ; snd)
 open import Cubical.Data.Unit using (tt)
+open import Cubical.Data.Maybe using (Maybe ; just ; nothing)
+open import Cubical.Data.Nat using (ℕ ; zero ; suc)
+open import Cubical.Data.FinData using (Fin ; zero ; suc)
+open import Cubical.Data.FinData.Properties using (isSetFin)
 import Cubical.Data.Empty as Empty
 import Cubical.Data.Sum as Sum
 import Cubical.Data.Equality as Eq
@@ -71,9 +75,11 @@ open import Theory.Type.Bottom.Base σeq V vs 𝒫
 open import Theory.Type.Function.Base σeq V vs 𝒫
 open import Theory.Type.Sum.Base σeq V vs 𝒫
 open import Theory.Type.Sum.Binary.Base σeq V vs 𝒫
+open import Theory.Type.Product.Base σeq V vs 𝒫
 open import Theory.Type.Product.Binary.Base σeq V vs 𝒫
 open import Theory.Type.Cover.Base σeq V vs 𝒫
 open import Theory.Type.Decidable.Base σeq V vs 𝒫
+open import Theory.Type.Decidable.Route σeq V vs 𝒫
 
 private variable ℓA ℓB ℓC ℓD ℓH ℓX ℓY ℓΛ ℓ< : Level
 
@@ -214,6 +220,104 @@ record AnswerFunctor : Typeω where
       → ty (Ans (⊗ᴰSet o As)) (op o ms)
 
 
+-- A covariant answer additionally has a plain `fmap` and an *empty answer*
+-- at any grammar.  `Dec` has neither, and the second is the interesting
+-- refusal: `⊤Ty ⊢ DecTy A` at an arbitrary `A` is a decision procedure, not
+-- a default.  One cannot decline to decide.
+record CovariantAnswer (𝒯 : AnswerFunctor) : Typeω where
+  open AnswerFunctor 𝒯
+  field
+    Ans-fmap : {ℓA ℓB : Level} {s : S}
+      {A : TheorySet ℓA s} {B : TheorySet ℓB s}
+      → ty A ⊢ ty B → ty (Ans A) ⊢ ty (Ans B)
+
+    Ans-empty : {ℓA : Level} {s : S} {A : TheorySet ℓA s} → ⊤Ty ⊢ ty (Ans A)
+
+-- Committing to one summand of an indexed sum.  `_<|>_` asks every
+-- alternative and glues the answers; `Ans-route` is told by a `Route` which
+-- alternative the model is in, and answers from that one branch.
+--
+-- This is the field the framework was missing, and it is what a judgment
+-- whose *premise index is an output* needs.  When a rule reads
+--
+--     ⊕[ y ∈ Y ] Φ y      -- some `y` works, and the checker must find it
+--
+-- the checker cannot consult all of `Y`: `Y` need not be finite, and even
+-- when it is, asking every alternative is not what a resolver does.  A
+-- `Route` supplies a `Cover` of the model by `Maybe Y` -- `total` says the
+-- model lands in a named cell or in the `nothing` cell, `disjoint` says it
+-- lands in at most one -- so the answer is asked only where the cover
+-- points.
+--
+-- It is the one field whose two implementations are genuinely different
+-- arguments rather than the same argument transcribed.  At `Dec` the named
+-- branch may come back `no`, and the sum must then be refuted *outright*:
+-- that is `routeIn`, and it is the cover's `disjoint` that kills every
+-- unnamed alternative.  A covariant answer has no refutation to propagate
+-- and needs none -- `Ans-empty` answers the `nothing` cell, and a branch
+-- that yields nothing makes the sum yield nothing -- so `FromCov.committing`
+-- derives it once.  Neither half follows from `AnswerFunctor` alone: an
+-- answer has to say what it does with the alternatives it did not take.
+record CommittingAnswer (𝒯 : AnswerFunctor) : Typeω where
+  open AnswerFunctor 𝒯
+  field
+    Ans-route : {ℓY ℓA ℓB : Level} {s : S} {Y : Type ℓY}
+      (sY : isSet Y) (Φ : Y → TheorySet ℓA s)
+      → Route (λ y → ty (Φ y)) ℓB → DiscreteEq Y
+      → ty (&ᴰSet (λ y → Ans (Φ y))) ⊢ ty (Ans (⊕ᴰSet sY Φ))
+
+-- What a covariant answer is, as a committing one: observe the cover, and
+-- dispose of every cell not taken by `Ans-empty`.  No refutation travels
+-- anywhere, which is why `Maybe` and `ND` route without ever spending the
+-- cover's `disjoint`, while `Dec`'s `routeIn` spends nothing else.
+module FromCov (𝒯 : AnswerFunctor) (cov : CovariantAnswer 𝒯) where
+  open AnswerFunctor 𝒯
+  open CovariantAnswer cov
+
+  committing : CommittingAnswer 𝒯
+  committing .CommittingAnswer.Ans-route {Y = Y} sY Φ R decY =
+    ⊕ᴰ-elim step ∘⊢ &⊕ᴰ-dist
+    ∘⊢ (id⊢ ,& (R .Route.cov .total ∘⊢ ⊤Ty-intro))
+    where
+    Ds : TheoryTy _ _
+    Ds = ty (&ᴰSet (λ y → Ans (Φ y)))
+
+    step : (v : Maybe Y) → Ds & R .Route.B v ⊢ ty (Ans (⊕ᴰSet sY Φ))
+    step nothing = Ans-empty ∘⊢ ⊤Ty-intro
+    step (just y₀) = Ans-fmap (σ⊕ y₀) ∘⊢ π y₀ ∘⊢ π₁
+
+-- ...and the combinator that is `Ans-route`'s opposite number: ask every
+-- alternative of a *finite* sum and keep all the answers.  No cover, no
+-- `disjoint`, no commitment -- and correspondingly no way for the caller to
+-- learn which alternative was taken, since more than one may have been.
+--
+-- `Dec` cannot have it, and the reason is not an oversight: `Ans-empty` is
+-- the base case, and a decision cannot answer `⊕[ i ∈ Fin 0 ] Φ i` without
+-- refuting it, which is a decision procedure.  So the split is exactly:
+-- an answer that can commit routes, and an answer that can give up
+-- enumerates.  A judgment whose alternatives are *not* known exclusive is
+-- available only to the second kind -- which is why an incoherent instance
+-- table is visible at `ND` and unwritable at `Dec`.
+module CovCombinators (𝒯 : AnswerFunctor) (cov : CovariantAnswer 𝒯) where
+  open AnswerFunctor 𝒯
+  open CovariantAnswer cov public
+
+  Ans-anyFin : {ℓA : Level} {s : S} {n : ℕ} {D : TheoryTy ℓD s}
+    (Φ : Fin n → TheorySet ℓA s)
+    → ((i : Fin n) → D ⊢ ty (Ans (Φ i)))
+    → D ⊢ ty (Ans (⊕ᴰSet isSetFin Φ))
+  Ans-anyFin {n = zero} Φ ps = Ans-empty ∘⊢ ⊤Ty-intro
+  Ans-anyFin {n = suc n} Φ ps =
+    Ans-fmap glue ∘⊢ Ans-⊕& ∘⊢ (ps zero ,& Ans-anyFin (λ i → Φ (suc i)) tail)
+    where
+    tail : (i : Fin n) → _ ⊢ ty (Ans (Φ (suc i)))
+    tail i = ps (suc i)
+
+    glue : ty (Φ zero) ⊕ (⊕[ i ∈ Fin n ] ty (Φ (suc i)))
+         ⊢ ⊕[ i ∈ Fin (suc n) ] ty (Φ i)
+    glue = ⊕-elim (σ⊕ zero) (⊕ᴰ-elim λ i → σ⊕ (suc i))
+
+
 -- The combinators.  `X` indexes the mutually recursive family -- one
 -- component per nonterminal, per context, per (context, type) -- and `O` is
 -- the well-founded order the recursion descends on.  For the monoid that
@@ -270,3 +374,4 @@ module Combinators (𝒯 : AnswerFunctor)
     -- a grammar with no parse anywhere
     none : {A : TheorySet ℓA s} → (⊤Ty ⊢ ¬Ty (ty A)) → D ⊢ ty (Ans A)
     none n = side (dec-no ∘⊢ n)
+

@@ -34,7 +34,7 @@ open import Theory.Type.Monad.Base σeq V vs 𝒫
 open import Theory.Type.Monad.Maybe σeq V vs 𝒫 public
 open import Theory.Combinator.Core σeq V vs 𝒫 public
 
-private variable ℓA : Level
+private variable ℓA ℓB : Level
 
 -- The traversal `Ans-node` performs: every slot must answer.
 travΠFin : {ℓp : Level} {n : ℕ} {P : Fin n → Type ℓp}
@@ -57,7 +57,7 @@ travΠFin {n = suc n} {P = P} d = onHead (d zero)
 MaybeSet : {s : S} → TheorySet ℓA s → TheorySet ℓA s
 MaybeSet (A , sA) = Maybe A , isSetMaybe sA
 
-fmapM : {s : S} {A : TheoryTy ℓA s} {B : TheoryTy ℓA s}
+fmapM : {s : S} {A : TheoryTy ℓA s} {B : TheoryTy ℓB s}
   → A ⊢ B → Maybe A ⊢ Maybe B
 fmapM = Monad.fmap MaybeMonad
 
@@ -78,6 +78,18 @@ MaybeAnswer .AnswerFunctor.Ans-node o _ {ms = ms} ws = onAll (travΠFin ws)
   onAll : _ → _
   onAll (Sum.inl all) = Sum.inl (node-mk all)
   onAll (Sum.inr _) = Sum.inr tt
+
+-- `Maybe` is covariant, so both extra records come for free: a forward map
+-- and `nothing`, which is a perfectly good answer at every grammar.  That
+-- `nothing` is what makes routing cheap here -- the cells the route did not
+-- name are simply not consulted, and no refutation is owed for them.
+MaybeCov : CovariantAnswer MaybeAnswer
+MaybeCov .CovariantAnswer.Ans-fmap = fmapM
+MaybeCov .CovariantAnswer.Ans-empty = nothing
+
+MaybeCommitting : CommittingAnswer MaybeAnswer
+MaybeCommitting = FromCov.committing MaybeAnswer MaybeCov
+
 
 module MaybeCombinators {ℓX ℓ<} {X : Type ℓX} (xs : X → S)
   (O : LI.IPtOrder σeq V vs 𝒫 xs ℓ<) where

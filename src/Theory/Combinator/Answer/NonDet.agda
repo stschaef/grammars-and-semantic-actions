@@ -107,6 +107,20 @@ NDAnswer .AnswerFunctor.Ans-ofDec m (Sum.inr _) = nilND m tt
 NDAnswer .AnswerFunctor.Ans-node o _ {ms = ms} ws =
   ndFromList (op o ms) (mapL node-mk (allΠFin λ a → ndToList (ms a) (ws a)))
 
+-- `ND` is covariant too, with `nilND` for the empty answer -- and here the
+-- empty answer is literally the empty list of derivations.  Routing at `ND`
+-- therefore *counts*: the cells the route did not name contribute nothing,
+-- and the count that comes back is the number of derivations the named cell
+-- admits.  That is what makes `ND` the backend that detects a route whose
+-- `disjoint` is a lie; see `Instances/Class/Resolve`.
+NDCov : CovariantAnswer NDAnswer
+NDCov .CovariantAnswer.Ans-fmap = Monad.fmap NDMonad
+NDCov .CovariantAnswer.Ans-empty = nilND
+
+NDCommitting : CommittingAnswer NDAnswer
+NDCommitting = FromCov.committing NDAnswer NDCov
+
+
 module NDCombinators {ℓX ℓ<} {X : Type ℓX} (xs : X → S)
   (O : LI.IPtOrder σeq V vs 𝒫 xs ℓ<) where
   open Combinators NDAnswer xs O public
