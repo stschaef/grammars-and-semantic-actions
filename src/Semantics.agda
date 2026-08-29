@@ -26,6 +26,7 @@
      Semantics.Examples.StarParser          a Kleene star parser, written once for all models
      Semantics.Examples.StarParserDemo      the same parser elaborated in both models below
      Semantics.Examples.StarParserRun       and run, on a two-letter alphabet
+     Semantics.Examples.ChartDemo           the chart model at a fixed input word
 
    Models
      Semantics.Instances.Families           families of sets over strings
@@ -35,6 +36,9 @@
      Semantics.Instances.FamiliesLater      the later modality in the families model
      Semantics.Instances.Sets               grammars as plain sets, terms as plain functions
      Semantics.Instances.SetsInductive      the star in that model is List
+     Semantics.Instances.Languages          languages: proof-irrelevant grammars, i.e. subsets of String
+     Semantics.Instances.Day                Day convolution over an arbitrary monoid
+     Semantics.Instances.Spans              grammars as span-indexed matrices; the CYK chart
 -}
 module Semantics where
 
@@ -59,7 +63,11 @@ open import Semantics.Instances.FamiliesInductive
 open import Semantics.Instances.FamiliesLater
 open import Semantics.Instances.Sets
 open import Semantics.Instances.SetsInductive
+open import Semantics.Instances.Languages
+open import Semantics.Instances.Day
+open import Semantics.Instances.Spans
 
 open import Semantics.Examples.StarParser
 import Semantics.Examples.StarParserDemo
 open import Semantics.Examples.StarParserRun
+open import Semantics.Examples.ChartDemo
