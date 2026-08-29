@@ -253,15 +253,43 @@
    These are `Core`'s, restated.  None of them is a bug; all of them are
    places where the types permit less than the development wants.
 
-   GAP 1 -- `⊗ᴰ` IS NOT A `Functor` CODE.  `Theory/Type/Code/Base` has
-   `⊗e`, whose slots are independent, so a grammar that needs the
-   dependency cannot be a `μ` and gets its `roll`/`unroll` written by
-   hand.  Closing it means adding a `⊗ᴰe` constructor, which every match
-   on `Functor` would then have to cover -- around seventeen sites across
-   `Code/Base`, `Inductive/HLevels`, `Code/Container` and
-   `Guarded/Justification`, all shared with the monoid development.
+   GAP 1 -- `⊗ᴰ` IS NOT A `Functor` CODE.  CLOSED, AND THE CLOSING IS THE
+   ARGUMENT FOR NOT USING IT.
 
-   Worth knowing before doing it: the dependency is an artefact of NAMED
+   `Theory/Type/Code/Base` now has `⊗ᴰe`, whose slots are indexed by the
+   whole splitting, beside `⊗e`, whose slots are independent.  The cost
+   was seventeen cases across `Code/Base`, `Inductive/HLevels`,
+   `Code/Container` and `Guarded/Justification`; every one of them is its
+   `⊗e` sibling with `F a` replaced by `F ms a`, including the four that
+   are proofs (`reconstructF`, `mapG≡map`, `isSet⟦_⟧`, `map-∘`).  Nothing
+   in the monoid development noticed.  So the CODE side of the gap was
+   real and is gone.
+
+   What the gap was protecting is the CLIENT side, and `Lambda/Scope` --
+   re-expressed as `μ ScopeF` and then read back -- is the measurement:
+
+     * A `μ` costs a universe.  `ℓF ℓ-zero` is `ℓ-suc ℓ-zero`, and
+       `NodeArgs` is uniform in its level, so every slot that is NOT
+       recursive has to be `Lift`ed to meet the ones that are.  `Scope`'s
+       two of four were, and so were their `Decidable`s.
+     * `⟦ Var x ⟧` is a `Lift`, so `roll`/`unroll` still do slotwise
+       wrapping -- the twelve hand-written lines become fourteen.
+     * `⟦ ⊕e ⟧` is a sum over ALL operations, so `unroll` must FIND the
+       summand the cover cell names.  That is no-confusion, which is the
+       cover's `disjoint` field, spelled out again as nine cases.
+     * AND IT BREAKS CONVENTION 1.  A `μ` is an indexed `data`, so the
+       judgment stops REDUCING on the term.  `Scope [] (tvar 0)` used to
+       BE `⊥`; now a derivation has to be unrolled one node before its
+       premise is visible.  One line of `ScopeTests` measures exactly
+       that, and it is the only line of thirty-five that changed.
+
+   The recommendation is therefore: use `⊗ᴰe` when you want a code -- a
+   `Container`, a `Guard`, an `isSetμ` -- for a grammar with a binder, and
+   do NOT use it to define a judgment.  Convention 1 is still right, and
+   `rollNode`/`unrollNode` by hand are still cheaper than the `μ` that
+   would generate them.
+
+   Worth knowing either way: the dependency is an artefact of NAMED
    syntax.  `lam n t` scopes its body in `Γ , n`, and `n` is a slot value;
    a de Bruijn `lam t` scopes it in `B ∷ Γ`, which mentions no slot at
    all.  Surface-syntax judgments need `⊗ᴰ` and core-syntax ones do not --

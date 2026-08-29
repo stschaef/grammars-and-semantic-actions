@@ -40,10 +40,20 @@ data DBTm : Type ℓ-zero where
 
 -- The fold.  Total on derivations: a derivation *is* the proof that every
 -- name resolves, so there is no failure case.
+--
+-- `Scope` is a `μ`, so this is the `μ`'s own `rec` at a constant motive
+-- rather than a recursion on the term.  `map` at a `Var x` slot calls the
+-- fold at *that* index, which is how the body of a `lam` is folded in the
+-- extended context without this algebra ever naming it.  The `.lower`s are
+-- the `Lift` that `⟦ Var x ⟧` and `⟦ k A ⟧` insert.
+dbAlg : (Γ : Ctx) → ⟦ ScopeF Γ ⟧TheoryTy (λ _ _ → DBTm) ⊢ (λ _ → DBTm)
+dbAlg Γ m (varOp , ms , e , ws) =
+  dvar (deBruijn Γ (ms theVar) (ws theVar .lower))
+dbAlg Γ m (appOp , ms , e , ws) = dapp (ws theFun .lower) (ws theArg .lower)
+dbAlg Γ m (lamOp , ms , e , ws) = dlam (ws theBody .lower)
+
 toDB : (Γ : Ctx) (t : RawTm) → Scope Γ t → DBTm
-toDB Γ (tvar x) v = dvar (deBruijn Γ x v)
-toDB Γ (tapp t u) s = dapp (toDB Γ t (s .fst)) (toDB Γ u (s .snd))
-toDB Γ (tlam x t) s = dlam (toDB (x ∷ Γ) t s)
+toDB Γ = rec ScopeF dbAlg Γ
 
 nameAction : (Γ : Ctx) → SemanticAction (Scope Γ) DBTm
 nameAction Γ t s = toDB Γ t s , tt
