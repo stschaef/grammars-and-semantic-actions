@@ -26,11 +26,12 @@
      Semantics.Displayed.IndexedProduct     displayed indexed products; coproducts by ^op duality
      Semantics.Displayed.RightAdjoint       displayed right adjoints, ported to uncurried style
      Semantics.Displayed.Model              displayed models: what a gluing argument is stated against
+     Semantics.Displayed.Weaken             any model is displayed over any other, with constant fibres
 
    The free model
      Semantics.Free.Syntax                  objects inductively, morphisms as a QIT (infinitary)
      Semantics.Free.Model                   that syntax as a Model, one universe up
-     Semantics.Free.Recursor                interpreting the syntax in any model (hole-free)
+     Semantics.Free.Recursor                interpreting the syntax in any model, via elim
      Semantics.Free.Eliminator              the eliminator into a displayed model
 
    Example
@@ -70,6 +71,7 @@ open import Semantics.Later
 open import Semantics.Displayed.IndexedProduct
 open import Semantics.Displayed.RightAdjoint
 open import Semantics.Displayed.Model
+open import Semantics.Displayed.Weaken
 
 open import Semantics.Free.Syntax
 open import Semantics.Free.Model

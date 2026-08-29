@@ -1,15 +1,21 @@
-{-# OPTIONS --lossy-unification #-}
-{- The recursor: interpreting the syntax in any model.
+{-# OPTIONS --lossy-unification --allow-unsolved-metas #-}
+{- The recursor, as an instance of the eliminator.
 
-   The free model is initial, so every `GrammarModel` with the same
-   generators receives a structure-preserving map from it. Unlike the
-   eliminator, this needs no displayed machinery: each path constructor
-   is discharged by the target model's own law, and a plain
-   `UniversalElement`'s β/η carry none of the `reind` that the
-   *displayed* representable's action inserts.
+   Any model is a displayed model over the free one with constant
+   fibres (`Semantics.Displayed.Weaken`), and a section of a weakening
+   is exactly a functor. So the recursor is
 
-   This is what the gluing arguments need in order to even state a
-   logical relation: the two interpretations being related.
+       rec = introS⁻ (elim (weakenModel FreeModel M) ⟦lit⟧)
+
+   rather than a second induction over `Exp`. This is ccl's pattern
+   (`rec ı = introS⁻ (elim wkC ı)`), and it means the interpretation of
+   the syntax cannot drift out of step with the eliminator.
+
+   Note the consequence: `rec` now inherits the eight unfilled β/η
+   holes in `Semantics.Free.Eliminator`, so it typechecks but is not
+   yet a complete proof. The earlier standalone recursor was hole-free
+   precisely because a plain `UniversalElement`'s β/η carry no `reind`;
+   that duplication is what this replaces.
 -}
 open import Cubical.Foundations.Prelude
 open import Cubical.Foundations.HLevels
@@ -22,84 +28,30 @@ module Semantics.Free.Recursor {ℓ ℓ' ℓX} {Gen : hSet ℓX}
 
 open import Cubical.Categories.Category
 open import Cubical.Categories.Functor
-open import Cubical.Categories.Monoidal.Base
-open import Cubical.Categories.NaturalTransformation
-open import Cubical.Categories.Morphism
+import Cubical.Categories.Displayed.Instances.Weaken.Base as Wk
 
-open import Semantics.Notation M
+open import Semantics.Displayed.Model
+open import Semantics.Displayed.Weaken
 open import Semantics.Free.Syntax Gen
+open import Semantics.Free.Model Gen
+open import Semantics.Free.Eliminator Gen
 
-open NatTrans
-open NatIso
-open isIso
-open Functor
+private
+  module M = GrammarModel M
 
-recOb : Ty → Grammar
-recOb (↑ g) = literal g
-recOb εT = ε
-recOb (A ⊗T B) = recOb A ⊗ recOb B
-recOb (A ⊸T B) = recOb A ⊸ recOb B
-recOb (A ⟜T B) = recOb A ⟜ recOb B
-recOb (⊕T X A) = ⊕ᴰ {X = X} (λ x → recOb (A x))
-recOb (&T X A) = &ᴰ {X = X} (λ x → recOb (A x))
+  -- M, viewed as a displayed model over the syntax.
+  Mᴰ : Modelᴰ FreeModel ℓ ℓ'
+  Mᴰ = weakenModel FreeModel M.model
 
-recHom : ∀ {A B} → Exp A B → recOb A ⊢ recOb B
--- category
-recHom idE = id
-recHom (f ⋆E g) = recHom g ∘g recHom f
-recHom (⋆IdLE f i) = ⋆IdL (recHom f) i
-recHom (⋆IdRE f i) = ⋆IdR (recHom f) i
-recHom (⋆AssocE f g h i) = ⋆Assoc (recHom f) (recHom g) (recHom h) i
-recHom (isSetExp f g p q i j) =
-  isSetHom (recHom f) (recHom g) (λ i → recHom (p i)) (λ i → recHom (q i)) i j
--- tensor
-recHom (f ⊗E g) = recHom f ,⊗ recHom g
-recHom (⊗E-id i) = ─⊗─ .F-id i
-recHom (⊗E-seq f g f' g' i) =
-  ─⊗─ .F-seq (recHom f , recHom f') (recHom g , recHom g') i
--- associator
-recHom αE = α⟨ _ , _ , _ ⟩
-recHom αE⁻ = α⁻¹⟨ _ , _ , _ ⟩
-recHom (α-sec i) = α .nIso _ .sec i
-recHom (α-ret i) = α .nIso _ .ret i
-recHom (α-nat f g h i) =
-  α .trans .N-hom (recHom f , recHom g , recHom h) i
--- left unitor
-recHom ηE = η⟨ _ ⟩
-recHom ηE⁻ = η⁻¹⟨ _ ⟩
-recHom (η-sec i) = η .nIso _ .sec i
-recHom (η-ret i) = η .nIso _ .ret i
-recHom (η-nat f i) = η .trans .N-hom (recHom f) i
--- right unitor
-recHom ρE = ρ⟨ _ ⟩
-recHom ρE⁻ = ρ⁻¹⟨ _ ⟩
-recHom (ρ-sec i) = ρ .nIso _ .sec i
-recHom (ρ-ret i) = ρ .nIso _ .ret i
-recHom (ρ-nat f i) = ρ .trans .N-hom (recHom f) i
--- coherence
-recHom (pentagonE i) = pentagon _ _ _ _ i
-recHom (triangleE i) = triangle _ _ i
--- ⊸
-recHom ⊸appE = ⊸-app
-recHom (⊸lamE f) = ⊸-intro (recHom f)
-recHom (⊸βE f i) = ⊸-β {f = recHom f} i
-recHom (⊸ηE g i) = ⊸-η {g = recHom g} i
--- ⟜
-recHom ⟜appE = ⟜-app
-recHom (⟜lamE f) = ⟜-intro (recHom f)
-recHom (⟜βE f i) = ⟜-β {f = recHom f} i
-recHom (⟜ηE g i) = ⟜-η {g = recHom g} i
--- indexed coproducts
-recHom (σE x) = σ x
-recHom (⊕elimE f) = ⊕ᴰ-elim (λ x → recHom (f x))
-recHom (⊕βE X A f x i) =
-  ⊕ᴰ-β {X = X} {A = λ y → recOb (A y)} (λ y → recHom (f y)) x i
-recHom (⊕ηE X A g i) =
-  ⊕ᴰ-η {X = X} {A = λ y → recOb (A y)} (recHom g) i
--- indexed products
-recHom (πE x) = π x
-recHom (&introE f) = &ᴰ-intro (λ x → recHom (f x))
-recHom (&βE X A f x i) =
-  &ᴰ-β {X = X} {A = λ y → recOb (A y)} (λ y → recHom (f y)) x i
-recHom (&ηE X A g i) =
-  &ᴰ-η {X = X} {A = λ y → recOb (A y)} (recHom g) i
+  ı : Interpᴰ Mᴰ
+  ı = M.⟦lit⟧
+
+-- | The interpretation of the syntax in M.
+rec : Functor FREE (Model.C M.model)
+rec = Wk.introS⁻ (elim Mᴰ ı)
+
+recOb : Ty → Category.ob (Model.C M.model)
+recOb = Functor.F-ob rec
+
+recHom : ∀ {A B} → Exp A B → Model.C M.model [ recOb A , recOb B ]
+recHom = Functor.F-hom rec
