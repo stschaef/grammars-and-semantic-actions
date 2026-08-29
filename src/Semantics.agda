@@ -30,7 +30,8 @@
    The free model
      Semantics.Free.Syntax                  objects inductively, morphisms as a QIT (infinitary)
      Semantics.Free.Model                   that syntax as a Model, one universe up
-     Semantics.Free.Eliminator              interpretation of generators; object part of the eliminator
+     Semantics.Free.Recursor                interpreting the syntax in any model (hole-free)
+     Semantics.Free.Eliminator              the eliminator into a displayed model
 
    Example
      Semantics.Examples.StarParser          a Kleene star parser, written once for all models
@@ -72,6 +73,7 @@ open import Semantics.Displayed.Model
 
 open import Semantics.Free.Syntax
 open import Semantics.Free.Model
+open import Semantics.Free.Recursor
 open import Semantics.Free.Eliminator
 
 open import Semantics.Instances.Families
