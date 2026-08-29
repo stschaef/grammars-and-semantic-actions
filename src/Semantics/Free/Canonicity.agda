@@ -27,6 +27,10 @@ open import Cubical.HITs.PropositionalTruncation as PT
 
 open import Cubical.Categories.Category
 open import Cubical.Categories.Displayed.Base
+open import Cubical.Categories.Displayed.Functor
+open import Cubical.Categories.Displayed.BinProduct
+open import Cubical.Categories.Displayed.Instances.BinProduct.More
+open import Cubical.Categories.Monoidal.Base
 
 open import Semantics.Free.Syntax Gen
 open import Semantics.Free.Model Gen
@@ -78,15 +82,17 @@ CANON .isSetHomᴰ {xᴰ = P} {yᴰ = Q} = isProp→isSet (isPropPredHom P Q _)
 ------------------------------------------------------------
 
 module _ {A B : Ty} (P : Pred A) (Q : Pred B) where
-  private
-    Day : (Γ : Ty) → Exp Γ (A ⊗T B) → Type ℓP
-    Day Γ t =
-      ∥ Σ[ Γ₁ ∈ Ty ] Σ[ Γ₂ ∈ Ty ] Σ[ m ∈ Exp Γ (Γ₁ ⊗T Γ₂) ]
+  -- The raw (untruncated) factorisations. Kept separate so the
+  -- eventual normalisation version can replace the truncation by
+  -- ccl's coend HIT over the same data.
+  DayRaw : (Γ : Ty) → Exp Γ (A ⊗T B) → Type ℓP
+  DayRaw Γ t =
+      Σ[ Γ₁ ∈ Ty ] Σ[ Γ₂ ∈ Ty ] Σ[ m ∈ Exp Γ (Γ₁ ⊗T Γ₂) ]
         Σ[ a ∈ Exp Γ₁ A ] Σ[ b ∈ Exp Γ₂ B ]
-          (⟨ P .⟦_⟧P Γ₁ a ⟩ × ⟨ Q .⟦_⟧P Γ₂ b ⟩ × (t ≡ m ⋆E (a ⊗E b))) ∥₁
+          (⟨ P .⟦_⟧P Γ₁ a ⟩ × ⟨ Q .⟦_⟧P Γ₂ b ⟩ × (t ≡ m ⋆E (a ⊗E b))) 
 
   _⊗P_ : Pred (A ⊗T B)
-  _⊗P_ .⟦_⟧P Γ t = Day Γ t , squash₁
+  _⊗P_ .⟦_⟧P Γ t = ∥ DayRaw Γ t ∥₁ , squash₁
   _⊗P_ .subst-closed m t =
     PT.map λ (Γ₁ , Γ₂ , n , a , b , pa , pb , e) →
       Γ₁ , Γ₂ , m ⋆E n , a , b , pa , pb ,
@@ -109,3 +115,15 @@ module _ {A A' B B' : Ty} {P : Pred A} {P' : Pred A'}
       (cong (_⋆E (f ⊗E g)) e
        ∙ ⋆AssocE m (a ⊗E b) (f ⊗E g)
        ∙ cong (m ⋆E_) (sym (⊗E-seq a f b g)))
+
+------------------------------------------------------------
+-- The tensor as a displayed functor. Its laws are free.
+------------------------------------------------------------
+
+⊗CANON : Functorᴰ (MonoidalCategory.─⊗─ FREEMC) (CANON ×Cᴰ CANON) CANON
+⊗CANON .Functorᴰ.F-obᴰ (P , Q) = P ⊗P Q
+⊗CANON .Functorᴰ.F-homᴰ (fᴰ , gᴰ) = ⊗Pmap fᴰ gᴰ
+⊗CANON .Functorᴰ.F-idᴰ {xᴰ = (P , Q)} =
+  isProp→PathP (λ i → isPropPredHom (P ⊗P Q) (P ⊗P Q) _) _ _
+⊗CANON .Functorᴰ.F-seqᴰ {xᴰ = (P , Q)} {zᴰ = (R , S)} _ _ =
+  isProp→PathP (λ i → isPropPredHom (P ⊗P Q) (R ⊗P S) _) _ _
