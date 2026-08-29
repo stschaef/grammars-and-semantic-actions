@@ -72,22 +72,24 @@ private
   headInj i j e = Eq.pathToEq
     (sym (headRet i) ∙ cong headClause (Eq.eqToPath e) ∙ headRet j)
 
+  -- The off-diagonal cases are `Judgment`'s `clash` lemmas: a derivation
+  -- carries an equation now, so a wrong head is refuted rather than absurd.
   nodeOf : (i : Fin 3) → Match (Clause i) ⊢ NodeAt (clauseHead i)
   nodeOf zero vtrue _ = (λ ()) , Eq.refl
-  nodeOf zero vfalse ()
-  nodeOf zero (vpair _ _) ()
-  nodeOf (suc zero) vtrue ()
+  nodeOf zero vfalse d = Empty.rec (clashTrue vfalse d)
+  nodeOf zero (vpair v w) d = Empty.rec (clashTrue (vpair v w) d)
+  nodeOf (suc zero) vtrue d = Empty.rec (clashFalse vtrue d)
   nodeOf (suc zero) vfalse _ = (λ ()) , Eq.refl
-  nodeOf (suc zero) (vpair _ _) ()
-  nodeOf (suc (suc zero)) vtrue ()
-  nodeOf (suc (suc zero)) vfalse ()
+  nodeOf (suc zero) (vpair v w) d = Empty.rec (clashFalse (vpair v w) d)
+  nodeOf (suc (suc zero)) vtrue d = Empty.rec (clashPair pwild pwild vtrue d)
+  nodeOf (suc (suc zero)) vfalse d = Empty.rec (clashPair pwild pwild vfalse d)
   nodeOf (suc (suc zero)) (vpair v w) _ = pairArgs v w , Eq.refl
 
 -- Exhaustive and irredundant, as one record.
 clauseCover : Cover (Fin 3) (λ i → Match (Clause i))
-clauseCover .total vtrue _ = zero , tt
-clauseCover .total vfalse _ = suc zero , tt
-clauseCover .total (vpair v w) _ = suc (suc zero) , (tt , tt)
+clauseCover .total vtrue _ = zero , (tt , refl)
+clauseCover .total vfalse _ = suc zero , (tt , refl)
+clauseCover .total (vpair v w) _ = suc (suc zero) , ((v , w) , refl)
 clauseCover .disjoint i j ne v (d , e) =
   nodeCover .disjoint (clauseHead i) (clauseHead j)
     (λ q → ne (headInj i j q)) v (nodeOf i v d , nodeOf j v e)

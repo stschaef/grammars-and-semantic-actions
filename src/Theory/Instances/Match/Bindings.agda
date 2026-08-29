@@ -2,11 +2,20 @@
 {- The readout: a derivation folded to the substitution it justifies.
 
    `Elaborate` reads a de Bruijn index off a `Lookup` witness, because the
-   witness is where the search already happened.  Here the honest statement
-   is narrower and worth making plainly: `Match p` is a proposition, so a
-   *single* pattern's derivation carries no information the index and the
-   scrutinee do not already have -- `bind` reads `n` off `pvar n` and `v`
-   off the model, and the derivation only certifies that it may.
+   witness is where the search already happened.  The same now holds here,
+   and it did not used to.  `Judgment`'s `Match p v` is
+   `Σ[ e ∈ Env p ] (inst p e ≡ v)`, so `bind` is a fold over `e` alone: it
+   never looks at the scrutinee, and it cannot, because `v` is not one of
+   its arguments.  The old `bind` read `v` off the model and `n` off the
+   index and the derivation merely certified that it might; what it
+   returned was a substitution nothing said was *correct*.  The equation
+   in the derivation says exactly that -- `inst p e ≡ v` is "the pattern,
+   filled with these bindings, is the value" -- so the readout is a
+   projection and its correctness is definitional.
+
+   The names still come off the pattern, and that is not a weakness: a
+   name is a syntactic feature of `pvar n`, and `Env` is what carries the
+   thing the pattern does *not* determine.
 
    The content is one level up.  `Any cs` is a sum over the clause list, so
    its derivations are exactly the clauses that fire, and `anyAction`
@@ -56,23 +65,18 @@ Subst = List (ℕ × Val)
 Result : Type ℓ-zero
 Result = ℕ × Subst
 
--- The fold.  Total on derivations, and the impossible head/pattern pairs
--- are impossible by reduction rather than by a failure case.
-bind : (p : Pat) (v : Val) → Match p v → Subst
-bind pwild v _ = []
-bind (pvar n) v _ = (n , v) ∷ []
-bind ptrue vtrue _ = []
-bind ptrue vfalse ()
-bind ptrue (vpair _ _) ()
-bind pfalse vtrue ()
-bind pfalse vfalse _ = []
-bind pfalse (vpair _ _) ()
-bind (ppair p q) vtrue ()
-bind (ppair p q) vfalse ()
-bind (ppair p q) (vpair v w) (d , e) = bind p v d ++ bind q w e
+-- The fold, over the filling and nothing else.  There are no impossible
+-- head/pattern pairs to rule out, because there is no head: `Env` has one
+-- clause per pattern and every one of them is inhabited.
+bind : (p : Pat) → Env p → Subst
+bind pwild _ = []
+bind (pvar n) v = (n , v) ∷ []
+bind ptrue _ = []
+bind pfalse _ = []
+bind (ppair p q) (e , f) = bind p e ++ bind q f
 
 bindAction : (p : Pat) → SemanticAction (Match p) Subst
-bindAction p v d = bind p v d , tt
+bindAction p v d = bind p (d .fst) , tt
 
 -- ...and over a clause list, tagging each summand with its position.
 anyAction : (cs : List Pat) → SemanticAction (Any cs) Result

@@ -1,9 +1,15 @@
 {-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
-{- Scope checking, and the nameless term it produces.
+{- Scope checking, and the nameless term it produces -- which is now the
+   whole of what there is to say, because `Scope` carries it.
 
-   The same shape as `Annotated/Elaborate`, one level simpler: a `Scope Γ`
-   derivation folds to a de Bruijn term, and the variable case reads the
-   index off the `InCtx` witness the checker already built.
+   `Annotated/Elaborate` is a fold: a derivation is traversed and a core
+   term is built, and that the core term is the right one is a theorem
+   nobody stated.  Here there is no fold.  `Scope Γ t` is
+   `Σ[ d ∈ DBTm ] Names Γ d t`, so `toDB` is `.fst` and its correctness is
+   `.snd`; `nameRight` below is that sentence, and its proof is a
+   projection.  The variable case does not "read the index off the `InCtx`
+   witness" either -- there is nothing to read, since the checker built
+   `dvar n` out of the witness at `rollVar` in the first place.
 
    `compile` is three internal terms composed -- the checker
    `⊤Ty ⊢ DecTy (Scope Γ)`, the action `semact-dec` builds from `nameAction`,
@@ -32,18 +38,12 @@ import Theory.Combinator.Answer.Decidable
 
 module CD = Check D.DecAnswer
 
--- Nameless terms.
-data DBTm : Type ℓ-zero where
-  dvar : ℕ → DBTm
-  dapp : DBTm → DBTm → DBTm
-  dlam : DBTm → DBTm
-
--- The fold.  Total on derivations: a derivation *is* the proof that every
--- name resolves, so there is no failure case.
+-- The conversion, and its correctness.  Both projections.
 toDB : (Γ : Ctx) (t : RawTm) → Scope Γ t → DBTm
-toDB Γ (tvar x) v = dvar (deBruijn Γ x v)
-toDB Γ (tapp t u) s = dapp (toDB Γ t (s .fst)) (toDB Γ u (s .snd))
-toDB Γ (tlam x t) s = dlam (toDB (x ∷ Γ) t s)
+toDB Γ t = fst
+
+nameRight : (Γ : Ctx) (t : RawTm) (s : Scope Γ t) → Names Γ (toDB Γ t s) t
+nameRight Γ t = snd
 
 nameAction : (Γ : Ctx) → SemanticAction (Scope Γ) DBTm
 nameAction Γ t s = toDB Γ t s , tt
@@ -83,3 +83,9 @@ db-open-in-ctx = refl
 
 db-open-deep : compile (5 ∷ 3 ∷ 0 ∷ []) openT ≡ just (dvar 2)
 db-open-deep = refl
+
+-- a context that repeats a name resolves to the inner binding, which is
+-- the content of `At` and the reason `ScopeTests`' positional reading is
+-- the wrong one
+db-shadowed-ctx : compile (0 ∷ 0 ∷ []) openT ≡ just (dvar 0)
+db-shadowed-ctx = refl
