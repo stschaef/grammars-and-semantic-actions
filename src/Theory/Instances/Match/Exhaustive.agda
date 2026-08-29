@@ -148,3 +148,34 @@ irredundant v d e =
 -- is what `tally full v ≡ 1` observes one value at a time.
 covers : (v : Val) → isContr (Any full v)
 covers v = exhaustive v , irredundant v (exhaustive v)
+
+
+-- What the cover was already worth, now that `Combinator/Complete` says
+-- it out loud.
+--
+-- `clauseCover` was built to state exhaustiveness (`total`) and
+-- irredundancy (`disjoint`).  Those are the same two fields a checker
+-- owes, so the cover ALSO decides each clause -- and the decision does not
+-- go near `fix`, `look` or an `AnswerFunctor`.  `total` is the
+-- completeness half: it is what says a value that matches nothing is
+-- refuted rather than merely not-found.
+--
+-- The point is not that this beats the combinator checker.  It is that
+-- when a client has a cover, the decision is already paid for, and the
+-- completeness argument is the cover's own `total` rather than a separate
+-- induction related to the checker by hand.
+open import Theory.Combinator.Complete VEqns Empty.⊥ noVarSort vPresentation
+  using (decideCell ; DiscreteEq)
+
+decFin3 : DiscreteEq (Fin 3)
+decFin3 zero zero = Sum.inl Eq.refl
+decFin3 (suc zero) (suc zero) = Sum.inl Eq.refl
+decFin3 (suc (suc zero)) (suc (suc zero)) = Sum.inl Eq.refl
+decFin3 zero (suc _) = Sum.inr λ ()
+decFin3 (suc _) zero = Sum.inr λ ()
+decFin3 (suc zero) (suc (suc zero)) = Sum.inr λ ()
+decFin3 (suc (suc zero)) (suc zero) = Sum.inr λ ()
+
+-- the checker for each clause, straight out of the cover
+decClause : (i : Fin 3) → Decidable (Match (Clause i))
+decClause = decideCell decFin3 clauseCover
