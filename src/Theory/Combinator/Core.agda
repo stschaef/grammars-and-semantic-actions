@@ -419,3 +419,108 @@ module Combinators (𝒯 : AnswerFunctor)
     none : {A : TheorySet ℓA s} → (⊤Ty ⊢ ¬Ty (ty A)) → D ⊢ ty (Ans A)
     none n = side (dec-no ∘⊢ n)
 
+
+
+-- THE INTERFACE MINUS ALTERNATION.  `Theory/Combinator/Linear` grades an
+-- answer by a *budget*: an answer at `m` carries its own step count and a
+-- proof that the count is under `k · size m`.  Three of `AnswerFunctor`'s
+-- six operations survive that grading and three do not, and the three that
+-- do not are exactly those whose model element does not shrink:
+--
+--     Ans-map&   cost unchanged, same `m`                  -- survives
+--     Ans-ofDec  cost 1, and `1 ≤ k · size m`              -- survives
+--     Ans-node   cost `1 + Σ`, and the slots are subterms  -- survives
+--     Ans-⊕&     cost `c₁ + c₂`, both at the SAME `m`      -- dies
+--     Ans-&&     cost `c₁ + c₂`, both at the SAME `m`      -- dies
+--     Ans-re     cost 1 + c, at `f m`, and nothing relates
+--                `size (f m)` to `size m`                  -- dies
+--
+-- `Ans-⊕&` and `Ans-&&` have literally the same type up to the answer's
+-- output, so they fail for literally the same reason: both premises may
+-- spend the whole budget of `m`, so the conclusion wants `2 · k · size m`
+-- and no `k` absorbs a doubling.  `Linear.⊕&-impossible` is that argument
+-- as a term.  The house convention -- attach a side condition to the NODE
+-- through `Ans-&&` -- is safe in practice only because the condition costs
+-- 1; the *type* of `Ans-&&` promises nothing of the kind, which is the
+-- same complaint `Ans-node`'s header makes about slots.
+--
+-- So this record is not a weakening for its own sake.  It is the largest
+-- fragment on which a budget is stable, and a client typed at it *cannot*
+-- write the exponential combinator: `LinearCombinators` has no `_<|>_`
+-- because there is no field to build one from.  Every client already
+-- avoids nested alternation by committing through a cover; here that is a
+-- typing fact rather than a convention.
+record LinearAnswer : Typeω where
+  field
+    ℓAns : Level → Level
+    Ans : {ℓA : Level} {s : S} → TheorySet ℓA s → TheorySet (ℓAns ℓA) s
+
+    Ans-map& : {ℓA ℓB ℓH : Level} {s : S}
+      {A : TheorySet ℓA s} {B : TheorySet ℓB s} {H : TheoryTy ℓH s}
+      → ty A & H ⊢ ty B → ty B & H ⊢ ty A
+      → ty (Ans A) & H ⊢ ty (Ans B)
+
+    Ans-ofDec : {ℓA : Level} {s : S} {A : TheorySet ℓA s}
+      → ty (DecSet A) ⊢ ty (Ans A)
+
+    Ans-node : {ℓA : Level} (o : σ .ops) → Precise o
+      → {As : NodeArgs ℓA o} {ms : interpIn o ↓M}
+      → ((a : arities σ o) → ty (Ans (As ms a)) (ms a))
+      → ty (Ans (⊗ᴰSet o As)) (op o ms)
+
+-- Every answer is a linear answer by forgetting; the converse is what
+-- fails, and `Linear` says why.  This is what keeps the ungraded clients
+-- working: a checker written at `LinearAnswer` runs at `Dec`, `Maybe` and
+-- `ND` through this map, and additionally at the graded answer, where the
+-- others cannot go.
+linearOf : AnswerFunctor → LinearAnswer
+linearOf 𝒯 .LinearAnswer.ℓAns = AnswerFunctor.ℓAns 𝒯
+linearOf 𝒯 .LinearAnswer.Ans = AnswerFunctor.Ans 𝒯
+linearOf 𝒯 .LinearAnswer.Ans-map& = AnswerFunctor.Ans-map& 𝒯
+linearOf 𝒯 .LinearAnswer.Ans-ofDec = AnswerFunctor.Ans-ofDec 𝒯
+linearOf 𝒯 .LinearAnswer.Ans-node = AnswerFunctor.Ans-node 𝒯
+
+-- `Combinators` with the one derived combinator that alternation feeds
+-- removed.  Everything else is unchanged, because everything else only
+-- ever needed `Ans` to be a family of sets that `▷` can delay: `fix` is
+-- `löb` at the answer family, so a bound *carried inside the answer* is
+-- transported across the fixpoint by `löb`'s own typing and never has to
+-- be proved about it.  That is the whole reason the grading works at all,
+-- and why `Lambda/CostTests`' wall -- `löb-unfold` is propositional -- is
+-- not met here.
+module LinearCombinators (𝒯 : LinearAnswer)
+  {X : Type ℓX} (xs : X → S) (O : LI.IPtOrder σeq V vs 𝒫 xs ℓ<) where
+
+  open LinearAnswer 𝒯 public
+  open LI.GuardedIndexed σeq V vs 𝒫 xs O public
+
+  Fam : (ℓA : Level) → Type _
+  Fam ℓA = (x : X) → TheorySet ℓA (xs x)
+
+  AnsFam : Fam ℓA → SetFam (ℓAns ℓA)
+  AnsFam A = (λ x → ty (Ans (A x))) , λ x m → isSetTy (Ans (A x)) m
+
+  Step : Fam ℓA → Type _
+  Step A = ∀ x → ▷ (AnsFam A) x ⊢ ty (Ans (A x))
+
+  Checker : Fam ℓA → Type _
+  Checker A = ∀ x → ⊤Ty ⊢ ty (Ans (A x))
+
+  fix : {A : Fam ℓA} → Step A → Checker A
+  fix {A = A} φ = Fam▷.löb (AnsFam A .fst) (AnsFam A .snd) φ
+
+  callAt : {A : Fam ℓA} (x' : X) {x : X} {m : ↓M (xs x)} {m' : ↓M (xs x')}
+    → (x' , m') < (x , m) → ▷ (AnsFam A) x m → ty (Ans (A x')) m'
+  callAt {A = A} x' lt β = ▷app (AnsFam A) lt β
+
+  Ans-map : {s : S} {A : TheorySet ℓA s} {B : TheorySet ℓB s}
+    → ty A ⊢ ty B → ty B ⊢ ty A → ty (Ans A) ⊢ ty (Ans B)
+  Ans-map f g = Ans-map& (f ∘⊢ π₁) (g ∘⊢ π₁) ∘⊢ (id⊢ ,& ⊤Ty-intro)
+
+  module _ {s : S} {D : TheoryTy ℓD s} where
+
+    side : {A : TheorySet ℓA s} → Decidable (ty A) → D ⊢ ty (Ans A)
+    side d = Ans-ofDec ∘⊢ d ∘⊢ ⊤Ty-intro
+
+    none : {A : TheorySet ℓA s} → (⊤Ty ⊢ ¬Ty (ty A)) → D ⊢ ty (Ans A)
+    none n = side (dec-no ∘⊢ n)

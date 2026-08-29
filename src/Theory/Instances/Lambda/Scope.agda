@@ -300,11 +300,17 @@ unrollNode lamOp Γ m (s , (ms , Eq.refl)) =
     theBody → unrollBody Γ (ms theBinder) (ms theBody) s
 
 
--- The checker, for whatever answer.
-module Check (𝒯 : AnswerFunctor) where
+-- The checker, for whatever answer -- and `LinearAnswer` is what makes
+-- "whatever" a smaller word.  Nothing below mentions `_<|>_` or `Ans-⊕&`;
+-- it never did, because the cover commits and there is nothing left to
+-- alternate.  Typing the module at `LinearAnswer` turns that from a fact
+-- about this text into a fact about what this text is permitted to be, and
+-- buys the graded instance of `Theory/Combinator/Linear`, at which every
+-- answer carries a proof that it was cheap.
+module CheckL (𝒯 : LinearAnswer) where
 
   open Subterm {X = Ctx} isSetCtx (λ _ → 0) hiding (_<_) public
-  open Combinators 𝒯 srt order public
+  open LinearCombinators 𝒯 srt order public
 
   step : Step ScopeSet
   step Γ = look nodeCover branch
@@ -337,3 +343,8 @@ module Check (𝒯 : AnswerFunctor) where
 
   scoped : Checker ScopeSet
   scoped = fix step
+
+-- ...and an ordinary answer is a linear one by forgetting, so the three
+-- ungraded instantiations are unaffected: `ScopeTests` and `CostTests`
+-- name `Check` and are unchanged.
+module Check (𝒯 : AnswerFunctor) = CheckL (linearOf 𝒯)
