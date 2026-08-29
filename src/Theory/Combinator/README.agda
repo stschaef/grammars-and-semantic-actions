@@ -410,5 +410,58 @@
 
    So the obligation is CONSERVED, not LOCATED, and a judgment can be
    arranged so that it is discharged before the framework ever sees it.
-   That is the useful form of the observation; the sharper one is false. -}
+   That is the useful form of the observation; the sharper one is false.
+
+   ============================================================
+   VII.  ADDENDUM: TWO CLIENTS, JOINED AT A SIDE CONDITION
+   ============================================================
+
+   Written after `Instances/Infer` landed, which is the first client whose
+   premises are discharged by ANOTHER client.  Type inference for
+   unannotated terms is a judgment over the term theory whose type
+   equations are solved by `Unify`, a judgment over the stack theory.
+
+   THE JOIN IS THE SIDE-CONDITION MECHANISM, AND IT NEEDED NOTHING NEW.
+   `Unify/Check` at `Answer/Decidable` is a `Decidable`; `side`/`Ans-ofDec`
+   takes a `Decidable`; `decSolv` is the two lines that put them together.
+   No change to `Core`, no change to `Unify`, and the outer client stays
+   polymorphic in its own answer.  Three consequences are worth recording.
+
+   1.  THE JOIN IS ONE-WAY.  `Ans-ofDec` consumes a DECISION, so the inner
+       client is pinned to `Dec` however the outer one is instantiated: an
+       inference checker at `ND` still calls a unifier at `Dec`.  There is
+       no `Ans A ⊢ Ans B` in the interface and there should not be -- it
+       would be a bind, which section VI records the framework as declining.
+       So clients compose along `Decidable` and not along `Ans`.
+
+   2.  A SIDE CONDITION IS LOCAL AND UNIFICATION IS GLOBAL, SO THE JOIN
+       LANDS AT A MODE CHANGE.  Threading a substitution between sibling
+       premises is a premise index that is a previous premise's OUTPUT,
+       which nothing provides; and solving at every node is degenerate,
+       since a node's constraint set contains its children's, so the
+       premises would say nothing the condition had not already said.  What
+       is left is to split the judgment: the syntax-directed part generates
+       constraints and postpones every equation, and ONE conjunction with
+       the other client's judgment discharges them.  `Bidir`'s two-mode
+       family is the shape that fits, with `&` where `Bidir` has `⊕ᴰ`.
+
+       The general rule this suggests: a client composes with another
+       exactly when the other's judgment can be stated at a SINGLE index
+       computed from the first's -- and the price of computing that index
+       up front is that the first judgment loses everything the second was
+       going to decide.  `Infer`'s `Gen` is scope checking and nothing more.
+
+   3.  COMPLETENESS SPLITS ALONG THE SAME LINE, AND THAT IS THE REAL
+       FINDING.  A judgment refuted NODE BY NODE inherits completeness from
+       the cover's `total` for free; `Infer` proves exactly that for its
+       shape mode, over infinitely many types, in twelve lines.  A judgment
+       whose refutation is an existential over SUBSTITUTIONS inherits
+       nothing, because no cover of the term model splits by solvability --
+       and `Ans-ofDec` asks for a decision, not for a characterisation, so
+       the framework never demands the missing half either.  Both facts are
+       structural.  The lesson for client eight is that the side-condition
+       mechanism buys composition at the cost of the refutation's meaning,
+       and that a client using it owes an explicit statement of what its
+       `no` says.  `Infer`'s header is that statement.
+ -}
 module Theory.Combinator.README where
