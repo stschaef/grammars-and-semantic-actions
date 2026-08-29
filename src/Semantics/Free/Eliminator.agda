@@ -30,6 +30,8 @@ open import Cubical.Categories.Instances.Fiber
 
 open import Semantics.Model
 open import Semantics.Displayed.Model
+open import Semantics.Displayed.IndexedProduct
+open import Cubical.Categories.Displayed.Presheaf.Uncurried.Base
 open import Semantics.Free.Syntax Gen
 open import Semantics.Free.Model Gen
 
@@ -42,7 +44,6 @@ module _ {ℓCᴰ ℓCᴰ'} (Mᴰ : Modelᴰ FreeModel ℓCᴰ ℓCᴰ') where
     module R = HomᴰReasoning Cᴰ
     module F = Fibers Cᴰ
     module Fop = Fibers (Cᴰ ^opᴰ)
-
   open MonoidalStrᴰ MCᴰ
   open NatIsoᴰ
   open NatTransᴰ
@@ -67,10 +68,24 @@ module _ {ℓCᴰ ℓCᴰ'} (Mᴰ : Modelᴰ FreeModel ℓCᴰ ℓCᴰ') where
 
     private
       module ⊗ᴰ = Functorᴰ ─⊗ᴰ─
+      -- The displayed presheaves underlying the indexed (co)products,
+      -- so that their *family*-level reind-filler is reachable. It is
+      -- private inside UniversalElementᴰNotation, but P and Pᴰ are
+      -- module parameters, so it can be rebuilt from outside.
+      module ΠP (X : hSet ℓ) (A : ⟨ X ⟩ → Ty) =
+        PresheafᴰNotation Cᴰ _
+          (ΠTyPshᴰ Cᴰ (λ x → Cᴰ [-][-, elimOb (A x) ]))
+      module ΣP (X : hSet ℓ) (A : ⟨ X ⟩ → Ty) =
+        PresheafᴰNotation (Cᴰ ^opᴰ) _
+          (ΠTyPshᴰ (Cᴰ ^opᴰ) (λ x → (Cᴰ ^opᴰ) [-][-, elimOb (A x) ]))
       module Σᴰ (X : hSet ℓ) (A : ⟨ X ⟩ → Ty) =
-        UniversalElementᴰNotation (Cᴰ ^opᴰ) _ _ (Σsᴰ X A (λ x → elimOb (A x)))
+        UniversalElementᴰNotation (Cᴰ ^opᴰ) _
+          (ΠTyPshᴰ (Cᴰ ^opᴰ) (λ x → (Cᴰ ^opᴰ) [-][-, elimOb (A x) ]))
+          (Σsᴰ X A (λ x → elimOb (A x)))
       module Πᴰ (X : hSet ℓ) (A : ⟨ X ⟩ → Ty) =
-        UniversalElementᴰNotation Cᴰ _ _ (Πsᴰ X A (λ x → elimOb (A x)))
+        UniversalElementᴰNotation Cᴰ _
+          (ΠTyPshᴰ Cᴰ (λ x → Cᴰ [-][-, elimOb (A x) ]))
+          (Πsᴰ X A (λ x → elimOb (A x)))
       module ⊸ᴰ (B D : Ty) =
         UniversalElementᴰNotation Cᴰ _ _ (⊸uesᴰ (elimOb B) (elimOb D))
       module ⟜ᴰ (A D : Ty) =
