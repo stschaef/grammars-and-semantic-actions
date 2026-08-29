@@ -72,6 +72,7 @@ open import Cubical.Relation.Nullary.Properties using (Discrete→isSet)
 
 open import Theory.Instances.Class.Base public
 open import Theory.Type.SemanticAction.Base CEqns ⊥ (λ ()) cPresentation
+import Theory.Combinator.Answer.Decidable CEqns ⊥ (λ ()) cPresentation as D
 
 -- The dictionary: which instance was chosen, and the dictionaries its
 -- context demanded.  A `Dict` is the derivation with the proofs erased and
@@ -398,3 +399,18 @@ module Resolver (T : Table) where
 
   dictAction : (C : Cls) → SemanticAction (ty (ResSet C)) Dict
   dictAction C t d = toDict C t d , tt
+
+  -- The front end, at `Dec`.  It needs `Coherent T` because the routed
+  -- resolver does, which is the point: you cannot get a decision procedure
+  -- out of an incoherent table, and the failure is static.
+  --
+  -- This lives in the client rather than in the tests: a client exports
+  -- its front end and a test calls it.
+  module Front (coh : Coherent T) where
+    module CD = Check D.DecAnswer
+
+    decRes : CD.Checker ResSet
+    decRes = CD.resolver (CD.Routed.routed coh D.DecCommitting)
+
+    resolve : Cls → Typ → Maybe Dict
+    resolve C = observe (decRes C) (semact-dec (dictAction C))

@@ -130,3 +130,27 @@ module Check (𝒯 : AnswerFunctor) where
 
   unify : Checker SolSet
   unify = fix step
+
+
+-- The front end.  `Sol` carries no data -- it is a proposition -- so the
+-- action recomputes each assignment from the same `check` the judgment
+-- used.  Carrying `check`'s answer in the judgment would make the
+-- derivation *be* the substitution and nothing else here would change.
+--
+-- This lives in the client, not in the tests: a client exports its front
+-- end and a test calls it.
+open import Theory.Type.SemanticAction.Base UEqns ℕ (λ n → n) uPresentation
+
+import Theory.Combinator.Answer.Decidable
+  UEqns ℕ (λ n → n) uPresentation as D
+
+module CD = Check D.DecAnswer
+
+mguAction : (n : ℕ) → SemanticAction (Sol n) (AList n)
+mguAction n ps d = mgu n ps d , tt
+
+solve : (n : ℕ) → Stack n → Maybe (AList n)
+solve n = observe (CD.unify n) (semact-dec (mguAction n))
+
+unifyTm : (n : ℕ) → Tm n → Tm n → Maybe (AList n)
+unifyTm n t u = solve n ((t , u) ∷ [])

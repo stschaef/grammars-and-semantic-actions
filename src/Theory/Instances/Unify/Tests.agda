@@ -33,8 +33,6 @@ import Cubical.Data.Equality as Eq
 
 open import Theory.Instances.Unify.Check
 
-open import Theory.Type.SemanticAction.Base UEqns ℕ (λ n → n) uPresentation
-
 import Theory.Combinator.Answer.Decidable
   UEqns ℕ (λ n → n) uPresentation as D
 import Theory.Combinator.Answer.Incomplete
@@ -42,30 +40,19 @@ import Theory.Combinator.Answer.Incomplete
 import Theory.Combinator.Answer.NonDet
   UEqns ℕ (λ n → n) uPresentation as NDm
 
-module CD = Check D.DecAnswer
 module CM = Check MB.MaybeAnswer
 module CN = Check NDm.NDAnswer
 
 -- the same grammar, read three ways
-decideSol : (n : ℕ) → D.Decidable (Sol n)
-decideSol = CD.unify
-
 testSol : (n : ℕ) → ⊤Ty ⊢ MB.Maybe (Sol n)
 testSol = CM.unify
 
 parsesSol : (n : ℕ) → ⊤Ty ⊢ NDm.ND (Sol n)
 parsesSol = CN.unify
 
--- ...and the readout, as a semantic action, so that the boundary between
--- the internal term and the external value is crossed once, in `observe`.
-mguAction : (n : ℕ) → SemanticAction (Sol n) (AList n)
-mguAction n ps d = mgu n ps d , tt
-
-solve : (n : ℕ) → Stack n → Maybe (AList n)
-solve n = observe (decideSol n) (semact-dec (mguAction n))
-
+-- The front end comes from `Check`; a test only calls it.
 unify : (n : ℕ) → Tm n → Tm n → Maybe (AList n)
-unify n t u = solve n ((t , u) ∷ [])
+unify = unifyTm
 
 mayB : (n : ℕ) → Stack n → Bool
 mayB n ps = Sum.rec (λ _ → true) (λ _ → false) (testSol n ps tt)

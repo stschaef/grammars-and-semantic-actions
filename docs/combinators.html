@@ -275,7 +275,7 @@ Precise o  = ∀ m → isProp (NodeAt o m)      -- "...in exactly one way"</code
 <div class="note"><span class="k">Compare</span>
 <p>In the string framework the recursive call is <code>call</code>/<code>callAt</code>/<code>pApp</code>, and it has to thread a continuation through. Here, with no leftover input, it is <em>literally just</em> <code>▷app</code> &mdash; open the &ldquo;later&rdquo; box at a smaller element.</p></div>
 
-<figure class="src"><figcaption><span class="path">Theory/Combinator/Core.agda</span><span class="lines">392 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
+<figure class="src"><figcaption><span class="path">Theory/Combinator/Core.agda</span><span class="lines">421 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
 {- Combinators for an arbitrary finitary algebraic theory.
 
    `Theory/Instances/Monoid/Combinator/Core` is these combinators at the
@@ -454,6 +454,15 @@ node-shape : {o : σ .ops} {As : NodeArgs ℓA o} → ⊗ᴰ o As ⊢ NodeAt o
 node-shape m t = t .fst , t .snd .fst
 
 
+-- Reindexing a grammar along a map of model elements -- possibly across
+-- sorts, since nothing here relates the two.
+reTy : {s s' : S} → (↓M s → ↓M s') → TheoryTy ℓA s' → TheoryTy ℓA s
+reTy f A m = A (f m)
+
+reSet : {s s' : S} → (↓M s → ↓M s') → TheorySet ℓA s' → TheorySet ℓA s
+reSet f (A , sA) = reTy f A , λ m → sA (f m)
+
+
 record AnswerFunctor : Typeω where
   field
     ℓAns : Level → Level
@@ -510,6 +519,26 @@ record AnswerFunctor : Typeω where
       → {As : NodeArgs ℓA o} {ms : interpIn o ↓M}
       → ((a : arities σ o) → ty (Ans (As ms a)) (ms a))
       → ty (Ans (⊗ᴰSet o As)) (op o ms)
+
+    -- An answer is *pointwise* in the model element: an answer at `f m`
+    -- for `A` is an answer at `m` for `A` reindexed along `f`.
+    --
+    -- `Ans-node` is this same move for the one map a signature supplies --
+    -- a slot's projection out of its node -- and that is all a judgment
+    -- whose premises are *subterms* ever needs.  A judgment that is a
+    -- *machine* needs more: its premise sits at a state computed from the
+    -- conclusion's, and no operation of any signature produces that state
+    -- from the premise's.  `Instances/Unify` is the case in point, where
+    -- the state is the equation stack with a substitution applied.
+    --
+    -- This is much less than a bind: the reindexing is a map of *model
+    -- elements*, fixed before any answer is asked, so a later premise
+    -- still cannot depend on an earlier premise's derivation.  Every
+    -- answer defined by cases on `A m` satisfies it, which is all three --
+    -- `Dec` and `Maybe` by the identity, `ND` by the list isomorphism it
+    -- is already defined through.
+    Ans-re : {ℓA : Level} {s s' : S} {A : TheorySet ℓA s'}
+      (f : ↓M s → ↓M s') → reTy f (ty (Ans A)) ⊢ ty (Ans (reSet f A))
 
 
 -- A covariant answer additionally has a plain `fmap` and an *empty answer*
@@ -677,7 +706,7 @@ module Combinators (𝒯 : AnswerFunctor)
 <div class="note"><span class="k">Cost</span>
 <p>Alternation at <code>Dec</code> cannot short-circuit. To build a refutation of <code>A ⊕ B</code> you genuinely need refutations of both, so <code>_&lt;|&gt;_</code> runs every branch. Nested alternation is exponential, and no choice of answer can fix that &mdash; only committing via a cover can.</p></div>
 
-<figure class="src"><figcaption><span class="path">Theory/Combinator/Answer/Decidable.agda</span><span class="lines">113 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
+<figure class="src"><figcaption><span class="path">Theory/Combinator/Answer/Decidable.agda</span><span class="lines">115 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
 {- `Combinator/Core` at `Dec`.  The intrinsically correct answer: `DecTy A`
    *is* a decision, so a checker built from these combinators is sound and
    complete by typing rather than by a theorem.
@@ -771,6 +800,8 @@ DecAnswer .AnswerFunctor.Ans-node o prec {As = As} {ms = ms} ws =
     → ty (DecSet (⊗ᴰSet o As)) (op o ms)
   onAll (Sum.inl all) = Sum.inl (node-mk all)
   onAll (Sum.inr no) = Sum.inr λ t → Empty.rec (no (atMs t))
+-- A decision is a decision of `A m`, and `reTy` only moves the `m`.
+DecAnswer .AnswerFunctor.Ans-re f m d = d
 
 -- Committing at `Dec`, which is exactly `routeIn`.  `Maybe` and `ND` reach
 -- the same shape through `FromCov.committing`, but by the opposite
@@ -795,7 +826,7 @@ module DecCombinators {ℓX ℓ&lt;} {X : Type ℓX} (xs : X → S)
 
 <p>Returns a derivation or nothing, with no refutation. <code>Ans-⊕&amp;</code> is <code>orElse</code>, which commits to the left &mdash; so this is the PEG reading of a grammar, and an ambiguous one silently drops derivations. <code>Ans-node</code> ignores <code>Precise</code> entirely: with nothing to refute, a node is just a traversal.</p>
 
-<figure class="src"><figcaption><span class="path">Theory/Combinator/Answer/Incomplete.agda</span><span class="lines">99 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
+<figure class="src"><figcaption><span class="path">Theory/Combinator/Answer/Incomplete.agda</span><span class="lines">100 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
 {- `Combinator/Core` at `Maybe`: at most one answer, no refutation.
 
    `Ans-⊕&amp;` is `orElse`, which commits to the left -- so this is the PEG
@@ -875,6 +906,7 @@ MaybeAnswer .AnswerFunctor.Ans-node o _ {ms = ms} ws = onAll (travΠFin ws)
   onAll : _ → _
   onAll (Sum.inl all) = Sum.inl (node-mk all)
   onAll (Sum.inr _) = Sum.inr tt
+MaybeAnswer .AnswerFunctor.Ans-re f m d = d
 
 -- `Maybe` is covariant, so both extra records come for free: a forward map
 -- and `nothing`, which is a perfectly good answer at every grammar.  That
@@ -904,7 +936,7 @@ module MaybeCombinators {ℓX ℓ&lt;} {X : Type ℓX} (xs : X → S)
 <div class="note warn"><span class="k">The honest gap</span>
 <p>Completeness here is a claim about the grammar, not a consequence of the type. <code>ND A</code> is a list of derivations and nothing types &ldquo;these are all of them&rdquo;. Only <code>Dec</code> is intrinsic. An <em>exhaustive</em> answer &mdash; a list together with a proof that every derivation is in it &mdash; would close this, and would be the most interesting backend to add.</p></div>
 
-<figure class="src"><figcaption><span class="path">Theory/Combinator/Answer/NonDet.agda</span><span class="lines">129 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
+<figure class="src"><figcaption><span class="path">Theory/Combinator/Answer/NonDet.agda</span><span class="lines">132 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
 {- `Combinator/Core` at `ND`: every answer, not just one.
 
    `Ans-⊕&amp;` is `appendND` where `Incomplete`'s is `orElse`, so an ambiguous
@@ -1012,6 +1044,9 @@ NDAnswer .AnswerFunctor.Ans-ofDec m (Sum.inl a) = ηND m a
 NDAnswer .AnswerFunctor.Ans-ofDec m (Sum.inr _) = nilND m tt
 NDAnswer .AnswerFunctor.Ans-node o _ {ms = ms} ws =
   ndFromList (op o ms) (mapL node-mk (allΠFin λ a → ndToList (ms a) (ws a)))
+-- the derivations of `A` at `f m` are the derivations of `A ∘ f` at `m`,
+-- and `ND` is a list of them
+NDAnswer .AnswerFunctor.Ans-re f m x = ndFromList m (ndToList (f m) x)
 
 -- `ND` is covariant too, with `nilND` for the empty answer -- and here the
 -- empty answer is literally the empty list of derivations.  Routing at `ND`
@@ -5937,7 +5972,7 @@ module Subtype {X : Type ℓX} (isSetX : isSet X) (rank : X → ℕ) where
 <h4>And the dictionary</h4>
 <p>A derivation of <code>Resolve C τ</code> is a tree of instance choices &mdash; which is to say it <em>is</em> the dictionary a compiler passes at run time. <code>toDict</code> folds it, <code>dictAction</code> makes that a <code>SemanticAction</code>, and <code>resolve</code> is <code>observe checker (semact-dec dictAction)</code>: the same three-term composition as <a href="#aelab">elaboration</a>, one more time.</p>
 
-<figure class="src"><figcaption><span class="path">Theory/Instances/Class/Resolve.agda</span><span class="lines">400 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
+<figure class="src"><figcaption><span class="path">Theory/Instances/Class/Resolve.agda</span><span class="lines">416 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
 {- Typeclass instance resolution, and the identification the framework was
    missing a field for:
 
@@ -6011,6 +6046,7 @@ open import Cubical.Relation.Nullary.Properties using (Discrete→isSet)
 
 open import Theory.Instances.Class.Base public
 open import Theory.Type.SemanticAction.Base CEqns ⊥ (λ ()) cPresentation
+import Theory.Combinator.Answer.Decidable CEqns ⊥ (λ ()) cPresentation as D
 
 -- The dictionary: which instance was chosen, and the dictionaries its
 -- context demanded.  A `Dict` is the derivation with the proofs erased and
@@ -6337,10 +6373,25 @@ module Resolver (T : Table) where
 
   dictAction : (C : Cls) → SemanticAction (ty (ResSet C)) Dict
   dictAction C t d = toDict C t d , tt
+
+  -- The front end, at `Dec`.  It needs `Coherent T` because the routed
+  -- resolver does, which is the point: you cannot get a decision procedure
+  -- out of an incoherent table, and the failure is static.
+  --
+  -- This lives in the client rather than in the tests: a client exports
+  -- its front end and a test calls it.
+  module Front (coh : Coherent T) where
+    module CD = Check D.DecAnswer
+
+    decRes : CD.Checker ResSet
+    decRes = CD.resolver (CD.Routed.routed coh D.DecCommitting)
+
+    resolve : Cls → Typ → Maybe Dict
+    resolve C = observe (decRes C) (semact-dec (dictAction C))
 </code></pre></figure>
 <h3 id="ctests">Running it</h3>
 
-<figure class="src"><figcaption><span class="path">Theory/Instances/Class/ResolveTests.agda</span><span class="lines">267 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
+<figure class="src"><figcaption><span class="path">Theory/Instances/Class/ResolveTests.agda</span><span class="lines">270 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
 {- One resolver, two tables, three answers -- and the payoff.
 
    `T₀` is coherent: at most one `Eq` instance and one `Ord` instance per
@@ -6434,8 +6485,10 @@ module CM = R₀.Check MB.MaybeAnswer
 module CN = R₀.Check NDm.NDAnswer
 
 -- the same grammar, read three ways, and all three route
+module F₀ = R₀.Front coh₀
+
 decRes : CD.Checker R₀.ResSet
-decRes = CD.resolver (CD.Routed.routed coh₀ D.DecCommitting)
+decRes = F₀.decRes
 
 mayRes : CM.Checker R₀.ResSet
 mayRes = CM.resolver (CM.Routed.routed coh₀ MB.MaybeCommitting)
@@ -6455,8 +6508,9 @@ count C t = length (NDm.ndToList t (ndRes C t tt))
 -- ...and the front end: resolve, then read the dictionary off the
 -- derivation.  Three internal terms composed, exactly as in
 -- `Annotated/Elaborate`'s `compile`.
+-- The front end comes from `Resolve`; a test only calls it.
 resolve : Cls → Typ → Maybe Dict
-resolve C = observe (decRes C) (semact-dec (R₀.dictAction C))
+resolve = F₀.resolve
 
 -- Positive cases.
 dec-eq-ι : decB eqC ι ≡ true
@@ -6630,7 +6684,7 @@ may-overlap = refl
 <div class="note"><span class="k">Two documented exceptions, both in <code>Match</code>, both arguments rather than lapses</span>
 <p><code>pwild</code> and <code>pvar n</code> do not go through <code>look</code>, because a rule that holds at every head is a decision and not a node. And <code>observeAll</code> is a hand-rolled boundary, because <code>observe</code> reads <em>one</em> value out of a <code>⊤Ty</code>-map while <code>ND</code> is a list &mdash; supplying the missing combinator means changing the backend interface, which is worth doing deliberately rather than in passing.</p></div>
 
-<figure class="src"><figcaption><span class="path">Theory/Combinator/README.agda</span><span class="lines">297 lines</span></figcaption><pre><code>{- WHAT TO READ BEFORE WRITING CLIENT SEVEN.
+<figure class="src"><figcaption><span class="path">Theory/Combinator/README.agda</span><span class="lines">334 lines</span></figcaption><pre><code>{- WHAT TO READ BEFORE WRITING CLIENT SEVEN.
 
    `Theory/Combinator/Core` is a framework for syntax-directed judgments
    over an arbitrary finitary algebraic theory, and there are six clients
@@ -6925,7 +6979,44 @@ may-overlap = refl
    development has three token rules where this one has `Ans-node`.  For
    a commutative theory the node cover is not disjoint at all -- the bag
    `{a,b}` is a node of two different heads -- so prediction, and with it
-   this whole framework, needs a chosen head. -}
+   this whole framework, needs a chosen head.
+
+   ============================================================
+   VI.  ADDENDUM: `Ans-re`, AND A THIRD KIND OF OUTCOME
+   ============================================================
+
+   Written after `Unify` landed, which is why it sits at the end rather
+   than in section I.
+
+   `Ans-re` REINDEXES AN ANSWER ALONG A MAP OF MODEL ELEMENTS.  Every
+   judgment before `Unify` had its premises at SUBTERMS, and `Ans-node` is
+   already the reindexing for those -- a slot's projection out of its node
+   is the one map a signature hands you.  A judgment that is a MACHINE has
+   a premise at a state COMPUTED from the conclusion's, and no operation of
+   any signature produces that state.  Hence the field.
+
+   It is deliberately WEAKER than a monadic bind: `f` maps model elements
+   and is fixed before any answer is asked, so a later premise still cannot
+   read an earlier premise's derivation.  The prediction that unification
+   would need bind was wrong; it needs reindexing.
+
+   AND A CORRECTION TO SECTION II.  It is tempting to read the `Route`
+   obligations as LOCATING an algorithm's uniqueness theorem -- `disjoint`
+   IS coherence, `disjoint` IS uniqueness of synthesis.  Three clients now
+   say otherwise, in three different ways:
+
+     * `Class/Resolve` -- `disjoint` is coherence, verbatim.
+     * `Bidir/Typing` -- the same theorem, but the content sits in `into`
+       (`soundInfer`), because the cells were chosen as the fibres of a
+       candidate function.  `disjoint ∘ into` is uniqueness; how it splits
+       between the two is a design choice.
+     * `Unify/Check` -- NO ROUTE ARISES AT ALL.  The existential collapses
+       at the definition of the judgment, so uniqueness is `isPropSol`,
+       definitional, and the framework never gets to ask for it.
+
+   So the obligation is CONSERVED, not LOCATED, and a judgment can be
+   arranged so that it is discharged before the framework ever sees it.
+   That is the useful form of the observation; the sharper one is false. -}
 module Theory.Combinator.README where
 </code></pre></figure>
 <h2 id="internal">Reflection: is this internal to the DSL?</h2>

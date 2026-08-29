@@ -92,8 +92,10 @@ module CM = R₀.Check MB.MaybeAnswer
 module CN = R₀.Check NDm.NDAnswer
 
 -- the same grammar, read three ways, and all three route
+module F₀ = R₀.Front coh₀
+
 decRes : CD.Checker R₀.ResSet
-decRes = CD.resolver (CD.Routed.routed coh₀ D.DecCommitting)
+decRes = F₀.decRes
 
 mayRes : CM.Checker R₀.ResSet
 mayRes = CM.resolver (CM.Routed.routed coh₀ MB.MaybeCommitting)
@@ -113,8 +115,9 @@ count C t = length (NDm.ndToList t (ndRes C t tt))
 -- ...and the front end: resolve, then read the dictionary off the
 -- derivation.  Three internal terms composed, exactly as in
 -- `Annotated/Elaborate`'s `compile`.
+-- The front end comes from `Resolve`; a test only calls it.
 resolve : Cls → Typ → Maybe Dict
-resolve C = observe (decRes C) (semact-dec (R₀.dictAction C))
+resolve = F₀.resolve
 
 -- Positive cases.
 dec-eq-ι : decB eqC ι ≡ true
