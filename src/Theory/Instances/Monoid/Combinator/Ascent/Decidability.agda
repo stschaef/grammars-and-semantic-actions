@@ -52,12 +52,14 @@ module Theory.Instances.Monoid.Combinator.Ascent.Decidability
   {ℓAlph} (Alphabet : Type ℓAlph)
   (_≟_ : (x y : Alphabet) → (x Eq.≡ y) Sum.⊎ ((x Eq.≡ y) → Empty.⊥)) where
 
-open import Cubical.Data.FinData using (zero ; suc)
 open import Cubical.Data.List using (List ; [] ; _∷_ ; _++_)
-open import Cubical.Data.Sigma using (_,_)
-open import Cubical.Data.Unit using (tt ; tt*)
+open import Cubical.Data.Unit using (tt)
 
 open import Theory.Instances.Monoid.Combinator.Core Alphabet _≟_
+open import Theory.Instances.Monoid.SequentialUnambiguity.Nullable Alphabet isSetAlphabet
+  using (¬Nullable ; ¬Nullable-map)
+open import Theory.Instances.Monoid.SequentialUnambiguity.First Alphabet isSetAlphabet
+  using (¬Nullable-startsWith)
 import Theory.Instances.Monoid.Combinator.Ascent.Base Alphabet _≟_ as A
 import Theory.Instances.Monoid.Combinator.Decidable.Base Alphabet _≟_ ℓ-zero as D
 open import Theory.Instances.Monoid.Derivative Alphabet isSetAlphabet
@@ -65,8 +67,7 @@ open import Theory.Instances.Monoid.Derivative Alphabet isSetAlphabet
 open import Theory.Instances.Monoid.Precise Alphabet isSetAlphabet
   using (Dl-absorb ; Dl-absorb⁻)
 open import Theory.Instances.Monoid.Residual Alphabet isSetAlphabet
-  using ( _⟜_ ; _⊸_ ; ⟜-intro ; ⟜-app ; ⟜-precomp ; ⟜-unitr
-        ; ⊸-lam ; ⊸-precomp ; ⊗ε-unit-r )
+  using ( _⟜_ ; _⊸_ ; ⟜-precomp ; ⊸-lam ; ⊸-precomp ; ⊗ε-unit-r )
 
 private variable ℓ : Level
 
@@ -99,48 +100,40 @@ shiftD⁻ {A = A} = Dl-absorb⁻ {A = A}
 
 module _ (c : Alphabet) where
 
-  -- `⊥Ty ⟜ literal c` is empty: absorbing a `c` would produce a `⊥Ty`.
-  private
-    noStack : (l : String) → (⊥Ty ⟜ literal c) l → Empty.⊥
-    noStack l s = Empty.rec* (s (⌈gen c ⌉) Eq.refl)
+  -- `⊥Ty ⟜ literal c` is empty: absorbing a `c` would produce a `⊥Ty`.  The
+  -- only step outside the combinators is applying the stack at `⌈gen c ⌉`,
+  -- which *constructs* a word from a letter rather than taking one apart.
+  noStack : ⊥Ty ⟜ literal c ⊢ ⊥Ty
+  noStack l s = s (⌈gen c ⌉) Eq.refl
 
   -- ...so the left-hand side is inhabited at the empty word, vacuously.
-  vacuous : ((⊥Ty ⟜ literal c) ⊸ ⊥Ty) []
-  vacuous l s = Empty.rec (noStack l s)
+  vacuous : εTy ⊢ (⊥Ty ⟜ literal c) ⊸ ⊥Ty
+  vacuous =
+    ⊸-lam {A = ⊥Ty ⟜ literal c} {B = εTy} {C = ⊥Ty} (noStack ∘⊢ ⊗ε-unit-r)
 
-  -- ...and the right-hand side is not.
-  notThere : (literal c ⊗ (⊥Ty ⊸ ⊥Ty)) [] → Empty.⊥
-  notThere (ms , e , (lc , _)) = go (ms zero) (ms (suc zero)) lc e
-    where
-    go : (x y : String) → x Eq.≡ ⌈gen c ⌉ → (x ++ y) Eq.≡ [] → Empty.⊥
-    go .(⌈gen c ⌉) y Eq.refl ()
+  -- ...and the right-hand side is not, because it is headed by a letter.
+  -- That is `¬Nullable`, which the repo already states as a `⊢`-term and
+  -- already proves for `startsWith`.
+  notThere : ¬Nullable (literal c ⊗ (⊥Ty ⊸ ⊥Ty))
+  notThere = ¬Nullable-map (⊗-map id⊢ ⊤Ty-intro) (¬Nullable-startsWith {c})
 
   -- THEREFORE: `⊸⟜-swap` has no converse, so `Ans-dimap` cannot be used for
   -- `shift`, so `Dec` cannot instantiate the ascent combinators as they
-  -- stand.  This is not a missing lemma; it is a counterexample.
+  -- stand.  This is not a missing lemma; it is a counterexample -- and the
+  -- absurdity it lands in is itself a `⊢`-term: the empty word would be
+  -- empty.
   noShiftConverse :
-    ((⊥Ty ⟜ literal c) ⊸ ⊥Ty ⊢ literal c ⊗ (⊥Ty ⊸ ⊥Ty)) → Empty.⊥
-  noShiftConverse f = notThere (f [] vacuous)
+    ((⊥Ty ⟜ literal c) ⊸ ⊥Ty ⊢ literal c ⊗ (⊥Ty ⊸ ⊥Ty)) → εTy ⊢ ⊥Ty
+  noShiftConverse f = notThere ∘⊢ ((f ∘⊢ vacuous) ,& id⊢)
 
 -- ---------------------------------------------------------------------------
--- The other half: the sites that are *not* blocked, demonstrated rather than
--- asserted.  The converses `Dec` needs are all internal, and the reduction --
--- the heart of the thing -- goes through at `DivariantAnswer`.
+-- The other half: the sites that are *not* blocked.  The converses `Dec` needs
+-- are all internal and none of them is about parsing, so they live in
+-- `Residual` with the terms they invert -- `⟜-curry⁻`, `⟜-unitr⁻`.  What is
+-- left here is the one that *is* about parsing: the reduction, the heart of
+-- the thing, at `DivariantAnswer` instead of `CovariantAnswer`.
 
 private variable ℓA ℓB ℓC ℓD : Level
-
--- converse of `⟜-curry`, by two applications and an associativity
-⟜-curry⁻ : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt} {C : TheoryTy ℓC tt}
-  → (C ⟜ B) ⟜ A ⊢ C ⟜ (A ⊗ B)
-⟜-curry⁻ {A = A} {B = B} {C = C} =
-  ⟜-intro {A = (C ⟜ B) ⟜ A} {B = A ⊗ B} {C = C}
-    (⟜-app {B = B} {C = C}
-     ∘⊢ (⟜-app {B = A} {C = C ⟜ B} ,⊗ id⊢)
-     ∘⊢ ⊗-assoc⁻)
-
--- converse of `⟜-unitr`
-⟜-unitr⁻ : {C : TheoryTy ℓC tt} → C ⊢ C ⟜ εTy
-⟜-unitr⁻ {C = C} = ⟜-intro {B = εTy} {C = C} ⊗ε-unit-r
 
 -- The reduction -- the heart of the thing -- at `DivariantAnswer` instead of
 -- `CovariantAnswer`.  Two maps instead of one, exactly as `mapP` takes for

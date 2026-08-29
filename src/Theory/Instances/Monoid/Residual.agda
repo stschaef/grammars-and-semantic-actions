@@ -130,6 +130,23 @@ module _ {A : TheoryTy ℓ tt} {B : TheoryTy ℓ' tt} {C : TheoryTy ℓ'' tt} wh
       (f' (y ++ r) (two y r , Eq.refl , (a' , (b , tt*))))
 
 -- a residual that wants nothing more is what it produces
+-- Currying the tower the other way, and its converse.  A stack of
+-- residuals is `pop n` in an LR machine, and these two are what make it
+-- associate; neither mentions a parser.
+⟜-curry : {A : TheoryTy ℓ tt} {B : TheoryTy ℓ' tt} {C : TheoryTy ℓ'' tt}
+  → C ⟜ (A ⊗ B) ⊢ (C ⟜ B) ⟜ A
+⟜-curry {A = A} {B = B} {C = C} =
+  ⟜-intro {A = C ⟜ (A ⊗ B)} {B = A} {C = C ⟜ B}
+    (⟜-uncurry {A = A} {B = B} {C = C})
+
+⟜-curry⁻ : {A : TheoryTy ℓ tt} {B : TheoryTy ℓ' tt} {C : TheoryTy ℓ'' tt}
+  → (C ⟜ B) ⟜ A ⊢ C ⟜ (A ⊗ B)
+⟜-curry⁻ {A = A} {B = B} {C = C} =
+  ⟜-intro {A = (C ⟜ B) ⟜ A} {B = A ⊗ B} {C = C}
+    (⟜-app {B = B} {C = C}
+     ∘⊢ (⟜-app {B = A} {C = C ⟜ B} ,⊗ id⊢)
+     ∘⊢ ⊗-assoc⁻)
+
 ⟜-unitr : {C : TheoryTy ℓ tt} → C ⟜ εTy ⊢ C
 ⟜-unitr {C = C} m f = castEq {A = C} (++-unit-rEq m) (f [] εTy-pt)
 
@@ -261,6 +278,10 @@ module _ {ℓA ℓB ℓX} {X : Type ℓX} {xs : X → Unit}
   go : (x y w : ↓M tt) → A x → [] Eq.≡ y → (x ++ y) Eq.≡ w → A w
   go x .[] w a' Eq.refl r =
     castEq {A = A} r (castEq {A = A} (Eq.sym (++-unit-rEq x)) a')
+
+-- the converse of `⟜-unitr`, which needs the unitor just above
+⟜-unitr⁻ : {C : TheoryTy ℓ tt} → C ⊢ C ⟜ εTy
+⟜-unitr⁻ {C = C} = ⟜-intro {B = εTy} {C = C} ⊗ε-unit-r
 
 -- naturality of the left unitor's inverse, in the slot it does not touch
 ⊗-unit-l⁻-nat : {K : TheoryTy ℓ tt} {L : TheoryTy ℓ' tt} (f : K ⊢ L)

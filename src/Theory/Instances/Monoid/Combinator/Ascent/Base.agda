@@ -43,7 +43,7 @@ open import Cubical.Data.FinData using (zero ; suc)
 
 open import Theory.Instances.Monoid.Combinator.Core Alphabet _≟_ public
 open import Theory.Instances.Monoid.Residual Alphabet isSetAlphabet
-  using ( _⟜_ ; ⟜-intro ; ⟜-app ; ⟜-precomp ; ⟜-uncurry ; ⟜-unitr ; ⊗ε-unit-r ; ⊗ε-unit-l ; &⊕ᴰ-distR
+  using ( _⟜_ ; ⟜-intro ; ⟜-app ; ⟜-precomp ; ⟜-uncurry ; ⟜-curry ; ⟜-unitr ; ⊗ε-unit-r ; ⊗ε-unit-l ; &⊕ᴰ-distR
         ; _⊸_ ; ⊸-lam ; ⊸-app ; ⊸-precomp ; ⊸-unitl ; ⊸⟜-swap )
 
 private variable ℓA ℓB ℓC ℓD ℓG : Level
@@ -127,12 +127,6 @@ module _ {ℓG : Level} {Goal : TheorySet ℓG tt} where
   start : (ty Goal ⟜ ty Goal) ⊸ ty Goal ⊢ ty Goal
   start = ⊸-unitl emptyStack
 
--- currying the stack tower, which is what "pop n" was: `⟜-uncurry` is already
--- the hard half, so this is one `⟜-intro`.
-⟜-curry : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt} {C : TheoryTy ℓC tt}
-  → C ⟜ (A ⊗ B) ⊢ (C ⟜ B) ⟜ A
-⟜-curry {A = A} {B = B} {C = C} =
-  ⟜-intro {A = C ⟜ (A ⊗ B)} {B = A} {C = C ⟜ B} (⟜-uncurry {A = A} {B = B} {C = C})
 module Goto (𝒯 : AnswerFunctor) (cov : CovariantAnswer 𝒯)
   {ℓG : Level} (Goal : TheorySet ℓG tt) where
   open CovAscent 𝒯 cov Goal public
