@@ -33,6 +33,7 @@
      Semantics.Free.Model                   that syntax as a Model, one universe up
      Semantics.Free.Recursor                interpreting the syntax in any model, via elim
      Semantics.Free.Eliminator              the eliminator into a displayed model
+     Semantics.Free.Canonicity              canonicity: predicates over the syntax (in progress)
 
    Example
      Semantics.Examples.StarParser          a Kleene star parser, written once for all models
@@ -77,6 +78,7 @@ open import Semantics.Free.Syntax
 open import Semantics.Free.Model
 open import Semantics.Free.Recursor
 open import Semantics.Free.Eliminator
+open import Semantics.Free.Canonicity
 
 open import Semantics.Instances.Families
 open import Semantics.Instances.Recovered
