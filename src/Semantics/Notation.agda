@@ -29,7 +29,7 @@ open import Cubical.Categories.Presheaf.Representable using (UniversalElement)
 open import Semantics.Structure.Biclosed
 open import Semantics.Structure.IndexedCoproduct
 
-open GrammarModel M
+open GrammarModel M public
 open MonoidalCategory MC public hiding (C)
 open Biclosed biclosed public
 
@@ -212,8 +212,8 @@ char = ⊕[ c ∈ Gen ] literal c
 ------------------------------------------------------------------------
 
 open import Cubical.Data.Sigma using (_,_)
-open import Cubical.Categories.Functor using (Functor)
-open Functor
+import Cubical.Categories.Functor as CF
+open CF.Functor
 
 ,⊗-id : id {A} ,⊗ id {B} ≡ id
 ,⊗-id = ─⊗─ .F-id

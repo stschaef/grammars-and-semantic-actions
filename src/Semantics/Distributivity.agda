@@ -1,11 +1,17 @@
 {-# OPTIONS --lossy-unification #-}
 {- ⊗ distributes over set-indexed sums.
 
-   In `Grammar.Distributivity` this is proved by hand, by unfolding the
-   definition of ⊗ as a sigma of splittings. Here it is a formal
-   consequence of the biclosure: `- ⊗ B` and `A ⊗ -` are left adjoints,
-   so they preserve colimits. The proof uses nothing but the β/η laws
-   of ⊕ᴰ, ⊸ and ⟜.
+   In `Grammar.Sum.Properties` this is proved by hand, by unfolding ⊗
+   into a sigma of splittings. Here both directions are instances of
+   one theorem — `Semantics.Structure.Preservation`, that a left
+   adjoint preserves set-indexed coproducts — applied to the two
+   partial applications of the tensor, whose right adjoints are ⊸ and
+   ⟜ respectively.
+
+   Nothing here is specific to ⊗: for the same statement about an
+   arbitrary operation of an arbitrary algebraic theory, in an
+   arbitrary argument slot, see `ClosedOps.op-dist` in
+   `Semantics.Structure.Operation`.
 -}
 open import Cubical.Foundations.Prelude
 open import Cubical.Foundations.HLevels
@@ -17,10 +23,8 @@ module Semantics.Distributivity {ℓ ℓ' ℓX} {Gen : hSet ℓX}
   (M : GrammarModel ℓ ℓ' ℓX Gen) where
 
 open import Semantics.Notation M
-
-private
-  variable
-    D : Grammar
+open import Semantics.Structure.Biclosed
+open import Semantics.Structure.Preservation
 
 module _ {X : hSet ℓX} {A : ⟨ X ⟩ → Grammar} {B : Grammar} where
   private
@@ -30,83 +34,57 @@ module _ {X : hSet ℓX} {A : ⟨ X ⟩ → Grammar} {B : Grammar} where
     B⊗A : ⟨ X ⟩ → Grammar
     B⊗A x = B ⊗ A x
 
+    -- (- ⊗ B) is a left adjoint, with right adjoint B ⊸ -
+    module L = PreserveΣ (tensorR MC B) (⊸ues B) (Σs X A) (Σs X A⊗B)
+    -- (B ⊗ -) is a left adjoint, with right adjoint - ⟜ B
+    module R = PreserveΣ (tensorL MC B) (⟜ues B) (Σs X A) (Σs X B⊗A)
+
   ------------------------------------------------------------------
-  -- Extensionality: a map out of (⊕ᴰ A) ⊗ B is determined by its
-  -- restrictions along the coprojections. This is the ⊸-transpose of
-  -- the corresponding fact for ⊕ᴰ.
+  -- Extensionality: a map out of a tensor with a coproduct is
+  -- determined by its restrictions along the coprojections.
   ------------------------------------------------------------------
-  ⊗ᴰ≡ : {f f' : (⊕ᴰ A) ⊗ B ⊢ D}
+  ⊗ᴰ≡ : {D : Grammar} {f f' : (⊕ᴰ A) ⊗ B ⊢ D}
       → (∀ x → f ∘g (σ x ,⊗ id) ≡ f' ∘g (σ x ,⊗ id))
       → f ≡ f'
-  ⊗ᴰ≡ {f = f} {f' = f'} p = sym ⊸-β ∙ cong ⊸-intro⁻ q ∙ ⊸-β
-    where
-    q : ⊸-intro f ≡ ⊸-intro f'
-    q = ⊕ᴰ≡ λ x →
-      ⊸-intro-natural ∙ cong ⊸-intro (p x) ∙ sym ⊸-intro-natural
+  ⊗ᴰ≡ = L.E⊕ext
 
-  ᴰ⊗≡ : {f f' : B ⊗ (⊕ᴰ A) ⊢ D}
+  ᴰ⊗≡ : {D : Grammar} {f f' : B ⊗ (⊕ᴰ A) ⊢ D}
       → (∀ x → f ∘g (id ,⊗ σ x) ≡ f' ∘g (id ,⊗ σ x))
       → f ≡ f'
-  ᴰ⊗≡ {f = f} {f' = f'} p = sym ⟜-β ∙ cong ⟜-intro⁻ q ∙ ⟜-β
-    where
-    q : ⟜-intro f ≡ ⟜-intro f'
-    q = ⊕ᴰ≡ λ x →
-      ⟜-intro-natural ∙ cong ⟜-intro (p x) ∙ sym ⟜-intro-natural
+  ᴰ⊗≡ = R.E⊕ext
 
   ------------------------------------------------------------------
   -- (⊕ᴰ A) ⊗ B ≅ ⊕ᴰ (λ x → A x ⊗ B): sum on the left
   ------------------------------------------------------------------
   ⊕ᴰ-distL⁻ : ⊕ᴰ A⊗B ⊢ (⊕ᴰ A) ⊗ B
-  ⊕ᴰ-distL⁻ = ⊕ᴰ-elim λ x → σ x ,⊗ id
+  ⊕ᴰ-distL⁻ = L.preserve⁻
 
   ⊕ᴰ-distL : (⊕ᴰ A) ⊗ B ⊢ ⊕ᴰ A⊗B
-  ⊕ᴰ-distL = ⊸-intro⁻ (⊕ᴰ-elim λ x → ⊸-intro (σ {A = A⊗B} x))
+  ⊕ᴰ-distL = L.preserve
 
   ⊕ᴰ-distL-β : ∀ x → ⊕ᴰ-distL ∘g (σ x ,⊗ id) ≡ σ {A = A⊗B} x
-  ⊕ᴰ-distL-β x =
-    ∘g-assoc ⊸-app _ _
-    ∙ cong (⊸-app ∘g_) (,⊗-comp-l (σ x) _ ∙ cong (_,⊗ id) (⊕ᴰ-β _ x))
-    ∙ ⊸-β
+  ⊕ᴰ-distL-β = L.preserve-β
 
   ⊕ᴰ-distL-sec : ⊕ᴰ-distL ∘g ⊕ᴰ-distL⁻ ≡ id
-  ⊕ᴰ-distL-sec = ⊕ᴰ≡ λ x →
-    ∘g-assoc ⊕ᴰ-distL ⊕ᴰ-distL⁻ (σ x)
-    ∙ cong (⊕ᴰ-distL ∘g_) (⊕ᴰ-β _ x)
-    ∙ ⊕ᴰ-distL-β x
-    ∙ sym (∘g-idL (σ x))
+  ⊕ᴰ-distL-sec = L.preserve-sec
 
   ⊕ᴰ-distL-ret : ⊕ᴰ-distL⁻ ∘g ⊕ᴰ-distL ≡ id
-  ⊕ᴰ-distL-ret = ⊗ᴰ≡ λ x →
-    ∘g-assoc ⊕ᴰ-distL⁻ ⊕ᴰ-distL (σ x ,⊗ id)
-    ∙ cong (⊕ᴰ-distL⁻ ∘g_) (⊕ᴰ-distL-β x)
-    ∙ ⊕ᴰ-β _ x
-    ∙ sym (∘g-idL (σ x ,⊗ id))
+  ⊕ᴰ-distL-ret = L.preserve-ret
 
   ------------------------------------------------------------------
-  -- B ⊗ (⊕ᴰ A) ≅ ⊕ᴰ (λ x → B ⊗ A x): sum on the right, by the other closure
+  -- B ⊗ (⊕ᴰ A) ≅ ⊕ᴰ (λ x → B ⊗ A x): sum on the right
   ------------------------------------------------------------------
   ⊕ᴰ-distR⁻ : ⊕ᴰ B⊗A ⊢ B ⊗ (⊕ᴰ A)
-  ⊕ᴰ-distR⁻ = ⊕ᴰ-elim λ x → id ,⊗ σ x
+  ⊕ᴰ-distR⁻ = R.preserve⁻
 
   ⊕ᴰ-distR : B ⊗ (⊕ᴰ A) ⊢ ⊕ᴰ B⊗A
-  ⊕ᴰ-distR = ⟜-intro⁻ (⊕ᴰ-elim λ x → ⟜-intro (σ {A = B⊗A} x))
+  ⊕ᴰ-distR = R.preserve
 
   ⊕ᴰ-distR-β : ∀ x → ⊕ᴰ-distR ∘g (id ,⊗ σ x) ≡ σ {A = B⊗A} x
-  ⊕ᴰ-distR-β x =
-    ∘g-assoc ⟜-app _ _
-    ∙ cong (⟜-app ∘g_) (,⊗-comp-r (σ x) _ ∙ cong (id ,⊗_) (⊕ᴰ-β _ x))
-    ∙ ⟜-β
+  ⊕ᴰ-distR-β = R.preserve-β
 
   ⊕ᴰ-distR-sec : ⊕ᴰ-distR ∘g ⊕ᴰ-distR⁻ ≡ id
-  ⊕ᴰ-distR-sec = ⊕ᴰ≡ λ x →
-    ∘g-assoc ⊕ᴰ-distR ⊕ᴰ-distR⁻ (σ x)
-    ∙ cong (⊕ᴰ-distR ∘g_) (⊕ᴰ-β _ x)
-    ∙ ⊕ᴰ-distR-β x
-    ∙ sym (∘g-idL (σ x))
+  ⊕ᴰ-distR-sec = R.preserve-sec
 
   ⊕ᴰ-distR-ret : ⊕ᴰ-distR⁻ ∘g ⊕ᴰ-distR ≡ id
-  ⊕ᴰ-distR-ret = ᴰ⊗≡ λ x →
-    ∘g-assoc ⊕ᴰ-distR⁻ ⊕ᴰ-distR (id ,⊗ σ x)
-    ∙ cong (⊕ᴰ-distR⁻ ∘g_) (⊕ᴰ-distR-β x)
-    ∙ ⊕ᴰ-β _ x
-    ∙ sym (∘g-idL (id ,⊗ σ x))
+  ⊕ᴰ-distR-ret = R.preserve-ret
