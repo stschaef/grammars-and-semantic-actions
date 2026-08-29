@@ -35,15 +35,13 @@ open import Cubical.Data.FinData using (Fin ; zero ; suc)
 open import Cubical.Data.List using (List ; [] ; _∷_)
 open import Cubical.Data.List.Properties using (isOfHLevelList)
 open import Cubical.Data.Sigma using (_×_ ; _,_ ; fst ; snd)
-open import Cubical.Data.Unit using (Unit ; tt ; Unit* ; tt*)
+open import Cubical.Data.Unit using (Unit ; tt)
 import Cubical.Data.Sum as Sum
 open import Cubical.Data.Sum using (isProp⊎)
 import Cubical.Data.Empty as Empty
 import Cubical.Data.Equality as Eq
 
 open import Theory.Instances.Lambda.Guard Name isSetName public
-open import Theory.Type.Inductive.HLevels
-  λEqns Name (λ _ → nm) termPresentation public
 
 Ctx : Type ℓ-zero
 Ctx = List Name
@@ -96,123 +94,57 @@ decInCtx (y ∷ Γ) x _ = onName (decName x y)
   onName (yes p) = Sum.inl (Sum.inl p)
   onName (no ¬p) = onTail ¬p (decInCtx Γ x tt)
 
--- The grammar, as a `Functor` code.
---
--- `lamOp`'s body slot is `Var (ms theBinder ∷ Γ)`: an index computed from
--- slot zero's *value*, which is exactly what `⊗ᴰe` adds and what `⊗e`
--- cannot say.  So `Scope` is a `μ`, and `rollNode`/`unrollNode` below are
--- the `μ`'s own `roll`/`unroll` -- up to the summand tag and the `Lift`s
--- that `⟦ k A ⟧` and `⟦ Var x ⟧` insert.  See the note at the bottom of
--- this block for what that costs.
-ScopeCode : LSort → Type (ℓ-suc ℓ-zero)
-ScopeCode = Functor ℓ-zero Ctx (λ _ → tm)
+-- The grammar.  A proposition, so `unambiguous` is definitional.
+Scope : Ctx → TheoryTy ℓ-zero tm
+Scope Γ (tvar x) = InCtx Γ x
+Scope Γ (tapp t u) = Scope Γ t × Scope Γ u
+Scope Γ (tlam x t) = Scope (x ∷ Γ) t
 
--- The three productions, as the slots of their nodes.  This is `Slots`
--- below, read as codes rather than as grammars.
-Rules : (Γ : Ctx) (o : LOp) (ms : interpIn o ↓M) → interpIn o ScopeCode
-Rules Γ varOp ms theVar = k (InCtx Γ)
-Rules Γ appOp ms a = Var Γ                 -- both slots alike, so no name
-Rules Γ lamOp ms theBinder = k ⊤Ty
-Rules Γ lamOp ms theBody = Var (ms theBinder ∷ Γ)
+isPropScope : (Γ : Ctx) (t : RawTm) → isProp (Scope Γ t)
+isPropScope Γ (tvar x) = isPropInCtx Γ x
+isPropScope Γ (tapp t u) = isProp× (isPropScope Γ t) (isPropScope Γ u)
+isPropScope Γ (tlam x t) = isPropScope (x ∷ Γ) t
 
-ScopeF : Ctx → ScopeCode tm
-ScopeF Γ = ⊕e LOp λ o → ⊗ᴰe o (Rules Γ o)
+ScopeSet : Ctx → TheorySet ℓ-zero tm
+ScopeSet Γ = Scope Γ , λ t → isProp→isSet (isPropScope Γ t)
 
-isSetRules : (Γ : Ctx) (o : LOp) (ms : interpIn o ↓M) (a : arities λSig o)
-  → isSetValued (Rules Γ o ms a)
-isSetRules Γ varOp ms theVar = lift λ x → isProp→isSet (isPropInCtx Γ x)
-isSetRules Γ appOp ms a = lift tt*
-isSetRules Γ lamOp ms theBinder = lift isSet⊤Ty
-isSetRules Γ lamOp ms theBody = lift tt*
-
-isSetScopeF : (Γ : Ctx) → isSetValued (ScopeF Γ)
-isSetScopeF Γ = lift isSetLOp , λ o ms a → isSetRules Γ o ms a
-
-Scope : Ctx → TheoryTy (ℓ-suc ℓ-zero) tm
-Scope = μ ScopeF
-
-isSetScope : (Γ : Ctx) → isSetTheoryTy (Scope Γ)
-isSetScope = isSetμ ScopeF isSetScopeF
-
-ScopeSet : Ctx → TheorySet (ℓ-suc ℓ-zero) tm
-ScopeSet Γ = Scope Γ , isSetScope Γ
-
--- `μ` lives one universe up -- `ℓF ℓ-zero` is `ℓ-suc ℓ-zero` -- and
--- `NodeArgs` is uniform in its level, so the two slots that are *not*
--- recursive have to be lifted to meet the ones that are.
-LiftSet : {s : LSort} (ℓB : Level) → TheorySet ℓ-zero s → TheorySet ℓB s
-LiftSet ℓB (A , sA) = LiftTheoryTy ℓB A , isSetLiftTheoryTy sA
+⊤Set : {s : LSort} → TheorySet ℓ-zero s
+⊤Set = ⊤Ty , isSet⊤Ty
 
 -- The binder slot's "condition", named rather than written inline, so that
 -- every slot of every rule below enters the answer the same way: through a
 -- `Decidable` and `Ans-ofDec`.  This one happens to be trivially true --
 -- the untyped calculus asks nothing of a bound name -- and saying so out
 -- loud is cheaper than an exception to the convention.
-dec⊤ : {s : LSort} → Decidable (LiftTheoryTy (ℓ-suc ℓ-zero) (⊤Ty {s = s}))
-dec⊤ _ _ = Sum.inl (lift tt)
+dec⊤ : {s : LSort} → Decidable (⊤Ty {s = s})
+dec⊤ _ _ = Sum.inl tt
 
-decInCtx↑ : (Γ : Ctx)
-  → Decidable (LiftTheoryTy (ℓ-suc ℓ-zero) (InCtx Γ))
-decInCtx↑ Γ = dec-retract liftTy lowerTy (decInCtx Γ)
-
-Slots : (o : LOp) → Ctx → NodeArgs (ℓ-suc ℓ-zero) o
-Slots varOp Γ ms theVar = LiftSet _ (InCtxSet Γ)
-Slots appOp Γ ms a = ScopeSet Γ
-Slots lamOp Γ ms theBinder = LiftSet _ (⊤Ty , isSet⊤Ty)
+-- The three productions, as the slots of their nodes.  Only `lamOp` uses
+-- the dependency on the splitting, and it is the whole reason for `⊗ᴰ`.
+Slots : (o : LOp) → Ctx → NodeArgs ℓ-zero o
+Slots varOp Γ ms theVar = InCtxSet Γ
+Slots appOp Γ ms a = ScopeSet Γ            -- both slots alike, so no name
+Slots lamOp Γ ms theBinder = ⊤Set
 Slots lamOp Γ ms theBody = ScopeSet (ms theBinder ∷ Γ)
 
 -- One level of unfolding, both ways, as `⊢`-terms.  `unrollNode` needs the
 -- cell: a term is a node of `o` only where the cover says so.
---
--- These are `roll` and `unroll`, and the work that is left is bureaucracy
--- of two kinds.  (a) `⟦ Var x ⟧` is `Lift (μ ...)`, so every *recursive*
--- slot is wrapped and unwrapped; the two non-recursive slots need nothing,
--- since `Slots` already lifts them.  (b) `ScopeF` is a sum over LOp, so
--- `roll` needs the tag and `unroll` has to *find* it -- which is
--- no-confusion, i.e. exactly the cover's `disjoint` field.
 rollNode : (o : LOp) (Γ : Ctx) → ⊗ᴰ o (Slots o Γ) ⊢ Scope Γ
-rollNode varOp Γ m (ms , e , ws) =
-  roll m (varOp , ms , e , λ where theVar → ws theVar)
-rollNode appOp Γ m (ms , e , ws) = roll m (appOp , ms , e , λ a → lift (ws a))
-rollNode lamOp Γ m (ms , e , ws) = roll m (lamOp , ms , e , λ where
-  theBinder → ws theBinder
-  theBody → lift (ws theBody))
-
-private
-  -- no-confusion, in the form the summand selection wants
-  noConf : (o o' : LOp) → (o Eq.≡ o' → Empty.⊥) → (m : RawTm)
-    → NodeAt o m → NodeAt o' m → Empty.⊥
-  noConf o o' ne m nd nd' =
-    Empty.rec* (nodeCover .disjoint o o' ne m (nd , nd'))
-
-  -- `μ` sums over *every* operation; the cover cell says which summand a
-  -- given node is in.  Three of the nine cases do the `Lift` bookkeeping;
-  -- the other six are the refutation above.
-  atHead : (Γ : Ctx) (o o' : LOp) (m : RawTm) → NodeAt o m
-    → ⟦ ⊗ᴰe o' (Rules Γ o') ⟧TheoryTy Scope m
-    → ⊗ᴰ o (Slots o Γ) m
-  atHead Γ varOp varOp m nd (ms , e , ws) =
-    ms , e , λ where theVar → ws theVar
-  atHead Γ appOp appOp m nd (ms , e , ws) = ms , e , λ a → ws a .lower
-  atHead Γ lamOp lamOp m nd (ms , e , ws) = ms , e , λ where
-    theBinder → ws theBinder
-    theBody → ws theBody .lower
-  atHead Γ varOp appOp m nd x =
-    Empty.rec (noConf varOp appOp (λ ()) m nd (x .fst , x .snd .fst))
-  atHead Γ varOp lamOp m nd x =
-    Empty.rec (noConf varOp lamOp (λ ()) m nd (x .fst , x .snd .fst))
-  atHead Γ appOp varOp m nd x =
-    Empty.rec (noConf appOp varOp (λ ()) m nd (x .fst , x .snd .fst))
-  atHead Γ appOp lamOp m nd x =
-    Empty.rec (noConf appOp lamOp (λ ()) m nd (x .fst , x .snd .fst))
-  atHead Γ lamOp varOp m nd x =
-    Empty.rec (noConf lamOp varOp (λ ()) m nd (x .fst , x .snd .fst))
-  atHead Γ lamOp appOp m nd x =
-    Empty.rec (noConf lamOp appOp (λ ()) m nd (x .fst , x .snd .fst))
+rollNode varOp Γ m (ms , Eq.refl , ws) = ws theVar
+rollNode appOp Γ m (ms , Eq.refl , ws) = ws theFun , ws theArg
+rollNode lamOp Γ m (ms , Eq.refl , ws) = ws theBody
 
 unrollNode : (o : LOp) (Γ : Ctx) → Scope Γ & NodeAt o ⊢ ⊗ᴰ o (Slots o Γ)
-unrollNode o Γ m (s , nd) =
-  atHead Γ o (unroll ScopeF Γ m s .fst) m nd (unroll ScopeF Γ m s .snd)
+unrollNode varOp Γ m (s , (ms , Eq.refl)) =
+  node-mk {ms = ms} λ where theVar → s
+unrollNode appOp Γ m (s , (ms , Eq.refl)) =
+  node-mk {ms = ms} λ where
+    theFun → s .fst
+    theArg → s .snd
+unrollNode lamOp Γ m (s , (ms , Eq.refl)) =
+  node-mk {ms = ms} λ where
+    theBinder → tt
+    theBody → s
 
 
 -- The checker, for whatever answer.
@@ -229,7 +161,7 @@ module Check (𝒯 : AnswerFunctor) where
       → ▷ (AnsFam ScopeSet) Γ & NodeAt o ⊢ ty (Ans (⊗ᴰSet o (Slots o Γ)))
     nodeAns varOp m (β , (ms , Eq.refl)) =
       Ans-node varOp (preciseλ varOp) {As = Slots varOp Γ} {ms = ms}
-        λ where theVar → Ans-ofDec (ms theVar) (decInCtx↑ Γ (ms theVar) tt)
+        λ where theVar → Ans-ofDec (ms theVar) (decInCtx Γ (ms theVar) tt)
     nodeAns appOp m (β , (ms , Eq.refl)) =
       Ans-node appOp (preciseλ appOp) {As = Slots appOp Γ} {ms = ms}
         λ where

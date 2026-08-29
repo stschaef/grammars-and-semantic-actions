@@ -18,7 +18,6 @@ open import Cubical.Data.Nat using (ℕ ; zero ; suc ; isSetℕ ; discreteℕ)
 open import Cubical.Data.Sigma using (_,_ ; fst ; snd)
 open import Cubical.Data.Unit using (tt)
 import Cubical.Data.Sum as Sum
-import Cubical.Data.Equality as Eq
 
 open import Theory.Instances.Lambda.Scope ℕ isSetℕ discreteℕ
 
@@ -131,16 +130,6 @@ nd-selfApp = refl
 
 -- The refutation is real content, not a bit: at `Dec` an out-of-scope term
 -- comes back with a proof that it cannot be scoped.
---
--- THE ONE LINE THAT `⊗ᴰe` COST.  When `Scope` was defined by recursion on
--- the model, `Scope [] (tvar 0)` *was* `InCtx [] 0` *was* `⊥`, so the `inl`
--- branch below was `Empty.rec s` on the nose.  `Scope` is now a `μ`, so a
--- derivation has to be unrolled one node before its premise is visible.
--- Every other test in this file is unchanged.
-noOpen : Scope [] openT → Empty.⊥
-noOpen s =
-  unrollNode varOp [] openT (s , ((λ _ → 0) , Eq.refl)) .snd .snd theVar .lower
-
 no-open : D.¬Ty (Scope []) openT
 no-open =
-  Sum.rec (λ s → Empty.rec (noOpen s)) (λ n → n) (decideScope [] openT tt)
+  Sum.rec (λ s → Empty.rec s) (λ n → n) (decideScope [] openT tt)
