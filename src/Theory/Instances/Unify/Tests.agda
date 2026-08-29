@@ -7,24 +7,28 @@
    `⟨leaf, y⟩`, a variable with itself, the occurs-check failure and the
    leaf-versus-fork clash.
 
-   `mguAction` is where a derivation becomes an answer.  `Sol` is a
-   proposition -- the machine is deterministic, so a derivation is only the
-   news that it finished -- and the substitution is recomputed by `mgu`,
-   from the same `check` the derivation was built by.  That is the one
-   place this development is thinner than `Elaborate`, where the derivation
-   *is* the de Bruijn index; here it could be, at the cost of carrying
-   `check`'s answer in the judgment, and nothing else would change.
+   `mguAction` is where a derivation becomes an answer, and it is now a
+   projection: the flexible rule records the term `check` returned, so the
+   derivation *is* the triangular substitution and `mgu` reads it off, the
+   way `Elaborate` reads a de Bruijn index off a `Lookup`.  Every expected
+   value below is unchanged by that -- the machine was always computing
+   these chains; it was computing them twice.
 
-   The `ND` count is worth reading as a statement: it is `1` on every
-   solvable problem and `0` on every unsolvable one, and one is exactly the
-   uniqueness of the most general unifier, made observable. -}
+   `Sol` is still a proposition, and the `ND` count is the observable form
+   of it: `1` on every solvable problem and `0` on every unsolvable one.
+   Carrying the assignment did not make the judgment ambiguous, because the
+   assignment is determined -- exactly `Annotated`'s reason.
+
+   `solveV` is the same run with `Correct`'s proof attached, so its `just`
+   branch is a substitution together with the fact that it unifies.  Its
+   substitution is `solve`'s, on the nose. -}
 open import Cubical.Foundations.Prelude
 module Theory.Instances.Unify.Tests where
 
 open import Cubical.Data.Bool using (Bool ; true ; false)
 open import Cubical.Data.FinData using (Fin ; zero ; suc)
 open import Cubical.Data.List using (List ; [] ; _∷_ ; length)
-open import Cubical.Data.Maybe using (Maybe ; just ; nothing)
+open import Cubical.Data.Maybe using (Maybe ; just ; nothing ; map-Maybe)
 open import Cubical.Data.Nat using (ℕ ; zero ; suc)
 open import Cubical.Data.Sigma using (_,_ ; fst ; snd)
 open import Cubical.Data.Unit using (tt)
@@ -132,4 +136,38 @@ _ = refl
 
 -- orientation: a rigid term against a variable is the same equation
 _ : unify 2 (fork leaf leaf) (var y) ≡ just (1 , 1 , y , fork leaf leaf , Eq.refl)
+_ = refl
+
+
+-- THE DERIVATION, WRITTEN OUT.  This is the whole point of the refinement:
+-- a derivation of the source's example is two `assign`s and a `tt`, and the
+-- two terms it assigns are the two the substitution consists of.  Nothing
+-- else is in it -- the `refl`s are `check`'s answers being identified with
+-- them, and `tt` is the empty stack.
+theStack : Stack 2
+theStack = (t , u) ∷ []
+
+d : Sol 2 theStack
+d = assign leaf refl (assign leaf refl tt)
+
+-- ...so the readout is a projection, and this is that fact.
+_ : mgu 2 theStack d ≡ σ
+_ = refl
+
+-- ...and the derivation comes with the proof that its substitution
+-- unifies.  The type is `Unif (applyA σ)` on the nose: no transport, no
+-- second run, and the checker's answer is what supplies `d`.
+_ : Unif (applyA σ) theStack
+_ = mguUnifies 2 theStack d
+
+-- The verified front end returns the stack it was asked about paired with a
+-- unifier *of that stack* -- the second component's type mentions the first,
+-- which is what a dependent guarantee has to do to cross `observe`.
+_ : map-Maybe (λ r → r .snd .fst) (solveV 2 theStack) ≡ just σ
+_ = refl
+
+_ : map-Maybe fst (solveV 2 theStack) ≡ just theStack
+_ = refl
+
+_ : map-Maybe fst (unifierTm 2 (var x) (var y)) ≡ just ((var x , var y) ∷ [])
 _ = refl
