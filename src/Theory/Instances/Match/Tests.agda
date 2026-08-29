@@ -28,7 +28,7 @@ module Theory.Instances.Match.Tests where
 open import Cubical.Data.List using (List ; [] ; _∷_)
 open import Cubical.Data.Maybe using (Maybe ; just ; nothing)
 open import Cubical.Data.Nat using (ℕ)
-open import Cubical.Data.Sigma using (_,_)
+open import Cubical.Data.Sigma using (_,_ ; fst ; snd)
 
 open import Theory.Instances.Match.Bindings
 open import Theory.Instances.Match.Exhaustive using (full ; covers)
@@ -161,3 +161,22 @@ nd-full-pair = refl
 
 nd-swap : allMatches swap mixed ≡ (0 , (0 , vtrue) ∷ (1 , vfalse) ∷ []) ∷ []
 nd-swap = refl
+
+
+-- What the derivation now carries.  The equation is the second projection,
+-- so "the recorded bindings really match" needs no proof at all -- which is
+-- the whole of the strengthening, stated in one line.
+carries : (p : Pat) (v : Val) (d : Match p v) → inst p (d .fst) ≡ v
+carries p v d = d .snd
+
+-- A non-linear pattern is still a proposition -- `Env` is per occurrence --
+-- and still binds its name twice, which is a fact about `bind` alone.
+nonlinear : List Pat
+nonlinear = ppair (pvar 0) (pvar 0) ∷ []
+
+nd-nonlinear : allMatches nonlinear mixed
+             ≡ (0 , (0 , vtrue) ∷ (0 , vfalse) ∷ []) ∷ []
+nd-nonlinear = refl
+
+nd-nonlinear-count : tally nonlinear mixed ≡ 1
+nd-nonlinear-count = refl

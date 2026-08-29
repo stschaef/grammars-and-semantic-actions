@@ -27,11 +27,46 @@
    and nowhere else.  This is the case the annotated instance never meets,
    because every one of its operations has an argument.
 
-   Matching a single pattern is a *proposition*: `isPropMatch` below.  The
-   proof-relevance is in the clause list, and that is the point -- see
+   WHAT A DERIVATION IS.  `Match p v` is *not* an assertion that `v` fits
+   `p`; it is the pair of a filling for `p`'s holes and the equation that
+   says filling `p` with it *is* `v`:
+
+       Match p v  =  Σ[ e ∈ Env p ] (inst p e ≡ v)  =  fiber (inst p) v
+
+   `Env p` is one value per *occurrence* of a hole -- `pwild` and `pvar`
+   have one each, the constants none, a pair the two of its components --
+   and `inst` is total, so nothing here is partial and no lookup is
+   involved.  What this buys is that `Bindings`' readout stops
+   reconstructing the substitution out of the index and the model and
+   becomes a projection: the bindings ride in the derivation, and the
+   equation is what makes them the right ones.  A checker that returns a
+   derivation returns a *verified substitution*, definitionally.
+
+   It is the move `Annotated/Typing`'s `Lookup` makes one level down --
+   there a derivation carries the de Bruijn index instead of asserting that
+   lookup succeeds -- applied to the judgment as a whole rather than to one
+   premise of it.
+
+   STILL A PROPOSITION, and for a reason worth naming: `inst p` is
+   *injective* at every `p`, including a non-linear one like
+   `ppair (pvar 0) (pvar 0)`, because `Env` is indexed by occurrence and
+   not by name.  So `Match p v` is the fibre of an embedding and
+   `isPropMatch` is that observation and nothing else.  Linearity is
+   neither needed nor assumed: a non-linear pattern binds its name twice,
+   which is a fact about `bind`, not about the h-level.
+
+   `HeadIs` below is no-confusion for `Val`, by recursion so that it
+   reduces to `⊥`.  It is what replaced the absurd patterns the old `Match`
+   got for free: `Match ptrue vfalse` used to *be* `⊥`, and is now
+   `Σ Unit (vtrue ≡ vfalse)`, which is empty for a reason one has to give.
+   The three `clash` lemmas give it, once each, and `clashAt` and
+   `Exhaustive` both consume them.
+
+   The proof-relevance is in the clause list, and that is the point -- see
    `Clauses`. -}
 open import Cubical.Foundations.Prelude
 open import Cubical.Foundations.HLevels
+open import Cubical.Functions.Embedding using (injective→hasPropFibers)
 open import Cubical.Algebra.Theory.Finitary
 open SortedSig
 open SortedEqns
@@ -43,7 +78,7 @@ import Cubical.Data.FinData as FD
 open import Cubical.Data.FinData.More using (two)
 open import Cubical.Data.List using (List ; [] ; _∷_)
 open import Cubical.Data.Nat using (ℕ ; zero ; suc ; isSetℕ)
-open import Cubical.Data.Sigma using (_×_ ; _,_ ; fst ; snd)
+open import Cubical.Data.Sigma using (_×_ ; Σ-syntax ; ΣPathP ; _,_ ; fst ; snd)
 open import Cubical.Data.Sum using (_⊎_ ; isSet⊎)
 import Cubical.Data.Sum as Sum
 open import Cubical.Data.Unit using (Unit ; tt ; isSetUnit ; isPropUnit)
@@ -99,34 +134,66 @@ private
 isSetPat : isSet Pat
 isSetPat = isOfHLevelRetract 2 toP fromP patRet isSetPW
 
--- The judgment.  Defined by recursion, not as an indexed family: the
--- guard's calls sit at `(p , v)` pairs that no unifier has to invert.
+-- The holes of a pattern, one per occurrence, and the pattern filled in
+-- at them.  `inst` is total: a pattern with its holes filled is a value,
+-- and that is the whole of what a match has to produce.
+Env : Pat → Type ℓ-zero
+Env pwild = Val
+Env (pvar n) = Val
+Env ptrue = Unit
+Env pfalse = Unit
+Env (ppair p q) = Env p × Env q
+
+inst : (p : Pat) → Env p → Val
+inst pwild v = v
+inst (pvar n) v = v
+inst ptrue _ = vtrue
+inst pfalse _ = vfalse
+inst (ppair p q) (e , f) = vpair (inst p e) (inst q f)
+
+-- The judgment: a filling, and the equation that makes it the right one.
+-- Still stated so the guard's calls sit at `(p , v)` pairs that no unifier
+-- has to invert -- `inst` recurses on the pattern, which is an index, and
+-- the model element appears only on the right of an `≡`.
 Match : Pat → TheoryTy ℓ-zero val
-Match pwild v = Unit
-Match (pvar n) v = Unit
-Match ptrue vtrue = Unit
-Match ptrue vfalse = ⊥
-Match ptrue (vpair _ _) = ⊥
-Match pfalse vtrue = ⊥
-Match pfalse vfalse = Unit
-Match pfalse (vpair _ _) = ⊥
-Match (ppair p q) vtrue = ⊥
-Match (ppair p q) vfalse = ⊥
-Match (ppair p q) (vpair v w) = Match p v × Match q w
+Match p v = Σ[ e ∈ Env p ] (inst p e ≡ v)
+
+-- Injectivity, by projection.  A pair is injective in both components and
+-- a constant is a map out of `Unit`, so every `inst p` is.
+instInj : (p : Pat) {e f : Env p} → inst p e ≡ inst p f → e ≡ f
+instInj pwild q = q
+instInj (pvar n) q = q
+instInj ptrue q = refl
+instInj pfalse q = refl
+instInj (ppair p q) r =
+  ΣPathP (instInj p (cong pairFst r) , instInj q (cong pairSnd r))
 
 isPropMatch : (p : Pat) (v : Val) → isProp (Match p v)
-isPropMatch pwild v = isPropUnit
-isPropMatch (pvar n) v = isPropUnit
-isPropMatch ptrue vtrue = isPropUnit
-isPropMatch ptrue vfalse = λ ()
-isPropMatch ptrue (vpair _ _) = λ ()
-isPropMatch pfalse vtrue = λ ()
-isPropMatch pfalse vfalse = isPropUnit
-isPropMatch pfalse (vpair _ _) = λ ()
-isPropMatch (ppair p q) vtrue = λ ()
-isPropMatch (ppair p q) vfalse = λ ()
-isPropMatch (ppair p q) (vpair v w) =
-  isProp× (isPropMatch p v) (isPropMatch q w)
+isPropMatch p = injective→hasPropFibers {f = inst p} (isSetVCrr val) (instInj p)
+
+-- No-confusion for `Val`, by recursion, so that a head the pattern did not
+-- produce is `⊥` on sight.
+HeadIs : VOp → Val → Type ℓ-zero
+HeadIs vtrueOp vtrue = Unit
+HeadIs vtrueOp vfalse = ⊥
+HeadIs vtrueOp (vpair _ _) = ⊥
+HeadIs vfalseOp vtrue = ⊥
+HeadIs vfalseOp vfalse = Unit
+HeadIs vfalseOp (vpair _ _) = ⊥
+HeadIs vpairOp vtrue = ⊥
+HeadIs vpairOp vfalse = ⊥
+HeadIs vpairOp (vpair _ _) = Unit
+
+-- ...so a derivation transports the head its pattern forces onto `v`.
+-- These are the refutations `Match`'s old absurd patterns stood for.
+clashTrue : (v : Val) → Match ptrue v → HeadIs vtrueOp v
+clashTrue v (_ , e) = subst (HeadIs vtrueOp) e tt
+
+clashFalse : (v : Val) → Match pfalse v → HeadIs vfalseOp v
+clashFalse v (_ , e) = subst (HeadIs vfalseOp) e tt
+
+clashPair : (p q : Pat) (v : Val) → Match (ppair p q) v → HeadIs vpairOp v
+clashPair p q v (_ , e) = subst (HeadIs vpairOp) e tt
 
 MatchSet : Pat → TheorySet ℓ-zero val
 MatchSet p = Match p , λ v → isProp→isSet (isPropMatch p v)
@@ -197,12 +264,12 @@ module Check (𝒯 : AnswerFunctor) where
 
     trueAt : Later ptrue & NodeAt vtrueOp ⊢ ty (Ans (MatchSet ptrue))
     trueAt = constAt vtrueOp ptrue trueSlots (λ vs ())
-      (λ where _ (_ , (vs , Eq.refl)) → tt)
+      (λ where _ (_ , (vs , Eq.refl)) → tt , refl)
       (λ where _ (_ , (vs , Eq.refl)) → node-mk {ms = vs} λ ())
 
     falseAt : Later pfalse & NodeAt vfalseOp ⊢ ty (Ans (MatchSet pfalse))
     falseAt = constAt vfalseOp pfalse falseSlots (λ vs ())
-      (λ where _ (_ , (vs , Eq.refl)) → tt)
+      (λ where _ (_ , (vs , Eq.refl)) → tt , refl)
       (λ where _ (_ , (vs , Eq.refl)) → node-mk {ms = vs} λ ())
 
     pairAt : (p q : Pat)
@@ -220,28 +287,34 @@ module Check (𝒯 : AnswerFunctor) where
             theSnd → callAt q
               (callSnd {x = ppair p q} {x' = q} (vs theFst) (vs theSnd)) β
 
+      -- `roll` *builds* the filling and its equation out of the slots';
+      -- `unroll` takes them apart by projecting the pair.  Neither shuffles
+      -- data any more: the node's equation is `cong₂ vpair` of the slots',
+      -- and a slot's is `cong pairFst`/`cong pairSnd` of the node's.
       roll : ⊗ᴰ vpairOp (pairSlots p q) & NodeAt vpairOp ⊢ Match (ppair p q)
-      roll _ ((vs , Eq.refl , ws) , _) = ws theFst , ws theSnd
+      roll _ ((vs , Eq.refl , ws) , _) =
+        (ws theFst .fst , ws theSnd .fst) ,
+        cong₂ vpair (ws theFst .snd) (ws theSnd .snd)
 
       unroll : Match (ppair p q) & NodeAt vpairOp ⊢ ⊗ᴰ vpairOp (pairSlots p q)
       unroll _ (d , (vs , Eq.refl)) = node-mk {ms = vs} λ where
-        theFst → d .fst
-        theSnd → d .snd
+        theFst → d .fst .fst , cong pairFst (d .snd)
+        theSnd → d .fst .snd , cong pairSnd (d .snd)
 
   step : Step MatchSet
-  step pwild = yes! λ _ → tt
-  step (pvar n) = yes! λ _ → tt
+  step pwild = yes! λ v → v , refl
+  step (pvar n) = yes! λ v → v , refl
   step ptrue = look nodeCover λ where
     vtrueOp → trueAt
-    vfalseOp → clashAt vfalseOp ptrue λ vs ()
-    vpairOp → clashAt vpairOp ptrue λ vs ()
+    vfalseOp → clashAt vfalseOp ptrue λ vs → clashTrue (op vfalseOp vs)
+    vpairOp → clashAt vpairOp ptrue λ vs → clashTrue (op vpairOp vs)
   step pfalse = look nodeCover λ where
-    vtrueOp → clashAt vtrueOp pfalse λ vs ()
+    vtrueOp → clashAt vtrueOp pfalse λ vs → clashFalse (op vtrueOp vs)
     vfalseOp → falseAt
-    vpairOp → clashAt vpairOp pfalse λ vs ()
+    vpairOp → clashAt vpairOp pfalse λ vs → clashFalse (op vpairOp vs)
   step (ppair p q) = look nodeCover λ where
-    vtrueOp → clashAt vtrueOp (ppair p q) λ vs ()
-    vfalseOp → clashAt vfalseOp (ppair p q) λ vs ()
+    vtrueOp → clashAt vtrueOp (ppair p q) λ vs → clashPair p q (op vtrueOp vs)
+    vfalseOp → clashAt vfalseOp (ppair p q) λ vs → clashPair p q (op vfalseOp vs)
     vpairOp → pairAt p q
 
   matched : Checker MatchSet
