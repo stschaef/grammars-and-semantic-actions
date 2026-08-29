@@ -21,6 +21,7 @@ open import Cubical.Foundations.HLevels
 module Semantics.Instances.Families (Alphabet : hSet ℓ-zero) where
 
 open import Cubical.Foundations.Isomorphism
+open import Cubical.Foundations.Equiv.Base using (strictContrFibers; equiv-proof)
 open import Cubical.Foundations.Structure using (⟨_⟩)
 
 open import Cubical.Categories.Category
@@ -59,8 +60,10 @@ module _ (ℓ : Level) where
   ΠGrammar X A .vertex =
     (&[ x ∈ ⟨ X ⟩ ] (A x .fst)) , isSetGrammar&ᴰ (λ x → A x .snd)
   ΠGrammar X A .element x = π x
-  ΠGrammar X A .universal B =
-    isoToIsEquiv (iso (λ f x → π x ∘g f) &ᴰ-intro (λ _ → refl) (λ _ → refl))
+  -- Both round trips hold by `refl`, so the inverse can be given
+  -- definitionally rather than through `isoToIsEquiv`. This keeps
+  -- `intro` cheap to reduce, which matters a lot downstream.
+  ΠGrammar X A .universal B .equiv-proof = strictContrFibers &ᴰ-intro
 
   ----------------------------------------------------------------
   -- Set-indexed coproducts are ⊕ᴰ. The index must be an h-set for
@@ -70,8 +73,7 @@ module _ (ℓ : Level) where
   ΣGrammar X A .vertex =
     (⊕[ x ∈ ⟨ X ⟩ ] (A x .fst)) , isSetGrammar⊕ᴰ (X .snd) (λ x → A x .snd)
   ΣGrammar X A .element x = σ x
-  ΣGrammar X A .universal B =
-    isoToIsEquiv (iso (λ f x → f ∘g σ x) ⊕ᴰ-elim (λ _ → refl) (λ _ → refl))
+  ΣGrammar X A .universal B .equiv-proof = strictContrFibers ⊕ᴰ-elim
 
   ----------------------------------------------------------------
   -- The biclosure is ⊸ and ⟜.
