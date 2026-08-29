@@ -54,48 +54,19 @@ module _ {X : hSet ℓX} {A : ⟨ X ⟩ → Grammar} {B : Grammar} where
       ⟜-intro-natural ∙ cong ⟜-intro (p x) ∙ sym ⟜-intro-natural
 
   ------------------------------------------------------------------
-  -- (⊕ᴰ A) ⊗ B ≅ ⊕ᴰ (λ x → A x ⊗ B)
+  -- (⊕ᴰ A) ⊗ B ≅ ⊕ᴰ (λ x → A x ⊗ B): sum on the left
   ------------------------------------------------------------------
-  ⊕ᴰ-distR⁻ : ⊕ᴰ A⊗B ⊢ (⊕ᴰ A) ⊗ B
-  ⊕ᴰ-distR⁻ = ⊕ᴰ-elim λ x → σ x ,⊗ id
+  ⊕ᴰ-distL⁻ : ⊕ᴰ A⊗B ⊢ (⊕ᴰ A) ⊗ B
+  ⊕ᴰ-distL⁻ = ⊕ᴰ-elim λ x → σ x ,⊗ id
 
-  ⊕ᴰ-distR : (⊕ᴰ A) ⊗ B ⊢ ⊕ᴰ A⊗B
-  ⊕ᴰ-distR = ⊸-intro⁻ (⊕ᴰ-elim λ x → ⊸-intro (σ {A = A⊗B} x))
+  ⊕ᴰ-distL : (⊕ᴰ A) ⊗ B ⊢ ⊕ᴰ A⊗B
+  ⊕ᴰ-distL = ⊸-intro⁻ (⊕ᴰ-elim λ x → ⊸-intro (σ {A = A⊗B} x))
 
-  ⊕ᴰ-distR-β : ∀ x → ⊕ᴰ-distR ∘g (σ x ,⊗ id) ≡ σ {A = A⊗B} x
-  ⊕ᴰ-distR-β x =
+  ⊕ᴰ-distL-β : ∀ x → ⊕ᴰ-distL ∘g (σ x ,⊗ id) ≡ σ {A = A⊗B} x
+  ⊕ᴰ-distL-β x =
     ∘g-assoc ⊸-app _ _
     ∙ cong (⊸-app ∘g_) (,⊗-comp-l (σ x) _ ∙ cong (_,⊗ id) (⊕ᴰ-β _ x))
     ∙ ⊸-β
-
-  ⊕ᴰ-distR-sec : ⊕ᴰ-distR ∘g ⊕ᴰ-distR⁻ ≡ id
-  ⊕ᴰ-distR-sec = ⊕ᴰ≡ λ x →
-    ∘g-assoc ⊕ᴰ-distR ⊕ᴰ-distR⁻ (σ x)
-    ∙ cong (⊕ᴰ-distR ∘g_) (⊕ᴰ-β _ x)
-    ∙ ⊕ᴰ-distR-β x
-    ∙ sym (∘g-idL (σ x))
-
-  ⊕ᴰ-distR-ret : ⊕ᴰ-distR⁻ ∘g ⊕ᴰ-distR ≡ id
-  ⊕ᴰ-distR-ret = ⊗ᴰ≡ λ x →
-    ∘g-assoc ⊕ᴰ-distR⁻ ⊕ᴰ-distR (σ x ,⊗ id)
-    ∙ cong (⊕ᴰ-distR⁻ ∘g_) (⊕ᴰ-distR-β x)
-    ∙ ⊕ᴰ-β _ x
-    ∙ sym (∘g-idL (σ x ,⊗ id))
-
-  ------------------------------------------------------------------
-  -- B ⊗ (⊕ᴰ A) ≅ ⊕ᴰ (λ x → B ⊗ A x), by the other closure
-  ------------------------------------------------------------------
-  ⊕ᴰ-distL⁻ : ⊕ᴰ B⊗A ⊢ B ⊗ (⊕ᴰ A)
-  ⊕ᴰ-distL⁻ = ⊕ᴰ-elim λ x → id ,⊗ σ x
-
-  ⊕ᴰ-distL : B ⊗ (⊕ᴰ A) ⊢ ⊕ᴰ B⊗A
-  ⊕ᴰ-distL = ⟜-intro⁻ (⊕ᴰ-elim λ x → ⟜-intro (σ {A = B⊗A} x))
-
-  ⊕ᴰ-distL-β : ∀ x → ⊕ᴰ-distL ∘g (id ,⊗ σ x) ≡ σ {A = B⊗A} x
-  ⊕ᴰ-distL-β x =
-    ∘g-assoc ⟜-app _ _
-    ∙ cong (⟜-app ∘g_) (,⊗-comp-r (σ x) _ ∙ cong (id ,⊗_) (⊕ᴰ-β _ x))
-    ∙ ⟜-β
 
   ⊕ᴰ-distL-sec : ⊕ᴰ-distL ∘g ⊕ᴰ-distL⁻ ≡ id
   ⊕ᴰ-distL-sec = ⊕ᴰ≡ λ x →
@@ -105,8 +76,37 @@ module _ {X : hSet ℓX} {A : ⟨ X ⟩ → Grammar} {B : Grammar} where
     ∙ sym (∘g-idL (σ x))
 
   ⊕ᴰ-distL-ret : ⊕ᴰ-distL⁻ ∘g ⊕ᴰ-distL ≡ id
-  ⊕ᴰ-distL-ret = ᴰ⊗≡ λ x →
-    ∘g-assoc ⊕ᴰ-distL⁻ ⊕ᴰ-distL (id ,⊗ σ x)
+  ⊕ᴰ-distL-ret = ⊗ᴰ≡ λ x →
+    ∘g-assoc ⊕ᴰ-distL⁻ ⊕ᴰ-distL (σ x ,⊗ id)
     ∙ cong (⊕ᴰ-distL⁻ ∘g_) (⊕ᴰ-distL-β x)
+    ∙ ⊕ᴰ-β _ x
+    ∙ sym (∘g-idL (σ x ,⊗ id))
+
+  ------------------------------------------------------------------
+  -- B ⊗ (⊕ᴰ A) ≅ ⊕ᴰ (λ x → B ⊗ A x): sum on the right, by the other closure
+  ------------------------------------------------------------------
+  ⊕ᴰ-distR⁻ : ⊕ᴰ B⊗A ⊢ B ⊗ (⊕ᴰ A)
+  ⊕ᴰ-distR⁻ = ⊕ᴰ-elim λ x → id ,⊗ σ x
+
+  ⊕ᴰ-distR : B ⊗ (⊕ᴰ A) ⊢ ⊕ᴰ B⊗A
+  ⊕ᴰ-distR = ⟜-intro⁻ (⊕ᴰ-elim λ x → ⟜-intro (σ {A = B⊗A} x))
+
+  ⊕ᴰ-distR-β : ∀ x → ⊕ᴰ-distR ∘g (id ,⊗ σ x) ≡ σ {A = B⊗A} x
+  ⊕ᴰ-distR-β x =
+    ∘g-assoc ⟜-app _ _
+    ∙ cong (⟜-app ∘g_) (,⊗-comp-r (σ x) _ ∙ cong (id ,⊗_) (⊕ᴰ-β _ x))
+    ∙ ⟜-β
+
+  ⊕ᴰ-distR-sec : ⊕ᴰ-distR ∘g ⊕ᴰ-distR⁻ ≡ id
+  ⊕ᴰ-distR-sec = ⊕ᴰ≡ λ x →
+    ∘g-assoc ⊕ᴰ-distR ⊕ᴰ-distR⁻ (σ x)
+    ∙ cong (⊕ᴰ-distR ∘g_) (⊕ᴰ-β _ x)
+    ∙ ⊕ᴰ-distR-β x
+    ∙ sym (∘g-idL (σ x))
+
+  ⊕ᴰ-distR-ret : ⊕ᴰ-distR⁻ ∘g ⊕ᴰ-distR ≡ id
+  ⊕ᴰ-distR-ret = ᴰ⊗≡ λ x →
+    ∘g-assoc ⊕ᴰ-distR⁻ ⊕ᴰ-distR (id ,⊗ σ x)
+    ∙ cong (⊕ᴰ-distR⁻ ∘g_) (⊕ᴰ-distR-β x)
     ∙ ⊕ᴰ-β _ x
     ∙ sym (∘g-idL (id ,⊗ σ x))
