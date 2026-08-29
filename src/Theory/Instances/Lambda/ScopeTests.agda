@@ -14,8 +14,9 @@ module Theory.Instances.Lambda.ScopeTests where
 open import Cubical.Data.Bool using (Bool ; true ; false ; false≢true)
 import Cubical.Data.Empty as Empty
 open import Cubical.Data.List using (List ; [] ; _∷_ ; length)
+open import Cubical.Data.Maybe using (Maybe ; just ; nothing)
 open import Cubical.Data.Nat using (ℕ ; zero ; suc ; isSetℕ ; discreteℕ)
-open import Cubical.Data.Sigma using (_,_ ; fst ; snd)
+open import Cubical.Data.Sigma using (_×_ ; _,_ ; fst ; snd)
 open import Cubical.Data.Unit using (tt)
 import Cubical.Data.Sum as Sum
 
@@ -109,7 +110,8 @@ may-capture-in-ctx : mayB (1 ∷ []) capture ≡ true
 may-capture-in-ctx = refl
 
 -- ...and `ND` enumerates exactly one derivation, because `Scope` is a
--- proposition: being in scope has no content beyond holding.
+-- proposition -- which it now is for a reason, `namesUniq`, rather than
+-- for want of content.
 nd-id : count [] idT ≡ 1
 nd-id = refl
 
@@ -131,5 +133,38 @@ nd-selfApp = refl
 -- The refutation is real content, not a bit: at `Dec` an out-of-scope term
 -- comes back with a proof that it cannot be scoped.
 no-open : D.¬Ty (Scope []) openT
-no-open =
-  Sum.rec (λ s → Empty.rec s) (λ n → n) (decideScope [] openT tt)
+no-open = Sum.rec impossible (λ n → n) (decideScope [] openT tt)
+  where
+  impossible : Scope [] openT → D.¬Ty (Scope []) openT
+  impossible (dvar n , ())
+  impossible (dapp _ _ , ())
+  impossible (dlam _ , ())
+
+
+-- WHY THE NAMING RELATION IS NOT POSITIONAL.  The obvious reading of
+-- "`d` names `t` over `Γ`" at a variable is "position `n` of `Γ` holds
+-- `x`", and over a context that repeats a name it holds twice: `dvar 0`
+-- and `dvar 1` would both name `tvar 0` over `0 ∷ 0 ∷ []`.  `Scope` would
+-- then not be a proposition, `namesUniq` would be false, and `ND` would
+-- enumerate a derivation per shadowed binding.  This is the fact the task
+-- said to verify rather than assume, so here it is verified.
+nth : Ctx → ℕ → Maybe ℕ
+nth [] _ = nothing
+nth (y ∷ Γ) zero = just y
+nth (y ∷ Γ) (suc n) = nth Γ n
+
+positional-ambiguous
+  : (nth (0 ∷ 0 ∷ []) 0 ≡ just 0) × (nth (0 ∷ 0 ∷ []) 1 ≡ just 0)
+positional-ambiguous = refl , refl
+
+-- `At` is the positional reading plus "and not any inner one", so it
+-- accepts the shadowing binding and refutes the shadowed one.
+at-inner : At (0 ∷ 0 ∷ []) 0 0
+at-inner = refl
+
+at-not-outer : At (0 ∷ 0 ∷ []) 1 0 → Empty.⊥
+at-not-outer w = w .fst refl
+
+-- ...and the checker enumerates the one derivation, not two.
+nd-shadowed-ctx : count (0 ∷ 0 ∷ []) openT ≡ 1
+nd-shadowed-ctx = refl

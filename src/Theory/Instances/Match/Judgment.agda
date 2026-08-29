@@ -62,6 +62,16 @@
    The three `clash` lemmas give it, once each, and `clashAt` and
    `Exhaustive` both consume them.
 
+   AND A NOTE ON CONVENTION 1.  `Match` is no longer literally a recursion
+   on the model -- it is a `Σ` whose second component is an equation.  The
+   recursion moved one level down, into `Env` and `inst`, both of which
+   recurse on the *pattern*; the model element occurs only to the right of
+   an `≡`.  That is what the convention is for: no branch of the checker
+   ever unifies a model constructor, so there is still no
+   `SplitError.UnificationStuck`, and `isPropMatch` got *shorter* rather
+   than longer, because it is now a property of a map rather than a case
+   analysis.
+
    The proof-relevance is in the clause list, and that is the point -- see
    `Clauses`. -}
 open import Cubical.Foundations.Prelude
