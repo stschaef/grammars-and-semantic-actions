@@ -41,3 +41,15 @@ module _ {C : Category ℓC ℓC'} (Cᴰ : Categoryᴰ C ℓCᴰ ℓCᴰ')
   ΠTyPshⱽ : {X : Type ℓ} → (X → Presheafⱽ c Cᴰ ℓPᴰ)
           → Presheafⱽ c Cᴰ (ℓ-max ℓ ℓPᴰ)
   ΠTyPshⱽ = ΠTyPsh
+
+  -- | A vertical set-indexed product: fibrewise, over the identity.
+  ΠTyⱽ : {X : Type ℓ} (Aⱽ : X → Categoryᴰ.ob[_] Cᴰ c) → Type _
+  ΠTyⱽ Aⱽ =
+    UniversalElementⱽ' Cᴰ c (ΠTyPshⱽ (λ x → Cᴰ [-][-, Aⱽ x ]))
+
+-- | Vertical coproducts are the ^op dual, as in the displayed case.
+module _ {C : Category ℓC ℓC'} (Cᴰ : Categoryᴰ C ℓCᴰ ℓCᴰ')
+  {c : Category.ob C} where
+
+  ΣTyⱽ : {X : Type ℓ} (Aⱽ : X → Categoryᴰ.ob[_] Cᴰ c) → Type _
+  ΣTyⱽ = ΠTyⱽ (Cᴰ ^opᴰ) {c}
