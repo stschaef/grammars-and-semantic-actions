@@ -145,7 +145,11 @@ module _ {ℓCᴰ ℓCᴰ'} (Mᴰ : Modelᴰ FreeModel ℓCᴰ ℓCᴰ') where
       (gᴰ : Cᴰ.Hom[ g ][ elimOb B , Πᴰ.vertexᴰ X A ])
       → gᴰ Cᴰ.≡[ &ηE X A g ]
         Πᴰ.introᴰ X A (λ x → gᴰ Cᴰ.⋆ᴰ (Πᴰ.elementᴰ X A x))
-    &ηᴰ' X A g gᴰ = {!!}
+    &ηᴰ' X A g gᴰ =
+      F.rectify (F.≡out (F.≡in (Πᴰ.ηᴰ _ _ gᴰ)
+        ∙ Πᴰ.cong-introᴰ _ _ {p'ᴰ = λ x → gᴰ Cᴰ.⋆ᴰ Πᴰ.elementᴰ X A x}
+            (λ i → (λ x → sym (F.reind-filler _) i .fst)
+                 , (λ x → sym (F.reind-filler _) i .snd))))
 
     ------------------------------------------------------------------
     -- The morphism part
