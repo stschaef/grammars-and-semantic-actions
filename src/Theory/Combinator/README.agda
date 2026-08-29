@@ -293,5 +293,42 @@
    development has three token rules where this one has `Ans-node`.  For
    a commutative theory the node cover is not disjoint at all -- the bag
    `{a,b}` is a node of two different heads -- so prediction, and with it
-   this whole framework, needs a chosen head. -}
+   this whole framework, needs a chosen head.
+
+   ============================================================
+   VI.  ADDENDUM: `Ans-re`, AND A THIRD KIND OF OUTCOME
+   ============================================================
+
+   Written after `Unify` landed, which is why it sits at the end rather
+   than in section I.
+
+   `Ans-re` REINDEXES AN ANSWER ALONG A MAP OF MODEL ELEMENTS.  Every
+   judgment before `Unify` had its premises at SUBTERMS, and `Ans-node` is
+   already the reindexing for those -- a slot's projection out of its node
+   is the one map a signature hands you.  A judgment that is a MACHINE has
+   a premise at a state COMPUTED from the conclusion's, and no operation of
+   any signature produces that state.  Hence the field.
+
+   It is deliberately WEAKER than a monadic bind: `f` maps model elements
+   and is fixed before any answer is asked, so a later premise still cannot
+   read an earlier premise's derivation.  The prediction that unification
+   would need bind was wrong; it needs reindexing.
+
+   AND A CORRECTION TO SECTION II.  It is tempting to read the `Route`
+   obligations as LOCATING an algorithm's uniqueness theorem -- `disjoint`
+   IS coherence, `disjoint` IS uniqueness of synthesis.  Three clients now
+   say otherwise, in three different ways:
+
+     * `Class/Resolve` -- `disjoint` is coherence, verbatim.
+     * `Bidir/Typing` -- the same theorem, but the content sits in `into`
+       (`soundInfer`), because the cells were chosen as the fibres of a
+       candidate function.  `disjoint ∘ into` is uniqueness; how it splits
+       between the two is a design choice.
+     * `Unify/Check` -- NO ROUTE ARISES AT ALL.  The existential collapses
+       at the definition of the judgment, so uniqueness is `isPropSol`,
+       definitional, and the framework never gets to ask for it.
+
+   So the obligation is CONSERVED, not LOCATED, and a judgment can be
+   arranged so that it is discharged before the framework ever sees it.
+   That is the useful form of the observation; the sharper one is false. -}
 module Theory.Combinator.README where
