@@ -75,7 +75,6 @@ open import Cubical.Data.List.Properties using (isOfHLevelList)
 open import Cubical.Data.Sigma using (_×_ ; Σ-syntax ; ΣPathP ; _,_ ; fst ; snd)
 open import Cubical.Data.Unit using (Unit ; tt)
 import Cubical.Data.Sum as Sum
-open import Cubical.Data.Sum using (isProp⊎)
 import Cubical.Data.Empty as Empty
 import Cubical.Data.Equality as Eq
 
