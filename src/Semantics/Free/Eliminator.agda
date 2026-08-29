@@ -145,11 +145,13 @@ module _ {ℓCᴰ ℓCᴰ'} (Mᴰ : Modelᴰ FreeModel ℓCᴰ ℓCᴰ') where
       (gᴰ : Cᴰ.Hom[ g ][ elimOb B , Πᴰ.vertexᴰ X A ])
       → gᴰ Cᴰ.≡[ &ηE X A g ]
         Πᴰ.introᴰ X A (λ x → gᴰ Cᴰ.⋆ᴰ (Πᴰ.elementᴰ X A x))
-    &ηᴰ' X A g gᴰ =
-      F.rectify (F.≡out (F.≡in (Πᴰ.ηᴰ _ _ gᴰ)
-        ∙ Πᴰ.cong-introᴰ _ _ {p'ᴰ = λ x → gᴰ Cᴰ.⋆ᴰ Πᴰ.elementᴰ X A x}
-            (λ i → (λ x → sym (F.reind-filler _) i .fst)
-                 , (λ x → sym (F.reind-filler _) i .snd))))
+    -- Both indexed η cases are open. The reind sits inside `introᴰ`s
+    -- *family* argument, and the reind path is the third component of
+    -- the comma-morphism produced by `appHet` in `ΠTyPshᴰ`, which Agda
+    -- cannot invert to solve the metavariable. Supplying it needs
+    -- either the bare (reind-free) η lemma upstream in ccl, or that
+    -- path written out by hand.
+    &ηᴰ' X A g gᴰ = {!!}
 
     ------------------------------------------------------------------
     -- The morphism part
