@@ -22,12 +22,19 @@
      Semantics.Inductive.KleeneStar         the star as an initial algebra
      Semantics.Later                        the later modality and guarded fixed points
 
+   Example
+     Semantics.Examples.StarParser          a Kleene star parser, written once for all models
+     Semantics.Examples.StarParserDemo      the same parser elaborated in both models below
+     Semantics.Examples.StarParserRun       and run, on a two-letter alphabet
+
    Models
      Semantics.Instances.Families           families of sets over strings
      Semantics.Instances.Recovered          the derived distributor is the hand-written one
      Semantics.Instances.MonoidSignature    monoidal biclosed = monoid theory, all slots closed
      Semantics.Instances.FamiliesInductive  initial algebras, and the star, in the families model
      Semantics.Instances.FamiliesLater      the later modality in the families model
+     Semantics.Instances.Sets               grammars as plain sets, terms as plain functions
+     Semantics.Instances.SetsInductive      the star in that model is List
 -}
 module Semantics where
 
@@ -50,3 +57,9 @@ open import Semantics.Instances.Recovered
 open import Semantics.Instances.MonoidSignature
 open import Semantics.Instances.FamiliesInductive
 open import Semantics.Instances.FamiliesLater
+open import Semantics.Instances.Sets
+open import Semantics.Instances.SetsInductive
+
+open import Semantics.Examples.StarParser
+import Semantics.Examples.StarParserDemo
+open import Semantics.Examples.StarParserRun

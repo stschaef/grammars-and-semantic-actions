@@ -17,7 +17,6 @@ open import Cubical.Data.List
 open import Cubical.Data.Sigma
 open import Cubical.Data.Unit
 
-import Semantics.Notation
 import Semantics.Inductive.Functor
 import Semantics.Inductive.Algebra
 import Semantics.Inductive.KleeneStar
@@ -28,7 +27,6 @@ module _ (ℓ : Level) (Gen : hSet ℓ) where
   private
     M = SetsOn ℓ Gen
 
-  module N = Semantics.Notation M
   module SemF = Semantics.Inductive.Functor M
   module SemA = Semantics.Inductive.Algebra M
   module SemK = Semantics.Inductive.KleeneStar M

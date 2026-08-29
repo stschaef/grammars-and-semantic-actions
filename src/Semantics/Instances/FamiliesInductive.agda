@@ -42,7 +42,6 @@ import Grammar.Inductive.HLevels
 import Semantics.Inductive.Functor
 import Semantics.Inductive.Algebra
 import Semantics.Inductive.KleeneStar
-import Semantics.Notation
 
 open import Semantics.Instances.Families Alphabet
 
@@ -58,7 +57,6 @@ module _ (ℓ : Level) (Gen : hSet ℓ) (lit : ⟨ Gen ⟩ → SetGrammar ℓ) w
   module Sem = Semantics.Inductive.Functor M
   module SemA = Semantics.Inductive.Algebra M
   module SemK = Semantics.Inductive.KleeneStar M
-  module N = Semantics.Notation M
 
   private
     variable
