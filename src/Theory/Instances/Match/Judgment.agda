@@ -1,0 +1,254 @@
+{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
+{- Pattern matching as a syntax-directed judgment: `Match p v` is "the
+   value `v` matches the pattern `p`", written once, for every answer.
+
+   The index/model split is the mirror image of `Annotated/Typing`'s.
+   There the index was a type and the guard descended on the term; here the
+   index is a *pattern* and the guard descends on the scrutinee.  Patterns
+   are an ordinary Agda datatype, external to the theory, exactly as `Ty`
+   is -- the theory presents the things being analysed, not the things
+   analysing them.  Each premise's index is determined: `ppair p q` against
+   `vpair v w` asks `p` of `v` and `q` of `w`, and nothing else.
+
+   Two places where the fit is not automatic, and both are informative.
+
+   `pwild` and `pvar n` are not syntax-directed on the value at all: they
+   hold at every head.  A rule with no premises and no restriction on the
+   scrutinee is not a node -- it is a decision -- so those two indices are
+   `side` and never reach `look`.  Pretending otherwise would mean writing
+   the same trivial node three times, once per cell of the cover.
+
+   The constant patterns fail for a reason no slot can carry.  `vtrueOp` is
+   nullary, so `⊗ᴰ vtrueOp` has nowhere to put the refutation that makes
+   `Match pfalse vtrue` empty; `Ans-node` can only refute a node through a
+   slot.  `clashAt` routes it the other way: the answer is built at `⊥Ty`
+   and relabelled by `Ans-map&`, whose hypothesis -- "this value is a node
+   of `o`" -- is precisely the knowledge that makes `Match p` empty here
+   and nowhere else.  This is the case the annotated instance never meets,
+   because every one of its operations has an argument.
+
+   Matching a single pattern is a *proposition*: `isPropMatch` below.  The
+   proof-relevance is in the clause list, and that is the point -- see
+   `Clauses`. -}
+open import Cubical.Foundations.Prelude
+open import Cubical.Foundations.HLevels
+open import Cubical.Algebra.Theory.Finitary
+open SortedSig
+open SortedEqns
+module Theory.Instances.Match.Judgment where
+
+open import Cubical.Data.Empty using (⊥)
+import Cubical.Data.Empty as Empty
+import Cubical.Data.FinData as FD
+open import Cubical.Data.FinData.More using (two)
+open import Cubical.Data.List using (List ; [] ; _∷_)
+open import Cubical.Data.Nat using (ℕ ; zero ; suc ; isSetℕ)
+open import Cubical.Data.Sigma using (_×_ ; _,_ ; fst ; snd)
+open import Cubical.Data.Sum using (_⊎_ ; isSet⊎)
+import Cubical.Data.Sum as Sum
+open import Cubical.Data.Unit using (Unit ; tt ; isSetUnit ; isPropUnit)
+open import Cubical.Data.W.Indexed using (IW ; node ; isOfHLevelSuc-IW)
+import Cubical.Data.Equality as Eq
+
+open import Theory.Instances.Match.Guard public
+
+-- Patterns, external to the theory.
+data Pat : Type ℓ-zero where
+  pwild : Pat
+  pvar : ℕ → Pat
+  ptrue pfalse : Pat
+  ppair : Pat → Pat → Pat
+
+private
+  PShape : Type ℓ-zero
+  PShape = ℕ ⊎ ℕ
+
+  PPos : Unit → PShape → Type ℓ-zero
+  PPos _ (Sum.inl (suc (suc (suc zero)))) = FD.Fin 2
+  PPos _ _ = ⊥
+
+  PW : Unit → Type ℓ-zero
+  PW = IW (λ _ → PShape) PPos (λ _ _ _ → tt)
+
+  isSetPW : isSet (PW tt)
+  isSetPW = isOfHLevelSuc-IW 1 (λ _ → isSet⊎ isSetℕ isSetℕ) tt
+
+  toP : Pat → PW tt
+  toP pwild = node (Sum.inl 0) λ ()
+  toP (pvar n) = node (Sum.inr n) λ ()
+  toP ptrue = node (Sum.inl 1) λ ()
+  toP pfalse = node (Sum.inl 2) λ ()
+  toP (ppair p q) = node (Sum.inl 3) (two (toP p) (toP q))
+
+  fromP : PW tt → Pat
+  fromP (node (Sum.inl zero) _) = pwild
+  fromP (node (Sum.inl (suc zero)) _) = ptrue
+  fromP (node (Sum.inl (suc (suc zero))) _) = pfalse
+  fromP (node (Sum.inl (suc (suc (suc zero)))) sub) =
+    ppair (fromP (sub theFst)) (fromP (sub theSnd))
+  fromP (node (Sum.inl (suc (suc (suc (suc n))))) _) = pwild
+  fromP (node (Sum.inr n) _) = pvar n
+
+  patRet : (p : Pat) → fromP (toP p) ≡ p
+  patRet pwild = refl
+  patRet (pvar n) = refl
+  patRet ptrue = refl
+  patRet pfalse = refl
+  patRet (ppair p q) = cong₂ ppair (patRet p) (patRet q)
+
+isSetPat : isSet Pat
+isSetPat = isOfHLevelRetract 2 toP fromP patRet isSetPW
+
+-- The judgment.  Defined by recursion, not as an indexed family: the
+-- guard's calls sit at `(p , v)` pairs that no unifier has to invert.
+Match : Pat → TheoryTy ℓ-zero val
+Match pwild v = Unit
+Match (pvar n) v = Unit
+Match ptrue vtrue = Unit
+Match ptrue vfalse = ⊥
+Match ptrue (vpair _ _) = ⊥
+Match pfalse vtrue = ⊥
+Match pfalse vfalse = Unit
+Match pfalse (vpair _ _) = ⊥
+Match (ppair p q) vtrue = ⊥
+Match (ppair p q) vfalse = ⊥
+Match (ppair p q) (vpair v w) = Match p v × Match q w
+
+isPropMatch : (p : Pat) (v : Val) → isProp (Match p v)
+isPropMatch pwild v = isPropUnit
+isPropMatch (pvar n) v = isPropUnit
+isPropMatch ptrue vtrue = isPropUnit
+isPropMatch ptrue vfalse = λ ()
+isPropMatch ptrue (vpair _ _) = λ ()
+isPropMatch pfalse vtrue = λ ()
+isPropMatch pfalse vfalse = isPropUnit
+isPropMatch pfalse (vpair _ _) = λ ()
+isPropMatch (ppair p q) vtrue = λ ()
+isPropMatch (ppair p q) vfalse = λ ()
+isPropMatch (ppair p q) (vpair v w) =
+  isProp× (isPropMatch p v) (isPropMatch q w)
+
+MatchSet : Pat → TheorySet ℓ-zero val
+MatchSet p = Match p , λ v → isProp→isSet (isPropMatch p v)
+
+-- The slots, one family per rule that has any.  The constants have none --
+-- their operations are nullary -- so there is no `Slots` indexed by an
+-- arbitrary pair of operation and pattern, and no unreachable branch of it.
+trueSlots : NodeArgs ℓ-zero vtrueOp
+trueSlots vs ()
+
+falseSlots : NodeArgs ℓ-zero vfalseOp
+falseSlots vs ()
+
+pairSlots : Pat → Pat → NodeArgs ℓ-zero vpairOp
+pairSlots p q vs theFst = MatchSet p
+pairSlots p q vs theSnd = MatchSet q
+
+⊥Set : TheorySet ℓ-zero val
+⊥Set = ⊥Ty , isSet⊥Ty
+
+-- A clause list, as a grammar: the pointwise sum of its patterns.  This is
+-- `⊕` and nothing more, which is why `_<|>_` builds the matcher for it by
+-- a fold and why the three answers then genuinely disagree -- `Dec` reads
+-- the sum as a decision, `Maybe` as a left-biased choice, `ND` as an
+-- enumeration.
+AnySet : List Pat → TheorySet ℓ-zero val
+AnySet [] = ⊥Set
+AnySet (p ∷ ps) = MatchSet p ⊕Set AnySet ps
+
+Any : List Pat → TheoryTy ℓ-zero val
+Any cs = ty (AnySet cs)
+
+
+-- The matcher, for whatever answer.
+module Check (𝒯 : AnswerFunctor) where
+
+  open Subvalue {X = Pat} isSetPat (λ _ → 0) hiding (_<_) public
+  open Combinators 𝒯 srt order public
+
+  private
+    Later : Pat → TheoryTy _ val
+    Later = ▷ (AnsFam MatchSet)
+
+    yes! : {p : Pat} → ((v : Val) → Match p v) → Later p ⊢ ty (Ans (MatchSet p))
+    yes! h = side λ v _ → Sum.inl (h v)
+
+  -- A head that the pattern rejects.  The refutation cannot ride in a slot
+  -- -- `vtrueOp` has none -- so it rides in the hypothesis of `Ans-map&`.
+  clashAt : (o : VOp) (p : Pat)
+    → ((vs : interpIn o ↓M) → Match p (op o vs) → ⊥)
+    → Later p & NodeAt o ⊢ ty (Ans (MatchSet p))
+  clashAt o p ¬m =
+    Ans-map& (λ _ (b , _) → Empty.rec* b)
+             (λ where _ (d , (vs , Eq.refl)) → Empty.rec (¬m vs d))
+    ∘⊢ (none {A = ⊥Set} (λ _ _ b → b) ,& π₂)
+
+  private
+    constAt : (o : VOp) (p : Pat) (As : NodeArgs ℓ-zero o)
+      → ((vs : interpIn o ↓M) → (a : arities VSig o) → ty (Ans (As vs a)) (vs a))
+      → (⊗ᴰ o As & NodeAt o ⊢ Match p)
+      → (Match p & NodeAt o ⊢ ⊗ᴰ o As)
+      → Later p & NodeAt o ⊢ ty (Ans (MatchSet p))
+    constAt o p As ws roll unroll = Ans-map& roll unroll ∘⊢ (mk ,& π₂)
+      where
+      mk : Later p & NodeAt o ⊢ ty (Ans (⊗ᴰSet o As))
+      mk _ (β , (vs , Eq.refl)) =
+        Ans-node o (preciseV o) {As = As} {ms = vs} (ws vs)
+
+    trueAt : Later ptrue & NodeAt vtrueOp ⊢ ty (Ans (MatchSet ptrue))
+    trueAt = constAt vtrueOp ptrue trueSlots (λ vs ())
+      (λ where _ (_ , (vs , Eq.refl)) → tt)
+      (λ where _ (_ , (vs , Eq.refl)) → node-mk {ms = vs} λ ())
+
+    falseAt : Later pfalse & NodeAt vfalseOp ⊢ ty (Ans (MatchSet pfalse))
+    falseAt = constAt vfalseOp pfalse falseSlots (λ vs ())
+      (λ where _ (_ , (vs , Eq.refl)) → tt)
+      (λ where _ (_ , (vs , Eq.refl)) → node-mk {ms = vs} λ ())
+
+    pairAt : (p q : Pat)
+      → Later (ppair p q) & NodeAt vpairOp ⊢ ty (Ans (MatchSet (ppair p q)))
+    pairAt p q = Ans-map& roll unroll ∘⊢ (mk ,& π₂)
+      where
+      mk : Later (ppair p q) & NodeAt vpairOp
+         ⊢ ty (Ans (⊗ᴰSet vpairOp (pairSlots p q)))
+      mk _ (β , (vs , Eq.refl)) =
+        Ans-node vpairOp (preciseV vpairOp)
+          {As = pairSlots p q} {ms = vs}
+          λ where
+            theFst → callAt p
+              (callFst {x = ppair p q} {x' = p} (vs theFst) (vs theSnd)) β
+            theSnd → callAt q
+              (callSnd {x = ppair p q} {x' = q} (vs theFst) (vs theSnd)) β
+
+      roll : ⊗ᴰ vpairOp (pairSlots p q) & NodeAt vpairOp ⊢ Match (ppair p q)
+      roll _ ((vs , Eq.refl , ws) , _) = ws theFst , ws theSnd
+
+      unroll : Match (ppair p q) & NodeAt vpairOp ⊢ ⊗ᴰ vpairOp (pairSlots p q)
+      unroll _ (d , (vs , Eq.refl)) = node-mk {ms = vs} λ where
+        theFst → d .fst
+        theSnd → d .snd
+
+  step : Step MatchSet
+  step pwild = yes! λ _ → tt
+  step (pvar n) = yes! λ _ → tt
+  step ptrue = look nodeCover λ where
+    vtrueOp → trueAt
+    vfalseOp → clashAt vfalseOp ptrue λ vs ()
+    vpairOp → clashAt vpairOp ptrue λ vs ()
+  step pfalse = look nodeCover λ where
+    vtrueOp → clashAt vtrueOp pfalse λ vs ()
+    vfalseOp → falseAt
+    vpairOp → clashAt vpairOp pfalse λ vs ()
+  step (ppair p q) = look nodeCover λ where
+    vtrueOp → clashAt vtrueOp (ppair p q) λ vs ()
+    vfalseOp → clashAt vfalseOp (ppair p q) λ vs ()
+    vpairOp → pairAt p q
+
+  matched : Checker MatchSet
+  matched = fix step
+
+  -- ...and the clause list, folded with `<|>`.  The empty list is `none`:
+  -- no value matches no clause, and that is a refutation `Dec` can hold.
+  matchAny : (cs : List Pat) → ⊤Ty ⊢ ty (Ans (AnySet cs))
+  matchAny [] = none λ _ _ b → b
+  matchAny (p ∷ ps) = matched p <|> matchAny ps
