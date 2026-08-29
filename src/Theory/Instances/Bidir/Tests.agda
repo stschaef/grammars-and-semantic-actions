@@ -108,16 +108,16 @@ chk-mismatch = refl
 -- composition below is bidirectional checking, then annotated checking,
 -- then elaboration to the core language.
 private
-  thenAnnotated : (Γ : Ctx) (A : Ty) → Maybe ATm → Maybe AE.CoreTm
+  thenAnnotated : (Γ : Ctx) (A : Ty) → Maybe ATm → Maybe AE.Nameless
   thenAnnotated Γ A nothing = nothing
   thenAnnotated Γ A (just t) = AE.compile Γ A t
 
 roundtrip-beta : thenAnnotated Γ₁ ι (check Γ₁ ι beta)
-  ≡ just (AE.capp (AE.clam ι (AE.cvar 0)) (AE.cvar 0))
+  ≡ just (AE.dapp (AE.dlam ι (AE.dvar 0)) (AE.dvar 0))
 roundtrip-beta = refl
 
 roundtrip-nested : thenAnnotated [] ((ι ⇒ ι) ⇒ ι ⇒ ι) (check [] ((ι ⇒ ι) ⇒ ι ⇒ ι) nested)
-  ≡ just (AE.clam (ι ⇒ ι) (AE.clam ι (AE.capp (AE.cvar 1) (AE.cvar 0))))
+  ≡ just (AE.dlam (ι ⇒ ι) (AE.dlam ι (AE.dapp (AE.dvar 1) (AE.dvar 0))))
 roundtrip-nested = refl
 
 -- THE OTHER TWO ANSWERS.  `Maybe` routes through `FromCov.committing`

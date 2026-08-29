@@ -1,6 +1,21 @@
 {-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
 {- A type checker for the annotated lambda calculus, written once, for
-   every answer.
+   every answer -- and, since it is intrinsically typed, an elaborator.
+
+   THE JUDGMENT CARRIES THE PROGRAM.  `Der (Γ , A) t` is not "`t` checks at
+   `A`"; it is
+
+     Σ[ c ∈ Core Γ A ] (erase c ≡ t)
+
+   a well-typed core term together with the evidence that it is a term for
+   this source.  The difference is which claims need proving.  A judgment
+   defined by recursion on `t` is a definition someone wrote, and "this
+   definition is STLC typing" is checked nowhere: the checker is verified
+   against the judgment, the judgment against nothing.  Here `Core` IS the
+   typing rules -- a constructor exists exactly when the rule applies --
+   so a `yes` from the checker means a well-typed core term exists and a
+   `no` means none does, both by typing, and `Elaborate`'s elaborator is
+   the first projection.
 
    The family is indexed by `Ctx × Ty` -- a checking judgment `Γ ⊢ t ⇐ A`
    -- and the guard descends on the term.  Each rule's premises sit at
@@ -15,6 +30,29 @@
    The `lam` rule uses the dependency twice over: the body's *context* and
    its *type* are both read off the node.  With `Operation/Base`'s `⊗ᵘ` --
    independent slots -- neither is expressible.
+
+   WHAT THE INTRINSIC FORM COSTS, honestly, is house convention 1: the
+   judgment is no longer defined by recursion on the model, so `isProp` is
+   no longer two lines and `unrollNode` no longer holds its premises
+   already separated.  Both are paid in one place.  The old recursive
+   judgment survives below as `Der⁻`, and the pair `graph`/`canon` is an
+   isomorphism between it and the erasure fibre: `graph` is recursion on
+   the CORE term, which hits every clause of `Der⁻` definitionally, and
+   `canon` is recursion on the SOURCE, which is elaboration.  `isPropDer`
+   is then a retraction onto a proposition and `unrollNode` computes the
+   fibre rather than inverting `erase`.  So the extrinsic judgment is
+   demoted from definition to lemma -- which is the right place for it,
+   since as a definition it was the unverified layer.
+
+   AND THE UNIFIER NEVER COMPLAINS, which was the thing to be afraid of:
+   `Core` is an indexed `data`, the one shape house convention 1 warns
+   against, and it is matched only against itself.  `graph`, `canon` and
+   `canonUniq` each recur on one argument with the other side free, no
+   clause matches a `Core` constructor against a model constructor, and the
+   equations between source terms are projected rather than unified -- the
+   trick `Guard` already needs for `Precise`.  So no `SplitError` arises
+   anywhere below, and the only equational reasoning left is `substRefl` on
+   a path in `Ty`, and `Ty` is a set.
 
    `AOp` is infinite, since `appOp B` carries a type.  That costs nothing:
    `Guard`'s node cover is a `Cover` over it all the same, and `step` is
@@ -47,7 +85,7 @@ open import Cubical.Data.List.Properties using (isOfHLevelList)
 open import Cubical.Data.Maybe using (Maybe ; just ; nothing)
 open import Cubical.Data.Maybe.Properties using (isOfHLevelMaybe ; discreteMaybe)
 open import Cubical.Data.Nat using (ℕ ; isSetℕ ; discreteℕ)
-open import Cubical.Data.Sigma using (_×_ ; _,_ ; fst ; snd)
+open import Cubical.Data.Sigma using (Σ-syntax ; _×_ ; _,_ ; fst ; snd ; Σ≡Prop)
 open import Cubical.Data.Unit using (Unit ; tt)
 open import Cubical.Relation.Nullary.Base using (Dec ; yes ; no)
 import Cubical.Data.Sum as Sum
@@ -155,20 +193,132 @@ decLook ((y , B) ∷ Γ) A x _ = onName (discreteℕ x y) (discreteTy A B)
     (Sum.inr miss) → Empty.rec (miss .fst p)
   onName (no ¬p) _ = onTail ¬p (decLook Γ A x tt)
 
--- The judgment.  Every premise's index is determined, so this is a
--- proposition: an annotated term has at most one derivation at a type, and
--- `unambiguous` is definitional rather than a theorem.
-Der : Jdg → TheoryTy ℓ-zero tm
-Der (Γ , A) (avar x) = Look Γ A x
-Der (Γ , A) (aapp B f a) = Der (Γ , B ⇒ A) f × Der (Γ , B) a
-Der (Γ , A) (alam x B t) = ArrHead A B × Der ((x , B) ∷ Γ , cod A) t
+-- THE CORE LANGUAGE, INTRINSICALLY TYPED.  `Core Γ A` is inhabited by
+-- well-typed terms and by nothing else: `capp` may only apply a `B ⇒ A` to
+-- a `B`, and `clam`'s body lives in the extended context.  No constructor
+-- carries a type field for an elaborator to fill in wrongly, because the
+-- type is an INDEX.
+--
+-- The variable constructor carries a `Lookup`, not a numeral, and that is
+-- the one departure from the textbook well-scoped representation.  A
+-- numeral -- a positional pointer into a type-only context -- is exactly
+-- right for a nameless language and WRONG for this one: `avar 0` in the
+-- context `0:ι, 0:ι` would then be the erasure of two different core
+-- terms, the erasure fibre below would have two elements, and the judgment
+-- would stop being a proposition.  `Lookup Γ A x` is the pointer TOGETHER
+-- with the evidence that nothing nearer shadows it, which is verbatim the
+-- innermost-wins rule of the surface language; `deBruijn` counts it.  So
+-- the ambiguity that intrinsic syntax would introduce is refuted at the
+-- constructor rather than truncated away afterwards.
+data Core : Ctx → Ty → Type ℓ-zero where
+  cvar : {Γ : Ctx} {A : Ty} (x : ℕ) → Lookup Γ A x → Core Γ A
+  capp : {Γ : Ctx} {A B : Ty} → Core Γ (B ⇒ A) → Core Γ B → Core Γ A
+  clam : {Γ : Ctx} {A B : Ty} (x : ℕ) → Core ((x , B) ∷ Γ) A → Core Γ (B ⇒ A)
 
+-- ...and back to the surface.  `clam` keeps the binder's name and `capp`
+-- reads its annotation off the TYPE INDEX, so erasure is total and
+-- recovers the source exactly -- which is what makes "erases to `t`" a
+-- usable premise rather than a slogan.
+erase : {Γ : Ctx} {A : Ty} → Core Γ A → ATm
+erase (cvar x _) = avar x
+erase (capp {B = B} f a) = aapp B (erase f) (erase a)
+erase (clam {B = B} x t) = alam x B (erase t)
+
+-- Reading `A` as `B ⇒ cod A`, which is what the `lam` rule's side
+-- condition says and what its core term needs.
+arrEta : {B : Ty} (A : Ty) → ArrHead A B → A ≡ B ⇒ cod A
+arrEta ι (h , _) = Empty.rec h
+arrEta (B' ⇒ C) (_ , p) = cong (_⇒ C) p
+
+eraseSubst : {Γ : Ctx} {A A' : Ty} (e : A ≡ A') (c : Core Γ A)
+  → erase (subst (Core Γ) e c) ≡ erase c
+eraseSubst {Γ = Γ} e c i = erase (subst-filler (Core Γ) e c (~ i))
+
+-- THE JUDGMENT.  Not "`t` checks at `A`" but "here is a well-typed core
+-- term, and it erases to `t`".  Elaboration is then the first projection
+-- and its correctness is the type of that projection: the layer that used
+-- to say "the judgment means STLC typing" -- verified nowhere, because it
+-- was a claim about a definition someone wrote -- is gone, because there
+-- is no longer a separate definition to compare `Core` against.
+Der : Jdg → TheoryTy ℓ-zero tm
+Der (Γ , A) t = Σ[ c ∈ Core Γ A ] (erase c ≡ t)
+
+-- The judgment this file used to define, demoted from definition to
+-- lemma.  It is the erasure fibre computed by recursion on the source, so
+-- it is a proposition for the old two-line reason; everything below is the
+-- claim that computing the fibre and taking it agree.
+Der⁻ : Jdg → TheoryTy ℓ-zero tm
+Der⁻ (Γ , A) (avar x) = Look Γ A x
+Der⁻ (Γ , A) (aapp B f a) = Der⁻ (Γ , B ⇒ A) f × Der⁻ (Γ , B) a
+Der⁻ (Γ , A) (alam x B t) = ArrHead A B × Der⁻ ((x , B) ∷ Γ , cod A) t
+
+isPropDer⁻ : (i : Jdg) (t : ATm) → isProp (Der⁻ i t)
+isPropDer⁻ (Γ , A) (avar x) = isPropLookup Γ A x
+isPropDer⁻ (Γ , A) (aapp B f a) =
+  isProp× (isPropDer⁻ (Γ , B ⇒ A) f) (isPropDer⁻ (Γ , B) a)
+isPropDer⁻ (Γ , A) (alam x B t) =
+  isProp× (isPropArrHead A B) (isPropDer⁻ ((x , B) ∷ Γ , cod A) t)
+
+-- One direction is free: recursion on the CORE term hits each clause of
+-- `Der⁻` definitionally, with no equation to transport along.  This is why
+-- the fibre is computed here and inverted nowhere.
+graph : {Γ : Ctx} {A : Ty} (c : Core Γ A) → Der⁻ (Γ , A) (erase c)
+graph (cvar x v) = v
+graph (capp f a) = graph f , graph a
+graph (clam x c) = (tt , refl) , graph c
+
+-- ...and the other is elaboration, by recursion on the SOURCE.  The `lam`
+-- clause is the only place a `subst` appears in the whole development: the
+-- body's core term is built at `B ⇒ cod A` and the conclusion asks for
+-- `A`, and `arrEta` is the side condition rewritten as that path.
+canon : (Γ : Ctx) (A : Ty) (t : ATm) → Der⁻ (Γ , A) t → Core Γ A
+canon Γ A (avar x) v = cvar x v
+canon Γ A (aapp B f a) d = capp (canon Γ (B ⇒ A) f (d .fst)) (canon Γ B a (d .snd))
+canon Γ A (alam x B t) d = subst (Core Γ) (sym (arrEta A (d .fst)))
+  (clam x (canon ((x , B) ∷ Γ) (cod A) t (d .snd)))
+
+canonErase : (Γ : Ctx) (A : Ty) (t : ATm) (d : Der⁻ (Γ , A) t)
+  → erase (canon Γ A t d) ≡ t
+canonErase Γ A (avar x) v = refl
+canonErase Γ A (aapp B f a) d =
+  cong₂ (aapp B) (canonErase Γ (B ⇒ A) f (d .fst)) (canonErase Γ B a (d .snd))
+canonErase Γ A (alam x B t) d =
+    eraseSubst (sym (arrEta A (d .fst))) (clam x (canon ((x , B) ∷ Γ) (cod A) t (d .snd)))
+  ∙ cong (alam x B) (canonErase ((x , B) ∷ Γ) (cod A) t (d .snd))
+
+-- Elaborating a term that came from a core term returns that core term.
+-- By induction on the CORE term, so the `lam` case is a `subst` along a
+-- path in `Ty` that is already `refl`, rather than an inversion of
+-- erasure.  This is the entire content of unambiguity.
+canonUniq : {Γ : Ctx} {A : Ty} (c : Core Γ A) → canon Γ A (erase c) (graph c) ≡ c
+canonUniq (cvar x v) = refl
+canonUniq (capp f a) = cong₂ capp (canonUniq f) (canonUniq a)
+canonUniq (clam {Γ = Γ} x c) =
+  substRefl {B = Core Γ} (clam x (canon _ _ (erase c) (graph c)))
+  ∙ cong (clam x) (canonUniq c)
+
+into : (i : Jdg) → Der i ⊢ Der⁻ i
+into (Γ , A) t d = subst (Der⁻ (Γ , A)) (d .snd) (graph (d .fst))
+
+from : (i : Jdg) → Der⁻ i ⊢ Der i
+from (Γ , A) t d = canon Γ A t d , canonErase Γ A t d
+
+fromInto : (i : Jdg) (t : ATm) (d : Der i t) → from i t (into i t d) ≡ d
+fromInto (Γ , A) t (c , p) = Σ≡Prop (λ c' → isSetCrr tm (erase c') t) (onEq t p)
+  where
+  onEq : (t' : ATm) (q : erase c ≡ t')
+    → canon Γ A t' (subst (Der⁻ (Γ , A)) q (graph c)) ≡ c
+  onEq t' q =
+    J (λ t'' q' → canon Γ A t'' (subst (Der⁻ (Γ , A)) q' (graph c)) ≡ c)
+      (cong (canon Γ A (erase c)) (substRefl {B = Der⁻ (Γ , A)} (graph c))
+        ∙ canonUniq c) q
+
+-- ...so the intrinsic judgment is a proposition after all, and it is one
+-- for a reason worth naming: the surface language is unambiguous, and
+-- `Der` is a retract of the computed fibre rather than a truncation of it.
 isPropDer : (i : Jdg) (t : ATm) → isProp (Der i t)
-isPropDer (Γ , A) (avar x) = isPropLookup Γ A x
-isPropDer (Γ , A) (aapp B f a) =
-  isProp× (isPropDer (Γ , B ⇒ A) f) (isPropDer (Γ , B) a)
-isPropDer (Γ , A) (alam x B t) =
-  isProp× (isPropArrHead A B) (isPropDer ((x , B) ∷ Γ , cod A) t)
+isPropDer i t =
+  isOfHLevelRetract 1 (into i t) (from i t) (fromInto i t) (isPropDer⁻ i t)
 
 DerSet : Jdg → TheorySet ℓ-zero tm
 DerSet i = Der i , λ t → isProp→isSet (isPropDer i t)
@@ -182,23 +332,54 @@ Slots (lamOp B) (Γ , A) ms theBinder = ArrSet A B
 Slots (lamOp B) (Γ , A) ms theBody = DerSet ((ms theBinder , B) ∷ Γ , cod A)
 
 -- One level of unfolding, both ways, as `⊢`-terms.
+--
+-- ROLL CONSTRUCTS CORE SYNTAX.  It is not the data shuffle it was: each
+-- clause applies the core constructor for its operation and pairs it with
+-- the erasure equation assembled from the slots'.  So the core term the
+-- checker returns is built by the checker, one node at a time, and `elab`
+-- is a projection out of it rather than a second pass that could disagree.
 rollNode : (o : AOp) (i : Jdg) → ⊗ᴰ o (Slots o i) ⊢ Der i
-rollNode varOp (Γ , A) m (ms , Eq.refl , ws) = ws theVar
-rollNode (appOp B) (Γ , A) m (ms , Eq.refl , ws) = ws theFun , ws theArg
-rollNode (lamOp B) (Γ , A) m (ms , Eq.refl , ws) = ws theBinder , ws theBody
+rollNode varOp (Γ , A) m (ms , Eq.refl , ws) = cvar (ms theVar) (ws theVar) , refl
+rollNode (appOp B) (Γ , A) m (ms , Eq.refl , ws) =
+    capp (ws theFun .fst) (ws theArg .fst)
+  , cong₂ (aapp B) (ws theFun .snd) (ws theArg .snd)
+rollNode (lamOp B) (Γ , A) m (ms , Eq.refl , ws) =
+    subst (Core Γ) (sym (arrEta A (ws theBinder)))
+      (clam (ms theBinder) (ws theBody .fst))
+  , eraseSubst (sym (arrEta A (ws theBinder)))
+      (clam (ms theBinder) (ws theBody .fst))
+  ∙ cong (alam (ms theBinder) B) (ws theBody .snd)
 
+-- UNROLL GOES THROUGH THE FIBRE.  It computes the fibre with `into`,
+-- splits it -- definitionally, since `Der⁻` is recursion on the source --
+-- and re-elaborates each slot with `from`.
+--
+-- The alternative is to invert `erase` directly: match on the conclusion's
+-- core term, refute the two wrong heads with a discriminator, and project
+-- the equation with `Guard`'s `appFun`/`lamBd`.  That is writable -- it was
+-- written, and it typechecks -- at a cost of one `subst` per index the
+-- constructor binds, three for `lam`, each with its own `subst-filler`
+-- lemma to move `erase` across.  It buys nothing here: `Der` is a
+-- proposition, so the two unrollings are equal, and `canon` has to exist
+-- anyway for `isPropDer`.  The general shape of the trade is that an
+-- intrinsic judgment pays for inversion once, either in transports or in a
+-- computed fibre, and the computed fibre is the same work the propositional
+-- reasoning needs.
+--
+-- Either way the round trip is never run on the accepting path, since
+-- `Ans-map&`'s backward map exists only to carry a refutation.
 unrollNode : (o : AOp) (i : Jdg) → Der i & NodeAt o ⊢ ⊗ᴰ o (Slots o i)
 unrollNode varOp (Γ , A) m (d , (ms , Eq.refl)) =
-  node-mk {ms = ms} λ where theVar → d
+  node-mk {ms = ms} λ where theVar → into (Γ , A) _ d
 unrollNode (appOp B) (Γ , A) m (d , (ms , Eq.refl)) =
   node-mk {ms = ms} λ where
-    theFun → d .fst
-    theArg → d .snd
+    theFun → from (Γ , B ⇒ A) (ms theFun) (into (Γ , A) _ d .fst)
+    theArg → from (Γ , B) (ms theArg) (into (Γ , A) _ d .snd)
 unrollNode (lamOp B) (Γ , A) m (d , (ms , Eq.refl)) =
   node-mk {ms = ms} λ where
-    theBinder → d .fst
-    theBody → d .snd
-
+    theBinder → into (Γ , A) _ d .fst
+    theBody → from ((ms theBinder , B) ∷ Γ , cod A) (ms theBody)
+      (into (Γ , A) _ d .snd)
 
 -- The checker, for whatever answer.
 module Check (𝒯 : AnswerFunctor) where
