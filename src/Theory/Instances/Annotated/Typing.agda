@@ -51,6 +51,7 @@ open import Cubical.Data.Sigma using (_×_ ; _,_ ; fst ; snd)
 open import Cubical.Data.Unit using (Unit ; tt)
 open import Cubical.Relation.Nullary.Base using (Dec ; yes ; no)
 import Cubical.Data.Sum as Sum
+open import Cubical.Data.Sum using (isProp⊎)
 import Cubical.Data.Empty as Empty
 import Cubical.Data.Equality as Eq
 
@@ -78,7 +79,7 @@ Jdg = Ctx × Ty
 isSetIdx : isSet Jdg
 isSetIdx = isSetΣ isSetCtx λ _ → isSetTyp
 
--- The two side conditions, each a grammar at sort `nm` with a decision.
+-- The `lam` rule's side condition: "A is an arrow with domain B".
 ArrHead : Ty → Ty → Type ℓ-zero
 ArrHead A B = IsArr A × (dom A ≡ B)
 
@@ -96,18 +97,63 @@ decArrHead (B' ⇒ C) B x _ = onDom (discreteTy B' B)
   onDom (yes p) = Sum.inl (tt , p)
   onDom (no ¬p) = Sum.inr λ z → Empty.rec (¬p (z .snd))
 
+-- The `var` rule's premise, carrying the *position*.
+--
+-- This is the proof-relevant refinement.  `lookC Γ x ≡ just A` said only
+-- that lookup succeeds; `Lookup Γ A x` is the witness that it does -- a
+-- chain of "not here" steps ending in a hit -- and counting the steps is
+-- the de Bruijn index.  So a derivation stops being mere evidence that the
+-- term checks and becomes the elaborated variable: `Elaborate` reads the
+-- core term off it rather than re-running the lookup.
+--
+-- It is still a *proposition*.  The two summands are mutually exclusive --
+-- one asserts `x ≡ y`, the other refutes it -- so shadowing resolves to
+-- the innermost binding and no term has two derivations.  Proof-relevant
+-- and unambiguous are not in tension: the content is the position, and the
+-- position is unique.
+Lookup : Ctx → Ty → ℕ → Type ℓ-zero
+Lookup [] A x = Empty.⊥
+Lookup ((y , B) ∷ Γ) A x =
+  ((x ≡ y) × (A ≡ B)) Sum.⊎ ((x ≡ y → Empty.⊥) × Lookup Γ A x)
+
+deBruijn : (Γ : Ctx) (A : Ty) (x : ℕ) → Lookup Γ A x → ℕ
+deBruijn ((y , B) ∷ Γ) A x (Sum.inl _) = 0
+deBruijn ((y , B) ∷ Γ) A x (Sum.inr (_ , v)) = ℕ.suc (deBruijn Γ A x v)
+
+private
+  isPropNeq : {x y : ℕ} → isProp (x ≡ y → Empty.⊥)
+  isPropNeq f g = funExt λ z → Empty.rec (f z)
+
+isPropLookup : (Γ : Ctx) (A : Ty) (x : ℕ) → isProp (Lookup Γ A x)
+isPropLookup [] A x = λ ()
+isPropLookup ((y , B) ∷ Γ) A x =
+  isProp⊎ (isProp× (isSetℕ _ _) (isSetTyp _ _))
+          (isProp× isPropNeq (isPropLookup Γ A x))
+          (λ hit miss → miss .fst (hit .fst))
+
 Look : Ctx → Ty → TheoryTy ℓ-zero nm
-Look Γ A x = lookC Γ x ≡ just A
+Look Γ A = Lookup Γ A
 
 LookSet : Ctx → Ty → TheorySet ℓ-zero nm
-LookSet Γ A = Look Γ A , λ x → isProp→isSet (isOfHLevelMaybe 0 isSetTyp _ _)
+LookSet Γ A = Look Γ A , λ x → isProp→isSet (isPropLookup Γ A x)
 
 decLook : (Γ : Ctx) (A : Ty) → Decidable (Look Γ A)
-decLook Γ A x _ = onEq (discreteMaybe discreteTy (lookC Γ x) (just A))
+decLook [] A x _ = Sum.inr λ ()
+decLook ((y , B) ∷ Γ) A x _ = onName (discreteℕ x y) (discreteTy A B)
   where
-  onEq : Dec (lookC Γ x ≡ just A) → DecTy (Look Γ A) x
-  onEq (yes p) = Sum.inl p
-  onEq (no ¬p) = Sum.inr λ p → Empty.rec (¬p p)
+  onTail : (x ≡ y → Empty.⊥) → DecTy (Look Γ A) x
+    → DecTy (Look ((y , B) ∷ Γ) A) x
+  onTail ne (Sum.inl v) = Sum.inl (Sum.inr (ne , v))
+  onTail ne (Sum.inr ¬v) = Sum.inr λ where
+    (Sum.inl hit) → Empty.rec (ne (hit .fst))
+    (Sum.inr miss) → ¬v (miss .snd)
+
+  onName : Dec (x ≡ y) → Dec (A ≡ B) → DecTy (Look ((y , B) ∷ Γ) A) x
+  onName (yes p) (yes q) = Sum.inl (Sum.inl (p , q))
+  onName (yes p) (no ¬q) = Sum.inr λ where
+    (Sum.inl hit) → Empty.rec (¬q (hit .snd))
+    (Sum.inr miss) → Empty.rec (miss .fst p)
+  onName (no ¬p) _ = onTail ¬p (decLook Γ A x tt)
 
 -- The judgment.  Every premise's index is determined, so this is a
 -- proposition: an annotated term has at most one derivation at a type, and
@@ -118,7 +164,7 @@ Der (Γ , A) (aapp B f a) = Der (Γ , B ⇒ A) f × Der (Γ , B) a
 Der (Γ , A) (alam x B t) = ArrHead A B × Der ((x , B) ∷ Γ , cod A) t
 
 isPropDer : (i : Jdg) (t : ATm) → isProp (Der i t)
-isPropDer (Γ , A) (avar x) = isOfHLevelMaybe 0 isSetTyp _ _
+isPropDer (Γ , A) (avar x) = isPropLookup Γ A x
 isPropDer (Γ , A) (aapp B f a) =
   isProp× (isPropDer (Γ , B ⇒ A) f) (isPropDer (Γ , B) a)
 isPropDer (Γ , A) (alam x B t) =
