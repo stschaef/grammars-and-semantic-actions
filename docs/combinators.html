@@ -936,7 +936,7 @@ module MaybeCombinators {ℓX ℓ&lt;} {X : Type ℓX} (xs : X → S)
 <div class="note warn"><span class="k">The honest gap</span>
 <p>Completeness here is a claim about the grammar, not a consequence of the type. <code>ND A</code> is a list of derivations and nothing types &ldquo;these are all of them&rdquo;. Only <code>Dec</code> is intrinsic. An <em>exhaustive</em> answer &mdash; a list together with a proof that every derivation is in it &mdash; would close this, and would be the most interesting backend to add.</p></div>
 
-<figure class="src"><figcaption><span class="path">Theory/Combinator/Answer/NonDet.agda</span><span class="lines">132 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
+<figure class="src"><figcaption><span class="path">Theory/Combinator/Answer/NonDet.agda</span><span class="lines">147 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
 {- `Combinator/Core` at `ND`: every answer, not just one.
 
    `Ans-⊕&amp;` is `appendND` where `Incomplete`'s is `orElse`, so an ambiguous
@@ -1068,6 +1068,21 @@ module NDCombinators {ℓX ℓ&lt;} {X : Type ℓX} (xs : X → S)
 
   parses : {A : Fam ℓA} → Step A → (x : X) → ⊤Ty ⊢ ND (ty (A x))
   parses = fix
+
+
+-- The `ND` counterpart of `SemanticAction/Base`'s `observe`.
+--
+-- `observe` reads a single value out of a `⊤Ty`-map, which is what an
+-- answer with at most one derivation supports.  A nondeterministic answer
+-- is a list, so the action is applied *under* it and the boundary between
+-- the internal term and the external value is crossed once per derivation
+-- rather than once.  Without this a client reads out by hand, which is the
+-- one place `Match/Bindings` used to differ from every other front end.
+open import Theory.Type.SemanticAction.Base σeq V vs 𝒫 using (SemanticAction)
+
+observeND : {s : S} {A : TheoryTy ℓA s} {X : Type ℓp}
+  → (⊤Ty ⊢ ND A) → SemanticAction A X → ↓M s → List X
+observeND p a m = mapL (λ d → a m d .fst) (ndToList m (p m tt))
 </code></pre></figure>
 <h2 id="term">What a free term algebra gives you for free</h2>
 
@@ -1511,7 +1526,7 @@ Scope Γ (tlam x t) = Scope (x ∷ Γ) t</code></pre>
 <p><code>rollNode</code> and <code>unrollNode</code> are the one-step unfolding, both directions, both <code>⊢</code>-terms. <code>unrollNode</code> takes the cover&rsquo;s cell as a hypothesis, for the reason given earlier: knowing the head is what makes the backward direction possible.</p>
 <p>Then <code>step</code> is three lines: <code>look</code> over the cover, and in each branch, build the node answer and relabel it. The recursive calls appear as <code>callAt</code> with a descent proof, and the <code>lam</code> case calls at a <em>different index</em> &mdash; <code>ms zero ∷ Γ</code> &mdash; which is how the binder extends the context.</p>
 
-<figure class="src"><figcaption><span class="path">Theory/Instances/Lambda/Scope.agda</span><span class="lines">186 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
+<figure class="src"><figcaption><span class="path">Theory/Instances/Lambda/Scope.agda</span><span class="lines">339 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
 {- A scope checker for untyped lambda terms, written once, for every answer.
 
    The family is indexed by the context, so `X = Ctx` and Löb is taken over
@@ -1530,6 +1545,44 @@ Scope Γ (tlam x t) = Scope (x ∷ Γ) t</code></pre>
    one of its unfoldings agree only where the head is known, which is what
    `Ans-map&amp;` carries.
 
+   WHAT A DERIVATION IS.  `Scope Γ t` is not the assertion that every free
+   variable of `t` lies in `Γ` -- that would be a definition someone wrote,
+   with nothing saying it means what its name says.  It is
+
+       Scope Γ t  =  Σ[ d ∈ DBTm ] Names Γ d t
+
+   "`t` is the named form, over `Γ`, of some nameless term".  `Nameless`'
+   `toDB` is then `.fst`, and the correctness of the de Bruijn conversion
+   is the derivation's second component rather than a fold one hopes is
+   right.  `rollNode` and `unrollNode` correspondingly *build* the nameless
+   term and its naming proof out of the slots', and take them apart again;
+   the wrong nameless heads are refuted at the inversion, where
+   `Names Γ (dvar n) (tapp t u)` is `⊥` on sight.
+
+   WHY `At` AND NOT `nth`.  The obvious naming relation for a variable is
+   positional -- "position `n` of `Γ` holds `x`" -- and it is *wrong*, in a
+   way worth stating because it is the thing this task asked to verify
+   rather than assume.  Over `Γ = x ∷ x ∷ []` the positional relation holds
+   of both `dvar 0` and `dvar 1` at `tvar x`, so two distinct nameless terms
+   would name the same source term, `Scope` would not be a proposition, and
+   `ND` would enumerate a derivation per shadowed binding.  What is true is
+   that the *innermost* binding names it: `At Γ n x` is a chain of "not
+   here" steps ending in a hit, which is the old `InCtx` with its index
+   exposed, and the mutual exclusivity of its two summands is exactly the
+   uniqueness that fails positionally.  So the semantic object is carried,
+   and shadowing is the side condition that makes carrying it unambiguous.
+   `ScopeTests` exhibits the positional ambiguity as two `refl`s.
+
+   AND A NOTE ON CONVENTION 1.  `Scope` is no longer literally a recursion
+   on the model -- it is a `Σ`.  The recursion moved into `Names`, which
+   recurses on the nameless term *and* the named one, so every branch of
+   the checker still meets a defined-by-cases family and nothing unifies a
+   model constructor.  What it cost is `namesUniq`: `isPropScope` used to
+   be three lines of induction and is now that plus fifteen clauses of
+   no-confusion.  What it bought is that those fifteen clauses are the
+   theorem "the de Bruijn conversion is a function", which nobody had
+   stated before.
+
    Nothing below mentions `Dec`, `Maybe` or `ND`. -}
 open import Cubical.Foundations.Prelude
 open import Cubical.Foundations.HLevels
@@ -1547,10 +1600,9 @@ open import Cubical.Data.Nat using (ℕ ; zero ; suc)
 open import Cubical.Data.FinData using (Fin ; zero ; suc)
 open import Cubical.Data.List using (List ; [] ; _∷_)
 open import Cubical.Data.List.Properties using (isOfHLevelList)
-open import Cubical.Data.Sigma using (_×_ ; _,_ ; fst ; snd)
+open import Cubical.Data.Sigma using (_×_ ; Σ-syntax ; ΣPathP ; _,_ ; fst ; snd)
 open import Cubical.Data.Unit using (Unit ; tt)
 import Cubical.Data.Sum as Sum
-open import Cubical.Data.Sum using (isProp⊎)
 import Cubical.Data.Empty as Empty
 import Cubical.Data.Equality as Eq
 
@@ -1562,64 +1614,178 @@ Ctx = List Name
 isSetCtx : isSet Ctx
 isSetCtx = isOfHLevelList 0 isSetName
 
--- Membership, carrying the *position*.
+-- Nameless terms.  They live here rather than in `Nameless` because the
+-- judgment is about them: a scoping derivation *is* one, plus its naming.
+data DBTm : Type ℓ-zero where
+  dvar : ℕ → DBTm
+  dapp : DBTm → DBTm → DBTm
+  dlam : DBTm → DBTm
+
+-- Membership, carrying the *position* -- and now the position is an
+-- argument rather than a thing read off afterwards.
 --
 -- The same proof-relevant refinement as `Annotated/Typing`'s `Lookup`: a
 -- `Bool` test says only that the name is bound, whereas a chain of "not
--- here" steps ending in a hit says *where*, and counting the steps is the
--- de Bruijn index.  `Nameless` reads the converted term off a `Scope`
--- derivation rather than walking the context a second time.
+-- here" steps ending in a hit says *where*.  Here the steps are counted by
+-- `n` up front, which is what makes `Names` below an equation between a
+-- nameless term and a named one rather than a second traversal.
 --
--- Still a proposition -- the summands are mutually exclusive -- so
--- shadowing resolves inward and the index is unique.
+-- The two summands are mutually exclusive, so shadowing resolves inward
+-- and `n` is unique: that is `atUniq`, and it is the whole reason `Scope`
+-- stays a proposition.
+At : Ctx → ℕ → TheoryTy ℓ-zero nm
+At [] n x = Empty.⊥
+At (y ∷ Γ) zero x = x ≡ y
+At (y ∷ Γ) (suc n) x = (x ≡ y → Empty.⊥) × At Γ n x
+
 InCtx : Ctx → TheoryTy ℓ-zero nm
-InCtx [] x = Empty.⊥
-InCtx (y ∷ Γ) x = (x ≡ y) Sum.⊎ ((x ≡ y → Empty.⊥) × InCtx Γ x)
+InCtx Γ x = Σ[ n ∈ ℕ ] At Γ n x
 
 deBruijn : (Γ : Ctx) (x : Name) → InCtx Γ x → ℕ
-deBruijn (y ∷ Γ) x (Sum.inl _) = 0
-deBruijn (y ∷ Γ) x (Sum.inr (_ , v)) = suc (deBruijn Γ x v)
+deBruijn Γ x = fst
 
 private
   isPropNeq : {x y : Name} → isProp (x ≡ y → Empty.⊥)
   isPropNeq f g = funExt λ z → Empty.rec (f z)
 
+isPropAt : (Γ : Ctx) (n : ℕ) (x : Name) → isProp (At Γ n x)
+isPropAt [] n x = λ ()
+isPropAt (y ∷ Γ) zero x = isSetName _ _
+isPropAt (y ∷ Γ) (suc n) x = isProp× isPropNeq (isPropAt Γ n x)
+
+atUniq : (Γ : Ctx) (n m : ℕ) (x : Name) → At Γ n x → At Γ m x → n ≡ m
+atUniq [] n m x () _
+atUniq (y ∷ Γ) zero zero x _ _ = refl
+atUniq (y ∷ Γ) zero (suc m) x hit miss = Empty.rec (miss .fst hit)
+atUniq (y ∷ Γ) (suc n) zero x miss hit = Empty.rec (miss .fst hit)
+atUniq (y ∷ Γ) (suc n) (suc m) x a b = cong suc (atUniq Γ n m x (a .snd) (b .snd))
+
 isPropInCtx : (Γ : Ctx) (x : Name) → isProp (InCtx Γ x)
-isPropInCtx [] x = λ ()
-isPropInCtx (y ∷ Γ) x =
-  isProp⊎ (isSetName _ _) (isProp× isPropNeq (isPropInCtx Γ x))
-          (λ hit miss → miss .fst hit)
+isPropInCtx Γ x (n , a) (m , b) =
+  ΣPathP (q , isProp→PathP (λ i → isPropAt Γ (q i) x) a b)
+  where
+  q : n ≡ m
+  q = atUniq Γ n m x a b
 
 InCtxSet : Ctx → TheorySet ℓ-zero nm
 InCtxSet Γ = InCtx Γ , λ x → isProp→isSet (isPropInCtx Γ x)
 
 decInCtx : (Γ : Ctx) → Decidable (InCtx Γ)
-decInCtx [] x _ = Sum.inr λ ()
+decInCtx [] x _ = Sum.inr λ where (n , ())
 decInCtx (y ∷ Γ) x _ = onName (decName x y)
   where
   onTail : (x ≡ y → Empty.⊥) → DecTy (InCtx Γ) x → DecTy (InCtx (y ∷ Γ)) x
-  onTail ne (Sum.inl v) = Sum.inl (Sum.inr (ne , v))
+  onTail ne (Sum.inl (n , v)) = Sum.inl (suc n , (ne , v))
   onTail ne (Sum.inr ¬v) = Sum.inr λ where
-    (Sum.inl hit) → Empty.rec (ne hit)
-    (Sum.inr miss) → ¬v (miss .snd)
+    (zero , hit) → Empty.rec (ne hit)
+    (suc n , miss) → ¬v (n , miss .snd)
 
   onName : Dec (x ≡ y) → DecTy (InCtx (y ∷ Γ)) x
-  onName (yes p) = Sum.inl (Sum.inl p)
+  onName (yes p) = Sum.inl (zero , p)
   onName (no ¬p) = onTail ¬p (decInCtx Γ x tt)
 
--- The grammar.  A proposition, so `unambiguous` is definitional.
+-- The naming relation: `Names Γ d t` is "`t` is what `d` reads as, over
+-- `Γ`".  A total `nameIt : Ctx → DBTm → RawTm` is not available -- `dlam`
+-- carries no binder name -- so this is its relational form, and the name a
+-- `dlam` acquires comes from the `tlam` it is being matched against.  By
+-- recursion in both arguments, so every mismatched head is `⊥` on sight.
+Names : Ctx → DBTm → TheoryTy ℓ-zero tm
+Names Γ (dvar n) (tvar x) = At Γ n x
+Names Γ (dvar n) (tapp _ _) = Empty.⊥
+Names Γ (dvar n) (tlam _ _) = Empty.⊥
+Names Γ (dapp d e) (tvar _) = Empty.⊥
+Names Γ (dapp d e) (tapp t u) = Names Γ d t × Names Γ e u
+Names Γ (dapp d e) (tlam _ _) = Empty.⊥
+Names Γ (dlam d) (tvar _) = Empty.⊥
+Names Γ (dlam d) (tapp _ _) = Empty.⊥
+Names Γ (dlam d) (tlam x t) = Names (x ∷ Γ) d t
+
+-- The grammar: the nameless term, and the proof that naming it gives `t`.
 Scope : Ctx → TheoryTy ℓ-zero tm
-Scope Γ (tvar x) = InCtx Γ x
-Scope Γ (tapp t u) = Scope Γ t × Scope Γ u
-Scope Γ (tlam x t) = Scope (x ∷ Γ) t
+Scope Γ t = Σ[ d ∈ DBTm ] Names Γ d t
+
+isPropNames : (Γ : Ctx) (d : DBTm) (t : RawTm) → isProp (Names Γ d t)
+isPropNames Γ (dvar n) (tvar x) = isPropAt Γ n x
+isPropNames Γ (dvar n) (tapp _ _) = λ ()
+isPropNames Γ (dvar n) (tlam _ _) = λ ()
+isPropNames Γ (dapp d e) (tvar _) = λ ()
+isPropNames Γ (dapp d e) (tapp t u) =
+  isProp× (isPropNames Γ d t) (isPropNames Γ e u)
+isPropNames Γ (dapp d e) (tlam _ _) = λ ()
+isPropNames Γ (dlam d) (tvar _) = λ ()
+isPropNames Γ (dlam d) (tapp _ _) = λ ()
+isPropNames Γ (dlam d) (tlam x t) = isPropNames (x ∷ Γ) d t
+
+-- ...and the nameless term is determined by the named one.  At a variable
+-- this is `atUniq`, which is where shadowing is doing the work; everywhere
+-- else it is congruence.  Distinct nameless terms do not name the same
+-- source term over a fixed `Γ` -- verified, not assumed.
+namesUniq : (Γ : Ctx) (t : RawTm) (d e : DBTm)
+  → Names Γ d t → Names Γ e t → d ≡ e
+namesUniq Γ (tvar x) (dvar n) (dvar m) a b = cong dvar (atUniq Γ n m x a b)
+namesUniq Γ (tvar x) (dvar n) (dapp _ _) a ()
+namesUniq Γ (tvar x) (dvar n) (dlam _) a ()
+namesUniq Γ (tvar x) (dapp _ _) e () b
+namesUniq Γ (tvar x) (dlam _) e () b
+namesUniq Γ (tapp t u) (dapp d₁ d₂) (dapp e₁ e₂) a b =
+  cong₂ dapp (namesUniq Γ t d₁ e₁ (a .fst) (b .fst))
+             (namesUniq Γ u d₂ e₂ (a .snd) (b .snd))
+namesUniq Γ (tapp t u) (dapp _ _) (dvar _) a ()
+namesUniq Γ (tapp t u) (dapp _ _) (dlam _) a ()
+namesUniq Γ (tapp t u) (dvar _) e () b
+namesUniq Γ (tapp t u) (dlam _) e () b
+namesUniq Γ (tlam x t) (dlam d) (dlam e) a b =
+  cong dlam (namesUniq (x ∷ Γ) t d e a b)
+namesUniq Γ (tlam x t) (dlam _) (dvar _) a ()
+namesUniq Γ (tlam x t) (dlam _) (dapp _ _) a ()
+namesUniq Γ (tlam x t) (dvar _) e () b
+namesUniq Γ (tlam x t) (dapp _ _) e () b
 
 isPropScope : (Γ : Ctx) (t : RawTm) → isProp (Scope Γ t)
-isPropScope Γ (tvar x) = isPropInCtx Γ x
-isPropScope Γ (tapp t u) = isProp× (isPropScope Γ t) (isPropScope Γ u)
-isPropScope Γ (tlam x t) = isPropScope (x ∷ Γ) t
+isPropScope Γ t (d , a) (e , b) =
+  ΣPathP (q , isProp→PathP (λ i → isPropNames Γ (q i) t) a b)
+  where
+  q : d ≡ e
+  q = namesUniq Γ t d e a b
 
 ScopeSet : Ctx → TheorySet ℓ-zero tm
 ScopeSet Γ = Scope Γ , λ t → isProp→isSet (isPropScope Γ t)
+
+-- One production of the naming relation, as a constructor and as its
+-- inversion.  These are what `rollNode`/`unrollNode` are made of, and the
+-- reason the two are no longer data-shuffling: the node's nameless term is
+-- *built* from the slots', and a slot's is *projected* out of the node's.
+rollVar : (Γ : Ctx) (x : Name) → InCtx Γ x → Scope Γ (tvar x)
+rollVar Γ x (n , w) = dvar n , w
+
+unrollVar : (Γ : Ctx) (x : Name) → Scope Γ (tvar x) → InCtx Γ x
+unrollVar Γ x (dvar n , w) = n , w
+unrollVar Γ x (dapp _ _ , ())
+unrollVar Γ x (dlam _ , ())
+
+rollApp : (Γ : Ctx) (t u : RawTm)
+  → Scope Γ t → Scope Γ u → Scope Γ (tapp t u)
+rollApp Γ t u (d , a) (e , b) = dapp d e , (a , b)
+
+unrollFun : (Γ : Ctx) (t u : RawTm) → Scope Γ (tapp t u) → Scope Γ t
+unrollFun Γ t u (dapp d e , w) = d , w .fst
+unrollFun Γ t u (dvar _ , ())
+unrollFun Γ t u (dlam _ , ())
+
+unrollArg : (Γ : Ctx) (t u : RawTm) → Scope Γ (tapp t u) → Scope Γ u
+unrollArg Γ t u (dapp d e , w) = e , w .snd
+unrollArg Γ t u (dvar _ , ())
+unrollArg Γ t u (dlam _ , ())
+
+rollLam : (Γ : Ctx) (x : Name) (t : RawTm)
+  → Scope (x ∷ Γ) t → Scope Γ (tlam x t)
+rollLam Γ x t (d , w) = dlam d , w
+
+unrollBody : (Γ : Ctx) (x : Name) (t : RawTm)
+  → Scope Γ (tlam x t) → Scope (x ∷ Γ) t
+unrollBody Γ x t (dlam d , w) = d , w
+unrollBody Γ x t (dvar _ , ())
+unrollBody Γ x t (dapp _ _ , ())
 
 ⊤Set : {s : LSort} → TheorySet ℓ-zero s
 ⊤Set = ⊤Ty , isSet⊤Ty
@@ -1643,21 +1809,23 @@ Slots lamOp Γ ms theBody = ScopeSet (ms theBinder ∷ Γ)
 -- One level of unfolding, both ways, as `⊢`-terms.  `unrollNode` needs the
 -- cell: a term is a node of `o` only where the cover says so.
 rollNode : (o : LOp) (Γ : Ctx) → ⊗ᴰ o (Slots o Γ) ⊢ Scope Γ
-rollNode varOp Γ m (ms , Eq.refl , ws) = ws theVar
-rollNode appOp Γ m (ms , Eq.refl , ws) = ws theFun , ws theArg
-rollNode lamOp Γ m (ms , Eq.refl , ws) = ws theBody
+rollNode varOp Γ m (ms , Eq.refl , ws) = rollVar Γ (ms theVar) (ws theVar)
+rollNode appOp Γ m (ms , Eq.refl , ws) =
+  rollApp Γ (ms theFun) (ms theArg) (ws theFun) (ws theArg)
+rollNode lamOp Γ m (ms , Eq.refl , ws) =
+  rollLam Γ (ms theBinder) (ms theBody) (ws theBody)
 
 unrollNode : (o : LOp) (Γ : Ctx) → Scope Γ &amp; NodeAt o ⊢ ⊗ᴰ o (Slots o Γ)
 unrollNode varOp Γ m (s , (ms , Eq.refl)) =
-  node-mk {ms = ms} λ where theVar → s
+  node-mk {ms = ms} λ where theVar → unrollVar Γ (ms theVar) s
 unrollNode appOp Γ m (s , (ms , Eq.refl)) =
   node-mk {ms = ms} λ where
-    theFun → s .fst
-    theArg → s .snd
+    theFun → unrollFun Γ (ms theFun) (ms theArg) s
+    theArg → unrollArg Γ (ms theFun) (ms theArg) s
 unrollNode lamOp Γ m (s , (ms , Eq.refl)) =
   node-mk {ms = ms} λ where
     theBinder → tt
-    theBody → s
+    theBody → unrollBody Γ (ms theBinder) (ms theBody) s
 
 
 -- The checker, for whatever answer.
@@ -1708,12 +1876,18 @@ module Check (𝒯 : AnswerFunctor) where
 
 <p>Three internal terms composed &mdash; the checker <code>⊤Ty ⊢ DecTy (Scope Γ)</code>, the action <code>semact-dec</code> builds from <code>nameAction</code>, and <code>observe</code>, the one place a <code>⊤Ty</code>-map is read out. Nothing is hand-rolled, and <code>db-shadow</code> is <code>refl</code>, so the typechecker performs the conversion.</p>
 
-<figure class="src"><figcaption><span class="path">Theory/Instances/Lambda/Nameless.agda</span><span class="lines">85 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
-{- Scope checking, and the nameless term it produces.
+<figure class="src"><figcaption><span class="path">Theory/Instances/Lambda/Nameless.agda</span><span class="lines">91 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
+{- Scope checking, and the nameless term it produces -- which is now the
+   whole of what there is to say, because `Scope` carries it.
 
-   The same shape as `Annotated/Elaborate`, one level simpler: a `Scope Γ`
-   derivation folds to a de Bruijn term, and the variable case reads the
-   index off the `InCtx` witness the checker already built.
+   `Annotated/Elaborate` is a fold: a derivation is traversed and a core
+   term is built, and that the core term is the right one is a theorem
+   nobody stated.  Here there is no fold.  `Scope Γ t` is
+   `Σ[ d ∈ DBTm ] Names Γ d t`, so `toDB` is `.fst` and its correctness is
+   `.snd`; `nameRight` below is that sentence, and its proof is a
+   projection.  The variable case does not "read the index off the `InCtx`
+   witness" either -- there is nothing to read, since the checker built
+   `dvar n` out of the witness at `rollVar` in the first place.
 
    `compile` is three internal terms composed -- the checker
    `⊤Ty ⊢ DecTy (Scope Γ)`, the action `semact-dec` builds from `nameAction`,
@@ -1742,18 +1916,12 @@ import Theory.Combinator.Answer.Decidable
 
 module CD = Check D.DecAnswer
 
--- Nameless terms.
-data DBTm : Type ℓ-zero where
-  dvar : ℕ → DBTm
-  dapp : DBTm → DBTm → DBTm
-  dlam : DBTm → DBTm
-
--- The fold.  Total on derivations: a derivation *is* the proof that every
--- name resolves, so there is no failure case.
+-- The conversion, and its correctness.  Both projections.
 toDB : (Γ : Ctx) (t : RawTm) → Scope Γ t → DBTm
-toDB Γ (tvar x) v = dvar (deBruijn Γ x v)
-toDB Γ (tapp t u) s = dapp (toDB Γ t (s .fst)) (toDB Γ u (s .snd))
-toDB Γ (tlam x t) s = dlam (toDB (x ∷ Γ) t s)
+toDB Γ t = fst
+
+nameRight : (Γ : Ctx) (t : RawTm) (s : Scope Γ t) → Names Γ (toDB Γ t s) t
+nameRight Γ t = snd
 
 nameAction : (Γ : Ctx) → SemanticAction (Scope Γ) DBTm
 nameAction Γ t s = toDB Γ t s , tt
@@ -1793,6 +1961,12 @@ db-open-in-ctx = refl
 
 db-open-deep : compile (5 ∷ 3 ∷ 0 ∷ []) openT ≡ just (dvar 2)
 db-open-deep = refl
+
+-- a context that repeats a name resolves to the inner binding, which is
+-- the content of `At` and the reason `ScopeTests`' positional reading is
+-- the wrong one
+db-shadowed-ctx : compile (0 ∷ 0 ∷ []) openT ≡ just (dvar 0)
+db-shadowed-ctx = refl
 </code></pre></figure>
 <h3 id="ltests">Running it three ways</h3>
 
@@ -1807,7 +1981,7 @@ db-open-deep = refl
 <tr><td><code>no-open</code></td><td>At <code>Dec</code> an out-of-scope term returns an actual <em>refutation</em>, not a bit.</td></tr>
 </table>
 
-<figure class="src"><figcaption><span class="path">Theory/Instances/Lambda/ScopeTests.agda</span><span class="lines">135 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
+<figure class="src"><figcaption><span class="path">Theory/Instances/Lambda/ScopeTests.agda</span><span class="lines">170 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
 {- One scope checker, three answers.
 
    `Scope.Check` is instantiated at `DecAnswer`, `MaybeAnswer` and
@@ -1823,8 +1997,9 @@ module Theory.Instances.Lambda.ScopeTests where
 open import Cubical.Data.Bool using (Bool ; true ; false ; false≢true)
 import Cubical.Data.Empty as Empty
 open import Cubical.Data.List using (List ; [] ; _∷_ ; length)
+open import Cubical.Data.Maybe using (Maybe ; just ; nothing)
 open import Cubical.Data.Nat using (ℕ ; zero ; suc ; isSetℕ ; discreteℕ)
-open import Cubical.Data.Sigma using (_,_ ; fst ; snd)
+open import Cubical.Data.Sigma using (_×_ ; _,_ ; fst ; snd)
 open import Cubical.Data.Unit using (tt)
 import Cubical.Data.Sum as Sum
 
@@ -1918,7 +2093,8 @@ may-capture-in-ctx : mayB (1 ∷ []) capture ≡ true
 may-capture-in-ctx = refl
 
 -- ...and `ND` enumerates exactly one derivation, because `Scope` is a
--- proposition: being in scope has no content beyond holding.
+-- proposition -- which it now is for a reason, `namesUniq`, rather than
+-- for want of content.
 nd-id : count [] idT ≡ 1
 nd-id = refl
 
@@ -1940,8 +2116,41 @@ nd-selfApp = refl
 -- The refutation is real content, not a bit: at `Dec` an out-of-scope term
 -- comes back with a proof that it cannot be scoped.
 no-open : D.¬Ty (Scope []) openT
-no-open =
-  Sum.rec (λ s → Empty.rec s) (λ n → n) (decideScope [] openT tt)
+no-open = Sum.rec impossible (λ n → n) (decideScope [] openT tt)
+  where
+  impossible : Scope [] openT → D.¬Ty (Scope []) openT
+  impossible (dvar n , ())
+  impossible (dapp _ _ , ())
+  impossible (dlam _ , ())
+
+
+-- WHY THE NAMING RELATION IS NOT POSITIONAL.  The obvious reading of
+-- "`d` names `t` over `Γ`" at a variable is "position `n` of `Γ` holds
+-- `x`", and over a context that repeats a name it holds twice: `dvar 0`
+-- and `dvar 1` would both name `tvar 0` over `0 ∷ 0 ∷ []`.  `Scope` would
+-- then not be a proposition, `namesUniq` would be false, and `ND` would
+-- enumerate a derivation per shadowed binding.  This is the fact the task
+-- said to verify rather than assume, so here it is verified.
+nth : Ctx → ℕ → Maybe ℕ
+nth [] _ = nothing
+nth (y ∷ Γ) zero = just y
+nth (y ∷ Γ) (suc n) = nth Γ n
+
+positional-ambiguous
+  : (nth (0 ∷ 0 ∷ []) 0 ≡ just 0) × (nth (0 ∷ 0 ∷ []) 1 ≡ just 0)
+positional-ambiguous = refl , refl
+
+-- `At` is the positional reading plus "and not any inner one", so it
+-- accepts the shadowing binding and refutes the shadowed one.
+at-inner : At (0 ∷ 0 ∷ []) 0 0
+at-inner = refl
+
+at-not-outer : At (0 ∷ 0 ∷ []) 1 0 → Empty.⊥
+at-not-outer w = w .fst refl
+
+-- ...and the checker enumerates the one derivation, not two.
+nd-shadowed-ctx : count (0 ∷ 0 ∷ []) openT ≡ 1
+nd-shadowed-ctx = refl
 </code></pre></figure>
 <h2 id="abase">Client 2 &mdash; the type checker</h2>
 
@@ -2462,9 +2671,24 @@ nodeCover .disjoint o o' ne m ((ms , e) , (ms' , e')) =
 <h4>The step</h4>
 <p>Identical structure to the scope checker: <code>look</code> over the cover, a node answer per branch, relabel. The recursive calls go to <em>different indices</em> &mdash; the function position at <code>Γ ⊢ ⇐ B ⇒ A</code>, the argument at <code>Γ ⊢ ⇐ B</code>, the lambda body at an extended context and a smaller type.</p>
 
-<figure class="src"><figcaption><span class="path">Theory/Instances/Annotated/Typing.agda</span><span class="lines">241 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
+<figure class="src"><figcaption><span class="path">Theory/Instances/Annotated/Typing.agda</span><span class="lines">422 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
 {- A type checker for the annotated lambda calculus, written once, for
-   every answer.
+   every answer -- and, since it is intrinsically typed, an elaborator.
+
+   THE JUDGMENT CARRIES THE PROGRAM.  `Der (Γ , A) t` is not "`t` checks at
+   `A`"; it is
+
+     Σ[ c ∈ Core Γ A ] (erase c ≡ t)
+
+   a well-typed core term together with the evidence that it is a term for
+   this source.  The difference is which claims need proving.  A judgment
+   defined by recursion on `t` is a definition someone wrote, and "this
+   definition is STLC typing" is checked nowhere: the checker is verified
+   against the judgment, the judgment against nothing.  Here `Core` IS the
+   typing rules -- a constructor exists exactly when the rule applies --
+   so a `yes` from the checker means a well-typed core term exists and a
+   `no` means none does, both by typing, and `Elaborate`'s elaborator is
+   the first projection.
 
    The family is indexed by `Ctx × Ty` -- a checking judgment `Γ ⊢ t ⇐ A`
    -- and the guard descends on the term.  Each rule's premises sit at
@@ -2479,6 +2703,29 @@ nodeCover .disjoint o o' ne m ((ms , e) , (ms' , e')) =
    The `lam` rule uses the dependency twice over: the body's *context* and
    its *type* are both read off the node.  With `Operation/Base`'s `⊗ᵘ` --
    independent slots -- neither is expressible.
+
+   WHAT THE INTRINSIC FORM COSTS, honestly, is house convention 1: the
+   judgment is no longer defined by recursion on the model, so `isProp` is
+   no longer two lines and `unrollNode` no longer holds its premises
+   already separated.  Both are paid in one place.  The old recursive
+   judgment survives below as `Der⁻`, and the pair `graph`/`canon` is an
+   isomorphism between it and the erasure fibre: `graph` is recursion on
+   the CORE term, which hits every clause of `Der⁻` definitionally, and
+   `canon` is recursion on the SOURCE, which is elaboration.  `isPropDer`
+   is then a retraction onto a proposition and `unrollNode` computes the
+   fibre rather than inverting `erase`.  So the extrinsic judgment is
+   demoted from definition to lemma -- which is the right place for it,
+   since as a definition it was the unverified layer.
+
+   AND THE UNIFIER NEVER COMPLAINS, which was the thing to be afraid of:
+   `Core` is an indexed `data`, the one shape house convention 1 warns
+   against, and it is matched only against itself.  `graph`, `canon` and
+   `canonUniq` each recur on one argument with the other side free, no
+   clause matches a `Core` constructor against a model constructor, and the
+   equations between source terms are projected rather than unified -- the
+   trick `Guard` already needs for `Precise`.  So no `SplitError` arises
+   anywhere below, and the only equational reasoning left is `substRefl` on
+   a path in `Ty`, and `Ty` is a set.
 
    `AOp` is infinite, since `appOp B` carries a type.  That costs nothing:
    `Guard`'s node cover is a `Cover` over it all the same, and `step` is
@@ -2511,7 +2758,7 @@ open import Cubical.Data.List.Properties using (isOfHLevelList)
 open import Cubical.Data.Maybe using (Maybe ; just ; nothing)
 open import Cubical.Data.Maybe.Properties using (isOfHLevelMaybe ; discreteMaybe)
 open import Cubical.Data.Nat using (ℕ ; isSetℕ ; discreteℕ)
-open import Cubical.Data.Sigma using (_×_ ; _,_ ; fst ; snd)
+open import Cubical.Data.Sigma using (Σ-syntax ; _×_ ; _,_ ; fst ; snd ; Σ≡Prop)
 open import Cubical.Data.Unit using (Unit ; tt)
 open import Cubical.Relation.Nullary.Base using (Dec ; yes ; no)
 import Cubical.Data.Sum as Sum
@@ -2619,20 +2866,132 @@ decLook ((y , B) ∷ Γ) A x _ = onName (discreteℕ x y) (discreteTy A B)
     (Sum.inr miss) → Empty.rec (miss .fst p)
   onName (no ¬p) _ = onTail ¬p (decLook Γ A x tt)
 
--- The judgment.  Every premise's index is determined, so this is a
--- proposition: an annotated term has at most one derivation at a type, and
--- `unambiguous` is definitional rather than a theorem.
-Der : Jdg → TheoryTy ℓ-zero tm
-Der (Γ , A) (avar x) = Look Γ A x
-Der (Γ , A) (aapp B f a) = Der (Γ , B ⇒ A) f × Der (Γ , B) a
-Der (Γ , A) (alam x B t) = ArrHead A B × Der ((x , B) ∷ Γ , cod A) t
+-- THE CORE LANGUAGE, INTRINSICALLY TYPED.  `Core Γ A` is inhabited by
+-- well-typed terms and by nothing else: `capp` may only apply a `B ⇒ A` to
+-- a `B`, and `clam`'s body lives in the extended context.  No constructor
+-- carries a type field for an elaborator to fill in wrongly, because the
+-- type is an INDEX.
+--
+-- The variable constructor carries a `Lookup`, not a numeral, and that is
+-- the one departure from the textbook well-scoped representation.  A
+-- numeral -- a positional pointer into a type-only context -- is exactly
+-- right for a nameless language and WRONG for this one: `avar 0` in the
+-- context `0:ι, 0:ι` would then be the erasure of two different core
+-- terms, the erasure fibre below would have two elements, and the judgment
+-- would stop being a proposition.  `Lookup Γ A x` is the pointer TOGETHER
+-- with the evidence that nothing nearer shadows it, which is verbatim the
+-- innermost-wins rule of the surface language; `deBruijn` counts it.  So
+-- the ambiguity that intrinsic syntax would introduce is refuted at the
+-- constructor rather than truncated away afterwards.
+data Core : Ctx → Ty → Type ℓ-zero where
+  cvar : {Γ : Ctx} {A : Ty} (x : ℕ) → Lookup Γ A x → Core Γ A
+  capp : {Γ : Ctx} {A B : Ty} → Core Γ (B ⇒ A) → Core Γ B → Core Γ A
+  clam : {Γ : Ctx} {A B : Ty} (x : ℕ) → Core ((x , B) ∷ Γ) A → Core Γ (B ⇒ A)
 
+-- ...and back to the surface.  `clam` keeps the binder's name and `capp`
+-- reads its annotation off the TYPE INDEX, so erasure is total and
+-- recovers the source exactly -- which is what makes "erases to `t`" a
+-- usable premise rather than a slogan.
+erase : {Γ : Ctx} {A : Ty} → Core Γ A → ATm
+erase (cvar x _) = avar x
+erase (capp {B = B} f a) = aapp B (erase f) (erase a)
+erase (clam {B = B} x t) = alam x B (erase t)
+
+-- Reading `A` as `B ⇒ cod A`, which is what the `lam` rule's side
+-- condition says and what its core term needs.
+arrEta : {B : Ty} (A : Ty) → ArrHead A B → A ≡ B ⇒ cod A
+arrEta ι (h , _) = Empty.rec h
+arrEta (B' ⇒ C) (_ , p) = cong (_⇒ C) p
+
+eraseSubst : {Γ : Ctx} {A A' : Ty} (e : A ≡ A') (c : Core Γ A)
+  → erase (subst (Core Γ) e c) ≡ erase c
+eraseSubst {Γ = Γ} e c i = erase (subst-filler (Core Γ) e c (~ i))
+
+-- THE JUDGMENT.  Not "`t` checks at `A`" but "here is a well-typed core
+-- term, and it erases to `t`".  Elaboration is then the first projection
+-- and its correctness is the type of that projection: the layer that used
+-- to say "the judgment means STLC typing" -- verified nowhere, because it
+-- was a claim about a definition someone wrote -- is gone, because there
+-- is no longer a separate definition to compare `Core` against.
+Der : Jdg → TheoryTy ℓ-zero tm
+Der (Γ , A) t = Σ[ c ∈ Core Γ A ] (erase c ≡ t)
+
+-- The judgment this file used to define, demoted from definition to
+-- lemma.  It is the erasure fibre computed by recursion on the source, so
+-- it is a proposition for the old two-line reason; everything below is the
+-- claim that computing the fibre and taking it agree.
+Der⁻ : Jdg → TheoryTy ℓ-zero tm
+Der⁻ (Γ , A) (avar x) = Look Γ A x
+Der⁻ (Γ , A) (aapp B f a) = Der⁻ (Γ , B ⇒ A) f × Der⁻ (Γ , B) a
+Der⁻ (Γ , A) (alam x B t) = ArrHead A B × Der⁻ ((x , B) ∷ Γ , cod A) t
+
+isPropDer⁻ : (i : Jdg) (t : ATm) → isProp (Der⁻ i t)
+isPropDer⁻ (Γ , A) (avar x) = isPropLookup Γ A x
+isPropDer⁻ (Γ , A) (aapp B f a) =
+  isProp× (isPropDer⁻ (Γ , B ⇒ A) f) (isPropDer⁻ (Γ , B) a)
+isPropDer⁻ (Γ , A) (alam x B t) =
+  isProp× (isPropArrHead A B) (isPropDer⁻ ((x , B) ∷ Γ , cod A) t)
+
+-- One direction is free: recursion on the CORE term hits each clause of
+-- `Der⁻` definitionally, with no equation to transport along.  This is why
+-- the fibre is computed here and inverted nowhere.
+graph : {Γ : Ctx} {A : Ty} (c : Core Γ A) → Der⁻ (Γ , A) (erase c)
+graph (cvar x v) = v
+graph (capp f a) = graph f , graph a
+graph (clam x c) = (tt , refl) , graph c
+
+-- ...and the other is elaboration, by recursion on the SOURCE.  The `lam`
+-- clause is the only place a `subst` appears in the whole development: the
+-- body's core term is built at `B ⇒ cod A` and the conclusion asks for
+-- `A`, and `arrEta` is the side condition rewritten as that path.
+canon : (Γ : Ctx) (A : Ty) (t : ATm) → Der⁻ (Γ , A) t → Core Γ A
+canon Γ A (avar x) v = cvar x v
+canon Γ A (aapp B f a) d = capp (canon Γ (B ⇒ A) f (d .fst)) (canon Γ B a (d .snd))
+canon Γ A (alam x B t) d = subst (Core Γ) (sym (arrEta A (d .fst)))
+  (clam x (canon ((x , B) ∷ Γ) (cod A) t (d .snd)))
+
+canonErase : (Γ : Ctx) (A : Ty) (t : ATm) (d : Der⁻ (Γ , A) t)
+  → erase (canon Γ A t d) ≡ t
+canonErase Γ A (avar x) v = refl
+canonErase Γ A (aapp B f a) d =
+  cong₂ (aapp B) (canonErase Γ (B ⇒ A) f (d .fst)) (canonErase Γ B a (d .snd))
+canonErase Γ A (alam x B t) d =
+    eraseSubst (sym (arrEta A (d .fst))) (clam x (canon ((x , B) ∷ Γ) (cod A) t (d .snd)))
+  ∙ cong (alam x B) (canonErase ((x , B) ∷ Γ) (cod A) t (d .snd))
+
+-- Elaborating a term that came from a core term returns that core term.
+-- By induction on the CORE term, so the `lam` case is a `subst` along a
+-- path in `Ty` that is already `refl`, rather than an inversion of
+-- erasure.  This is the entire content of unambiguity.
+canonUniq : {Γ : Ctx} {A : Ty} (c : Core Γ A) → canon Γ A (erase c) (graph c) ≡ c
+canonUniq (cvar x v) = refl
+canonUniq (capp f a) = cong₂ capp (canonUniq f) (canonUniq a)
+canonUniq (clam {Γ = Γ} x c) =
+  substRefl {B = Core Γ} (clam x (canon _ _ (erase c) (graph c)))
+  ∙ cong (clam x) (canonUniq c)
+
+into : (i : Jdg) → Der i ⊢ Der⁻ i
+into (Γ , A) t d = subst (Der⁻ (Γ , A)) (d .snd) (graph (d .fst))
+
+from : (i : Jdg) → Der⁻ i ⊢ Der i
+from (Γ , A) t d = canon Γ A t d , canonErase Γ A t d
+
+fromInto : (i : Jdg) (t : ATm) (d : Der i t) → from i t (into i t d) ≡ d
+fromInto (Γ , A) t (c , p) = Σ≡Prop (λ c' → isSetCrr tm (erase c') t) (onEq t p)
+  where
+  onEq : (t' : ATm) (q : erase c ≡ t')
+    → canon Γ A t' (subst (Der⁻ (Γ , A)) q (graph c)) ≡ c
+  onEq t' q =
+    J (λ t'' q' → canon Γ A t'' (subst (Der⁻ (Γ , A)) q' (graph c)) ≡ c)
+      (cong (canon Γ A (erase c)) (substRefl {B = Der⁻ (Γ , A)} (graph c))
+        ∙ canonUniq c) q
+
+-- ...so the intrinsic judgment is a proposition after all, and it is one
+-- for a reason worth naming: the surface language is unambiguous, and
+-- `Der` is a retract of the computed fibre rather than a truncation of it.
 isPropDer : (i : Jdg) (t : ATm) → isProp (Der i t)
-isPropDer (Γ , A) (avar x) = isPropLookup Γ A x
-isPropDer (Γ , A) (aapp B f a) =
-  isProp× (isPropDer (Γ , B ⇒ A) f) (isPropDer (Γ , B) a)
-isPropDer (Γ , A) (alam x B t) =
-  isProp× (isPropArrHead A B) (isPropDer ((x , B) ∷ Γ , cod A) t)
+isPropDer i t =
+  isOfHLevelRetract 1 (into i t) (from i t) (fromInto i t) (isPropDer⁻ i t)
 
 DerSet : Jdg → TheorySet ℓ-zero tm
 DerSet i = Der i , λ t → isProp→isSet (isPropDer i t)
@@ -2646,23 +3005,54 @@ Slots (lamOp B) (Γ , A) ms theBinder = ArrSet A B
 Slots (lamOp B) (Γ , A) ms theBody = DerSet ((ms theBinder , B) ∷ Γ , cod A)
 
 -- One level of unfolding, both ways, as `⊢`-terms.
+--
+-- ROLL CONSTRUCTS CORE SYNTAX.  It is not the data shuffle it was: each
+-- clause applies the core constructor for its operation and pairs it with
+-- the erasure equation assembled from the slots'.  So the core term the
+-- checker returns is built by the checker, one node at a time, and `elab`
+-- is a projection out of it rather than a second pass that could disagree.
 rollNode : (o : AOp) (i : Jdg) → ⊗ᴰ o (Slots o i) ⊢ Der i
-rollNode varOp (Γ , A) m (ms , Eq.refl , ws) = ws theVar
-rollNode (appOp B) (Γ , A) m (ms , Eq.refl , ws) = ws theFun , ws theArg
-rollNode (lamOp B) (Γ , A) m (ms , Eq.refl , ws) = ws theBinder , ws theBody
+rollNode varOp (Γ , A) m (ms , Eq.refl , ws) = cvar (ms theVar) (ws theVar) , refl
+rollNode (appOp B) (Γ , A) m (ms , Eq.refl , ws) =
+    capp (ws theFun .fst) (ws theArg .fst)
+  , cong₂ (aapp B) (ws theFun .snd) (ws theArg .snd)
+rollNode (lamOp B) (Γ , A) m (ms , Eq.refl , ws) =
+    subst (Core Γ) (sym (arrEta A (ws theBinder)))
+      (clam (ms theBinder) (ws theBody .fst))
+  , eraseSubst (sym (arrEta A (ws theBinder)))
+      (clam (ms theBinder) (ws theBody .fst))
+  ∙ cong (alam (ms theBinder) B) (ws theBody .snd)
 
+-- UNROLL GOES THROUGH THE FIBRE.  It computes the fibre with `into`,
+-- splits it -- definitionally, since `Der⁻` is recursion on the source --
+-- and re-elaborates each slot with `from`.
+--
+-- The alternative is to invert `erase` directly: match on the conclusion's
+-- core term, refute the two wrong heads with a discriminator, and project
+-- the equation with `Guard`'s `appFun`/`lamBd`.  That is writable -- it was
+-- written, and it typechecks -- at a cost of one `subst` per index the
+-- constructor binds, three for `lam`, each with its own `subst-filler`
+-- lemma to move `erase` across.  It buys nothing here: `Der` is a
+-- proposition, so the two unrollings are equal, and `canon` has to exist
+-- anyway for `isPropDer`.  The general shape of the trade is that an
+-- intrinsic judgment pays for inversion once, either in transports or in a
+-- computed fibre, and the computed fibre is the same work the propositional
+-- reasoning needs.
+--
+-- Either way the round trip is never run on the accepting path, since
+-- `Ans-map&amp;`'s backward map exists only to carry a refutation.
 unrollNode : (o : AOp) (i : Jdg) → Der i &amp; NodeAt o ⊢ ⊗ᴰ o (Slots o i)
 unrollNode varOp (Γ , A) m (d , (ms , Eq.refl)) =
-  node-mk {ms = ms} λ where theVar → d
+  node-mk {ms = ms} λ where theVar → into (Γ , A) _ d
 unrollNode (appOp B) (Γ , A) m (d , (ms , Eq.refl)) =
   node-mk {ms = ms} λ where
-    theFun → d .fst
-    theArg → d .snd
+    theFun → from (Γ , B ⇒ A) (ms theFun) (into (Γ , A) _ d .fst)
+    theArg → from (Γ , B) (ms theArg) (into (Γ , A) _ d .snd)
 unrollNode (lamOp B) (Γ , A) m (d , (ms , Eq.refl)) =
   node-mk {ms = ms} λ where
-    theBinder → d .fst
-    theBody → d .snd
-
+    theBinder → into (Γ , A) _ d .fst
+    theBody → from ((ms theBinder , B) ∷ Γ , cod A) (ms theBody)
+      (into (Γ , A) _ d .snd)
 
 -- The checker, for whatever answer.
 module Check (𝒯 : AnswerFunctor) where
@@ -2710,20 +3100,31 @@ module Check (𝒯 : AnswerFunctor) where
 
 <p><code>elab</code> has no failure case, and that is the point: a derivation <em>is</em> the proof that the term checks, so elaboration is total on derivations. Ill-typed input never reaches the fold &mdash; <code>elab-bad</code> is <code>nothing</code> because the checker refuted, not because the fold gave up.</p>
 
-<figure class="src"><figcaption><span class="path">Theory/Instances/Annotated/Elaborate.agda</span><span class="lines">104 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
-{- What proof-relevance buys: the checker stops saying yes and starts
-   producing a program.
+<figure class="src"><figcaption><span class="path">Theory/Instances/Annotated/Elaborate.agda</span><span class="lines">165 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
+{- What an intrinsic judgment buys: the elaborator stops being a fold and
+   becomes a projection.
 
-   `Der (Γ , A) t` is a derivation, and a derivation is data.  Folding it
-   gives the elaborated core term -- named variables resolved to de Bruijn
-   indices, annotations kept, side conditions discarded.  The fold is
-   structural on the term, and the variable case is where the work already
-   happened: `deBruijn` reads the index off the `Lookup` witness the
-   checker built, rather than searching the context again.
+   `Der (Γ , A) t` is `Σ[ c ∈ Core Γ A ] (erase c ≡ t)`, so a derivation IS
+   a well-typed core term plus the evidence that it is a term for THIS
+   source.  Hence:
 
-   That is the difference between a judgment defined as `lookC Γ x ≡ just A`
-   and one defined as `Lookup Γ A x`.  Both are propositions and both say
-   the same thing; only the second *carries* what a compiler needs. -}
+     elab       = fst   -- and its type says the output is well typed at A
+     elabErase  = snd   -- and its type says the output erases to the input
+
+   Neither is a theorem.  The extrinsic version of this file folded a
+   derivation into an untyped `CoreTm` and then said nothing whatever about
+   the result: "elaboration produces a well-typed term" was a claim about a
+   function nobody had checked, and "elaboration preserves the program" was
+   not even stated.  Both are now the types of two projections.
+
+   ONE FOLD SURVIVES, and it is worth being exact about which.  `dB` prints
+   a core term nameless, replacing each `cvar x v` by `deBruijn Γ A x v`.
+   That is a change of variable REPRESENTATION out of a term that is
+   already well typed and already pinned to its source; it cannot make an
+   ill-typed term, and it is the only thing left that a test could catch
+   rather than the typechecker.  Putting numerals into `Core` itself would
+   remove it and would cost the judgment its unambiguity -- see `Typing`'s
+   note at `cvar`. -}
 open import Cubical.Foundations.Prelude
 open import Cubical.Algebra.Theory.Finitary
 open SortedSig
@@ -2741,40 +3142,64 @@ open import Theory.Instances.Annotated.Typing public
 
 open import Theory.Type.SemanticAction.Base
   AEqns ℕ (λ _ → nm) aPresentation
+import Theory.Combinator.Answer.Incomplete
+  AEqns ℕ (λ _ → nm) aPresentation as MB
+import Theory.Combinator.Answer.NonDet
+  AEqns ℕ (λ _ → nm) aPresentation as NDm
 import Theory.Combinator.Answer.Decidable
   AEqns ℕ (λ _ → nm) aPresentation as D
 
 module CD = Check D.DecAnswer
+module CM = Check MB.MaybeAnswer
+module CN = Check NDm.NDAnswer
 
--- The core language: the same calculus with variables resolved.
-data CoreTm : Type ℓ-zero where
-  cvar : ℕ → CoreTm
-  capp : CoreTm → CoreTm → CoreTm
-  clam : Ty → CoreTm → CoreTm
+-- Elaboration, and its two correctness statements, all three definitional.
+elab : (i : Jdg) (t : ATm) → Der i t → Core (i .fst) (i .snd)
+elab i t d = d .fst
 
--- The fold.  Note there is no failure case: a derivation is a proof the
--- term checks, so elaboration is total on derivations.
-elab : (i : Jdg) (t : ATm) → Der i t → CoreTm
-elab (Γ , A) (avar x) v = cvar (deBruijn Γ A x v)
-elab (Γ , A) (aapp B f a) d =
-  capp (elab (Γ , B ⇒ A) f (d .fst)) (elab (Γ , B) a (d .snd))
-elab (Γ , A) (alam x B t) d =
-  clam B (elab ((x , B) ∷ Γ , cod A) t (d .snd))
+elabErase : (i : Jdg) (t : ATm) (d : Der i t) → erase (elab i t d) ≡ t
+elabErase i t d = d .snd
+
+-- The nameless printout: `Core` resolves a variable by a `Lookup`, and the
+-- de Bruijn index is the number of "not here" steps in it.  The search
+-- happened once, in the checker; this only counts.
+data Nameless : Type ℓ-zero where
+  dvar : ℕ → Nameless
+  dapp : Nameless → Nameless → Nameless
+  dlam : Ty → Nameless → Nameless
+
+dB : {Γ : Ctx} {A : Ty} → Core Γ A → Nameless
+dB (cvar {Γ = Γ} {A = A} x v) = dvar (deBruijn Γ A x v)
+dB (capp f a) = dapp (dB f) (dB a)
+dB (clam {B = B} x c) = dlam B (dB c)
 
 -- ...as a semantic action, which is the DSL's own name for a readout: a
 -- map from a grammar into a constant `Δ X`.  Stating it this way is not
 -- decoration -- it is what lets `semact-dec` and `observe` below do the
 -- rest, so the boundary between "internal term" and "external value" is
 -- crossed exactly once, in `observe`, rather than by hand.
-elabAction : (i : Jdg) → SemanticAction (Der i) CoreTm
-elabAction i t d = elab i t d , tt
+elabAction : (i : Jdg) → SemanticAction (Der i) Nameless
+elabAction i t d = dB (elab i t d) , tt
 
--- Check, then elaborate.  This is the front end, and it is a composition of
--- three internal terms: the checker `⊤Ty ⊢ DecTy (Der i)`, the action
--- `DecTy (Der i) ⊢ Δ (Maybe CoreTm)` that `semact-dec` builds from
--- `elabAction`, and `observe`, which is the one place a `⊤Ty`-map is read.
-compile : (Γ : Ctx) (A : Ty) → ATm → Maybe CoreTm
+-- Check, then read out.  The front end is a composition of three internal
+-- terms: the checker `⊤Ty ⊢ DecTy (Der i)`, the action that `semact-dec`
+-- builds from `elabAction`, and `observe`, which is the one place a
+-- `⊤Ty`-map is read.
+compile : (Γ : Ctx) (A : Ty) → ATm → Maybe Nameless
 compile Γ A = observe (CD.typed (Γ , A)) (semact-dec (elabAction (Γ , A)))
+
+-- THE SAME ACTION AT THE OTHER TWO ANSWERS.  All three are available here,
+-- and the third is the one worth having: `observeND` applies the action
+-- under the list, so `compileAll` returns every core term the checker can
+-- build for a source term.  That is the empirical form of `isPropDer` --
+-- the proof says two derivations are equal, the list says how many the
+-- checker constructs -- and it is the measurement that would expose an
+-- intrinsic syntax whose erasure is not injective.  See the `shadow` test.
+compileM : (Γ : Ctx) (A : Ty) → ATm → Maybe Nameless
+compileM Γ A = observe (CM.typed (Γ , A)) (semact-Maybe (elabAction (Γ , A)))
+
+compileAll : (Γ : Ctx) (A : Ty) → ATm → List Nameless
+compileAll Γ A = NDm.observeND (CN.typed (Γ , A)) (elabAction (Γ , A))
 -- Tests.  `refl` again, so the typechecker runs the whole front end.
 
 idT : ATm
@@ -2789,31 +3214,57 @@ shadow = alam 0 ι (alam 0 ι (avar 0))
 nested : ATm                            -- λf:ι⇒ι. λx:ι. f x
 nested = alam 0 (ι ⇒ ι) (alam 1 ι (aapp ι (avar 0) (avar 1)))
 
-elab-id : compile [] (ι ⇒ ι) idT ≡ just (clam ι (cvar 0))
+elab-id : compile [] (ι ⇒ ι) idT ≡ just (dlam ι (dvar 0))
 elab-id = refl
 
--- the outer binder, so index 1: the fold read this off the derivation
-elab-konst : compile [] (ι ⇒ ι ⇒ ι) konst ≡ just (clam ι (clam ι (cvar 1)))
+-- the outer binder, so index 1: the projection read this off the core term
+elab-konst : compile [] (ι ⇒ ι ⇒ ι) konst ≡ just (dlam ι (dlam ι (dvar 1)))
 elab-konst = refl
 
 -- ...and shadowing resolves inward, so the *same* source name gives 0
-elab-shadow : compile [] (ι ⇒ ι ⇒ ι) shadow ≡ just (clam ι (clam ι (cvar 0)))
+elab-shadow : compile [] (ι ⇒ ι ⇒ ι) shadow ≡ just (dlam ι (dlam ι (dvar 0)))
 elab-shadow = refl
 
 elab-nested : compile [] ((ι ⇒ ι) ⇒ ι ⇒ ι) nested
-            ≡ just (clam (ι ⇒ ι) (clam ι (capp (cvar 1) (cvar 0))))
+            ≡ just (dlam (ι ⇒ ι) (dlam ι (dapp (dvar 1) (dvar 0))))
 elab-nested = refl
 
 -- a free variable resolves against the ambient context
-elab-open : compile ((7 , ι) ∷ []) ι (avar 7) ≡ just (cvar 0)
+elab-open : compile ((7 , ι) ∷ []) ι (avar 7) ≡ just (dvar 0)
 elab-open = refl
 
-elab-open2 : compile ((3 , ι) ∷ (7 , ι) ∷ []) ι (avar 7) ≡ just (cvar 1)
+elab-open2 : compile ((3 , ι) ∷ (7 , ι) ∷ []) ι (avar 7) ≡ just (dvar 1)
 elab-open2 = refl
 
 -- ill-typed terms produce nothing, not a bad core term
 elab-bad : compile [] ι idT ≡ nothing
 elab-bad = refl
+
+-- `Maybe` commits to the first alternative and here there is only one, so
+-- it agrees with the decision on every term above.
+may-nested : compileM [] ((ι ⇒ ι) ⇒ ι ⇒ ι) nested
+           ≡ just (dlam (ι ⇒ ι) (dlam ι (dapp (dvar 1) (dvar 0))))
+may-nested = refl
+
+may-bad : compileM [] ι idT ≡ nothing
+may-bad = refl
+
+-- ...and `ND` builds exactly one core term, so the intrinsic judgment is
+-- unambiguous in fact and not only in the retraction proof.
+all-id : compileAll [] (ι ⇒ ι) idT ≡ dlam ι (dvar 0) ∷ []
+all-id = refl
+
+-- the case the erasure fibre could have got wrong: two bindings of the
+-- name 0, one core term.  A `cvar` holding a bare numeral would list two.
+all-shadow : compileAll [] (ι ⇒ ι ⇒ ι) shadow ≡ dlam ι (dlam ι (dvar 0)) ∷ []
+all-shadow = refl
+
+all-nested : compileAll [] ((ι ⇒ ι) ⇒ ι ⇒ ι) nested
+           ≡ dlam (ι ⇒ ι) (dlam ι (dapp (dvar 1) (dvar 0))) ∷ []
+all-nested = refl
+
+all-bad : compileAll [] ι idT ≡ []
+all-bad = refl
 </code></pre></figure>
 <h3 id="atests">Running it three ways</h3>
 
@@ -3782,7 +4233,7 @@ nodeCover .disjoint o o' ne m ((vs , e) , (vs' , e')) =
 <tr><td><code>ND</code></td><td>an enumeration</td><td>a <em>count</em> of the clauses that fired</td></tr>
 </table>
 
-<figure class="src"><figcaption><span class="path">Theory/Instances/Match/Judgment.agda</span><span class="lines">254 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
+<figure class="src"><figcaption><span class="path">Theory/Instances/Match/Judgment.agda</span><span class="lines">337 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
 {- Pattern matching as a syntax-directed judgment: `Match p v` is "the
    value `v` matches the pattern `p`", written once, for every answer.
 
@@ -3811,11 +4262,56 @@ nodeCover .disjoint o o' ne m ((vs , e) , (vs' , e')) =
    and nowhere else.  This is the case the annotated instance never meets,
    because every one of its operations has an argument.
 
-   Matching a single pattern is a *proposition*: `isPropMatch` below.  The
-   proof-relevance is in the clause list, and that is the point -- see
+   WHAT A DERIVATION IS.  `Match p v` is *not* an assertion that `v` fits
+   `p`; it is the pair of a filling for `p`'s holes and the equation that
+   says filling `p` with it *is* `v`:
+
+       Match p v  =  Σ[ e ∈ Env p ] (inst p e ≡ v)  =  fiber (inst p) v
+
+   `Env p` is one value per *occurrence* of a hole -- `pwild` and `pvar`
+   have one each, the constants none, a pair the two of its components --
+   and `inst` is total, so nothing here is partial and no lookup is
+   involved.  What this buys is that `Bindings`' readout stops
+   reconstructing the substitution out of the index and the model and
+   becomes a projection: the bindings ride in the derivation, and the
+   equation is what makes them the right ones.  A checker that returns a
+   derivation returns a *verified substitution*, definitionally.
+
+   It is the move `Annotated/Typing`'s `Lookup` makes one level down --
+   there a derivation carries the de Bruijn index instead of asserting that
+   lookup succeeds -- applied to the judgment as a whole rather than to one
+   premise of it.
+
+   STILL A PROPOSITION, and for a reason worth naming: `inst p` is
+   *injective* at every `p`, including a non-linear one like
+   `ppair (pvar 0) (pvar 0)`, because `Env` is indexed by occurrence and
+   not by name.  So `Match p v` is the fibre of an embedding and
+   `isPropMatch` is that observation and nothing else.  Linearity is
+   neither needed nor assumed: a non-linear pattern binds its name twice,
+   which is a fact about `bind`, not about the h-level.
+
+   `HeadIs` below is no-confusion for `Val`, by recursion so that it
+   reduces to `⊥`.  It is what replaced the absurd patterns the old `Match`
+   got for free: `Match ptrue vfalse` used to *be* `⊥`, and is now
+   `Σ Unit (vtrue ≡ vfalse)`, which is empty for a reason one has to give.
+   The three `clash` lemmas give it, once each, and `clashAt` and
+   `Exhaustive` both consume them.
+
+   AND A NOTE ON CONVENTION 1.  `Match` is no longer literally a recursion
+   on the model -- it is a `Σ` whose second component is an equation.  The
+   recursion moved one level down, into `Env` and `inst`, both of which
+   recurse on the *pattern*; the model element occurs only to the right of
+   an `≡`.  That is what the convention is for: no branch of the checker
+   ever unifies a model constructor, so there is still no
+   `SplitError.UnificationStuck`, and `isPropMatch` got *shorter* rather
+   than longer, because it is now a property of a map rather than a case
+   analysis.
+
+   The proof-relevance is in the clause list, and that is the point -- see
    `Clauses`. -}
 open import Cubical.Foundations.Prelude
 open import Cubical.Foundations.HLevels
+open import Cubical.Functions.Embedding using (injective→hasPropFibers)
 open import Cubical.Algebra.Theory.Finitary
 open SortedSig
 open SortedEqns
@@ -3827,7 +4323,7 @@ import Cubical.Data.FinData as FD
 open import Cubical.Data.FinData.More using (two)
 open import Cubical.Data.List using (List ; [] ; _∷_)
 open import Cubical.Data.Nat using (ℕ ; zero ; suc ; isSetℕ)
-open import Cubical.Data.Sigma using (_×_ ; _,_ ; fst ; snd)
+open import Cubical.Data.Sigma using (_×_ ; Σ-syntax ; ΣPathP ; _,_ ; fst ; snd)
 open import Cubical.Data.Sum using (_⊎_ ; isSet⊎)
 import Cubical.Data.Sum as Sum
 open import Cubical.Data.Unit using (Unit ; tt ; isSetUnit ; isPropUnit)
@@ -3883,34 +4379,66 @@ private
 isSetPat : isSet Pat
 isSetPat = isOfHLevelRetract 2 toP fromP patRet isSetPW
 
--- The judgment.  Defined by recursion, not as an indexed family: the
--- guard's calls sit at `(p , v)` pairs that no unifier has to invert.
+-- The holes of a pattern, one per occurrence, and the pattern filled in
+-- at them.  `inst` is total: a pattern with its holes filled is a value,
+-- and that is the whole of what a match has to produce.
+Env : Pat → Type ℓ-zero
+Env pwild = Val
+Env (pvar n) = Val
+Env ptrue = Unit
+Env pfalse = Unit
+Env (ppair p q) = Env p × Env q
+
+inst : (p : Pat) → Env p → Val
+inst pwild v = v
+inst (pvar n) v = v
+inst ptrue _ = vtrue
+inst pfalse _ = vfalse
+inst (ppair p q) (e , f) = vpair (inst p e) (inst q f)
+
+-- The judgment: a filling, and the equation that makes it the right one.
+-- Still stated so the guard's calls sit at `(p , v)` pairs that no unifier
+-- has to invert -- `inst` recurses on the pattern, which is an index, and
+-- the model element appears only on the right of an `≡`.
 Match : Pat → TheoryTy ℓ-zero val
-Match pwild v = Unit
-Match (pvar n) v = Unit
-Match ptrue vtrue = Unit
-Match ptrue vfalse = ⊥
-Match ptrue (vpair _ _) = ⊥
-Match pfalse vtrue = ⊥
-Match pfalse vfalse = Unit
-Match pfalse (vpair _ _) = ⊥
-Match (ppair p q) vtrue = ⊥
-Match (ppair p q) vfalse = ⊥
-Match (ppair p q) (vpair v w) = Match p v × Match q w
+Match p v = Σ[ e ∈ Env p ] (inst p e ≡ v)
+
+-- Injectivity, by projection.  A pair is injective in both components and
+-- a constant is a map out of `Unit`, so every `inst p` is.
+instInj : (p : Pat) {e f : Env p} → inst p e ≡ inst p f → e ≡ f
+instInj pwild q = q
+instInj (pvar n) q = q
+instInj ptrue q = refl
+instInj pfalse q = refl
+instInj (ppair p q) r =
+  ΣPathP (instInj p (cong pairFst r) , instInj q (cong pairSnd r))
 
 isPropMatch : (p : Pat) (v : Val) → isProp (Match p v)
-isPropMatch pwild v = isPropUnit
-isPropMatch (pvar n) v = isPropUnit
-isPropMatch ptrue vtrue = isPropUnit
-isPropMatch ptrue vfalse = λ ()
-isPropMatch ptrue (vpair _ _) = λ ()
-isPropMatch pfalse vtrue = λ ()
-isPropMatch pfalse vfalse = isPropUnit
-isPropMatch pfalse (vpair _ _) = λ ()
-isPropMatch (ppair p q) vtrue = λ ()
-isPropMatch (ppair p q) vfalse = λ ()
-isPropMatch (ppair p q) (vpair v w) =
-  isProp× (isPropMatch p v) (isPropMatch q w)
+isPropMatch p = injective→hasPropFibers {f = inst p} (isSetVCrr val) (instInj p)
+
+-- No-confusion for `Val`, by recursion, so that a head the pattern did not
+-- produce is `⊥` on sight.
+HeadIs : VOp → Val → Type ℓ-zero
+HeadIs vtrueOp vtrue = Unit
+HeadIs vtrueOp vfalse = ⊥
+HeadIs vtrueOp (vpair _ _) = ⊥
+HeadIs vfalseOp vtrue = ⊥
+HeadIs vfalseOp vfalse = Unit
+HeadIs vfalseOp (vpair _ _) = ⊥
+HeadIs vpairOp vtrue = ⊥
+HeadIs vpairOp vfalse = ⊥
+HeadIs vpairOp (vpair _ _) = Unit
+
+-- ...so a derivation transports the head its pattern forces onto `v`.
+-- These are the refutations `Match`'s old absurd patterns stood for.
+clashTrue : (v : Val) → Match ptrue v → HeadIs vtrueOp v
+clashTrue v (_ , e) = subst (HeadIs vtrueOp) e tt
+
+clashFalse : (v : Val) → Match pfalse v → HeadIs vfalseOp v
+clashFalse v (_ , e) = subst (HeadIs vfalseOp) e tt
+
+clashPair : (p q : Pat) (v : Val) → Match (ppair p q) v → HeadIs vpairOp v
+clashPair p q v (_ , e) = subst (HeadIs vpairOp) e tt
 
 MatchSet : Pat → TheorySet ℓ-zero val
 MatchSet p = Match p , λ v → isProp→isSet (isPropMatch p v)
@@ -3981,12 +4509,12 @@ module Check (𝒯 : AnswerFunctor) where
 
     trueAt : Later ptrue &amp; NodeAt vtrueOp ⊢ ty (Ans (MatchSet ptrue))
     trueAt = constAt vtrueOp ptrue trueSlots (λ vs ())
-      (λ where _ (_ , (vs , Eq.refl)) → tt)
+      (λ where _ (_ , (vs , Eq.refl)) → tt , refl)
       (λ where _ (_ , (vs , Eq.refl)) → node-mk {ms = vs} λ ())
 
     falseAt : Later pfalse &amp; NodeAt vfalseOp ⊢ ty (Ans (MatchSet pfalse))
     falseAt = constAt vfalseOp pfalse falseSlots (λ vs ())
-      (λ where _ (_ , (vs , Eq.refl)) → tt)
+      (λ where _ (_ , (vs , Eq.refl)) → tt , refl)
       (λ where _ (_ , (vs , Eq.refl)) → node-mk {ms = vs} λ ())
 
     pairAt : (p q : Pat)
@@ -4004,28 +4532,34 @@ module Check (𝒯 : AnswerFunctor) where
             theSnd → callAt q
               (callSnd {x = ppair p q} {x' = q} (vs theFst) (vs theSnd)) β
 
+      -- `roll` *builds* the filling and its equation out of the slots';
+      -- `unroll` takes them apart by projecting the pair.  Neither shuffles
+      -- data any more: the node's equation is `cong₂ vpair` of the slots',
+      -- and a slot's is `cong pairFst`/`cong pairSnd` of the node's.
       roll : ⊗ᴰ vpairOp (pairSlots p q) &amp; NodeAt vpairOp ⊢ Match (ppair p q)
-      roll _ ((vs , Eq.refl , ws) , _) = ws theFst , ws theSnd
+      roll _ ((vs , Eq.refl , ws) , _) =
+        (ws theFst .fst , ws theSnd .fst) ,
+        cong₂ vpair (ws theFst .snd) (ws theSnd .snd)
 
       unroll : Match (ppair p q) &amp; NodeAt vpairOp ⊢ ⊗ᴰ vpairOp (pairSlots p q)
       unroll _ (d , (vs , Eq.refl)) = node-mk {ms = vs} λ where
-        theFst → d .fst
-        theSnd → d .snd
+        theFst → d .fst .fst , cong pairFst (d .snd)
+        theSnd → d .fst .snd , cong pairSnd (d .snd)
 
   step : Step MatchSet
-  step pwild = yes! λ _ → tt
-  step (pvar n) = yes! λ _ → tt
+  step pwild = yes! λ v → v , refl
+  step (pvar n) = yes! λ v → v , refl
   step ptrue = look nodeCover λ where
     vtrueOp → trueAt
-    vfalseOp → clashAt vfalseOp ptrue λ vs ()
-    vpairOp → clashAt vpairOp ptrue λ vs ()
+    vfalseOp → clashAt vfalseOp ptrue λ vs → clashTrue (op vfalseOp vs)
+    vpairOp → clashAt vpairOp ptrue λ vs → clashTrue (op vpairOp vs)
   step pfalse = look nodeCover λ where
-    vtrueOp → clashAt vtrueOp pfalse λ vs ()
+    vtrueOp → clashAt vtrueOp pfalse λ vs → clashFalse (op vtrueOp vs)
     vfalseOp → falseAt
-    vpairOp → clashAt vpairOp pfalse λ vs ()
+    vpairOp → clashAt vpairOp pfalse λ vs → clashFalse (op vpairOp vs)
   step (ppair p q) = look nodeCover λ where
-    vtrueOp → clashAt vtrueOp (ppair p q) λ vs ()
-    vfalseOp → clashAt vfalseOp (ppair p q) λ vs ()
+    vtrueOp → clashAt vtrueOp (ppair p q) λ vs → clashPair p q (op vtrueOp vs)
+    vfalseOp → clashAt vfalseOp (ppair p q) λ vs → clashPair p q (op vfalseOp vs)
     vpairOp → pairAt p q
 
   matched : Checker MatchSet
@@ -4043,15 +4577,24 @@ module Check (𝒯 : AnswerFunctor) where
 
 <p>The content is in <code>anyAction</code>, which tags each summand of the clause list with its <em>position</em>. That sum is the only proof-relevant thing in the development, and it is exactly what the three front ends disagree about &mdash; <code>decideMatch</code>, <code>firstMatch</code> and <code>allMatches</code> are one grammar and one action at three answers.</p>
 
-<figure class="src"><figcaption><span class="path">Theory/Instances/Match/Bindings.agda</span><span class="lines">106 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
+<figure class="src"><figcaption><span class="path">Theory/Instances/Match/Bindings.agda</span><span class="lines">109 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
 {- The readout: a derivation folded to the substitution it justifies.
 
    `Elaborate` reads a de Bruijn index off a `Lookup` witness, because the
-   witness is where the search already happened.  Here the honest statement
-   is narrower and worth making plainly: `Match p` is a proposition, so a
-   *single* pattern's derivation carries no information the index and the
-   scrutinee do not already have -- `bind` reads `n` off `pvar n` and `v`
-   off the model, and the derivation only certifies that it may.
+   witness is where the search already happened.  The same now holds here,
+   and it did not used to.  `Judgment`'s `Match p v` is
+   `Σ[ e ∈ Env p ] (inst p e ≡ v)`, so `bind` is a fold over `e` alone: it
+   never looks at the scrutinee, and it cannot, because `v` is not one of
+   its arguments.  The old `bind` read `v` off the model and `n` off the
+   index and the derivation merely certified that it might; what it
+   returned was a substitution nothing said was *correct*.  The equation
+   in the derivation says exactly that -- `inst p e ≡ v` is "the pattern,
+   filled with these bindings, is the value" -- so the readout is a
+   projection and its correctness is definitional.
+
+   The names still come off the pattern, and that is not a weakness: a
+   name is a syntactic feature of `pvar n`, and `Env` is what carries the
+   thing the pattern does *not* determine.
 
    The content is one level up.  `Any cs` is a sum over the clause list, so
    its derivations are exactly the clauses that fire, and `anyAction`
@@ -4060,10 +4603,10 @@ module Check (𝒯 : AnswerFunctor) where
    the three answers disagree about: `Dec` collapses it to a decision,
    `Maybe` to its leftmost summand, `ND` to all of them.
 
-   `observeAll` is the `ND` counterpart of `observe`.  `observe` reads a
-   single value out of a `⊤Ty`-map; a nondeterministic answer is a list, so
-   the action is applied under it and the boundary is crossed once per
-   derivation instead of once. -}
+   `ND` reads out through `Answer/NonDet`'s `observeND`, the counterpart
+   of `observe`: a nondeterministic answer is a list, so the action is
+   applied under it and the boundary is crossed once per derivation rather
+   than once. -}
 open import Cubical.Foundations.Prelude
 open import Cubical.Algebra.Theory.Finitary
 open SortedSig
@@ -4101,23 +4644,18 @@ Subst = List (ℕ × Val)
 Result : Type ℓ-zero
 Result = ℕ × Subst
 
--- The fold.  Total on derivations, and the impossible head/pattern pairs
--- are impossible by reduction rather than by a failure case.
-bind : (p : Pat) (v : Val) → Match p v → Subst
-bind pwild v _ = []
-bind (pvar n) v _ = (n , v) ∷ []
-bind ptrue vtrue _ = []
-bind ptrue vfalse ()
-bind ptrue (vpair _ _) ()
-bind pfalse vtrue ()
-bind pfalse vfalse _ = []
-bind pfalse (vpair _ _) ()
-bind (ppair p q) vtrue ()
-bind (ppair p q) vfalse ()
-bind (ppair p q) (vpair v w) (d , e) = bind p v d ++ bind q w e
+-- The fold, over the filling and nothing else.  There are no impossible
+-- head/pattern pairs to rule out, because there is no head: `Env` has one
+-- clause per pattern and every one of them is inhabited.
+bind : (p : Pat) → Env p → Subst
+bind pwild _ = []
+bind (pvar n) v = (n , v) ∷ []
+bind ptrue _ = []
+bind pfalse _ = []
+bind (ppair p q) (e , f) = bind p e ++ bind q f
 
 bindAction : (p : Pat) → SemanticAction (Match p) Subst
-bindAction p v d = bind p v d , tt
+bindAction p v d = bind p (d .fst) , tt
 
 -- ...and over a clause list, tagging each summand with its position.
 anyAction : (cs : List Pat) → SemanticAction (Any cs) Result
@@ -4126,9 +4664,8 @@ anyAction (p ∷ ps) =
   semact-⊕ (semact-map (0 ,_) (bindAction p))
            (semact-map (λ r → suc (r .fst) , r .snd) (anyAction ps))
 
-observeAll : {A : TheoryTy ℓA val} {X : Type ℓX}
-  → (⊤Ty ⊢ NDm.ND A) → SemanticAction A X → Val → List X
-observeAll p a v = mapL (λ d → a v d .fst) (NDm.ndToList v (p v tt))
+-- `ND`'s readout is `Answer/NonDet`'s `observeND`, the counterpart of
+-- `observe`; this client no longer rolls its own.
 
 -- The three front ends.  Same grammar, same action, three answers.
 decideMatch : (cs : List Pat) → Val → Maybe Result
@@ -4138,7 +4675,7 @@ firstMatch : (cs : List Pat) → Val → Maybe Result
 firstMatch cs = observe (CM.matchAny cs) (semact-Maybe (anyAction cs))
 
 allMatches : (cs : List Pat) → Val → List Result
-allMatches cs = observeAll (CN.matchAny cs) (anyAction cs)
+allMatches cs = NDm.observeND (CN.matchAny cs) (anyAction cs)
 
 -- ...and the number of clauses that fire.  Two is a redundant clause list,
 -- zero is a counterexample to exhaustiveness, and nothing but `ND` can say
@@ -4167,7 +4704,7 @@ bindsOf p = observe (CD.matched p) (semact-dec (bindAction p))
 <div class="note"><span class="k">What is not proved</span>
 <p>Nothing general. This is one list. There is no theorem &ldquo;<code>Cover</code> implies <code>tally ≡ 1</code>&rdquo; &mdash; that would have to relate the <code>ND</code> enumeration to the cover&rsquo;s index type, and the enumeration is a list with an order while the cover is not.</p></div>
 
-<figure class="src"><figcaption><span class="path">Theory/Instances/Match/Exhaustive.agda</span><span class="lines">148 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
+<figure class="src"><figcaption><span class="path">Theory/Instances/Match/Exhaustive.agda</span><span class="lines">181 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
 {- The identification the `tally` tests are pointing at.
 
    `Cover Y Λ` has two fields, and a clause list has two properties:
@@ -4241,22 +4778,24 @@ private
   headInj i j e = Eq.pathToEq
     (sym (headRet i) ∙ cong headClause (Eq.eqToPath e) ∙ headRet j)
 
+  -- The off-diagonal cases are `Judgment`'s `clash` lemmas: a derivation
+  -- carries an equation now, so a wrong head is refuted rather than absurd.
   nodeOf : (i : Fin 3) → Match (Clause i) ⊢ NodeAt (clauseHead i)
   nodeOf zero vtrue _ = (λ ()) , Eq.refl
-  nodeOf zero vfalse ()
-  nodeOf zero (vpair _ _) ()
-  nodeOf (suc zero) vtrue ()
+  nodeOf zero vfalse d = Empty.rec (clashTrue vfalse d)
+  nodeOf zero (vpair v w) d = Empty.rec (clashTrue (vpair v w) d)
+  nodeOf (suc zero) vtrue d = Empty.rec (clashFalse vtrue d)
   nodeOf (suc zero) vfalse _ = (λ ()) , Eq.refl
-  nodeOf (suc zero) (vpair _ _) ()
-  nodeOf (suc (suc zero)) vtrue ()
-  nodeOf (suc (suc zero)) vfalse ()
+  nodeOf (suc zero) (vpair v w) d = Empty.rec (clashFalse (vpair v w) d)
+  nodeOf (suc (suc zero)) vtrue d = Empty.rec (clashPair pwild pwild vtrue d)
+  nodeOf (suc (suc zero)) vfalse d = Empty.rec (clashPair pwild pwild vfalse d)
   nodeOf (suc (suc zero)) (vpair v w) _ = pairArgs v w , Eq.refl
 
 -- Exhaustive and irredundant, as one record.
 clauseCover : Cover (Fin 3) (λ i → Match (Clause i))
-clauseCover .total vtrue _ = zero , tt
-clauseCover .total vfalse _ = suc zero , tt
-clauseCover .total (vpair v w) _ = suc (suc zero) , (tt , tt)
+clauseCover .total vtrue _ = zero , (tt , refl)
+clauseCover .total vfalse _ = suc zero , (tt , refl)
+clauseCover .total (vpair v w) _ = suc (suc zero) , ((v , w) , refl)
 clauseCover .disjoint i j ne v (d , e) =
   nodeCover .disjoint (clauseHead i) (clauseHead j)
     (λ q → ne (headInj i j q)) v (nodeOf i v d , nodeOf j v e)
@@ -4315,12 +4854,43 @@ irredundant v d e =
 -- is what `tally full v ≡ 1` observes one value at a time.
 covers : (v : Val) → isContr (Any full v)
 covers v = exhaustive v , irredundant v (exhaustive v)
+
+
+-- What the cover was already worth, now that `Combinator/Complete` says
+-- it out loud.
+--
+-- `clauseCover` was built to state exhaustiveness (`total`) and
+-- irredundancy (`disjoint`).  Those are the same two fields a checker
+-- owes, so the cover ALSO decides each clause -- and the decision does not
+-- go near `fix`, `look` or an `AnswerFunctor`.  `total` is the
+-- completeness half: it is what says a value that matches nothing is
+-- refuted rather than merely not-found.
+--
+-- The point is not that this beats the combinator checker.  It is that
+-- when a client has a cover, the decision is already paid for, and the
+-- completeness argument is the cover's own `total` rather than a separate
+-- induction related to the checker by hand.
+open import Theory.Combinator.Complete VEqns Empty.⊥ noVarSort vPresentation
+  using (decideCell ; DiscreteEq)
+
+decFin3 : DiscreteEq (Fin 3)
+decFin3 zero zero = Sum.inl Eq.refl
+decFin3 (suc zero) (suc zero) = Sum.inl Eq.refl
+decFin3 (suc (suc zero)) (suc (suc zero)) = Sum.inl Eq.refl
+decFin3 zero (suc _) = Sum.inr λ ()
+decFin3 (suc _) zero = Sum.inr λ ()
+decFin3 (suc zero) (suc (suc zero)) = Sum.inr λ ()
+decFin3 (suc (suc zero)) (suc zero) = Sum.inr λ ()
+
+-- the checker for each clause, straight out of the cover
+decClause : (i : Fin 3) → Decidable (Match (Clause i))
+decClause = decideCell decFin3 clauseCover
 </code></pre></figure>
 <h3 id="mtests">Running it</h3>
 
 <p>Every test is <code>refl</code>. The three-answer rows are the ones to read: <code>shared</code> is a redundant list and <code>partial</code> a non-exhaustive one, and each answer has a different opinion about them &mdash; which is the point of leaving the answer abstract.</p>
 
-<figure class="src"><figcaption><span class="path">Theory/Instances/Match/Tests.agda</span><span class="lines">163 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
+<figure class="src"><figcaption><span class="path">Theory/Instances/Match/Tests.agda</span><span class="lines">182 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
 {- One matcher, three answers -- and here, for the first time in this
    development, the three say different things.
 
@@ -4350,7 +4920,7 @@ module Theory.Instances.Match.Tests where
 open import Cubical.Data.List using (List ; [] ; _∷_)
 open import Cubical.Data.Maybe using (Maybe ; just ; nothing)
 open import Cubical.Data.Nat using (ℕ)
-open import Cubical.Data.Sigma using (_,_)
+open import Cubical.Data.Sigma using (_,_ ; fst ; snd)
 
 open import Theory.Instances.Match.Bindings
 open import Theory.Instances.Match.Exhaustive using (full ; covers)
@@ -4483,6 +5053,25 @@ nd-full-pair = refl
 
 nd-swap : allMatches swap mixed ≡ (0 , (0 , vtrue) ∷ (1 , vfalse) ∷ []) ∷ []
 nd-swap = refl
+
+
+-- What the derivation now carries.  The equation is the second projection,
+-- so "the recorded bindings really match" needs no proof at all -- which is
+-- the whole of the strengthening, stated in one line.
+carries : (p : Pat) (v : Val) (d : Match p v) → inst p (d .fst) ≡ v
+carries p v d = d .snd
+
+-- A non-linear pattern is still a proposition -- `Env` is per occurrence --
+-- and still binds its name twice, which is a fact about `bind` alone.
+nonlinear : List Pat
+nonlinear = ppair (pvar 0) (pvar 0) ∷ []
+
+nd-nonlinear : allMatches nonlinear mixed
+             ≡ (0 , (0 , vtrue) ∷ (0 , vfalse) ∷ []) ∷ []
+nd-nonlinear = refl
+
+nd-nonlinear-count : tally nonlinear mixed ≡ 1
+nd-nonlinear-count = refl
 </code></pre></figure>
 <h2 id="ybase">Client 5 &mdash; the offside rule</h2>
 
@@ -6684,7 +7273,7 @@ may-overlap = refl
 <div class="note"><span class="k">Two documented exceptions, both in <code>Match</code>, both arguments rather than lapses</span>
 <p><code>pwild</code> and <code>pvar n</code> do not go through <code>look</code>, because a rule that holds at every head is a decision and not a node. And <code>observeAll</code> is a hand-rolled boundary, because <code>observe</code> reads <em>one</em> value out of a <code>⊤Ty</code>-map while <code>ND</code> is a list &mdash; supplying the missing combinator means changing the backend interface, which is worth doing deliberately rather than in passing.</p></div>
 
-<figure class="src"><figcaption><span class="path">Theory/Combinator/README.agda</span><span class="lines">334 lines</span></figcaption><pre><code>{- WHAT TO READ BEFORE WRITING CLIENT SEVEN.
+<figure class="src"><figcaption><span class="path">Theory/Combinator/README.agda</span><span class="lines">548 lines</span></figcaption><pre><code>{- WHAT TO READ BEFORE WRITING CLIENT SEVEN.
 
    `Theory/Combinator/Core` is a framework for syntax-directed judgments
    over an arbitrary finitary algebraic theory, and there are six clients
@@ -6823,8 +7412,10 @@ may-overlap = refl
        `data`.  An indexed family gets `SplitError.UnificationStuck` on
        the model's constructors in every branch of the checker, and the
        recursive form additionally makes `isProp` a two-line induction
-       rather than a theorem.  All five judgments do this: `Scope`, `Der`,
-       `Lin`, `Match`, `Layout`, `ResTy`/`MatchTy`.
+       rather than a theorem.  `Scope`, `Lin`, `Match`, `Layout` and
+       `ResTy`/`MatchTy` do this.  `Annotated/Typing` is the one departure,
+       and it is exception 3 below: its judgment is an erasure fibre over
+       an intrinsically typed core, so an indexed `data` on purpose.
 
    2.  DISPATCH WITH `look nodeCover`, never with a pattern match on the
        model element.  This is the convention everything else hangs off.
@@ -6907,10 +7498,11 @@ may-overlap = refl
 
 
    ============================================================
-   IV.  THE TWO DOCUMENTED EXCEPTIONS
+   IV.  THE THREE DOCUMENTED EXCEPTIONS
    ============================================================
 
-   Both are in `Match`, and both are arguments rather than lapses.
+   The first two are in `Match`, and all three are arguments rather than
+   lapses.
 
    `Match/Judgment`'s `pwild` and `pvar n` do NOT go through `look`.  They
    are not syntax-directed on the value at all -- they hold at every head
@@ -6931,6 +7523,37 @@ may-overlap = refl
    combinator means adding to `Answer/NonDet`, which is a change to the
    backend interface and worth making deliberately.
 
+   `Annotated/Typing`'s judgment is NOT A RECURSION ON THE MODEL, against
+   convention 1.  `Der (Γ , A) t` is `Σ[ c ∈ Core Γ A ] (erase c ≡ t)`: a
+   term of an intrinsically typed core syntax, together with the evidence
+   that it elaborates the source.  The argument is about which claims get
+   checked.  A recursive judgment verifies the checker against itself and
+   itself against nothing, and "this predicate is STLC typing" is exactly
+   the claim nobody was making good on; carrying the core term collapses
+   that layer, since `elab` is `fst`, "the output is well typed" is the
+   type of `fst`, and "the output erases to the input" is `snd`.
+
+   The cost is paid in two places and no more.  `isProp` is a retraction
+   onto the old recursive judgment -- which survives as `Der⁻`, demoted
+   from definition to lemma -- rather than a two-line induction, and
+   `unrollNode` recomputes that fibre instead of finding its premises
+   already separated.  The `SplitError` convention 1 predicts does NOT
+   appear: the core term is matched only against itself, and equations
+   between source terms are projected rather than unified, which is the
+   trick a `Precise` proof needs anyway.
+
+   Worth generalising, since a seventh client will face the choice.  Make
+   the judgment intrinsic when the client HAS an intended semantics its
+   judgment could get wrong -- a typing discipline, a scoping discipline,
+   an elaboration -- and leave it recursive when the judgment is its own
+   specification, as `Layout`'s indentation rule is.  And note what the
+   intrinsic form nearly costs: `Core` resolves a variable by a `Lookup`
+   and not by a numeral, because with a named source language a numeral
+   makes `erase` non-injective under shadowing, the fibre stops being a
+   proposition, and `ND` would count two derivations for `λx.λx.x`.  The
+   judgment being a proposition is a fact about the SOURCE language, and an
+   intrinsic judgment is the place it has to be re-established.
+
 
    ============================================================
    V.  KNOWN GAPS
@@ -6939,15 +7562,43 @@ may-overlap = refl
    These are `Core`'s, restated.  None of them is a bug; all of them are
    places where the types permit less than the development wants.
 
-   GAP 1 -- `⊗ᴰ` IS NOT A `Functor` CODE.  `Theory/Type/Code/Base` has
-   `⊗e`, whose slots are independent, so a grammar that needs the
-   dependency cannot be a `μ` and gets its `roll`/`unroll` written by
-   hand.  Closing it means adding a `⊗ᴰe` constructor, which every match
-   on `Functor` would then have to cover -- around seventeen sites across
-   `Code/Base`, `Inductive/HLevels`, `Code/Container` and
-   `Guarded/Justification`, all shared with the monoid development.
+   GAP 1 -- `⊗ᴰ` IS NOT A `Functor` CODE.  CLOSED, AND THE CLOSING IS THE
+   ARGUMENT FOR NOT USING IT.
 
-   Worth knowing before doing it: the dependency is an artefact of NAMED
+   `Theory/Type/Code/Base` now has `⊗ᴰe`, whose slots are indexed by the
+   whole splitting, beside `⊗e`, whose slots are independent.  The cost
+   was seventeen cases across `Code/Base`, `Inductive/HLevels`,
+   `Code/Container` and `Guarded/Justification`; every one of them is its
+   `⊗e` sibling with `F a` replaced by `F ms a`, including the four that
+   are proofs (`reconstructF`, `mapG≡map`, `isSet⟦_⟧`, `map-∘`).  Nothing
+   in the monoid development noticed.  So the CODE side of the gap was
+   real and is gone.
+
+   What the gap was protecting is the CLIENT side, and `Lambda/Scope` --
+   re-expressed as `μ ScopeF` and then read back -- is the measurement:
+
+     * A `μ` costs a universe.  `ℓF ℓ-zero` is `ℓ-suc ℓ-zero`, and
+       `NodeArgs` is uniform in its level, so every slot that is NOT
+       recursive has to be `Lift`ed to meet the ones that are.  `Scope`'s
+       two of four were, and so were their `Decidable`s.
+     * `⟦ Var x ⟧` is a `Lift`, so `roll`/`unroll` still do slotwise
+       wrapping -- the twelve hand-written lines become fourteen.
+     * `⟦ ⊕e ⟧` is a sum over ALL operations, so `unroll` must FIND the
+       summand the cover cell names.  That is no-confusion, which is the
+       cover's `disjoint` field, spelled out again as nine cases.
+     * AND IT BREAKS CONVENTION 1.  A `μ` is an indexed `data`, so the
+       judgment stops REDUCING on the term.  `Scope [] (tvar 0)` used to
+       BE `⊥`; now a derivation has to be unrolled one node before its
+       premise is visible.  One line of `ScopeTests` measures exactly
+       that, and it is the only line of thirty-five that changed.
+
+   The recommendation is therefore: use `⊗ᴰe` when you want a code -- a
+   `Container`, a `Guard`, an `isSetμ` -- for a grammar with a binder, and
+   do NOT use it to define a judgment.  Convention 1 is still right, and
+   `rollNode`/`unrollNode` by hand are still cheaper than the `μ` that
+   would generate them.
+
+   Worth knowing either way: the dependency is an artefact of NAMED
    syntax.  `lam n t` scopes its body in `Γ , n`, and `n` is a slot value;
    a de Bruijn `lam t` scopes it in `B ∷ Γ`, which mentions no slot at
    all.  Surface-syntax judgments need `⊗ᴰ` and core-syntax ones do not --
@@ -6980,6 +7631,24 @@ may-overlap = refl
    a commutative theory the node cover is not disjoint at all -- the bag
    `{a,b}` is a node of two different heads -- so prediction, and with it
    this whole framework, needs a chosen head.
+
+   `Instances/Bag` is that paragraph, proved.  `Bag/Failure` refutes
+   `Precise _⊙_`, refutes `Disjoint NodeAt`, and refutes the cover by
+   chosen head as well -- so the gap is not a missing lemma.  `Precise ε·`
+   survives, which is exactly the wrong half: a client over the
+   commutative theory can reach `Ans-node` only at the operation with no
+   slots.
+
+   `Bag/Chosen` is the repair and its price: precision comes back only by
+   CHANGING THE THEORY to one whose free model is `List El`, since
+   `Precise o` quantifies over every element of the result sort and so is
+   a property of the signature that no later side condition can restore.
+   `Bag/Chosen/Quotient` then measures the loss -- `Sorted` is provably
+   not the pullback of ANY predicate on bags, while `Occurs` is, because
+   it is a fold.  The verdict the two modules support is that the
+   framework extends to the NORMAL FORMS of a quotiented theory and not to
+   the theory, and that a client over the normal forms says something
+   about the quotient exactly when its judgment is a homomorphism.
 
    ============================================================
    VI.  ADDENDUM: `Ans-re`, AND A THIRD KIND OF OUTCOME
@@ -7016,7 +7685,141 @@ may-overlap = refl
 
    So the obligation is CONSERVED, not LOCATED, and a judgment can be
    arranged so that it is discharged before the framework ever sees it.
-   That is the useful form of the observation; the sharper one is false. -}
+   That is the useful form of the observation; the sharper one is false.
+
+   ============================================================
+   VII.  ADDENDUM: TWO CLIENTS, JOINED AT A SIDE CONDITION
+   ============================================================
+
+   Written after `Instances/Infer` landed, which is the first client whose
+   premises are discharged by ANOTHER client.  Type inference for
+   unannotated terms is a judgment over the term theory whose type
+   equations are solved by `Unify`, a judgment over the stack theory.
+
+   THE JOIN IS THE SIDE-CONDITION MECHANISM, AND IT NEEDED NOTHING NEW.
+   `Unify/Check` at `Answer/Decidable` is a `Decidable`; `side`/`Ans-ofDec`
+   takes a `Decidable`; `decSolv` is the two lines that put them together.
+   No change to `Core`, no change to `Unify`, and the outer client stays
+   polymorphic in its own answer.  Three consequences are worth recording.
+
+   1.  THE JOIN IS ONE-WAY.  `Ans-ofDec` consumes a DECISION, so the inner
+       client is pinned to `Dec` however the outer one is instantiated: an
+       inference checker at `ND` still calls a unifier at `Dec`.  There is
+       no `Ans A ⊢ Ans B` in the interface and there should not be -- it
+       would be a bind, which section VI records the framework as declining.
+       So clients compose along `Decidable` and not along `Ans`.
+
+   2.  A SIDE CONDITION IS LOCAL AND UNIFICATION IS GLOBAL, SO THE JOIN
+       LANDS AT A MODE CHANGE.  Threading a substitution between sibling
+       premises is a premise index that is a previous premise's OUTPUT,
+       which nothing provides; and solving at every node is degenerate,
+       since a node's constraint set contains its children's, so the
+       premises would say nothing the condition had not already said.  What
+       is left is to split the judgment: the syntax-directed part generates
+       constraints and postpones every equation, and ONE conjunction with
+       the other client's judgment discharges them.  `Bidir`'s two-mode
+       family is the shape that fits, with `&amp;` where `Bidir` has `⊕ᴰ`.
+
+       The general rule this suggests: a client composes with another
+       exactly when the other's judgment can be stated at a SINGLE index
+       computed from the first's -- and the price of computing that index
+       up front is that the first judgment loses everything the second was
+       going to decide.  `Infer`'s `Gen` is scope checking and nothing more.
+
+   3.  COMPLETENESS SPLITS ALONG THE SAME LINE, AND THAT IS THE REAL
+       FINDING.  A judgment refuted NODE BY NODE inherits completeness from
+       the cover's `total` for free; `Infer` proves exactly that for its
+       shape mode, over infinitely many types, in twelve lines.  A judgment
+       whose refutation is an existential over SUBSTITUTIONS inherits
+       nothing, because no cover of the term model splits by solvability --
+       and `Ans-ofDec` asks for a decision, not for a characterisation, so
+       the framework never demands the missing half either.  Both facts are
+       structural.  The lesson for client eight is that the side-condition
+       mechanism buys composition at the cost of the refutation's meaning,
+       and that a client using it owes an explicit statement of what its
+       `no` says.  `Infer`'s header is that statement.
+
+
+   ============================================================
+   VIII.  ADDENDUM: COMPLETENESS AS A COVER, AND ITS ASYMMETRY
+   ============================================================
+
+   `Theory/Type/Decidable/Base` had `decisionCover`/`coverDecidable`/
+   `dec-cover` from the start and no client ever used them.  A decision IS
+   a cover of `Bool`, and under that identification the cover's two laws
+   are the two halves a checker owes:
+
+     `total`     an `A` or a refutation of `A` -- soundness AND completeness
+     `disjoint`  never both -- consistency
+
+   `Combinator/Complete` surfaces this and exports `decideCell`: a cover
+   over ANY discrete index makes EVERY cell decidable, since `total` names
+   the cell an element is in and `disjoint` refutes the others.  So the
+   discipline is: exhibit the judgment as a CELL of a cover.
+   `Match/Exhaustive`'s `decClause` is the worked example, and it decides
+   each clause without going near `fix`, `look` or an `AnswerFunctor` --
+   that cover had been paying for a checker nobody collected.
+
+   THE IDENTIFICATION IS ASYMMETRIC, and this is the part to know before
+   reaching for it:
+
+     * it pays as "EXHIBIT A MAP INTO A CELL" whenever the specification
+       IMPLIES the judgment.  `Infer`'s `Gen` is this case: `genCell`,
+       `refuteCor`, `shapeVerdict`.
+     * it pays as "`total` IS COMPLETENESS" only when the judgment and the
+       specification COINCIDE.  `Unify`'s `Solvable` is this case.
+
+   `Infer`'s `Gen` cannot be the second.  The cover one wants has cells
+   `Gen` and `¬ Cor`, so `disjoint` would be `Gen → Cor` -- and `noCorXX`
+   refutes it at `x x`, which is well scoped while no intrinsically typed
+   core term erases to it at any types over any scope.  `Gen` is strictly
+   weaker than typability; the only cover it inhabits is `DecCover Gen`,
+   whose `total` is decidability, not completeness.  The 28-line induction
+   stands and any packaging is additive.
+
+   AND A CORRECTION TO SECTION VI's PESSIMISM.  That section recorded the
+   `AList` restriction as blocking completeness for unification.  It does
+   not.  The obstruction is about the CARRIED ANSWER, not about
+   solvability: restriction along `thin x` is not an operation on `AList`s
+   -- the `n = 1` counterexample stands -- but it IS composition for a
+   plain substitution.  `Unify/Solvable` quantifies over `Fin n → Tm m`
+   and proves `complete : Solvable n ps → Sol n ps`; `Unify/Cover`
+   packages it.  `mgu` still returns a chain and the tests still compare
+   chains.  Only the specification changed.
+
+   The cover is NOT structural -- `stackCover` splits by the head
+   equation and solvability is not a head property, so no amount of
+   no-confusion yields it; what yields it is the checker's own recursion
+   plus three lemmas.  It is NOT circular -- the transported decision is
+   for `Sol`, and `dec-retract`'s backward map IS the missing
+   completeness.
+
+   ============================================================
+   IX.  A PRACTICAL TRAP: `--lossy-unification` ACROSS ANSWERS
+   ============================================================
+
+   `PatComp/Tests` did not finish in 25 minutes.  One word fixed it:
+   `--lossy-unification` → `--no-lossy-unification`, after which the file
+   checks in 11 s.
+
+   The mechanism generalises to any client that asserts two backends
+   agree.  `compile` and `compileFirst` are the SAME term at
+   `𝒯 := DecAnswer` and `𝒯 := MaybeAnswer`, so both sides present the same
+   head at every step, the first-order approximation fires every time, and
+   each firing attempts `DecAnswer =?= MaybeAnswer` -- a seven-field
+   dependent record quantified over every level, sort and grammar.  Always
+   fails, always expensively, retried per subtree.  Roughly 3.5x time and
+   3x heap per level of tree depth.
+
+   Against a LITERAL it is free, because the heads differ and the
+   approximation never fires.  So a cross-answer equality is the thing to
+   avoid, not `--lossy-unification` as such.
+
+   AND A MEASUREMENT WARNING.  At a small `-M` every one of these looks
+   like non-termination: the same file ran 90 s without finishing at
+   `-M2G` and 10 s at `-M6G`.  "Does not terminate" and "wants more heap
+   than you gave it" are indistinguishable from outside.  Raise the heap
+   before diagnosing a hang. -}
 module Theory.Combinator.README where
 </code></pre></figure>
 <h2 id="internal">Reflection: is this internal to the DSL?</h2>

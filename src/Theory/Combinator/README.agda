@@ -463,5 +463,86 @@
        mechanism buys composition at the cost of the refutation's meaning,
        and that a client using it owes an explicit statement of what its
        `no` says.  `Infer`'s header is that statement.
- -}
+
+
+   ============================================================
+   VIII.  ADDENDUM: COMPLETENESS AS A COVER, AND ITS ASYMMETRY
+   ============================================================
+
+   `Theory/Type/Decidable/Base` had `decisionCover`/`coverDecidable`/
+   `dec-cover` from the start and no client ever used them.  A decision IS
+   a cover of `Bool`, and under that identification the cover's two laws
+   are the two halves a checker owes:
+
+     `total`     an `A` or a refutation of `A` -- soundness AND completeness
+     `disjoint`  never both -- consistency
+
+   `Combinator/Complete` surfaces this and exports `decideCell`: a cover
+   over ANY discrete index makes EVERY cell decidable, since `total` names
+   the cell an element is in and `disjoint` refutes the others.  So the
+   discipline is: exhibit the judgment as a CELL of a cover.
+   `Match/Exhaustive`'s `decClause` is the worked example, and it decides
+   each clause without going near `fix`, `look` or an `AnswerFunctor` --
+   that cover had been paying for a checker nobody collected.
+
+   THE IDENTIFICATION IS ASYMMETRIC, and this is the part to know before
+   reaching for it:
+
+     * it pays as "EXHIBIT A MAP INTO A CELL" whenever the specification
+       IMPLIES the judgment.  `Infer`'s `Gen` is this case: `genCell`,
+       `refuteCor`, `shapeVerdict`.
+     * it pays as "`total` IS COMPLETENESS" only when the judgment and the
+       specification COINCIDE.  `Unify`'s `Solvable` is this case.
+
+   `Infer`'s `Gen` cannot be the second.  The cover one wants has cells
+   `Gen` and `¬ Cor`, so `disjoint` would be `Gen → Cor` -- and `noCorXX`
+   refutes it at `x x`, which is well scoped while no intrinsically typed
+   core term erases to it at any types over any scope.  `Gen` is strictly
+   weaker than typability; the only cover it inhabits is `DecCover Gen`,
+   whose `total` is decidability, not completeness.  The 28-line induction
+   stands and any packaging is additive.
+
+   AND A CORRECTION TO SECTION VI's PESSIMISM.  That section recorded the
+   `AList` restriction as blocking completeness for unification.  It does
+   not.  The obstruction is about the CARRIED ANSWER, not about
+   solvability: restriction along `thin x` is not an operation on `AList`s
+   -- the `n = 1` counterexample stands -- but it IS composition for a
+   plain substitution.  `Unify/Solvable` quantifies over `Fin n → Tm m`
+   and proves `complete : Solvable n ps → Sol n ps`; `Unify/Cover`
+   packages it.  `mgu` still returns a chain and the tests still compare
+   chains.  Only the specification changed.
+
+   The cover is NOT structural -- `stackCover` splits by the head
+   equation and solvability is not a head property, so no amount of
+   no-confusion yields it; what yields it is the checker's own recursion
+   plus three lemmas.  It is NOT circular -- the transported decision is
+   for `Sol`, and `dec-retract`'s backward map IS the missing
+   completeness.
+
+   ============================================================
+   IX.  A PRACTICAL TRAP: `--lossy-unification` ACROSS ANSWERS
+   ============================================================
+
+   `PatComp/Tests` did not finish in 25 minutes.  One word fixed it:
+   `--lossy-unification` → `--no-lossy-unification`, after which the file
+   checks in 11 s.
+
+   The mechanism generalises to any client that asserts two backends
+   agree.  `compile` and `compileFirst` are the SAME term at
+   `𝒯 := DecAnswer` and `𝒯 := MaybeAnswer`, so both sides present the same
+   head at every step, the first-order approximation fires every time, and
+   each firing attempts `DecAnswer =?= MaybeAnswer` -- a seven-field
+   dependent record quantified over every level, sort and grammar.  Always
+   fails, always expensively, retried per subtree.  Roughly 3.5x time and
+   3x heap per level of tree depth.
+
+   Against a LITERAL it is free, because the heads differ and the
+   approximation never fires.  So a cross-answer equality is the thing to
+   avoid, not `--lossy-unification` as such.
+
+   AND A MEASUREMENT WARNING.  At a small `-M` every one of these looks
+   like non-termination: the same file ran 90 s without finishing at
+   `-M2G` and 10 s at `-M6G`.  "Does not terminate" and "wants more heap
+   than you gave it" are indistinguishable from outside.  Raise the heap
+   before diagnosing a hang. -}
 module Theory.Combinator.README where
