@@ -214,6 +214,18 @@ record AnswerFunctor : Typeω where
     -- `Operation/Base` states `⊗ᵘ-intro`: at `op o ms`, an answer at each
     -- slot.  `Precise o` is what lets a refutation at one slot refute the
     -- node.
+    --
+    -- Known gap: a *nullary* operation has no slot, so this rule cannot
+    -- refute one, and a side condition attached to one has nowhere to ride.
+    -- Two clients hit it independently -- `Match` at `vtrueOp`, `Layout` at
+    -- `nilOp` -- and neither needed a change here: `Ans-map&` will do it,
+    -- since the cover cell is exactly the knowledge that makes the grammar
+    -- empty, and `Ans-&&` will attach the condition at the node rather than
+    -- at a slot.  `Layout`'s form is the better convention: state every
+    -- operation's side condition as `⊗ᴰSet o (Slots o S) &Set SideSet o S`
+    -- and `Slots` stays pure recursive calls, where `Linear` instead hangs
+    -- its partition check off the function's slot.  Worth adopting before
+    -- the next client repeats the choice a third way.
     Ans-node : {ℓA : Level} (o : σ .ops) → Precise o
       → {As : NodeArgs ℓA o} {ms : interpIn o ↓M}
       → ((a : arities σ o) → ty (Ans (As ms a)) (ms a))
