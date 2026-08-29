@@ -21,14 +21,14 @@ open import Semantics.Notation M
 open import Semantics.Inductive.Functor M
 open import Semantics.Inductive.Algebra M
 
-module _ (A : Grammar) where
+module Star (A : Grammar) where
   -- ε ⊕ (A ⊗ -), as a code.
   *Ty : Unit* {ℓX} → Functor (Unit* {ℓX})
   *Ty _ = ⊕e Two λ where
     (lift true) → k ε
     (lift false) → k A ⊗e Var tt*
 
-  module _ (I : InitialAlgebra *Ty) where
+  module WithFix (I : InitialAlgebra *Ty) where
     open InitialAlgebraNotation I
 
     infix 30 _*
