@@ -22,6 +22,11 @@
      Semantics.Inductive.KleeneStar         the star as an initial algebra
      Semantics.Later                        the later modality and guarded fixed points
 
+   Displayed models (for gluing)
+     Semantics.Displayed.IndexedProduct     displayed indexed products; coproducts by ^op duality
+     Semantics.Displayed.RightAdjoint       displayed right adjoints, ported to uncurried style
+     Semantics.Displayed.Model              displayed models: what a gluing argument is stated against
+
    Example
      Semantics.Examples.StarParser          a Kleene star parser, written once for all models
      Semantics.Examples.StarParserDemo      the same parser elaborated in both models below
@@ -55,6 +60,10 @@ open import Semantics.Inductive.Functor
 open import Semantics.Inductive.Algebra
 open import Semantics.Inductive.KleeneStar
 open import Semantics.Later
+
+open import Semantics.Displayed.IndexedProduct
+open import Semantics.Displayed.RightAdjoint
+open import Semantics.Displayed.Model
 
 open import Semantics.Instances.Families
 open import Semantics.Instances.Recovered
