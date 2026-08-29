@@ -1,4 +1,4 @@
-{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
+{-# OPTIONS --no-lossy-unification -WnoUnsupportedIndexedMatch #-}
 {- One compiler, three answers -- and here, unlike `Match`, the three had
    better agree.
 
@@ -12,7 +12,63 @@
    and `labels`, syntactic tests on the tree the `Dec` answer returned.
 
    The tests are `refl`, so the typechecker runs the compiler, the guarded
-   fixpoint and all three answers on concrete matrices. -}
+   fixpoint and all three answers on concrete matrices.
+
+   AND THIS MODULE IS THE ONE THAT MUST NOT HAVE `--lossy-unification`.
+   Every other test module in the development carries it; this one is the
+   first that ever asks the typechecker to compare TWO ANSWERS -- `may-wide`
+   and `may-partial` are `compileFirst n P ≡ compile n P` -- and that
+   comparison is what lossy unification cannot survive.
+
+   The reason is structural and not accidental.  `compile` and
+   `compileFirst` are the SAME term: `observe (Check.build 𝒯 n) ...`, at
+   `𝒯 := DecAnswer` and `𝒯 := MaybeAnswer`.  Both sides therefore present
+   the same head to the conversion checker at every step, so lossy
+   unification's first-order approximation fires at every step, and each
+   time it fires it attempts `DecAnswer =?= MaybeAnswer`: two `AnswerFunctor`
+   records whose seven fields are dependent functions quantified over every
+   level, sort and grammar.  The attempt always fails, always after a great
+   deal of work, and is then retried at each of the four subtrees of each
+   `tswitch` the comparison descends into.
+
+   The cost is exponential in the DEPTH OF THE TREE, and the cleanest ladder
+   is the matrix of one all-wildcard row at width `w`, whose tree is a chain
+   of `w` column drops and nothing else.  Times and peak heap for
+   `compileFirst w P ≡ compile w P`, against a 2.2s / 0.4GB baseline for
+   importing `Check` and stating nothing:
+
+     w = 1     3.6s    0.6 GB
+     w = 2    10.0s    1.4 GB
+     w = 3    34.6s    4.4 GB
+     w = 4    stopped at 16 GB, still running
+     may-wide stopped at 13 GB, still running
+
+   -- and the ladder is worth reading as a warning about MEASUREMENT as much
+   as about the flag: with a small `-M` every one of these looks like a hang,
+   because the collector thrashes against the ceiling long before the
+   computation is done.  `w = 2` at `-M2G` runs for ninety seconds and never
+   finishes; the same file at `-M6G` finishes in ten.  "Does not terminate"
+   and "wants more heap than you gave it" are not distinguishable from the
+   outside, and this client was reported as the first when it was the second.
+
+   With the flag off, this whole file -- all twenty-four tests, all three
+   answers -- is eleven seconds and 2.3 GB.
+
+   Note what is NOT the cause, since it is the thing one would suspect.  It
+   is not the carried correctness.  `Comp n P` is `Σ[ t ∈ Tree ] Ok n t P`
+   and the readout is `fst`, exactly as `Annotated/Typing` does it, and each
+   side of every one of these tests reduces on its own in well under a
+   second -- `compile 2 wide ≡ just (...)` and `compileFirst 2 wide ≡
+   just (...)` are both free.  So is comparing two answers of the SAME
+   backend at two different matrices.  The blowup needs both sides to be
+   computations AND the answers to differ, which is precisely the condition
+   under which the approximation is offered a mismatch it cannot see is one.
+
+   The workaround, if a client ever wants the flag and the cross-answer test
+   at once, is to state each side against the same literal and get the
+   agreement by `∙ sym` -- two `refl`s and a one-line derivation, which costs
+   nothing.  Turning the flag off is better here, because then the agreement
+   is itself run by the typechecker, which is what convention 9 asks for. -}
 open import Cubical.Foundations.Prelude
 module Theory.Instances.PatComp.Tests where
 
