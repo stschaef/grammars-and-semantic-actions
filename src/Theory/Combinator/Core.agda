@@ -177,6 +177,15 @@ node-shape : {o : σ .ops} {As : NodeArgs ℓA o} → ⊗ᴰ o As ⊢ NodeAt o
 node-shape m t = t .fst , t .snd .fst
 
 
+-- Reindexing a grammar along a map of model elements -- possibly across
+-- sorts, since nothing here relates the two.
+reTy : {s s' : S} → (↓M s → ↓M s') → TheoryTy ℓA s' → TheoryTy ℓA s
+reTy f A m = A (f m)
+
+reSet : {s s' : S} → (↓M s → ↓M s') → TheorySet ℓA s' → TheorySet ℓA s
+reSet f (A , sA) = reTy f A , λ m → sA (f m)
+
+
 record AnswerFunctor : Typeω where
   field
     ℓAns : Level → Level
@@ -230,6 +239,26 @@ record AnswerFunctor : Typeω where
       → {As : NodeArgs ℓA o} {ms : interpIn o ↓M}
       → ((a : arities σ o) → ty (Ans (As ms a)) (ms a))
       → ty (Ans (⊗ᴰSet o As)) (op o ms)
+
+    -- An answer is *pointwise* in the model element: an answer at `f m`
+    -- for `A` is an answer at `m` for `A` reindexed along `f`.
+    --
+    -- `Ans-node` is this same move for the one map a signature supplies --
+    -- a slot's projection out of its node -- and that is all a judgment
+    -- whose premises are *subterms* ever needs.  A judgment that is a
+    -- *machine* needs more: its premise sits at a state computed from the
+    -- conclusion's, and no operation of any signature produces that state
+    -- from the premise's.  `Instances/Unify` is the case in point, where
+    -- the state is the equation stack with a substitution applied.
+    --
+    -- This is much less than a bind: the reindexing is a map of *model
+    -- elements*, fixed before any answer is asked, so a later premise
+    -- still cannot depend on an earlier premise's derivation.  Every
+    -- answer defined by cases on `A m` satisfies it, which is all three --
+    -- `Dec` and `Maybe` by the identity, `ND` by the list isomorphism it
+    -- is already defined through.
+    Ans-re : {ℓA : Level} {s s' : S} {A : TheorySet ℓA s'}
+      (f : ↓M s → ↓M s') → reTy f (ty (Ans A)) ⊢ ty (Ans (reSet f A))
 
 
 -- A covariant answer additionally has a plain `fmap` and an *empty answer*

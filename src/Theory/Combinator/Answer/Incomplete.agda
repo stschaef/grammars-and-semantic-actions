@@ -78,6 +78,7 @@ MaybeAnswer .AnswerFunctor.Ans-node o _ {ms = ms} ws = onAll (travΠFin ws)
   onAll : _ → _
   onAll (Sum.inl all) = Sum.inl (node-mk all)
   onAll (Sum.inr _) = Sum.inr tt
+MaybeAnswer .AnswerFunctor.Ans-re f m d = d
 
 -- `Maybe` is covariant, so both extra records come for free: a forward map
 -- and `nothing`, which is a perfectly good answer at every grammar.  That

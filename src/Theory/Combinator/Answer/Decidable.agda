@@ -92,6 +92,8 @@ DecAnswer .AnswerFunctor.Ans-node o prec {As = As} {ms = ms} ws =
     → ty (DecSet (⊗ᴰSet o As)) (op o ms)
   onAll (Sum.inl all) = Sum.inl (node-mk all)
   onAll (Sum.inr no) = Sum.inr λ t → Empty.rec (no (atMs t))
+-- A decision is a decision of `A m`, and `reTy` only moves the `m`.
+DecAnswer .AnswerFunctor.Ans-re f m d = d
 
 -- Committing at `Dec`, which is exactly `routeIn`.  `Maybe` and `ND` reach
 -- the same shape through `FromCov.committing`, but by the opposite

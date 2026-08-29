@@ -106,6 +106,9 @@ NDAnswer .AnswerFunctor.Ans-ofDec m (Sum.inl a) = ηND m a
 NDAnswer .AnswerFunctor.Ans-ofDec m (Sum.inr _) = nilND m tt
 NDAnswer .AnswerFunctor.Ans-node o _ {ms = ms} ws =
   ndFromList (op o ms) (mapL node-mk (allΠFin λ a → ndToList (ms a) (ws a)))
+-- the derivations of `A` at `f m` are the derivations of `A ∘ f` at `m`,
+-- and `ND` is a list of them
+NDAnswer .AnswerFunctor.Ans-re f m x = ndFromList m (ndToList (f m) x)
 
 -- `ND` is covariant too, with `nilND` for the empty answer -- and here the
 -- empty answer is literally the empty list of derivations.  Routing at `ND`
