@@ -83,6 +83,12 @@ UNCONS-branch : {ℓA : Level} {A : TheoryTy ℓA tt}
 UNCONS-branch m (ms , e , xs) =
   ms , e , xs zero .lower , xs (suc zero) .lower , tt*
 
+-- the nil cell, at any motive: it carries only the `ε` equation
+NIL-elim : {ℓA ℓB : Level} {A : TheoryTy ℓA tt}
+  {B : Unit → TheoryTy ℓB tt}
+  → ⟦ starBranch A false ⟧TheoryTy B ⊢ εTy
+NIL-elim m (ms , e , _) = ms , e , tt*
+
 NIL-branch⁻ : {ℓA : Level} {A : TheoryTy ℓA tt}
   → ⟦ starBranch A false ⟧TheoryTy (λ _ → A *) ⊢ LiftTheoryTy (ℓF ℓA) εTy
 NIL-branch⁻ m (ms , e , _) = lift (ms , e , tt*)

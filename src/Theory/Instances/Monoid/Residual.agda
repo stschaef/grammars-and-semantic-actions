@@ -30,9 +30,12 @@ import Theory.Type.Residual.Base MonEqns Alphabet (λ _ → tt) listPresentation
 
 private variable ℓ ℓ' ℓ'' ℓY : Level
 
--- `Eq.transport` goes through `subst`, so it leaves an `hcomp` even at
--- `Eq.refl`; matching the equation instead is what makes every cast below
--- vanish on canonical input.
+-- The discipline every cast below follows: build the equation in `Eq` and
+-- *match* it.  `Eq.transport` itself computes fine -- it is defined by
+-- `transport C refl b = b` -- but anything routed through a *path* does
+-- not: `Eq.pathToEq` is `JPath`, which does not reduce to `refl` even on
+-- `reflPath` (hence the separate propositional `pathToEq-reflPath`).  A
+-- cast built that way leaves an `hcomp` and blocks evaluation.
 castEq : {A : ↓M tt → Type ℓ} {x y : ↓M tt} → x Eq.≡ y → A x → A y
 castEq Eq.refl a = a
 
@@ -239,6 +242,17 @@ module _ {ℓA ℓB ℓX} {X : Type ℓX} {xs : X → Unit}
 ⊗ε-unit-r⁻ : {A : TheoryTy ℓ tt} → A ⊢ A ⊗ εTy
 ⊗ε-unit-r⁻ m a =
   two m [] , ++-unit-rEq m , (a , (εTy-pt , tt*))
+
+-- The left unit, by *matching* the two equations.  `Strings.⊗-unit-l`
+-- builds its equation as a path and converts with `pathToEq`, which is
+-- `JPath` and does not reduce -- so a parser built on it recognises but
+-- will not compute its value.  This one does.
+⊗ε-unit-l : {A : TheoryTy ℓ tt} → εTy ⊗ A ⊢ A
+⊗ε-unit-l {A = A} m (ms , e , (u , (a , _))) =
+  go (ms zero) (ms (suc zero)) m a (u .snd .fst) e
+  where
+  go : (x y w : ↓M tt) → A y → [] Eq.≡ x → (x ++ y) Eq.≡ w → A w
+  go .[] y .y a Eq.refl Eq.refl = a
 
 ⊗ε-unit-r : {A : TheoryTy ℓ tt} → A ⊗ εTy ⊢ A
 ⊗ε-unit-r {A = A} m (ms , e , (a , (u , _))) =
