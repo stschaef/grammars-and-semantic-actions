@@ -97,6 +97,12 @@ mixed = toks
   ∷ (klet , 9) ∷ (g , 13) ∷ (keq , 15) ∷ (n1 , 17)
   ∷ (h , 5) ∷ (keq , 7) ∷ (n2 , 9) ∷ [] )
 
+--   let x = 1 in x        -- all on one line
+oneLine : TokList
+oneLine = toks
+  ( (klet , 1) ∷ (x , 5) ∷ (keq , 7) ∷ (n1 , 9)
+  ∷ (kin , 11) ∷ (x , 14) ∷ [] )
+
 --   f = 1
 flat : TokList
 flat = toks ( (f , 1) ∷ (keq , 3) ∷ (n1 , 5) ∷ [] )
@@ -221,6 +227,16 @@ render-outdented : layout outdented
   ≡ just ( oTok (klet , 1) ∷ oOpen ∷ oTok (g , 5) ∷ oTok (keq , 7)
          ∷ oTok (a , 9) ∷ oClose ∷ oTok (h , 1) ∷ [] )
 render-outdented = refl
+
+-- The honest limitation, as a test.  Without Haskell's `parse-error(t)`
+-- rule the `in` is just another token indented past the block, so the
+-- block runs to the end of input and the `}` comes *after* `in x` instead
+-- of before `in`.  The stream is accepted by layout and would be rejected
+-- by any parser.  This is what a one-line `let` costs.
+render-oneLine : layout oneLine
+  ≡ just ( oTok (klet , 1) ∷ oOpen ∷ oTok (x , 5) ∷ oTok (keq , 7)
+         ∷ oTok (n1 , 9) ∷ oTok (kin , 11) ∷ oTok (x , 14) ∷ oClose ∷ [] )
+render-oneLine = refl
 
 -- A rejected stream renders as `nothing`, not as a malformed one.
 render-badIndent : layout badIndent ≡ nothing

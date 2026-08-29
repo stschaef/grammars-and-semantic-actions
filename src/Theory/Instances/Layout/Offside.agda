@@ -33,8 +33,13 @@
      * No `parse-error(t)` rule.  Haskell closes an implicit block when the
        enclosing parser would otherwise fail, which makes layout depend on
        the parser it feeds -- a mutual recursion this framework has no
-       reason to want.  So `let x = 1 in x` on one line is *not* accepted
-       here unless `in` outdents; the `}` before `in` has to be earned.
+       reason to want.  This is the real omission, and it is visible: a
+       one-line `let x = 1 in x` is *accepted*, but its `in` is indented
+       past the block, so the `}` lands at the end of input rather than
+       before the `in`, and the stream it renders to is one a parser would
+       reject.  `OffsideTests`' `oneLine` records exactly that.  Closing on
+       `in` means either a token that pops by fiat -- a two-line change,
+       and a lie about every other keyword -- or the mutual recursion.
      * No empty blocks.  `let` with nothing indented past it is a rejection
        rather than `{}`.
      * No explicit braces in the input, hence no interaction between them
