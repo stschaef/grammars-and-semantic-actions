@@ -63,7 +63,8 @@ module Theory.Instances.Infer.Base where
 open import Cubical.Data.FinData using (Fin ; zero ; suc)
 open import Cubical.Data.List using (List ; [] ; _∷_ ; _++_)
 open import Cubical.Data.List.Properties using (isOfHLevelList)
-open import Cubical.Data.Nat using (ℕ ; zero ; suc ; _+_ ; isSetℕ ; discreteℕ)
+open import Cubical.Data.Nat using (ℕ ; zero ; suc ; _+_ ; +-comm ; isSetℕ ; discreteℕ)
+import Cubical.Data.Nat.Order as NO
 open import Cubical.Data.Sigma using (Σ-syntax ; _×_ ; _,_ ; fst ; snd)
 open import Cubical.Data.Unit using (Unit ; tt)
 open import Cubical.Relation.Nullary.Base using (Dec ; yes ; no)
@@ -346,3 +347,115 @@ genComplete : (n : ℕ) (Γ : Ctx n) (A : Tm n) (k : ℕ) (t : RawTm)
   {m : ℕ} {Γ' : Ctx m} {A' : Tm m} (c : Core m Γ' A')
   → Agree Γ Γ' → erase c ≡ t → Gen n Γ A k t
 genComplete n Γ A k t c ag e = subst (Gen n Γ A k) e (genOf n c Γ ag A k)
+
+
+-- COMPLETENESS AS A MAP INTO A CELL -- AND WHY THAT IS ALL IT IS.
+--
+-- `Combinator/Complete` asks a client to exhibit its judgment as a CELL of
+-- a cover and read the checker, its soundness and its completeness off the
+-- cover's two fields.  For `Gen` the cell is the affirming half of
+-- `DecCover (Gen n Γ A k)`, the checker at `genM` is `total`, and
+-- `genComplete` is a MAP INTO that cell -- `Cor Γ ⊢ Gen n Γ A k` -- from
+-- which `disjoint` produces the refutation the front end wants.  That is
+-- the whole of the identification here, and `genCell` is it.
+--
+-- What does NOT happen is the reformulation that would have made `genOf`
+-- disappear.  The tempting cover is the one whose two cells are `Gen` and
+-- `¬ Cor`: its `total` would BE completeness, stated at the source term
+-- rather than at an erasure, and the induction above would be its proof
+-- rather than a theorem beside it.  That cover does not exist, and the
+-- reason is `disjoint`, which for those two cells is the CONVERSE of
+-- `genComplete` -- `Gen n Γ A k t → Cor Γ t` -- and is false.
+-- `xx` below is a witness: `x x` is perfectly well scoped, so `Gen` holds
+-- of it, and no intrinsically typed core term erases to it at any types
+-- whatever, because the two occurrences of `x` would have to be looked up
+-- at `B ⇛ A` and at `B` in ONE context, and `Lookup` resolves inwards.
+--
+-- So the split `Typing`'s header reports is visible here as a statement
+-- about covers: `Gen` is strictly weaker than typability, the cover it
+-- inhabits is the trivial one, and its `total` is decidability while
+-- completeness stays a separate map into the cell.  The induction is kept.
+Cor : {n : ℕ} → Ctx n → RawTm → Type ℓ-zero
+Cor Γ t = Σ[ m ∈ ℕ ] Σ[ Γ' ∈ Ctx m ] Σ[ A' ∈ Tm m ]
+  Σ[ c ∈ Core m Γ' A' ] (Agree Γ Γ' × (erase c ≡ t))
+
+genCell : (n : ℕ) (Γ : Ctx n) (A : Tm n) (k : ℕ) (t : RawTm)
+  → Cor Γ t → Gen n Γ A k t
+genCell n Γ A k t (m , Γ' , A' , c , ag , e) = genComplete n Γ A k t c ag e
+
+
+-- The witness, and its refutation.  Nothing about `Agree` or about the
+-- scope is used: `Cor` fails at EVERY context and every scope, which is
+-- what makes it a counterexample to `disjoint` and not merely to one
+-- instance of it.
+private
+  isApp isVarT : RawTm → Type ℓ-zero
+  isApp (tvar _) = Empty.⊥
+  isApp (tapp _ _) = Unit
+  isApp (tlam _ _) = Empty.⊥
+  isVarT (tvar _) = Unit
+  isVarT (tapp _ _) = Empty.⊥
+  isVarT (tlam _ _) = Empty.⊥
+
+  appFun appArg : RawTm → RawTm
+  appFun (tapp f _) = f
+  appFun (tvar x) = tvar x
+  appFun (tlam x t) = tlam x t
+  appArg (tapp _ a) = a
+  appArg (tvar x) = tvar x
+  appArg (tlam x t) = tlam x t
+
+  unTvar : ℕ → RawTm → ℕ
+  unTvar d (tvar x) = x
+  unTvar d (tapp _ _) = d
+  unTvar d (tlam _ _) = d
+
+  tySize : Tm n → ℕ
+  tySize (var _) = 1
+  tySize leaf = 1
+  tySize (fork a b) = suc (tySize a + tySize b)
+
+  -- A type is not one of its own arguments, which is the occurs check said
+  -- once, without a machine.
+  noSelfFork : (B A : Tm n) → B ⇛ A ≡ B → Empty.⊥
+  noSelfFork B A e =
+    NO.¬m<m (subst (λ z → tySize B NO.< z) (cong tySize e) lt)
+    where
+    lt : tySize B NO.< tySize (B ⇛ A)
+    lt = NO.suc-≤-suc (tySize A , +-comm (tySize A) (tySize B))
+
+  -- A core term erasing to a variable reads that variable's type off the
+  -- context, whatever type it was indexed at.
+  varCore : {m : ℕ} {Γ' : Ctx m} {A' : Tm m} (c : Core m Γ' A') (x : ℕ)
+    → erase c ≡ tvar x → A' ≡ lookD Γ' x
+  varCore {Γ' = Γ'} {A' = A'} (cvar y v) x e =
+    subst (λ z → A' ≡ lookD Γ' z) (cong (unTvar y) e) (lookDef Γ' A' y v)
+  varCore (capp f a) x e = Empty.rec (subst isVarT (sym e) tt)
+  varCore (clam y b) x e = Empty.rec (subst isVarT (sym e) tt)
+
+  -- ...so a self-application would ask one context for two types at one
+  -- name, and `lookD` is a function.
+  appCore : {m : ℕ} {Γ' : Ctx m} {A' : Tm m} (c : Core m Γ' A') (x y : ℕ)
+    → erase c ≡ tapp (tvar x) (tvar y) → x ≡ y → Empty.⊥
+  appCore (cvar z v) x y e _ = subst isApp (sym e) tt
+  appCore (clam z b) x y e _ = subst isApp (sym e) tt
+  appCore {Γ' = Γ'} (capp {A = A} {B = B} f a) x y e xy =
+    noSelfFork B A (ef ∙∙ cong (lookD Γ') xy ∙∙ sym ea)
+    where
+    ef : B ⇛ A ≡ lookD Γ' x
+    ef = varCore f x (cong appFun e)
+
+    ea : B ≡ lookD Γ' y
+    ea = varCore a y (cong appArg e)
+
+xx : RawTm
+xx = tapp (tvar 0) (tvar 0)
+
+xxCtx : Ctx 0
+xxCtx = (0 , leaf) ∷ []
+
+genXX : Gen 0 xxCtx leaf 0 xx
+genXX = Sum.inl (refl , refl) , Sum.inl (refl , refl)
+
+noCorXX : Cor xxCtx xx → Empty.⊥
+noCorXX (m , Γ' , A' , c , ag , e) = appCore c 0 0 e refl

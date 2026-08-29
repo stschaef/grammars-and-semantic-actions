@@ -108,6 +108,13 @@ elaborate t = inferCore (closed t) t
 scopeOnly : (i : Goal) → RawTm → Maybe ℕ
 scopeOnly i = observe (CD.inferred (genM i)) (semact-dec (shapeAction i))
 
+-- ...and the same run read as a VERDICT rather than as an answer.  This is
+-- what `Typing`'s `genCell` buys: not `Maybe`, but a shape derivation or a
+-- proof that no intrinsically typed core term erases to `t` at any types
+-- whatever.  It is total, so no `nothing` case survives to the caller.
+shapeVerdict : (i : Goal) (t : RawTm) → GenOrNoCor i t
+shapeVerdict i t = genVerdict i t (CD.inferred (genM i) t tt)
+
 -- `Maybe`: the same source text with no refutation to propagate.
 inferM : (i : Goal) → RawTm → Maybe (Σ[ m ∈ ℕ ] Tm m)
 inferM i = observe (CI.inferred (infM i)) (semact-Maybe (tyAction i))

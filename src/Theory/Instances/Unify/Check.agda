@@ -39,7 +39,16 @@
    `1` is the identity alone, while the restriction can be
    `fork (var 0) (var 0)`).  The only way to produce the premise's chain is
    to run the algorithm, which is what the answer we are trying to build
-   would have done.  See the end of `Correct`. -}
+   would have done.  See the end of `Correct`.
+
+   That argument is about `AList`, and it is why the judgment is not the
+   specification RULE BY RULE.  It is not why the two differ EXTENSIONALLY,
+   and `Solvable` proves they do not: `complete` is `Sol n ps` for every
+   stack some substitution unifies, by the same recursion `unify` runs on,
+   so the checker exported here decides solvability and not merely
+   termination.  What stays true is that the equivalence is a theorem
+   applied afterwards rather than an `Ans-map&` inside `step` -- the same
+   asymmetry `Infer/Elaborate` reports for `verified`. -}
 open import Cubical.Foundations.Prelude
 open import Cubical.Foundations.HLevels
 module Theory.Instances.Unify.Check where
