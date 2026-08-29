@@ -27,6 +27,11 @@
      Semantics.Displayed.RightAdjoint       displayed right adjoints, ported to uncurried style
      Semantics.Displayed.Model              displayed models: what a gluing argument is stated against
 
+   The free model
+     Semantics.Free.Syntax                  objects inductively, morphisms as a QIT (infinitary)
+     Semantics.Free.Model                   that syntax as a Model, one universe up
+     Semantics.Free.Eliminator              interpretation of generators; object part of the eliminator
+
    Example
      Semantics.Examples.StarParser          a Kleene star parser, written once for all models
      Semantics.Examples.StarParserDemo      the same parser elaborated in both models below
@@ -64,6 +69,10 @@ open import Semantics.Later
 open import Semantics.Displayed.IndexedProduct
 open import Semantics.Displayed.RightAdjoint
 open import Semantics.Displayed.Model
+
+open import Semantics.Free.Syntax
+open import Semantics.Free.Model
+open import Semantics.Free.Eliminator
 
 open import Semantics.Instances.Families
 open import Semantics.Instances.Recovered
