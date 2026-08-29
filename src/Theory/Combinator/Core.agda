@@ -195,11 +195,15 @@ record AnswerFunctor : Typeω where
     Ans-⊕& : {ℓA ℓB : Level} {s : S} {A : TheorySet ℓA s} {B : TheorySet ℓB s}
       → ty (Ans A) & ty (Ans B) ⊢ ty (Ans (A ⊕Set B))
 
-    -- ...and the conjunctive counterpart.  A rule with a side condition
-    -- *and* a premise in the same slot needs this: an operation has exactly
-    -- its arity many slots, so a condition that is not itself an argument
-    -- has to ride along with one.  Linear typing's application rule is the
-    -- case in point -- the partition check travels with the function.
+    -- ...and the conjunctive counterpart.  This is how a side condition
+    -- reaches a rule at all: an operation has exactly its arity many
+    -- slots, so a condition that is not itself an argument has nowhere of
+    -- its own to sit.  Conjoin it with the NODE and not with a slot: the
+    -- cell of the cover is `⊗ᴰSet o (Slots o i) &Set SideSet i`, and
+    -- `Slots` stays a list of premises.  `Layout/Offside` is forced into
+    -- that shape -- `nilOp` is nullary and has no slot to ride at all --
+    -- and `Annotated/Linear` is merely honest for it; both are written
+    -- that way, and a seventh client should be too.
     Ans-&& : {ℓA ℓB : Level} {s : S} {A : TheorySet ℓA s} {B : TheorySet ℓB s}
       → ty (Ans A) & ty (Ans B) ⊢ ty (Ans (A &Set B))
 
@@ -221,11 +225,10 @@ record AnswerFunctor : Typeω where
     -- `nilOp` -- and neither needed a change here: `Ans-map&` will do it,
     -- since the cover cell is exactly the knowledge that makes the grammar
     -- empty, and `Ans-&&` will attach the condition at the node rather than
-    -- at a slot.  `Layout`'s form is the better convention: state every
-    -- operation's side condition as `⊗ᴰSet o (Slots o S) &Set SideSet o S`
-    -- and `Slots` stays pure recursive calls, where `Linear` instead hangs
-    -- its partition check off the function's slot.  Worth adopting before
-    -- the next client repeats the choice a third way.
+    -- at a slot.  The second of those is now the house convention -- see
+    -- `Ans-&&` above, and `Theory/Combinator/README` -- but it is a
+    -- convention that the types permit rather than enforce: nothing here
+    -- stops a client from hanging a condition off a slot again.
     Ans-node : {ℓA : Level} (o : σ .ops) → Precise o
       → {As : NodeArgs ℓA o} {ms : interpIn o ↓M}
       → ((a : arities σ o) → ty (Ans (As ms a)) (ms a))

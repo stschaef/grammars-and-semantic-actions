@@ -111,6 +111,14 @@ ScopeSet Γ = Scope Γ , λ t → isProp→isSet (isPropScope Γ t)
 ⊤Set : {s : LSort} → TheorySet ℓ-zero s
 ⊤Set = ⊤Ty , isSet⊤Ty
 
+-- The binder slot's "condition", named rather than written inline, so that
+-- every slot of every rule below enters the answer the same way: through a
+-- `Decidable` and `Ans-ofDec`.  This one happens to be trivially true --
+-- the untyped calculus asks nothing of a bound name -- and saying so out
+-- loud is cheaper than an exception to the convention.
+dec⊤ : {s : LSort} → Decidable (⊤Ty {s = s})
+dec⊤ _ _ = Sum.inl tt
+
 -- The three productions, as the slots of their nodes.  Only `lamOp` uses
 -- the dependency on the splitting, and it is the whole reason for `⊗ᴰ`.
 Slots : (o : LOp) → Ctx → NodeArgs ℓ-zero o
@@ -164,7 +172,7 @@ module Check (𝒯 : AnswerFunctor) where
     nodeAns lamOp m (β , (ms , Eq.refl)) =
       Ans-node lamOp (preciseλ lamOp) {As = Slots lamOp Γ} {ms = ms}
         λ where
-          theBinder → Ans-ofDec (ms theBinder) (Sum.inl tt)
+          theBinder → Ans-ofDec (ms theBinder) (dec⊤ (ms theBinder) tt)
           theBody → callAt (ms theBinder ∷ Γ)
             (callBody {x = Γ} {x' = ms theBinder ∷ Γ}
               (ms theBinder) (ms theBody)) β

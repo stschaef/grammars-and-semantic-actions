@@ -24,7 +24,24 @@
 
    What is genuinely out of reach is linear *inference*: if the types were
    unknown the split would stop being computable, and then it would be a
-   route after all.  Checking is syntax-directed; inference is not. -}
+   route after all.  Checking is syntax-directed; inference is not.
+
+   THE SIDE CONDITION SITS AT THE NODE.  `⊗ᴰ` gives an operation exactly
+   its arity many slots, so a condition that is not one of the arguments
+   has nowhere of its own to sit.  An earlier version of this file made the
+   partition check ride along with the function's derivation --
+   `Slots (appOp B) … theFun = PartSet … &Set LinSet …` -- which typechecks
+   and misstates the rule: the partition constrains the *application*, not
+   the function, and `Slots` thereby stopped being a list of premises.  The
+   cell of the cover is `⊗ᴰSet o (Slots o i) &Set SideSet i` instead.
+   `Slots` is then pure recursive calls -- character for character
+   `Typing`'s, but for `keep` -- and every condition of every rule is in
+   one place, `SideT`.
+
+   `Layout/Offside` arrives at the same convention from the other
+   direction, at a *nullary* operation where there is no slot to ride at
+   all.  That it is forced there and merely honest here is the argument for
+   making it the house rule rather than a local trick. -}
 open import Cubical.Foundations.Prelude
 open import Cubical.Foundations.HLevels
 open import Cubical.Algebra.Theory.Finitary
@@ -38,7 +55,7 @@ open import Cubical.Data.FinData using (Fin ; zero ; suc)
 open import Cubical.Data.List using (List ; [] ; _∷_)
 open import Cubical.Data.Nat using (ℕ ; isSetℕ ; discreteℕ)
 open import Cubical.Data.Sigma using (_×_ ; _,_ ; fst ; snd)
-open import Cubical.Data.Unit using (Unit ; tt)
+open import Cubical.Data.Unit using (Unit ; tt ; isPropUnit)
 open import Cubical.Relation.Nullary.Base using (Dec ; yes ; no ; Discrete)
 open import Cubical.Relation.Nullary.Properties using (Discrete→isSet)
 import Cubical.Data.Sum as Sum
@@ -118,20 +135,50 @@ discreteCtx (p ∷ Γ) (q ∷ Δ) = onParts (discretePr p q) (discreteCtx Γ Δ)
     tl [] = Γ
     tl (_ ∷ Θ) = Θ
 
+-- Every rule's side condition, in one place, as a predicate on terms.
+-- Only the application has one.  The `var` rule's "Γ is exactly this
+-- singleton" and the `lam` rule's "A is an arrow with domain B" are
+-- conditions on the operation's *name* slot -- a genuine argument, with a
+-- genuine premise's shape -- so those stay where they are; what moves here
+-- is the condition that never had a slot of its own.
+SideT : Jdg → TheoryTy ℓ-zero tm
+SideT (Γ , A) (avar x) = Unit
+SideT (Γ , A) (aapp B f a) = partitions Γ f a ≡ true
+SideT (Γ , A) (alam x B t) = Unit
+
+isPropSideT : (i : Jdg) (t : ATm) → isProp (SideT i t)
+isPropSideT (Γ , A) (avar x) = isPropUnit
+isPropSideT (Γ , A) (aapp B f a) = isSetBool _ _
+isPropSideT (Γ , A) (alam x B t) = isPropUnit
+
+SideSet : Jdg → TheorySet ℓ-zero tm
+SideSet i = SideT i , λ t → isProp→isSet (isPropSideT i t)
+
+decSide : (i : Jdg) → Decidable (SideT i)
+decSide (Γ , A) (avar x) _ = Sum.inl tt
+decSide (Γ , A) (aapp B f a) _ = onB (partitions Γ f a)
+  where
+  onB : (b : Bool) → (b ≡ true) Sum.⊎ ((b ≡ true) → ⊥Ty (aapp B f a))
+  onB true = Sum.inl refl
+  onB false = Sum.inr λ p → Empty.rec (false≢true p)
+decSide (Γ , A) (alam x B t) _ = Sum.inl tt
+
 -- The judgment.  Same shape as `Der`, with linearity threaded through
--- `keep` and enforced by `partitions` at the application.
+-- `keep` and enforced by `SideT` at the application -- stated in the
+-- association the node rule produces: the condition, then the premises.
 Lin : Jdg → TheoryTy ℓ-zero tm
 Lin (Γ , A) (avar x) = Γ ≡ ((x , A) ∷ [])
 Lin (Γ , A) (aapp B f a) =
-  ((partitions Γ f a ≡ true) × Lin (keep Γ f , B ⇒ A) f)
-  × Lin (keep Γ a , B) a
+  SideT (Γ , A) (aapp B f a)
+  × (Lin (keep Γ f , B ⇒ A) f × Lin (keep Γ a , B) a)
 Lin (Γ , A) (alam x B t) = ArrHead A B × Lin ((x , B) ∷ Γ , cod A) t
 
 isPropLin : (i : Jdg) (t : ATm) → isProp (Lin i t)
 isPropLin (Γ , A) (avar x) = isSetCtx _ _
 isPropLin (Γ , A) (aapp B f a) =
-  isProp× (isProp× (isSetBool _ _) (isPropLin (keep Γ f , B ⇒ A) f))
-          (isPropLin (keep Γ a , B) a)
+  isProp× (isPropSideT (Γ , A) (aapp B f a))
+          (isProp× (isPropLin (keep Γ f , B ⇒ A) f)
+                   (isPropLin (keep Γ a , B) a))
 isPropLin (Γ , A) (alam x B t) =
   isProp× (isPropArrHead A B) (isPropLin ((x , B) ∷ Γ , cod A) t)
 
@@ -150,46 +197,45 @@ decSing Γ A x _ = onEq (discreteCtx Γ ((x , A) ∷ []))
   onEq (yes p) = Sum.inl p
   onEq (no ¬p) = Sum.inr λ p → Empty.rec (¬p p)
 
-PartSet : Ctx → ATm → ATm → TheorySet ℓ-zero tm
-PartSet Γ f a =
-  (λ _ → partitions Γ f a ≡ true) , λ _ → isProp→isSet (isSetBool _ _)
-
-decPart : (Γ : Ctx) (f a : ATm) → Decidable (ty (PartSet Γ f a))
-decPart Γ f a m _ = onB (partitions Γ f a)
-  where
-  onB : (b : Bool) → (b ≡ true) Sum.⊎ ((b ≡ true) → ⊥Ty m)
-  onB true = Sum.inl refl
-  onB false = Sum.inr λ p → Empty.rec (false≢true p)
-
--- The rules.  `theFun`'s slot carries the partition condition alongside
--- the function's derivation, because an operation has exactly its arity
--- many slots and there is no third one to put a side condition in.
+-- The rules, as the slots of their nodes: pure recursive calls, now that
+-- the side condition has moved to the node.  Compare `Typing`'s `Slots`,
+-- which these are line for line but for `keep`.
 Slots : (o : AOp) → Jdg → NodeArgs ℓ-zero o
 Slots varOp (Γ , A) ms theVar = SingSet Γ A
-Slots (appOp B) (Γ , A) ms theFun =
-  PartSet Γ (ms theFun) (ms theArg)
-    &Set LinSet (keep Γ (ms theFun) , B ⇒ A)
+Slots (appOp B) (Γ , A) ms theFun = LinSet (keep Γ (ms theFun) , B ⇒ A)
 Slots (appOp B) (Γ , A) ms theArg = LinSet (keep Γ (ms theArg) , B)
 Slots (lamOp B) (Γ , A) ms theBinder = ArrSet A B
 Slots (lamOp B) (Γ , A) ms theBody =
   LinSet ((ms theBinder , B) ∷ Γ , cod A)
 
-rollNode : (o : AOp) (i : Jdg) → ⊗ᴰ o (Slots o i) ⊢ Lin i
-rollNode varOp (Γ , A) m (ms , Eq.refl , ws) = ws theVar
-rollNode (appOp B) (Γ , A) m (ms , Eq.refl , ws) = ws theFun , ws theArg
-rollNode (lamOp B) (Γ , A) m (ms , Eq.refl , ws) = ws theBinder , ws theBody
+-- ...and the cell of the cover: the node, conjoined with the side
+-- condition that no slot should have been carrying.
+Cell : (o : AOp) → Jdg → TheorySet ℓ-zero tm
+Cell o i = ⊗ᴰSet o (Slots o i) &Set SideSet i
 
-unrollNode : (o : AOp) (i : Jdg) → Lin i & NodeAt o ⊢ ⊗ᴰ o (Slots o i)
+-- One level of unfolding, both ways, as `⊢`-terms.
+rollNode : (o : AOp) (i : Jdg) → ty (Cell o i) ⊢ Lin i
+rollNode varOp (Γ , A) m ((ms , Eq.refl , ws) , sd) = ws theVar
+rollNode (appOp B) (Γ , A) m ((ms , Eq.refl , ws) , sd) =
+  sd , (ws theFun , ws theArg)
+rollNode (lamOp B) (Γ , A) m ((ms , Eq.refl , ws) , sd) =
+  ws theBinder , ws theBody
+
+unrollNode : (o : AOp) (i : Jdg) → Lin i & NodeAt o ⊢ ty (Cell o i)
 unrollNode varOp (Γ , A) m (d , (ms , Eq.refl)) =
-  node-mk {ms = ms} λ where theVar → d
+  node-mk {ms = ms} (λ where theVar → d) , tt
 unrollNode (appOp B) (Γ , A) m (d , (ms , Eq.refl)) =
-  node-mk {ms = ms} λ where
-    theFun → d .fst
-    theArg → d .snd
+  node-mk {ms = ms}
+    (λ where
+      theFun → d .snd .fst
+      theArg → d .snd .snd)
+  , d .fst
 unrollNode (lamOp B) (Γ , A) m (d , (ms , Eq.refl)) =
-  node-mk {ms = ms} λ where
-    theBinder → d .fst
-    theBody → d .snd
+  node-mk {ms = ms}
+    (λ where
+      theBinder → d .fst
+      theBody → d .snd)
+  , tt
 
 
 module Check (𝒯 : AnswerFunctor) where
@@ -209,12 +255,9 @@ module Check (𝒯 : AnswerFunctor) where
       Ans-node (appOp B) (preciseA (appOp B))
         {As = Slots (appOp B) (Γ , A)} {ms = ms}
         λ where
-          theFun → Ans-&& (ms theFun)
-            ( Ans-ofDec (ms theFun)
-                (decPart Γ (ms theFun) (ms theArg) (ms theFun) tt)
-            , callAt (keep Γ (ms theFun) , B ⇒ A)
-                (callFun {x = Γ , A} {x' = keep Γ (ms theFun) , B ⇒ A}
-                  B (ms theFun) (ms theArg)) β )
+          theFun → callAt (keep Γ (ms theFun) , B ⇒ A)
+            (callFun {x = Γ , A} {x' = keep Γ (ms theFun) , B ⇒ A}
+              B (ms theFun) (ms theArg)) β
           theArg → callAt (keep Γ (ms theArg) , B)
             (callArg {x = Γ , A} {x' = keep Γ (ms theArg) , B}
               B (ms theFun) (ms theArg)) β
@@ -227,11 +270,16 @@ module Check (𝒯 : AnswerFunctor) where
             (callBody {x = Γ , A} {x' = (ms theBinder , B) ∷ Γ , cod A}
               (ms theBinder) B (ms theBody)) β
 
+    -- the cell: the node, and the side condition read by `Ans-ofDec`
+    cellAns : (o : AOp) → ▷ (AnsFam LinSet) (Γ , A) & NodeAt o
+      ⊢ ty (Ans (Cell o (Γ , A)))
+    cellAns o = Ans-&& ∘⊢ (nodeAns o ,& side (decSide (Γ , A)))
+
     branch : (o : AOp)
       → ▷ (AnsFam LinSet) (Γ , A) & NodeAt o ⊢ ty (Ans (LinSet (Γ , A)))
     branch o =
       Ans-map& (rollNode o (Γ , A) ∘⊢ π₁) (unrollNode o (Γ , A))
-      ∘⊢ (nodeAns o ,& π₂)
+      ∘⊢ (cellAns o ,& π₂)
 
   linear : Checker LinSet
   linear = fix step

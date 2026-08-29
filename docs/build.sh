@@ -109,9 +109,29 @@ hr{border:0;border-top:1px solid var(--rule);margin:2.5rem 0}
 <a href="#aguard">Annotated/Guard</a>
 <a href="#atyping">Annotated/Typing</a>
 <a href="#aelab">Annotated/Elaborate</a>
-<a href="#alin">Annotated/Linear</a>
 <a href="#atests">TypingTests</a>
+<b>Client 3 &mdash; linear</b>
+<a href="#alin">Annotated/Linear</a>
+<a href="#alintests">LinearTests</a>
+<b>Client 4 &mdash; matching</b>
+<a href="#mbase">Match/Base</a>
+<a href="#mguard">Match/Guard</a>
+<a href="#mjudg">Match/Judgment</a>
+<a href="#mbind">Match/Bindings</a>
+<a href="#mexh">Match/Exhaustive</a>
+<a href="#mtests">Match/Tests</a>
+<b>Client 5 &mdash; layout</b>
+<a href="#ybase">Layout/Base</a>
+<a href="#yguard">Layout/Guard</a>
+<a href="#yoffside">Layout/Offside</a>
+<a href="#yrender">Layout/Render</a>
+<a href="#ytests">OffsideTests</a>
+<b>Client 6 &mdash; instances</b>
+<a href="#cbase">Class/Base</a>
+<a href="#cresolve">Class/Resolve</a>
+<a href="#ctests">ResolveTests</a>
 <b>Reflection</b>
+<a href="#conventions">House conventions</a>
 <a href="#internal">Is it internal?</a>
 <a href="#trade">⊗ᴰ vs. summed indices</a>
 <a href="#boundary">Where it stops</a>
@@ -120,11 +140,11 @@ hr{border:0;border-top:1px solid var(--rule);margin:2.5rem 0}
 <main>
 
 <h1>Combinators for an arbitrary theory</h1>
-<p class="sub">A port of the parser-combinator framework off the free monoid, with a scope checker and a type checker written once and run at three different notions of &ldquo;answer&rdquo;.</p>
+<p class="sub">A port of the parser-combinator framework off the free monoid, with six clients &mdash; scope checking, type checking, linear typing, pattern matching, the offside rule and typeclass instance resolution &mdash; each written once and run at three different notions of &ldquo;answer&rdquo;.</p>
 
 <h2 id="what">What this is</h2>
 
-<p class="lede">The existing framework in this repository parses <em>strings</em>. This is that framework with the strings taken out, plus two clients that are not parsers at all.</p>
+<p class="lede">The existing framework in this repository parses <em>strings</em>. This is that framework with the strings taken out, plus six clients, not one of which is a parser.</p>
 
 <p>The setting is a <strong>finitary algebraic theory</strong> &mdash; a signature of operations, possibly with equations. Every such theory has a free model, and a <strong>grammar</strong> is a predicate on the elements of that model:</p>
 
@@ -140,6 +160,8 @@ hr{border:0;border-top:1px solid var(--rule);margin:2.5rem 0}
 </table>
 
 <p>The last row is what this work uses. A grammar over a lambda signature is a predicate on lambda terms &mdash; and &ldquo;is this term well-scoped?&rdquo; and &ldquo;does this term have type <code>A</code>?&rdquo; are exactly such predicates. So a scope checker and a type checker are <em>parsers</em>, in a precise sense, and they can be built from the same combinators.</p>
+
+<p>Then the question becomes how far the sense stretches, and the answer is the interesting part. Change the model to <em>values</em> and the same combinators do pattern matching; to <em>token streams</em> and they do the offside rule, which is the standard counterexample to &ldquo;syntax is context-free&rdquo;; to <em>types</em> and they do typeclass instance resolution. Change nothing but a client&rsquo;s <code>Slots</code> and intuitionistic typing becomes linear typing. Six clients, one <code>fix step</code>.</p>
 
 <div class="note"><span class="k">The payoff</span>
 <p>Each client is written <strong>once</strong>, mentioning no particular notion of answer, and then instantiated three ways: as a <em>decision procedure</em> that returns a proof or a refutation, as a <em>partial function</em> that returns at most one result, and as an <em>enumerator</em> that returns every derivation. Same source text, three behaviours.</p></div>
@@ -228,16 +250,26 @@ Precise o  = ∀ m → isProp (NodeAt o m)      -- "...in exactly one way"</code
 
 <h3 id="core-answer">The <code>AnswerFunctor</code></h3>
 
-<p>Five fields. This is the entire interface a new backend must implement.</p>
+<p>Six fields. This is the entire interface a new backend must implement.</p>
 
 <table>
 <tr><th>Field</th><th>In words</th></tr>
 <tr><td><code>Ans</code></td><td>What an answer about a grammar <em>is</em>.</td></tr>
 <tr><td><code>Ans-map&amp;</code></td><td>Relabel an answer along a renaming of grammars &mdash; given a hypothesis both directions may use.</td></tr>
 <tr><td><code>Ans-⊕&amp;</code></td><td>An answer about <code>A</code> and one about <code>B</code> combine into one about <code>A</code>&nbsp;or&nbsp;<code>B</code>. <em>This single field is the entire difference between the three backends.</em></td></tr>
-<tr><td><code>Ans-ofDec</code></td><td>Any decision is an answer. How side conditions get in.</td></tr>
+<tr><td><code>Ans-&amp;&amp;</code></td><td>&hellip;and the conjunctive counterpart. This is how a <em>side condition</em> reaches a rule: an operation has exactly its arity many slots, so a condition that is not itself an argument has nowhere of its own to sit, and gets conjoined with the whole node.</td></tr>
+<tr><td><code>Ans-ofDec</code></td><td>Any decision is an answer. The one door a side condition comes through.</td></tr>
 <tr><td><code>Ans-node</code></td><td>Answers at the arguments give an answer at the node.</td></tr>
 </table>
+
+<h4>Two refinements, and the asymmetry between them</h4>
+
+<p><code>CovariantAnswer</code> adds a plain <code>fmap</code> and an <em>empty answer</em> at any grammar. <code>Dec</code> has neither, and the second refusal is the interesting one: <code>⊤Ty ⊢ DecTy A</code> at an arbitrary <code>A</code> <em>is</em> a decision procedure, not a default. One cannot decline to decide.</p>
+
+<p><code>CommittingAnswer</code> adds <code>Ans-route</code>, which answers an indexed sum <code>⊕[ y ∈ Y ] Φ y</code> by consulting a <code>Route</code> &mdash; a cover of the model by <code>Maybe Y</code> &mdash; instead of asking every alternative. This is the field the framework was missing, and it is what a judgment whose <em>premise index is an output</em> needs. See <a href="#cresolve">instance resolution</a>, where the route&rsquo;s <code>disjoint</code> turns out to be coherence.</p>
+
+<div class="note"><span class="k">The split, stated once</span>
+<p>An answer that can <strong>commit</strong> routes; an answer that can <strong>give up</strong> enumerates. <code>Ans-route</code> needs a cover and gives you back which alternative was taken. <code>Ans-anyFin</code> needs <code>Ans-empty</code>, asks everything, and cannot tell you &mdash; because more than one may have fired. So a judgment whose alternatives are <em>not</em> known exclusive is available at <code>Maybe</code> and <code>ND</code> and <strong>unwritable at <code>Dec</code></strong>. That is not a hole to patch; an answer has to say what it does with the alternatives it did not take.</p></div>
 
 <h4>Why <code>Ans-map&amp;</code> carries a hypothesis</h4>
 
@@ -370,6 +402,20 @@ HTML
 code Theory/Instances/Lambda/Scope.agda
 
 cat <<'HTML'
+<h3 id="lname">What the derivation was for</h3>
+
+<p>A checker that only says <em>yes</em> is a checker nobody ships. <code>Scope Γ t</code> is data, and the data answers a question the checker already asked: <code>InCtx</code> is not a boolean but a chain of &ldquo;not this binder&rdquo; steps ending in a hit, and <strong>counting the steps is the de Bruijn index</strong>. So conversion to nameless form is a <em>fold of the derivation</em>, not a second walk over the context.</p>
+
+<p>The boundary out of the language is crossed exactly once, and it is spelled the same way in every client that has a readout:</p>
+
+<pre><code>compile Γ = observe (CD.scoped Γ) (semact-dec (nameAction Γ))</code></pre>
+
+<p>Three internal terms composed &mdash; the checker <code>⊤Ty ⊢ DecTy (Scope Γ)</code>, the action <code>semact-dec</code> builds from <code>nameAction</code>, and <code>observe</code>, the one place a <code>⊤Ty</code>-map is read out. Nothing is hand-rolled, and <code>db-shadow</code> is <code>refl</code>, so the typechecker performs the conversion.</p>
+
+HTML
+code Theory/Instances/Lambda/Nameless.agda
+
+cat <<'HTML'
 <h3 id="ltests">Running it three ways</h3>
 
 <p>Every test is <code>refl</code>, so they are executed by the typechecker: the combinators, the guarded fixpoint and all three answers reduce on concrete input. Worth reading for what it demonstrates rather than for the code:</p>
@@ -442,6 +488,16 @@ HTML
 code Theory/Instances/Annotated/Typing.agda
 
 cat <<'HTML'
+<h3 id="aelab">Elaboration: the same trick, one level up</h3>
+
+<p>Worth repeating because it is the argument for proof-relevance generally. <code>Der (Γ , A) t</code> could have had a variable rule reading <code>lookC Γ x ≡ just A</code>. That is the same proposition &mdash; and it carries nothing. <code>Lookup Γ A x</code> carries the <em>position</em>, so <code>elab</code> emits <code>cvar (deBruijn …)</code> by reading rather than by searching.</p>
+
+<p><code>elab</code> has no failure case, and that is the point: a derivation <em>is</em> the proof that the term checks, so elaboration is total on derivations. Ill-typed input never reaches the fold &mdash; <code>elab-bad</code> is <code>nothing</code> because the checker refuted, not because the fold gave up.</p>
+
+HTML
+code Theory/Instances/Annotated/Elaborate.agda
+
+cat <<'HTML'
 <h3 id="atests">Running it three ways</h3>
 
 <table>
@@ -456,6 +512,254 @@ cat <<'HTML'
 
 HTML
 code Theory/Instances/Annotated/TypingTests.agda
+
+cat <<'HTML'
+<h2 id="alin">Client 3 &mdash; linear typing: the same terms, a different discipline</h2>
+
+<p>This is the client that was expected to break the framework. The multiplicative rule splits the context:</p>
+
+<pre><code>Γ₁ ⊢ f : B ⊸ A     Γ₂ ⊢ a : B
+------------------------------  Γ = Γ₁ ⊎ Γ₂
+         Γ ⊢ f a : A</code></pre>
+
+<p>and <code>Γ₁</code>, <code>Γ₂</code> look like <em>outputs</em> &mdash; which by the rule of thumb would owe a <code>Route</code> over exponentially many splits.</p>
+
+<div class="note"><span class="k">They are not outputs</span>
+<p>Which variables <code>f</code> consumes is a <em>syntactic</em> fact about <code>f</code>. So <code>Γ₁ = keep Γ f</code> is a function of the conclusion&rsquo;s context and slot zero&rsquo;s <em>value</em> &mdash; and a slot index computed from another slot&rsquo;s value is exactly what <code>⊗ᴰ</code> is. No search, no route.</p>
+<p>Stated generally: <strong><code>⊗ᴰ</code>&rsquo;s dependency <em>is</em> the leftover/threading discipline.</strong> In the string framework the same idea is the continuation &mdash; what the head leaves for the tail; here it is what the function leaves for the argument. Same shape, different theory.</p></div>
+
+<p>What is genuinely out of reach is linear <em>inference</em>. If the types were unknown the split would stop being computable, and then it would be a route after all. Checking is syntax-directed; inference is not. That is the honest boundary, and it is the same one the annotation on <code>appOp B</code> draws.</p>
+
+<h4>Where the side condition lives, and why it moved</h4>
+
+<p><code>keep</code> computes the split, but nothing so far says the halves <em>partition</em> &mdash; that every variable is used exactly once rather than zero times or twice. That is a condition on the <em>application</em>, and an operation has exactly its arity many slots, so there is no third slot to put it in.</p>
+
+<p>An earlier version of this file hung it off the function&rsquo;s slot, <code>Slots (appOp B) … theFun = PartSet … &amp;Set LinSet …</code>. It typechecks, and it misstates the rule: the partition constrains the application, not the function, and <code>Slots</code> stopped being a list of premises. The condition now sits at the <em>node</em>,</p>
+
+<pre><code>Cell o i = ⊗ᴰSet o (Slots o i) &amp;Set SideSet i</code></pre>
+
+<p>which leaves <code>Slots</code> character for character <a href="#atyping"><code>Typing</code></a>&rsquo;s, but for <code>keep</code>, and collects every rule&rsquo;s condition in one place. <a href="#yoffside">Layout</a> is <em>forced</em> into the same shape by a nullary operation, which is the argument for making it the house rule rather than a local trick; see <a href="#conventions">the conventions</a>.</p>
+
+<h4 id="alintests">Two disciplines, one syntax</h4>
+
+<p><code>LinearTests</code> reports each term as <code>(intuitionistic , linear)</code> against the same syntax, the same node cover and the same <code>fix step</code>; only the <code>Slots</code> differ. <code>konst</code> is <code>(true , false)</code> &mdash; weakening. <code>dbl</code>, which uses <code>f</code> twice, is <code>(true , false)</code> &mdash; contraction. Where they agree the term is linear; where they differ it is the discipline talking, not the framework.</p>
+
+HTML
+code Theory/Instances/Annotated/Linear.agda
+code Theory/Instances/Annotated/LinearTests.agda
+
+cat <<'HTML'
+<h2 id="mbase">Client 4 &mdash; pattern matching, and what a nullary operation costs</h2>
+
+<p>The index/model split here is the mirror image of the type checker&rsquo;s. There the index was a type and the guard descended on the term; here the index is a <em>pattern</em> and the guard descends on the scrutinee. Patterns are an ordinary Agda datatype, external to the theory, exactly as <code>Ty</code> is &mdash; the theory presents the things being analysed, not the things analysing them.</p>
+
+<p>The theory is values: booleans and pairs. Two of its three operations are <strong>nullary</strong>, and that is why this client is here.</p>
+
+<div class="note warn"><span class="k">A nullary operation has no slot</span>
+<p><code>Ans-node</code> refutes a node by refuting one of its slots. <code>vtrueOp</code> has none &mdash; so <code>Match pfalse vtrue</code>, which is plainly empty, cannot be refuted through the node rule at all. The refutation has to travel somewhere else, and the somewhere else is <code>Ans-map&amp;</code>&rsquo;s hypothesis: &ldquo;this value is a node of <code>o</code>&rdquo; is precisely the knowledge that makes the grammar empty <em>here and nowhere else</em>. That is <code>clashAt</code>. A signature all of whose operations have arity ≥ 1 never notices the gap; two clients found it independently.</p></div>
+
+<p><code>V = ⊥</code> here, so the free model is the <em>initial</em> algebra and every scrutinee is closed. The annotated instance has <code>V = ℕ</code> because a term may be a variable; a scrutinee may not, and a judgment descending on an open term would have to say what to do at a generator.</p>
+
+HTML
+code Theory/Instances/Match/Base.agda
+
+cat <<'HTML'
+<h3 id="mguard">Guard</h3>
+
+<p>Shorter than the annotated one, because <code>VOp</code> is <em>finite</em>: no external annotation on an operation, so the node cover has three cells and a branch may be written by listing them. That finiteness is also what makes <a href="#mexh">exhaustiveness</a> a statement one can write down.</p>
+
+HTML
+code Theory/Instances/Match/Guard.agda
+
+cat <<'HTML'
+<h3 id="mjudg">The judgment, and two rules that are not nodes</h3>
+
+<p><code>pwild</code> and <code>pvar n</code> are not syntax-directed on the value at all: they hold at <em>every</em> head. A rule with no premises and no restriction on the scrutinee is not a node &mdash; it is a decision &mdash; so those two indices go through <code>side</code> and never reach <code>look</code>. Pretending otherwise means writing the same trivial node three times, once per cell of the cover.</p>
+
+<p>Matching a <em>single</em> pattern is a proposition. The proof-relevance is one level up: a clause list is the pointwise <em>sum</em> of its patterns, which is <code>⊕</code> and nothing more, so <code>matchAny</code> is a fold with <code>&lt;|&gt;</code>. That is where the three answers genuinely disagree rather than merely differing in packaging.</p>
+
+<table>
+<tr><th>Answer</th><th>Reads a clause list as</th><th>So it computes</th></tr>
+<tr><td><code>Dec</code></td><td>a decision</td><td>does <em>anything</em> match?</td></tr>
+<tr><td><code>Maybe</code></td><td>a left-biased choice</td><td>first-match semantics &mdash; what every real language does</td></tr>
+<tr><td><code>ND</code></td><td>an enumeration</td><td>a <em>count</em> of the clauses that fired</td></tr>
+</table>
+
+HTML
+code Theory/Instances/Match/Judgment.agda
+
+cat <<'HTML'
+<h3 id="mbind">The readout: substitutions</h3>
+
+<p>The honest statement first, because it is narrower than <a href="#aelab">elaboration</a>&rsquo;s. <code>Match p</code> is a proposition, so a single pattern&rsquo;s derivation carries nothing the index and the scrutinee do not already have: <code>bind</code> reads <code>n</code> off <code>pvar n</code> and <code>v</code> off the model, and the derivation only certifies that it may.</p>
+
+<p>The content is in <code>anyAction</code>, which tags each summand of the clause list with its <em>position</em>. That sum is the only proof-relevant thing in the development, and it is exactly what the three front ends disagree about &mdash; <code>decideMatch</code>, <code>firstMatch</code> and <code>allMatches</code> are one grammar and one action at three answers.</p>
+
+HTML
+code Theory/Instances/Match/Bindings.agda
+
+cat <<'HTML'
+<h3 id="mexh">The identification: exhaustiveness <em>is</em> a cover</h3>
+
+<p>This is the payoff of the client, and it is a two-line observation with a lot behind it. <code>Cover Y Λ</code> has two fields. A clause list has two properties.</p>
+
+<table>
+<tr><th><code>Cover</code> field</th><th>Clause list</th></tr>
+<tr><td><code>total</code></td><td>every value matches some clause &mdash; <strong>exhaustiveness</strong></td></tr>
+<tr><td><code>disjoint</code></td><td>no value matches two &mdash; <strong>irredundancy</strong></td></tr>
+</table>
+
+<p>So &ldquo;this clause list is exhaustive and irredundant&rdquo; is not a pair of ad hoc lemmas; it is <code>Cover (Fin n) (λ i → Match (clause i))</code>, the same record <code>look</code> consumes. And the concrete cover is the <em>node cover relabelled</em>: <code>full</code> has one clause per head constructor, so <code>disjoint</code> is no-confusion for <code>Val</code> transported along an injection <code>Fin 3 ↪ VOp</code>, and nothing about patterns is used. A complete irredundant clause list at depth one <em>is</em> a cover by head; deeper ones are covers of covers.</p>
+
+<p><code>tally full v ≡ 1</code> is the computational shadow, one value at a time. <code>tally shared both ≡ 2</code> is a redundant clause list exhibited as a number, and <code>tally partial ff' ≡ 0</code> is a counterexample to exhaustiveness. Only <code>ND</code> can say either.</p>
+
+<div class="note"><span class="k">What is not proved</span>
+<p>Nothing general. This is one list. There is no theorem &ldquo;<code>Cover</code> implies <code>tally ≡ 1</code>&rdquo; &mdash; that would have to relate the <code>ND</code> enumeration to the cover&rsquo;s index type, and the enumeration is a list with an order while the cover is not.</p></div>
+
+HTML
+code Theory/Instances/Match/Exhaustive.agda
+
+cat <<'HTML'
+<h3 id="mtests">Running it</h3>
+
+<p>Every test is <code>refl</code>. The three-answer rows are the ones to read: <code>shared</code> is a redundant list and <code>partial</code> a non-exhaustive one, and each answer has a different opinion about them &mdash; which is the point of leaving the answer abstract.</p>
+
+HTML
+code Theory/Instances/Match/Tests.agda
+
+cat <<'HTML'
+<h2 id="ybase">Client 5 &mdash; the offside rule</h2>
+
+<p>Layout is the standard counterexample to &ldquo;syntax is context-free&rdquo;. Whether a token opens a block, closes three of them, or does nothing depends on a column and on a stack of columns, and no context-free grammar has either. The claim tested here is narrower and it survives: <strong>layout is not context-free, but it <em>is</em> syntax-directed in this framework&rsquo;s sense</strong>, because the state after a token is a function of the state before it and of the token&rsquo;s own column.</p>
+
+<p>A lexer&rsquo;s output is a list, and a list over <code>Tok</code> is the free algebra for the signature <code>{nilOp, consOp t}</code>. Putting the token in the <em>operation</em> is the same trick <code>appOp B</code> plays, and it buys the same three things: a node cover by head, so prediction is LL(1); an infinite <code>LOp</code>, which a <code>Cover</code> does not care about; and precision everywhere, because a free term algebra has it.</p>
+
+<div class="note"><span class="k">Why not the free monoid</span>
+<p>The data <em>is</em> a string, and the string framework would accept it. It is still the wrong model. Layout is not associative in any useful sense &mdash; the state after a prefix is not a monoid element &mdash; and the rule needs to look at <em>the next token</em>, which the monoid presentation reaches only through a lookahead cover. Cons cells give it for free.</p></div>
+
+HTML
+code Theory/Instances/Layout/Base.agda
+
+cat <<'HTML'
+<h3 id="yguard">Guard: the degenerate case, named</h3>
+
+<p><code>consOp t</code> has one argument, so the &ldquo;subterm order&rdquo; is the proper <em>suffix</em> order and the measure is the length. That is precisely the order the string framework builds by hand out of <code>Suffix</code>; here it falls out of <code>ilexOrder</code> applied to the term size, because a token stream&rsquo;s only subterm is its tail.</p>
+
+HTML
+code Theory/Instances/Layout/Guard.agda
+
+cat <<'HTML'
+<h3 id="yoffside">The judgment, and the condition with nowhere to sit</h3>
+
+<p>The family is indexed by the layout state &mdash; a mode and a stack of open block columns &mdash; and the guard descends on the token list. For a one-argument operation <code>⊗ᴰ</code> degenerates to exactly a state machine&rsquo;s transition function, which is the honest shape of the thing.</p>
+
+<p><code>nilOp</code> has arity <em>zero</em>, so the &ldquo;end of input&rdquo; rule has no slot to hang its condition on &mdash; and it needs one, because end of input is <em>accepted</em> in <code>scanning</code> (close every open block) and <em>rejected</em> in <code>opening</code> (a block opener with no block). This is <a href="#mbase">the nullary gap</a> from the other side: not a refutation with nowhere to travel, but a condition with nowhere to sit. <code>Ans-&amp;&amp;</code> attaches it to the node:</p>
+
+<pre><code>Cell o S = ⊗ᴰSet o (Slots o S) &amp;Set SideSet o S</code></pre>
+
+<p>Stating <em>every</em> operation&rsquo;s condition that way &mdash; rather than only <code>nilOp</code>&rsquo;s &mdash; keeps <code>Slots</code> a pure recursive call and puts all the arithmetic in one place. This client is where the house convention comes from, and <a href="#alin">linear typing</a> now follows it.</p>
+
+<h4>Two functions of the same fact, and why there are two</h4>
+<p><code>popTo</code> computes the surviving stack: a <em>function</em> of the index and the token, which is what makes the tail&rsquo;s index computable and the judgment syntax-directed. It is not read off the derivation, and it could not be &mdash; <code>⊗ᴰ</code>&rsquo;s slot indices may mention sibling slots&rsquo; <em>model values</em>, never their proofs. <code>Close</code> is the proof-relevant counterpart: a chain of &ldquo;this block closes&rdquo; steps ending in a trichotomy at the first block that survives. The two never meet in the checker, and <code>survivors≡popTo</code> is the one coherence fact worth stating &mdash; if they disagreed, the renderer&rsquo;s braces would not match the checker&rsquo;s state.</p>
+
+<div class="note warn"><span class="k">What is not implemented, and this is the honest one</span>
+<p>No <code>parse-error(t)</code> rule. Haskell closes an implicit block when the enclosing parser would otherwise fail, which makes layout depend on the parser it feeds &mdash; a mutual recursion this framework has no reason to want. The omission is <em>visible</em>: a one-line <code>let x = 1 in x</code> is accepted, but its <code>in</code> is indented past the block, so the closing brace lands at end of input rather than before the <code>in</code>, and the rendered stream is one a parser would reject. <code>OffsideTests</code>&rsquo; <code>oneLine</code> records exactly that. Also absent: line tracking, empty blocks, and explicit braces in the input.</p></div>
+
+HTML
+code Theory/Instances/Layout/Offside.agda
+
+cat <<'HTML'
+<h3 id="yrender">Rendering: the derivation <em>is</em> the punctuation</h3>
+
+<p>Layout is a tree-to-tree pass, so the interesting object is not the decision but the output &mdash; and the output is already sitting in the derivation. <code>Close</code>&rsquo;s &ldquo;this block closes&rdquo; steps are the <code>}</code>s, and its terminal case is the <code>;</code> or its absence, so <code>closeOut</code> reads them off exactly as <code>deBruijn</code> reads an index off a <code>Lookup</code>. Nothing recomputes <code>popTo</code>; nothing compares two columns twice.</p>
+
+<p>Note the division of labour, which is what the framework is for. The mode-and-stack state is <em>not</em> carried in the derivation &mdash; it is the <em>index</em>, so it is available for free at every recursive call. The derivation carries only what the index cannot compute.</p>
+
+HTML
+code Theory/Instances/Layout/Render.agda
+
+cat <<'HTML'
+<h3 id="ytests">Running it three ways</h3>
+
+<p><code>ND</code> counts one derivation for every accepted stream and zero for every rejected one, and that is the expected answer rather than a lucky one: the judgment is a proposition by construction, because each token&rsquo;s rule is selected by the head constructor and each premise&rsquo;s index is a function of the state and the token. <strong>Layout is deterministic, and here that is a typing fact rather than a theorem about the algorithm.</strong></p>
+
+HTML
+code Theory/Instances/Layout/OffsideTests.agda
+
+cat <<'HTML'
+<h2 id="cbase">Client 6 &mdash; instance resolution, and what <code>disjoint</code> means</h2>
+
+<p>Every other client puts terms in the model and types in the index. This one is the other way round. <code>Resolve C τ</code> asks whether class <code>C</code> has an instance at type <code>τ</code>, and it is <code>τ</code> that the rules take apart &mdash; there is no term at all. So the model is the type language, <code>X</code> is the set of class names, and the guard descends on the subterm order of <em>types</em>.</p>
+
+<p><code>V = ⊥</code> again, and here the reason is sharp: a type variable in the model would make <code>Resolve</code> a judgment about <em>open</em> types, which is exactly where instance resolution stops being decidable.</p>
+
+<p>One more restriction is doing work. An instance head is a <em>constructor</em>, not a pattern: the table records <code>head = lstOp</code>, never <code>instance Eq (List ι)</code>. That is what makes resolution syntax-directed at all, it is what Haskell&rsquo;s instance heads obey up to arity, and a two-level head is precisely the shape that makes overlap possible.</p>
+
+HTML
+code Theory/Instances/Class/Base.agda
+
+cat <<'HTML'
+<h3 id="cresolve">The identification: <code>disjoint</code> is coherence</h3>
+
+<p>The node, the guard and the slots are the ordinary story &mdash; <code>Eq a =&gt; Eq (List a)</code> fires at <code>List a</code> and its one premise sits at <code>a</code>, a proper subtype. What is <em>not</em> determined is <strong>which instance</strong>. The judgment is an indexed sum:</p>
+
+<pre><code>Resolve C τ  =  ⊕[ i ∈ Inst C ] (instance i applies at τ)</code></pre>
+
+<p>and answering an indexed sum is what <code>AnswerFunctor</code> could not do before <code>Ans-route</code>. A checker cannot consult all of <code>Y</code>: it need not be finite, and even when it is, asking every alternative is not what a resolver does. A <code>Route</code> supplies a cover of the type language by <code>Maybe (Inst C)</code> &mdash; the cell of <code>just i</code> is &ldquo;<code>τ</code>&rsquo;s head is instance <code>i</code>&rsquo;s head&rdquo;, the cell of <code>nothing</code> is &ldquo;no instance&rsquo;s head matches&rdquo; &mdash; and then:</p>
+
+<table>
+<tr><th><code>Route</code> field</th><th>Instance resolution</th></tr>
+<tr><td><code>cov .total</code></td><td>resolution <em>terminates</em>: some instance&rsquo;s head matches, or provably none does. The finite search over the table, and where a <em>decidable</em> table is used.</td></tr>
+<tr><td><code>cov .disjoint</code></td><td><strong>COHERENCE</strong>: no two distinct instances of a class match the same type.</td></tr>
+<tr><td><code>into</code></td><td>an instance that applies does match its own head.</td></tr>
+</table>
+
+<div class="note"><span class="k">This is not an analogy</span>
+<p>Spelled out, <code>disjoint (just i) (just j)</code> for <code>i ≠ j</code> asks for <code>NodeAt (head i) &amp; NodeAt (head j) ⊢ ⊥Ty</code>, and the only way to get it is to know the heads differ. That is <code>Coherent T</code>, verbatim &mdash; the exact hypothesis <code>Routed.route</code> needs, and the exact thing GHC&rsquo;s coherence check verifies.</p></div>
+
+<h4>The other half, which is the better half</h4>
+
+<p>An <em>incoherent</em> table has no <code>Route</code>, so it has no routed resolver &mdash; <strong>statically</strong>, at the type level, not as a failure at run time. What it does have is <code>Ans-anyFin</code>: ask every instance, keep every answer. That needs <code>Ans-empty</code>, so it is available at <code>Maybe</code> and <code>ND</code> and never at <code>Dec</code>.</p>
+
+<p>So the two <code>Pick</code>s are the whole design tension in two lines: <code>routed</code> demands coherence and commits, <code>ambig</code> demands nothing and counts. <code>ResolveTests</code> declares <code>Eq a =&gt; Eq (List a)</code> <em>twice</em> &mdash; the smallest possible incoherence, and a real one, since that is what importing the same instance from two modules looks like. Then <code>incoherent</code> refutes <code>Coherent T₁</code>, so <code>Routed.routed</code> cannot be applied and that table has no decision procedure here at all; while at <code>ND</code>, <code>count₁ eqC (lst ι) ≡ 2</code> &mdash; the incoherence, exhibited as a number. At <code>Maybe</code> the same table returns one derivation and says nothing about the other, which is precisely the silent instance selection a PEG-shaped resolver performs.</p>
+
+<h4>And the dictionary</h4>
+<p>A derivation of <code>Resolve C τ</code> is a tree of instance choices &mdash; which is to say it <em>is</em> the dictionary a compiler passes at run time. <code>toDict</code> folds it, <code>dictAction</code> makes that a <code>SemanticAction</code>, and <code>resolve</code> is <code>observe checker (semact-dec dictAction)</code>: the same three-term composition as <a href="#aelab">elaboration</a>, one more time.</p>
+
+HTML
+code Theory/Instances/Class/Resolve.agda
+
+cat <<'HTML'
+<h3 id="ctests">Running it</h3>
+
+HTML
+code Theory/Instances/Class/ResolveTests.agda
+
+cat <<'HTML'
+<h2 id="conventions">House conventions, and where they came from</h2>
+
+<p>Six clients, written by different hands at different times, and they drifted. What follows is what they converged on. It is kept in the tree as <code>Theory/Combinator/README.agda</code> &mdash; a module with no definitions, deliberately, because a convention that could be enforced by a type would <em>be</em> a type.</p>
+
+<table>
+<tr><th>#</th><th>Convention</th><th>Because</th></tr>
+<tr><td>1</td><td>Define the judgment by recursion on the model, not as an indexed <code>data</code>.</td><td>An indexed family gets <code>UnificationStuck</code> in every branch of the checker, and the recursive form makes <code>isProp</code> a two-line induction rather than a theorem.</td></tr>
+<tr><td>2</td><td>Dispatch with <code>look nodeCover</code>, never with a match on the model element.</td><td>Everything else hangs off this. Matching on the term forces a <em>pointwise</em> relabelling, and going through the cover hands you <code>NodeAt o</code> as the hypothesis <code>Ans-map&amp;</code> wants.</td></tr>
+<tr><td>3</td><td><code>Slots o i</code> is a list of premises and nothing else.</td><td>If reading it does not read like the rule&rsquo;s premises, something is in the wrong place.</td></tr>
+<tr><td>4</td><td>Side conditions go at the <em>node</em>: <code>Cell o i = ⊗ᴰSet o (Slots o i) &amp;Set SideSet i</code>.</td><td><a href="#yoffside">Layout</a> is forced into it by a nullary operation; <a href="#alin">Linear</a> is merely honest for it. A condition on a <em>name</em> argument is not a side condition &mdash; it is a slot, and stays one.</td></tr>
+<tr><td>5</td><td>Every side condition comes with a <code>Decidable</code> and enters via <code>Ans-ofDec</code>.</td><td>The only door by which an answer learns something it did not compute. Keeping it single is what lets one source text run at three answers.</td></tr>
+<tr><td>6</td><td><code>rollNode</code> and <code>unrollNode</code> are <code>⊢</code>-terms; <code>unroll</code> takes <code>&amp; NodeAt o</code>.</td><td>A grammar and its unfolding agree only where the head is known.</td></tr>
+<tr><td>7</td><td>Premises carry their evidence: <code>InCtx</code>, <code>Lookup</code>, <code>Close</code>, not booleans.</td><td>A boolean says the name is bound; a chain of &ldquo;not here&rdquo; steps says <em>where</em>. All three are still propositions, so proof-relevance and unambiguity are not in tension.</td></tr>
+<tr><td>8</td><td>Readouts are <code>SemanticAction</code> + <code>observe</code>.</td><td><code>compile = observe checker (semact-dec action)</code>, in five clients, letter for letter. Do not write a boundary by hand.</td></tr>
+<tr><td>9</td><td>Tests are <code>refl</code>.</td><td>A test that needs a proof is a test that did not reduce, and a checker that does not reduce is a checker nobody can run.</td></tr>
+</table>
+
+<p>And a negative one: <strong>nothing in a judgment module mentions <code>Dec</code>, <code>Maybe</code> or <code>ND</code></strong>. If it does, the client has picked an answer, and the point of the framework was not to.</p>
+
+<div class="note"><span class="k">Two documented exceptions, both in <code>Match</code>, both arguments rather than lapses</span>
+<p><code>pwild</code> and <code>pvar n</code> do not go through <code>look</code>, because a rule that holds at every head is a decision and not a node. And <code>observeAll</code> is a hand-rolled boundary, because <code>observe</code> reads <em>one</em> value out of a <code>⊤Ty</code>-map while <code>ND</code> is a list &mdash; supplying the missing combinator means changing the backend interface, which is worth doing deliberately rather than in passing.</p></div>
+
+HTML
+code Theory/Combinator/README.agda
 
 cat <<'HTML'
 <h2 id="internal">Reflection: is this internal to the DSL?</h2>
@@ -510,6 +814,8 @@ cat <<'HTML'
 
 <p>So &ldquo;the grammar is LL(1)&rdquo; and &ldquo;the calculus is bidirectionally typeable&rdquo; are the same condition, discharged by the same record. The annotation buys precisely that discipline; without it, a checker owes uniqueness-of-synthesis as a side theorem, and the combinators will not supply it.</p>
 
+<p>That paragraph used to end the document. It no longer does: <code>Ans-route</code> exists, and <a href="#cresolve">instance resolution</a> is a client that pays the obligation rather than dodging it &mdash; with the same record, and with <code>disjoint</code> reading as <em>coherence</em> rather than as uniqueness of synthesis. The boundary has moved; it has not disappeared. A judgment whose alternatives are not known exclusive still has no decision procedure here, and cannot.</p>
+
 <h4>Other limits, stated plainly</h4>
 <table>
 <tr><th>Limit</th><th>Why</th></tr>
@@ -525,7 +831,14 @@ cat <<'HTML'
 
 <pre><code>cd src
 agda Theory/Instances/Lambda/ScopeTests.agda
-agda Theory/Instances/Annotated/TypingTests.agda</code></pre>
+agda Theory/Instances/Lambda/Nameless.agda
+agda Theory/Instances/Annotated/TypingTests.agda
+agda Theory/Instances/Annotated/Elaborate.agda
+agda Theory/Instances/Annotated/LinearTests.agda
+agda Theory/Instances/Match/Tests.agda
+agda Theory/Instances/Match/Exhaustive.agda
+agda Theory/Instances/Layout/OffsideTests.agda
+agda Theory/Instances/Class/ResolveTests.agda</code></pre>
 
 <p>This page is generated from the sources by <code>docs/build.sh</code>, so the code shown is always the code that compiles. Re-run it after any change.</p>
 
