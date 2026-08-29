@@ -6,7 +6,7 @@
    `Linear`'s `keep`/`freeIn` -- the external recursive functions a rule's
    index is computed by.
 
-   Two decisions shape the whole development.
+   Three decisions shape the whole development.
 
    The scope is an *index*, as in McBride: `Tm n` has `n` unknowns and
    solving one lands in `Tm n'` with `n = suc n'`.  So "the substitution
@@ -30,7 +30,16 @@
    in a separate pass, by structural recursion on its first term, and hands
    back a list of variable-headed equations.  `Sol` then descends
    lexicographically on `(scope, stack)`, and both components are
-   structural. -}
+   structural.
+
+   The judgment is *proof-relevant*.  Its flexible rule records the term
+   the occurs check returned rather than merely asserting that the check
+   succeeded, so a derivation IS the triangular substitution and `mgu` is a
+   projection -- `Annotated`'s move, where `Lookup` carries the variable's
+   position and `deBruijn` counts it off.  It costs nothing: the recorded
+   term is pinned down by `checked`, so `Sol` is still a proposition and
+   the `ND` count is still one.  `Correct` reads the unification proof off
+   the same recursion. -}
 open import Cubical.Foundations.Prelude
 open import Cubical.Foundations.HLevels
 module Theory.Instances.Unify.Term where
@@ -42,7 +51,7 @@ open import Cubical.Data.FinData.Properties using (discreteFin ; isSetFin)
 open import Cubical.Data.List using (List ; [] ; _∷_ ; _++_ ; length)
 open import Cubical.Data.List.Properties using (isOfHLevelList)
 open import Cubical.Data.Maybe using (Maybe ; just ; nothing)
-open import Cubical.Data.Sigma using (_×_ ; _,_ ; fst ; snd ; ΣPathP)
+open import Cubical.Data.Sigma using (Σ-syntax ; _×_ ; _,_ ; fst ; snd ; ΣPathP)
 open import Cubical.Data.Unit using (Unit ; tt ; isPropUnit ; isSetUnit)
 open import Cubical.Relation.Nullary.Base using (Dec ; yes ; no ; Discrete)
 open import Cubical.Relation.Nullary.Properties using (Discrete→isSet)
@@ -111,6 +120,29 @@ discreteTm t u = onCode (decCode t u)
 isSetTm : isSet (Tm n)
 isSetTm = Discrete→isSet discreteTm
 
+-- Every case analysis on a `Maybe` below is a *named* top-level function
+-- rather than a `where`-bound one.  That is not tidying: a lemma about
+-- `thick` or `check` is a `cong` over exactly these functions, and a
+-- helper hidden in a clause cannot be named, so the proof would have to
+-- invert an equation between `Maybe`s instead of computing.  `Correct`
+-- lives or dies by this.
+sucM : Maybe (Fin n) → Maybe (Fin (suc n))
+sucM nothing = nothing
+sucM (just y) = just (suc y)
+
+varM : Maybe (Fin n) → Maybe (Tm n)
+varM nothing = nothing
+varM (just y) = just (var y)
+
+forkM : Maybe (Tm n) → Maybe (Tm n) → Maybe (Tm n)
+forkM (just s) (just t) = just (fork s t)
+forkM nothing _ = nothing
+forkM (just _) nothing = nothing
+
+forM : Tm n → Maybe (Fin n) → Tm n
+forM w nothing = w
+forM w (just y) = var y
+
 -- McBride's thinning and its partial inverse.  `thick x y` is `y` seen
 -- from a world without `x`, and `nothing` exactly when `y` is `x`.
 thin : Fin (suc n) → Fin n → Fin (suc n)
@@ -122,26 +154,14 @@ thick : Fin (suc n) → Fin (suc n) → Maybe (Fin n)
 thick zero zero = nothing
 thick zero (suc y) = just y
 thick {suc _} (suc x) zero = just zero
-thick {suc _} (suc x) (suc y) = onRec (thick x y)
-  where
-  onRec : Maybe (Fin _) → Maybe (Fin (suc _))
-  onRec nothing = nothing
-  onRec (just y') = just (suc y')
+thick {suc _} (suc x) (suc y) = sucM (thick x y)
 
 -- The occurs check: `check x t` is `t` in a world without `x`, and fails
 -- exactly when `x` occurs in `t`.
 check : Fin (suc n) → Tm (suc n) → Maybe (Tm n)
-check x (var y) = onVar (thick x y)
-  where
-  onVar : Maybe (Fin _) → Maybe (Tm _)
-  onVar nothing = nothing
-  onVar (just y') = just (var y')
+check x (var y) = varM (thick x y)
 check x leaf = just leaf
-check x (fork s t) = onBoth (check x s) (check x t)
-  where
-  onBoth : Maybe (Tm _) → Maybe (Tm _) → Maybe (Tm _)
-  onBoth (just s') (just t') = just (fork s' t')
-  onBoth _ _ = nothing
+check x (fork s t) = forkM (check x s) (check x t)
 
 bind : (Fin n → Tm m) → Tm n → Tm m
 bind f (var y) = f y
@@ -149,11 +169,7 @@ bind f leaf = leaf
 bind f (fork s t) = fork (bind f s) (bind f t)
 
 for : Fin (suc n) → Tm n → Fin (suc n) → Tm n
-for x w y = onThick (thick x y)
-  where
-  onThick : Maybe (Fin _) → Tm _
-  onThick nothing = w
-  onThick (just y') = var y'
+for x w y = forM w (thick x y)
 
 subst1 : Fin (suc n) → Tm n → Tm (suc n) → Tm n
 subst1 x w = bind (for x w)
@@ -209,12 +225,12 @@ pushF : Flex n → Maybe (FStack n) → Maybe (FStack n)
 pushF e nothing = nothing
 pushF e (just qs) = just (e ∷ qs)
 
+sameF : (x y : Fin n) → Dec (x ≡ y) → Maybe (FStack n) → Maybe (FStack n)
+sameF x y (yes _) acc = acc
+sameF x y (no _) acc = pushF (x , var y) acc
+
 flatA : Tm n → Tm n → Maybe (FStack n) → Maybe (FStack n)
-flatA (var x) (var y) acc = onSame (discreteFin x y)
-  where
-  onSame : Dec (x ≡ y) → Maybe (FStack _)
-  onSame (yes _) = acc
-  onSame (no _) = pushF (x , var y) acc
+flatA (var x) (var y) acc = sameF x y (discreteFin x y) acc
 flatA (var x) leaf acc = pushF (x , leaf) acc
 flatA (var x) (fork a b) acc = pushF (x , fork a b) acc
 flatA leaf (var y) acc = pushF (y , leaf) acc
@@ -239,16 +255,31 @@ flat1 (t , u) = flatA t u (just [])
 -- drops by one at exactly that step, which is why the recursion is
 -- structural on `(n , ps)`.
 --
--- It is a *proposition*: the machine is deterministic, so there is nothing
--- to choose and `Sol` carries no data.  Uniqueness of the most general
--- unifier is that determinism, and here it is definitional.  What the
--- derivation does not carry, `mgu` below recomputes -- by the same
--- recursion, from the same `check`.
+-- The flexible rule CARRIES its assignment.  `onCheck`'s premise is not
+-- "`check x u` succeeded" but "here is a `w`, it is what `check x u`
+-- answered, and the substituted stack is solvable" -- the same move
+-- `Annotated`'s `Lookup` makes, where the witness is the variable's
+-- position and `deBruijn` reads the index off it.  So a derivation *is*
+-- the triangular substitution, and `mgu` below is a fold that projects
+-- rather than a second run of the machine: `mgu` never mentions `check`.
+--
+-- It is still a *proposition*.  `checked` pins `w` down uniquely -- two
+-- derivations assign the same term because `just` is injective and `Tm n`
+-- is a set -- so the existential is a singleton and no stack has two
+-- derivations.  Uniqueness of the most general unifier survives
+-- proof-relevance for exactly the reason it does in `Annotated`: the
+-- content carried is determined, so carrying it costs no ambiguity.
 Sol : (n : ℕ) → Stack n → Type ℓ-zero
 onFlat : (n : ℕ) → Maybe (FStack n) → Stack n → Type ℓ-zero
 flexAt : (n : ℕ) → Fin n → Tm n → FStack n → Stack n → Type ℓ-zero
 onCheck : (n : ℕ) → Fin (suc n) → Tm (suc n) → FStack (suc n) → Stack (suc n)
         → Maybe (Tm n) → Type ℓ-zero
+
+-- `checked n c w` is `c ≡ just w` said by recursion, so that the failing
+-- case is `⊥` definitionally and no clause below has to refute a path.
+checked : (n : ℕ) → Maybe (Tm n) → Tm n → Type ℓ-zero
+checked n nothing w = Empty.⊥
+checked n (just v) w = v ≡ w
 
 Sol n [] = Unit
 Sol n (p ∷ ps) = onFlat n (flat1 p) ps
@@ -259,9 +290,19 @@ onFlat n (just (e ∷ qs)) ps = flexAt n (e .fst) (e .snd) qs ps
 
 flexAt (suc n) x u qs ps = onCheck n x u qs ps (check x u)
 
-onCheck n x u qs ps nothing = Empty.⊥
-onCheck n x u qs ps (just w) =
-  Sol n (applyStack x w (unflexAll qs ++ ps))
+onCheck n x u qs ps c = Σ[ w ∈ Tm n ]
+  checked n c w × Sol n (applyStack x w (unflexAll qs ++ ps))
+
+pattern assign w c d = w , c , d
+
+isPropChecked : (n : ℕ) (c : Maybe (Tm n)) (w : Tm n) → isProp (checked n c w)
+isPropChecked n nothing w = λ ()
+isPropChecked n (just v) w = isSetTm v w
+
+checkedInj : (n : ℕ) (c : Maybe (Tm n)) (w w' : Tm n)
+           → checked n c w → checked n c w' → w ≡ w'
+checkedInj n nothing w w' ()
+checkedInj n (just v) w w' e e' = sym e ∙ e'
 
 isPropSol : (n : ℕ) (ps : Stack n) → isProp (Sol n ps)
 isPropOnFlat : (n : ℕ) (fl : Maybe (FStack n)) (ps : Stack n)
@@ -281,9 +322,17 @@ isPropOnFlat n (just (e ∷ qs)) ps = isPropFlexAt n (e .fst) (e .snd) qs ps
 
 isPropFlexAt (suc n) x u qs ps = isPropOnCheck n x u qs ps (check x u)
 
-isPropOnCheck n x u qs ps nothing = λ ()
-isPropOnCheck n x u qs ps (just w) =
-  isPropSol n (applyStack x w (unflexAll qs ++ ps))
+-- The one place proof-relevance has to be paid for: the assignment is
+-- carried, so two derivations agree in it before they agree in anything
+-- else, and `checkedInj` is that agreement.
+isPropOnCheck n x u qs ps c (assign w e d) (assign w' e' d') =
+  ΣPathP (same , ΣPathP
+    ( isProp→PathP (λ i → isPropChecked n c (same i)) e e'
+    , isProp→PathP
+        (λ i → isPropSol n (applyStack x (same i) (unflexAll qs ++ ps))) d d'))
+  where
+  same : w ≡ w'
+  same = checkedInj n c w w' e e'
 
 isSetSol : (n : ℕ) (ps : Stack n) → isSet (Sol n ps)
 isSetSol n ps = isProp→isSet (isPropSol n ps)
@@ -315,18 +364,21 @@ Steps (suc k) (suc n) m = Fin (suc n) × Tm n × Steps k n m
 AList : ℕ → Type ℓ-zero
 AList n = Σ[ m ∈ ℕ ] Σ[ k ∈ ℕ ] Steps k n m
 
--- ...and the readout, by the recursion `Sol` was defined by.  The
--- derivation says only that the machine finished; the assignment at each
--- step is `check`'s answer, recomputed here exactly as `Elaborate`'s
--- `deBruijn` recomputes nothing and reads instead.
+-- Prefixing one assignment, by projection rather than by a match, so that
+-- `consA x w σ .fst` is `σ .fst` without knowing anything about `σ`.  Every
+-- computation rule in `Correct` is that reduction.
+consA : Fin (suc n) → Tm n → AList n → AList (suc n)
+consA x w σ = σ .fst , suc (σ .snd .fst) , x , w , σ .snd .snd
+
+-- ...and the readout, by the recursion `Sol` was defined by -- but now
+-- there is nothing to recompute.  `mguFlexAt` projects the assignment out
+-- of the derivation exactly as `Elaborate`'s `deBruijn` counts the steps of
+-- a `Lookup`, and no clause here mentions `check`.
 mgu : (n : ℕ) (ps : Stack n) → Sol n ps → AList n
 mguFlat : (n : ℕ) (fl : Maybe (FStack n)) (ps : Stack n)
         → onFlat n fl ps → AList n
 mguFlexAt : (n : ℕ) (x : Fin n) (u : Tm n) (qs : FStack n) (ps : Stack n)
           → flexAt n x u qs ps → AList n
-mguCheck : (n : ℕ) (x : Fin (suc n)) (u : Tm (suc n)) (qs : FStack (suc n))
-  (ps : Stack (suc n)) (c : Maybe (Tm n)) → onCheck n x u qs ps c
-  → AList (suc n)
 
 mgu n [] _ = n , 0 , Eq.refl
 mgu n (p ∷ ps) d = mguFlat n (flat1 p) ps d
@@ -334,16 +386,14 @@ mgu n (p ∷ ps) d = mguFlat n (flat1 p) ps d
 mguFlat n (just []) ps d = mgu n ps d
 mguFlat n (just (e ∷ qs)) ps d = mguFlexAt n (e .fst) (e .snd) qs ps d
 
-mguFlexAt (suc n) x u qs ps d = mguCheck n x u qs ps (check x u) d
-
-mguCheck n x u qs ps (just w) d =
-  onRest (mgu n (applyStack x w (unflexAll qs ++ ps)) d)
-  where
-  onRest : AList n → AList (suc n)
-  onRest (m , k , τ) = m , suc k , x , w , τ
+mguFlexAt (suc n) x u qs ps (assign w _ d) =
+  consA x w (mgu n (applyStack x w (unflexAll qs ++ ps)) d)
 
 -- Applying a chain, for the tests: a most general unifier is only worth
 -- the name if it makes the two sides equal.
 applySteps : {k n m : ℕ} → Steps k n m → Tm n → Tm m
 applySteps {k = zero} Eq.refl t = t
 applySteps {k = suc k} {n = suc n} (x , w , τ) t = applySteps τ (subst1 x w t)
+
+applyA : (σ : AList n) → Tm n → Tm (σ .fst)
+applyA σ = applySteps (σ .snd .snd)
