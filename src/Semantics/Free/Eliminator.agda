@@ -30,6 +30,7 @@ open import Cubical.Categories.Instances.Fiber
 
 open import Semantics.Model
 open import Semantics.Displayed.Model
+open import Cubical.Data.Sigma
 open import Semantics.Displayed.IndexedProduct
 open import Cubical.Categories.Displayed.Presheaf.Uncurried.Base
 open import Semantics.Free.Syntax Gen
@@ -67,6 +68,14 @@ module _ {ℓCᴰ ℓCᴰ'} (Mᴰ : Modelᴰ FreeModel ℓCᴰ ℓCᴰ') where
     elimOb (&T X A) = Πsᴰ X A (λ x → elimOb (A x)) .fst
 
     private
+      -- The reind the displayed presheaf action inserts is along a
+      -- *loop* on the base morphism, and `Exp` is a set, so it is the
+      -- identity.
+      loopReind : ∀ {a b}{f : Exp a b}{aᴰ bᴰ} {q : f ≡ f}
+                  {Y : Cᴰ.Hom[ f ][ aᴰ , bᴰ ]}
+                → F.reind q Y ≡ Y
+      loopReind = {!!}
+
       module ⊗ᴰ = Functorᴰ ─⊗ᴰ─
       -- The displayed presheaves underlying the indexed (co)products,
       -- so that their *family*-level reind-filler is reachable. It is
@@ -146,7 +155,9 @@ module _ {ℓCᴰ ℓCᴰ'} (Mᴰ : Modelᴰ FreeModel ℓCᴰ ℓCᴰ') where
       (gᴰ : Cᴰ.Hom[ g ][ Σᴰ.vertexᴰ X A , elimOb B ])
       → gᴰ Cᴰ.≡[ ⊕ηE X A g ]
         Σᴰ.introᴰ X A (λ x → (Σᴰ.elementᴰ X A x) Cᴰ.⋆ᴰ gᴰ)
-    ⊕ηᴰ' X A g gᴰ = {!!}
+    ⊕ηᴰ' X A g gᴰ =
+      F.rectify (F.≡out (F.≡in (Σᴰ.ηᴰ _ _ gᴰ)
+        ∙ Σᴰ.cong-introᴰ _ _ (ΣPathP (refl , funExt (λ x → loopReind)))))
 
     &βᴰ' : ∀ {B} (X : hSet ℓ) (A : ⟨ X ⟩ → Ty) (f : ∀ x → Exp B (A x))
       (fᴰ : ∀ x → Cᴰ.Hom[ f x ][ elimOb B , elimOb (A x) ]) (x : ⟨ X ⟩)
@@ -166,7 +177,9 @@ module _ {ℓCᴰ ℓCᴰ'} (Mᴰ : Modelᴰ FreeModel ℓCᴰ ℓCᴰ') where
     -- cannot invert to solve the metavariable. Supplying it needs
     -- either the bare (reind-free) η lemma upstream in ccl, or that
     -- path written out by hand.
-    &ηᴰ' X A g gᴰ = {!!}
+    &ηᴰ' X A g gᴰ =
+      F.rectify (F.≡out (F.≡in (Πᴰ.ηᴰ _ _ gᴰ)
+        ∙ Πᴰ.cong-introᴰ _ _ (ΣPathP (refl , funExt (λ x → loopReind)))))
 
     ------------------------------------------------------------------
     -- The morphism part
