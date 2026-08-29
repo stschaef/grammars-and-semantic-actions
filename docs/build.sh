@@ -102,11 +102,14 @@ hr{border:0;border-top:1px solid var(--rule);margin:2.5rem 0}
 <b>Client 1 &mdash; scope</b>
 <a href="#lguard">Lambda/Guard</a>
 <a href="#lscope">Lambda/Scope</a>
+<a href="#lname">Lambda/Nameless</a>
 <a href="#ltests">ScopeTests</a>
 <b>Client 2 &mdash; typing</b>
 <a href="#abase">Annotated/Base</a>
 <a href="#aguard">Annotated/Guard</a>
 <a href="#atyping">Annotated/Typing</a>
+<a href="#aelab">Annotated/Elaborate</a>
+<a href="#alin">Annotated/Linear</a>
 <a href="#atests">TypingTests</a>
 <b>Reflection</b>
 <a href="#internal">Is it internal?</a>

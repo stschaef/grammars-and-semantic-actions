@@ -82,11 +82,14 @@ hr{border:0;border-top:1px solid var(--rule);margin:2.5rem 0}
 <b>Client 1 &mdash; scope</b>
 <a href="#lguard">Lambda/Guard</a>
 <a href="#lscope">Lambda/Scope</a>
+<a href="#lname">Lambda/Nameless</a>
 <a href="#ltests">ScopeTests</a>
 <b>Client 2 &mdash; typing</b>
 <a href="#abase">Annotated/Base</a>
 <a href="#aguard">Annotated/Guard</a>
 <a href="#atyping">Annotated/Typing</a>
+<a href="#aelab">Annotated/Elaborate</a>
+<a href="#alin">Annotated/Linear</a>
 <a href="#atests">TypingTests</a>
 <b>Reflection</b>
 <a href="#internal">Is it internal?</a>
@@ -240,7 +243,7 @@ Precise o  = ∀ m → isProp (NodeAt o m)      -- "...in exactly one way"</code
 <div class="note"><span class="k">Compare</span>
 <p>In the string framework the recursive call is <code>call</code>/<code>callAt</code>/<code>pApp</code>, and it has to thread a continuation through. Here, with no leftover input, it is <em>literally just</em> <code>▷app</code> &mdash; open the &ldquo;later&rdquo; box at a smaller element.</p></div>
 
-<figure class="src"><figcaption><span class="path">Theory/Combinator/Core.agda</span><span class="lines">247 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
+<figure class="src"><figcaption><span class="path">Theory/Combinator/Core.agda</span><span class="lines">272 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
 {- Combinators for an arbitrary finitary algebraic theory.
 
    `Theory/Instances/Monoid/Combinator/Core` is these combinators at the
@@ -377,6 +380,23 @@ isSet⊗ᴰ o As m =
       → TheorySet (ℓ-max ℓM ℓA) (σ .resultSort o)
 ⊗ᴰSet o As = ⊗ᴰ o As , isSet⊗ᴰ o As
 
+-- The one thing `⊗ᴰ` is not: a `Functor` code.  `Theory/Type/Code/Base`
+-- has `⊗e`, whose slots are independent, so a grammar that needs the
+-- dependency cannot be a `μ` and gets its `roll`/`unroll` written by hand
+-- (twelve lines, and they are honest `⊢`-terms) instead of for free.
+--
+-- Closing that gap means adding a `⊗ᴰe` constructor, which every match on
+-- `Functor` would then have to cover -- around seventeen sites across
+-- `Code/Base`, `Inductive/HLevels`, `Code/Container` and
+-- `Guarded/Justification`, all shared with the monoid development.  Worth
+-- doing deliberately, not in passing.
+--
+-- Worth knowing before doing it: the dependency is an artefact of *named*
+-- syntax.  `lam n t` scopes its body in `Γ , n`, and `n` is a slot value;
+-- a de Bruijn `lam t` scopes it in `B ∷ Γ`, which mentions no slot at all.
+-- So surface-syntax judgments need `⊗ᴰ` and core-syntax ones do not --
+-- which is one more reason compilers go nameless early.
+
 -- Introduction and elimination, in the shape `Operation/Base` states them
 -- for `⊗ᵘ`: at `op o ms`, a witness in each slot.
 node-mk : {o : σ .ops} {As : NodeArgs ℓA o} {ms : interpIn o ↓M}
@@ -413,6 +433,14 @@ record AnswerFunctor : Typeω where
 
     Ans-⊕&amp; : {ℓA ℓB : Level} {s : S} {A : TheorySet ℓA s} {B : TheorySet ℓB s}
       → ty (Ans A) &amp; ty (Ans B) ⊢ ty (Ans (A ⊕Set B))
+
+    -- ...and the conjunctive counterpart.  A rule with a side condition
+    -- *and* a premise in the same slot needs this: an operation has exactly
+    -- its arity many slots, so a condition that is not itself an argument
+    -- has to ride along with one.  Linear typing's application rule is the
+    -- case in point -- the partition check travels with the function.
+    Ans-&amp;&amp; : {ℓA ℓB : Level} {s : S} {A : TheorySet ℓA s} {B : TheorySet ℓB s}
+      → ty (Ans A) &amp; ty (Ans B) ⊢ ty (Ans (A &amp;Set B))
 
     -- Every answer can read a decision.  This is how a side condition --
     -- "this name is in scope", "these two types agree" -- enters a grammar
@@ -497,7 +525,7 @@ module Combinators (𝒯 : AnswerFunctor)
 <div class="note"><span class="k">Cost</span>
 <p>Alternation at <code>Dec</code> cannot short-circuit. To build a refutation of <code>A ⊕ B</code> you genuinely need refutations of both, so <code>_&lt;|&gt;_</code> runs every branch. Nested alternation is exponential, and no choice of answer can fix that &mdash; only committing via a cover can.</p></div>
 
-<figure class="src"><figcaption><span class="path">Theory/Combinator/Answer/Decidable.agda</span><span class="lines">98 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
+<figure class="src"><figcaption><span class="path">Theory/Combinator/Answer/Decidable.agda</span><span class="lines">101 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
 {- `Combinator/Core` at `Dec`.  The intrinsically correct answer: `DecTy A`
    *is* a decision, so a checker built from these combinators is sound and
    complete by typing rather than by a theorem.
@@ -570,6 +598,9 @@ DecAnswer .AnswerFunctor.Ans = DecSet
 DecAnswer .AnswerFunctor.Ans-map&amp; f g m (Sum.inl a , h) = Sum.inl (f m (a , h))
 DecAnswer .AnswerFunctor.Ans-map&amp; f g m (Sum.inr n , h) = Sum.inr λ b → n (g m (b , h))
 DecAnswer .AnswerFunctor.Ans-⊕&amp; = dec-⊕&amp;
+DecAnswer .AnswerFunctor.Ans-&amp;&amp; m (Sum.inl a , Sum.inl b) = Sum.inl (a , b)
+DecAnswer .AnswerFunctor.Ans-&amp;&amp; m (Sum.inl a , Sum.inr nb) = Sum.inr λ z → nb (z .snd)
+DecAnswer .AnswerFunctor.Ans-&amp;&amp; m (Sum.inr na , _) = Sum.inr λ z → na (z .fst)
 DecAnswer .AnswerFunctor.Ans-ofDec = id⊢
 DecAnswer .AnswerFunctor.Ans-node o prec {As = As} {ms = ms} ws =
   onAll (decΠFin (λ a → strip (ws a)))
@@ -600,7 +631,7 @@ module DecCombinators {ℓX ℓ&lt;} {X : Type ℓX} (xs : X → S)
 
 <p>Returns a derivation or nothing, with no refutation. <code>Ans-⊕&amp;</code> is <code>orElse</code>, which commits to the left &mdash; so this is the PEG reading of a grammar, and an ambiguous one silently drops derivations. <code>Ans-node</code> ignores <code>Precise</code> entirely: with nothing to refute, a node is just a traversal.</p>
 
-<figure class="src"><figcaption><span class="path">Theory/Combinator/Answer/Incomplete.agda</span><span class="lines">84 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
+<figure class="src"><figcaption><span class="path">Theory/Combinator/Answer/Incomplete.agda</span><span class="lines">87 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
 {- `Combinator/Core` at `Maybe`: at most one answer, no refutation.
 
    `Ans-⊕&amp;` is `orElse`, which commits to the left -- so this is the PEG
@@ -670,6 +701,9 @@ MaybeAnswer .AnswerFunctor.Ans-map&amp; f g m (Sum.inl a , h) = Sum.inl (f m (a 
 MaybeAnswer .AnswerFunctor.Ans-map&amp; f g m (Sum.inr u , h) = Sum.inr u
 MaybeAnswer .AnswerFunctor.Ans-⊕&amp; =
   orElse ∘⊢ (Monad.fmap MaybeMonad inl ,&amp;p Monad.fmap MaybeMonad inr)
+MaybeAnswer .AnswerFunctor.Ans-&amp;&amp; m (Sum.inl a , Sum.inl b) = Sum.inl (a , b)
+MaybeAnswer .AnswerFunctor.Ans-&amp;&amp; m (Sum.inl a , Sum.inr u) = Sum.inr u
+MaybeAnswer .AnswerFunctor.Ans-&amp;&amp; m (Sum.inr u , _) = Sum.inr u
 MaybeAnswer .AnswerFunctor.Ans-ofDec m (Sum.inl a) = Sum.inl a
 MaybeAnswer .AnswerFunctor.Ans-ofDec m (Sum.inr _) = Sum.inr tt
 MaybeAnswer .AnswerFunctor.Ans-node o _ {ms = ms} ws = onAll (travΠFin ws)
@@ -694,7 +728,7 @@ module MaybeCombinators {ℓX ℓ&lt;} {X : Type ℓX} (xs : X → S)
 <div class="note warn"><span class="k">The honest gap</span>
 <p>Completeness here is a claim about the grammar, not a consequence of the type. <code>ND A</code> is a list of derivations and nothing types &ldquo;these are all of them&rdquo;. Only <code>Dec</code> is intrinsic. An <em>exhaustive</em> answer &mdash; a list together with a proof that every derivation is in it &mdash; would close this, and would be the most interesting backend to add.</p></div>
 
-<figure class="src"><figcaption><span class="path">Theory/Combinator/Answer/NonDet.agda</span><span class="lines">113 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
+<figure class="src"><figcaption><span class="path">Theory/Combinator/Answer/NonDet.agda</span><span class="lines">115 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
 {- `Combinator/Core` at `ND`: every answer, not just one.
 
    `Ans-⊕&amp;` is `appendND` where `Incomplete`'s is `orElse`, so an ambiguous
@@ -796,6 +830,8 @@ NDAnswer .AnswerFunctor.Ans-map&amp; f g m (x , h) =
   ndFromList m (mapL (λ a → f m (a , h)) (ndToList m x))
 NDAnswer .AnswerFunctor.Ans-⊕&amp; =
   appendND ∘⊢ (Monad.fmap NDMonad inl ,&amp;p Monad.fmap NDMonad inr)
+NDAnswer .AnswerFunctor.Ans-&amp;&amp; m (x , y) = ndFromList m
+  (concatMapL (λ a → mapL (λ b → a , b) (ndToList m y)) (ndToList m x))
 NDAnswer .AnswerFunctor.Ans-ofDec m (Sum.inl a) = ηND m a
 NDAnswer .AnswerFunctor.Ans-ofDec m (Sum.inr _) = nilND m tt
 NDAnswer .AnswerFunctor.Ans-node o _ {ms = ms} ws =
@@ -1250,7 +1286,7 @@ Scope Γ (tlam x t) = Scope (x ∷ Γ) t</code></pre>
 <p><code>rollNode</code> and <code>unrollNode</code> are the one-step unfolding, both directions, both <code>⊢</code>-terms. <code>unrollNode</code> takes the cover&rsquo;s cell as a hypothesis, for the reason given earlier: knowing the head is what makes the backward direction possible.</p>
 <p>Then <code>step</code> is three lines: <code>look</code> over the cover, and in each branch, build the node answer and relabel it. The recursive calls appear as <code>callAt</code> with a descent proof, and the <code>lam</code> case calls at a <em>different index</em> &mdash; <code>ms zero ∷ Γ</code> &mdash; which is how the binder extends the context.</p>
 
-<figure class="src"><figcaption><span class="path">Theory/Instances/Lambda/Scope.agda</span><span class="lines">154 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
+<figure class="src"><figcaption><span class="path">Theory/Instances/Lambda/Scope.agda</span><span class="lines">178 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
 {- A scope checker for untyped lambda terms, written once, for every answer.
 
    The family is indexed by the context, so `X = Ctx` and Löb is taken over
@@ -1282,12 +1318,14 @@ module Theory.Instances.Lambda.Scope
   where
 
 open import Cubical.Data.Bool using (Bool ; true ; false ; isSetBool ; false≢true)
+open import Cubical.Data.Nat using (ℕ ; zero ; suc)
 open import Cubical.Data.FinData using (Fin ; zero ; suc)
 open import Cubical.Data.List using (List ; [] ; _∷_)
 open import Cubical.Data.List.Properties using (isOfHLevelList)
 open import Cubical.Data.Sigma using (_×_ ; _,_ ; fst ; snd)
 open import Cubical.Data.Unit using (Unit ; tt)
 import Cubical.Data.Sum as Sum
+open import Cubical.Data.Sum using (isProp⊎)
 import Cubical.Data.Empty as Empty
 import Cubical.Data.Equality as Eq
 
@@ -1299,28 +1337,50 @@ Ctx = List Name
 isSetCtx : isSet Ctx
 isSetCtx = isOfHLevelList 0 isSetName
 
--- Membership, as a `Bool` so that it is a proposition and decidable at once.
-memB : Name → Ctx → Bool
-memB x [] = false
-memB x (y ∷ Γ) = onEq (decName x y)
-  where
-  onEq : Dec (x ≡ y) → Bool
-  onEq (yes _) = true
-  onEq (no _) = memB x Γ
-
--- ...as a grammar at sort `nm`, and as a decision the answer can read.
+-- Membership, carrying the *position*.
+--
+-- The same proof-relevant refinement as `Annotated/Typing`'s `Lookup`: a
+-- `Bool` test says only that the name is bound, whereas a chain of "not
+-- here" steps ending in a hit says *where*, and counting the steps is the
+-- de Bruijn index.  `Nameless` reads the converted term off a `Scope`
+-- derivation rather than walking the context a second time.
+--
+-- Still a proposition -- the summands are mutually exclusive -- so
+-- shadowing resolves inward and the index is unique.
 InCtx : Ctx → TheoryTy ℓ-zero nm
-InCtx Γ x = memB x Γ ≡ true
+InCtx [] x = Empty.⊥
+InCtx (y ∷ Γ) x = (x ≡ y) Sum.⊎ ((x ≡ y → Empty.⊥) × InCtx Γ x)
+
+deBruijn : (Γ : Ctx) (x : Name) → InCtx Γ x → ℕ
+deBruijn (y ∷ Γ) x (Sum.inl _) = 0
+deBruijn (y ∷ Γ) x (Sum.inr (_ , v)) = suc (deBruijn Γ x v)
+
+private
+  isPropNeq : {x y : Name} → isProp (x ≡ y → Empty.⊥)
+  isPropNeq f g = funExt λ z → Empty.rec (f z)
+
+isPropInCtx : (Γ : Ctx) (x : Name) → isProp (InCtx Γ x)
+isPropInCtx [] x = λ ()
+isPropInCtx (y ∷ Γ) x =
+  isProp⊎ (isSetName _ _) (isProp× isPropNeq (isPropInCtx Γ x))
+          (λ hit miss → miss .fst hit)
 
 InCtxSet : Ctx → TheorySet ℓ-zero nm
-InCtxSet Γ = InCtx Γ , λ x → isProp→isSet (isSetBool _ _)
+InCtxSet Γ = InCtx Γ , λ x → isProp→isSet (isPropInCtx Γ x)
 
 decInCtx : (Γ : Ctx) → Decidable (InCtx Γ)
-decInCtx Γ x _ = onB (memB x Γ)
+decInCtx [] x _ = Sum.inr λ ()
+decInCtx (y ∷ Γ) x _ = onName (decName x y)
   where
-  onB : (b : Bool) → (b ≡ true) Sum.⊎ ((b ≡ true) → ⊥Ty x)
-  onB true = Sum.inl refl
-  onB false = Sum.inr λ p → Empty.rec (false≢true p)
+  onTail : (x ≡ y → Empty.⊥) → DecTy (InCtx Γ) x → DecTy (InCtx (y ∷ Γ)) x
+  onTail ne (Sum.inl v) = Sum.inl (Sum.inr (ne , v))
+  onTail ne (Sum.inr ¬v) = Sum.inr λ where
+    (Sum.inl hit) → Empty.rec (ne hit)
+    (Sum.inr miss) → ¬v (miss .snd)
+
+  onName : Dec (x ≡ y) → DecTy (InCtx (y ∷ Γ)) x
+  onName (yes p) = Sum.inl (Sum.inl p)
+  onName (no ¬p) = onTail ¬p (decInCtx Γ x tt)
 
 -- The grammar.  A proposition, so `unambiguous` is definitional.
 Scope : Ctx → TheoryTy ℓ-zero tm
@@ -1329,7 +1389,7 @@ Scope Γ (tapp t u) = Scope Γ t × Scope Γ u
 Scope Γ (tlam x t) = Scope (x ∷ Γ) t
 
 isPropScope : (Γ : Ctx) (t : RawTm) → isProp (Scope Γ t)
-isPropScope Γ (tvar x) = isSetBool _ _
+isPropScope Γ (tvar x) = isPropInCtx Γ x
 isPropScope Γ (tapp t u) = isProp× (isPropScope Γ t) (isPropScope Γ u)
 isPropScope Γ (tlam x t) = isPropScope (x ∷ Γ) t
 
@@ -1552,7 +1612,7 @@ nd-selfApp = refl
 -- comes back with a proof that it cannot be scoped.
 no-open : D.¬Ty (Scope []) openT
 no-open =
-  Sum.rec (λ s → Empty.rec (false≢true s)) (λ n → n) (decideScope [] openT tt)
+  Sum.rec (λ s → Empty.rec s) (λ n → n) (decideScope [] openT tt)
 </code></pre></figure>
 <h2 id="abase">Client 2 &mdash; the type checker</h2>
 
@@ -2073,7 +2133,7 @@ nodeCover .disjoint o o' ne m ((ms , e) , (ms' , e')) =
 <h4>The step</h4>
 <p>Identical structure to the scope checker: <code>look</code> over the cover, a node answer per branch, relabel. The recursive calls go to <em>different indices</em> &mdash; the function position at <code>Γ ⊢ ⇐ B ⇒ A</code>, the argument at <code>Γ ⊢ ⇐ B</code>, the lambda body at an extended context and a smaller type.</p>
 
-<figure class="src"><figcaption><span class="path">Theory/Instances/Annotated/Typing.agda</span><span class="lines">195 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
+<figure class="src"><figcaption><span class="path">Theory/Instances/Annotated/Typing.agda</span><span class="lines">241 lines</span></figcaption><pre><code>{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
 {- A type checker for the annotated lambda calculus, written once, for
    every answer.
 
@@ -2126,6 +2186,7 @@ open import Cubical.Data.Sigma using (_×_ ; _,_ ; fst ; snd)
 open import Cubical.Data.Unit using (Unit ; tt)
 open import Cubical.Relation.Nullary.Base using (Dec ; yes ; no)
 import Cubical.Data.Sum as Sum
+open import Cubical.Data.Sum using (isProp⊎)
 import Cubical.Data.Empty as Empty
 import Cubical.Data.Equality as Eq
 
@@ -2153,7 +2214,7 @@ Jdg = Ctx × Ty
 isSetIdx : isSet Jdg
 isSetIdx = isSetΣ isSetCtx λ _ → isSetTyp
 
--- The two side conditions, each a grammar at sort `nm` with a decision.
+-- The `lam` rule's side condition: "A is an arrow with domain B".
 ArrHead : Ty → Ty → Type ℓ-zero
 ArrHead A B = IsArr A × (dom A ≡ B)
 
@@ -2171,18 +2232,63 @@ decArrHead (B' ⇒ C) B x _ = onDom (discreteTy B' B)
   onDom (yes p) = Sum.inl (tt , p)
   onDom (no ¬p) = Sum.inr λ z → Empty.rec (¬p (z .snd))
 
+-- The `var` rule's premise, carrying the *position*.
+--
+-- This is the proof-relevant refinement.  `lookC Γ x ≡ just A` said only
+-- that lookup succeeds; `Lookup Γ A x` is the witness that it does -- a
+-- chain of "not here" steps ending in a hit -- and counting the steps is
+-- the de Bruijn index.  So a derivation stops being mere evidence that the
+-- term checks and becomes the elaborated variable: `Elaborate` reads the
+-- core term off it rather than re-running the lookup.
+--
+-- It is still a *proposition*.  The two summands are mutually exclusive --
+-- one asserts `x ≡ y`, the other refutes it -- so shadowing resolves to
+-- the innermost binding and no term has two derivations.  Proof-relevant
+-- and unambiguous are not in tension: the content is the position, and the
+-- position is unique.
+Lookup : Ctx → Ty → ℕ → Type ℓ-zero
+Lookup [] A x = Empty.⊥
+Lookup ((y , B) ∷ Γ) A x =
+  ((x ≡ y) × (A ≡ B)) Sum.⊎ ((x ≡ y → Empty.⊥) × Lookup Γ A x)
+
+deBruijn : (Γ : Ctx) (A : Ty) (x : ℕ) → Lookup Γ A x → ℕ
+deBruijn ((y , B) ∷ Γ) A x (Sum.inl _) = 0
+deBruijn ((y , B) ∷ Γ) A x (Sum.inr (_ , v)) = ℕ.suc (deBruijn Γ A x v)
+
+private
+  isPropNeq : {x y : ℕ} → isProp (x ≡ y → Empty.⊥)
+  isPropNeq f g = funExt λ z → Empty.rec (f z)
+
+isPropLookup : (Γ : Ctx) (A : Ty) (x : ℕ) → isProp (Lookup Γ A x)
+isPropLookup [] A x = λ ()
+isPropLookup ((y , B) ∷ Γ) A x =
+  isProp⊎ (isProp× (isSetℕ _ _) (isSetTyp _ _))
+          (isProp× isPropNeq (isPropLookup Γ A x))
+          (λ hit miss → miss .fst (hit .fst))
+
 Look : Ctx → Ty → TheoryTy ℓ-zero nm
-Look Γ A x = lookC Γ x ≡ just A
+Look Γ A = Lookup Γ A
 
 LookSet : Ctx → Ty → TheorySet ℓ-zero nm
-LookSet Γ A = Look Γ A , λ x → isProp→isSet (isOfHLevelMaybe 0 isSetTyp _ _)
+LookSet Γ A = Look Γ A , λ x → isProp→isSet (isPropLookup Γ A x)
 
 decLook : (Γ : Ctx) (A : Ty) → Decidable (Look Γ A)
-decLook Γ A x _ = onEq (discreteMaybe discreteTy (lookC Γ x) (just A))
+decLook [] A x _ = Sum.inr λ ()
+decLook ((y , B) ∷ Γ) A x _ = onName (discreteℕ x y) (discreteTy A B)
   where
-  onEq : Dec (lookC Γ x ≡ just A) → DecTy (Look Γ A) x
-  onEq (yes p) = Sum.inl p
-  onEq (no ¬p) = Sum.inr λ p → Empty.rec (¬p p)
+  onTail : (x ≡ y → Empty.⊥) → DecTy (Look Γ A) x
+    → DecTy (Look ((y , B) ∷ Γ) A) x
+  onTail ne (Sum.inl v) = Sum.inl (Sum.inr (ne , v))
+  onTail ne (Sum.inr ¬v) = Sum.inr λ where
+    (Sum.inl hit) → Empty.rec (ne (hit .fst))
+    (Sum.inr miss) → ¬v (miss .snd)
+
+  onName : Dec (x ≡ y) → Dec (A ≡ B) → DecTy (Look ((y , B) ∷ Γ) A) x
+  onName (yes p) (yes q) = Sum.inl (Sum.inl (p , q))
+  onName (yes p) (no ¬q) = Sum.inr λ where
+    (Sum.inl hit) → Empty.rec (¬q (hit .snd))
+    (Sum.inr miss) → Empty.rec (miss .fst p)
+  onName (no ¬p) _ = onTail ¬p (decLook Γ A x tt)
 
 -- The judgment.  Every premise's index is determined, so this is a
 -- proposition: an annotated term has at most one derivation at a type, and
@@ -2193,7 +2299,7 @@ Der (Γ , A) (aapp B f a) = Der (Γ , B ⇒ A) f × Der (Γ , B) a
 Der (Γ , A) (alam x B t) = ArrHead A B × Der ((x , B) ∷ Γ , cod A) t
 
 isPropDer : (i : Jdg) (t : ATm) → isProp (Der i t)
-isPropDer (Γ , A) (avar x) = isOfHLevelMaybe 0 isSetTyp _ _
+isPropDer (Γ , A) (avar x) = isPropLookup Γ A x
 isPropDer (Γ , A) (aapp B f a) =
   isProp× (isPropDer (Γ , B ⇒ A) f) (isPropDer (Γ , B) a)
 isPropDer (Γ , A) (alam x B t) =

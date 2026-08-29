@@ -27,6 +27,8 @@ import Cubical.Data.Sum as Sum
 
 open import Theory.Instances.Annotated.Typing public
 
+open import Theory.Type.SemanticAction.Base
+  AEqns ℕ (λ _ → nm) aPresentation
 import Theory.Combinator.Answer.Decidable
   AEqns ℕ (λ _ → nm) aPresentation as D
 
@@ -47,16 +49,20 @@ elab (Γ , A) (aapp B f a) d =
 elab (Γ , A) (alam x B t) d =
   clam B (elab ((x , B) ∷ Γ , cod A) t (d .snd))
 
--- Check, then elaborate.  This is the front end: source term in, core term
--- or a rejection out.
-compile : (Γ : Ctx) (A : Ty) (t : ATm) → Maybe CoreTm
-compile Γ A t = onDec (CD.typed (Γ , A) t tt)
-  where
-  onDec : DecTy (Der (Γ , A)) t → Maybe CoreTm
-  onDec (Sum.inl d) = just (elab (Γ , A) t d)
-  onDec (Sum.inr _) = nothing
+-- ...as a semantic action, which is the DSL's own name for a readout: a
+-- map from a grammar into a constant `Δ X`.  Stating it this way is not
+-- decoration -- it is what lets `semact-dec` and `observe` below do the
+-- rest, so the boundary between "internal term" and "external value" is
+-- crossed exactly once, in `observe`, rather than by hand.
+elabAction : (i : Jdg) → SemanticAction (Der i) CoreTm
+elabAction i t d = elab i t d , tt
 
-
+-- Check, then elaborate.  This is the front end, and it is a composition of
+-- three internal terms: the checker `⊤Ty ⊢ DecTy (Der i)`, the action
+-- `DecTy (Der i) ⊢ Δ (Maybe CoreTm)` that `semact-dec` builds from
+-- `elabAction`, and `observe`, which is the one place a `⊤Ty`-map is read.
+compile : (Γ : Ctx) (A : Ty) → ATm → Maybe CoreTm
+compile Γ A = observe (CD.typed (Γ , A)) (semact-dec (elabAction (Γ , A)))
 -- Tests.  `refl` again, so the typechecker runs the whole front end.
 
 idT : ATm

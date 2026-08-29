@@ -132,4 +132,4 @@ nd-selfApp = refl
 -- comes back with a proof that it cannot be scoped.
 no-open : D.¬Ty (Scope []) openT
 no-open =
-  Sum.rec (λ s → Empty.rec (false≢true s)) (λ n → n) (decideScope [] openT tt)
+  Sum.rec (λ s → Empty.rec s) (λ n → n) (decideScope [] openT tt)

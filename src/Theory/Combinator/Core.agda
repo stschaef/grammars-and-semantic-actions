@@ -135,6 +135,23 @@ isSet⊗ᴰ o As m =
       → TheorySet (ℓ-max ℓM ℓA) (σ .resultSort o)
 ⊗ᴰSet o As = ⊗ᴰ o As , isSet⊗ᴰ o As
 
+-- The one thing `⊗ᴰ` is not: a `Functor` code.  `Theory/Type/Code/Base`
+-- has `⊗e`, whose slots are independent, so a grammar that needs the
+-- dependency cannot be a `μ` and gets its `roll`/`unroll` written by hand
+-- (twelve lines, and they are honest `⊢`-terms) instead of for free.
+--
+-- Closing that gap means adding a `⊗ᴰe` constructor, which every match on
+-- `Functor` would then have to cover -- around seventeen sites across
+-- `Code/Base`, `Inductive/HLevels`, `Code/Container` and
+-- `Guarded/Justification`, all shared with the monoid development.  Worth
+-- doing deliberately, not in passing.
+--
+-- Worth knowing before doing it: the dependency is an artefact of *named*
+-- syntax.  `lam n t` scopes its body in `Γ , n`, and `n` is a slot value;
+-- a de Bruijn `lam t` scopes it in `B ∷ Γ`, which mentions no slot at all.
+-- So surface-syntax judgments need `⊗ᴰ` and core-syntax ones do not --
+-- which is one more reason compilers go nameless early.
+
 -- Introduction and elimination, in the shape `Operation/Base` states them
 -- for `⊗ᵘ`: at `op o ms`, a witness in each slot.
 node-mk : {o : σ .ops} {As : NodeArgs ℓA o} {ms : interpIn o ↓M}

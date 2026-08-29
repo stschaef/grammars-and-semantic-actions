@@ -30,12 +30,14 @@ module Theory.Instances.Lambda.Scope
   where
 
 open import Cubical.Data.Bool using (Bool ; true ; false ; isSetBool ; false≢true)
+open import Cubical.Data.Nat using (ℕ ; zero ; suc)
 open import Cubical.Data.FinData using (Fin ; zero ; suc)
 open import Cubical.Data.List using (List ; [] ; _∷_)
 open import Cubical.Data.List.Properties using (isOfHLevelList)
 open import Cubical.Data.Sigma using (_×_ ; _,_ ; fst ; snd)
 open import Cubical.Data.Unit using (Unit ; tt)
 import Cubical.Data.Sum as Sum
+open import Cubical.Data.Sum using (isProp⊎)
 import Cubical.Data.Empty as Empty
 import Cubical.Data.Equality as Eq
 
@@ -47,28 +49,50 @@ Ctx = List Name
 isSetCtx : isSet Ctx
 isSetCtx = isOfHLevelList 0 isSetName
 
--- Membership, as a `Bool` so that it is a proposition and decidable at once.
-memB : Name → Ctx → Bool
-memB x [] = false
-memB x (y ∷ Γ) = onEq (decName x y)
-  where
-  onEq : Dec (x ≡ y) → Bool
-  onEq (yes _) = true
-  onEq (no _) = memB x Γ
-
--- ...as a grammar at sort `nm`, and as a decision the answer can read.
+-- Membership, carrying the *position*.
+--
+-- The same proof-relevant refinement as `Annotated/Typing`'s `Lookup`: a
+-- `Bool` test says only that the name is bound, whereas a chain of "not
+-- here" steps ending in a hit says *where*, and counting the steps is the
+-- de Bruijn index.  `Nameless` reads the converted term off a `Scope`
+-- derivation rather than walking the context a second time.
+--
+-- Still a proposition -- the summands are mutually exclusive -- so
+-- shadowing resolves inward and the index is unique.
 InCtx : Ctx → TheoryTy ℓ-zero nm
-InCtx Γ x = memB x Γ ≡ true
+InCtx [] x = Empty.⊥
+InCtx (y ∷ Γ) x = (x ≡ y) Sum.⊎ ((x ≡ y → Empty.⊥) × InCtx Γ x)
+
+deBruijn : (Γ : Ctx) (x : Name) → InCtx Γ x → ℕ
+deBruijn (y ∷ Γ) x (Sum.inl _) = 0
+deBruijn (y ∷ Γ) x (Sum.inr (_ , v)) = suc (deBruijn Γ x v)
+
+private
+  isPropNeq : {x y : Name} → isProp (x ≡ y → Empty.⊥)
+  isPropNeq f g = funExt λ z → Empty.rec (f z)
+
+isPropInCtx : (Γ : Ctx) (x : Name) → isProp (InCtx Γ x)
+isPropInCtx [] x = λ ()
+isPropInCtx (y ∷ Γ) x =
+  isProp⊎ (isSetName _ _) (isProp× isPropNeq (isPropInCtx Γ x))
+          (λ hit miss → miss .fst hit)
 
 InCtxSet : Ctx → TheorySet ℓ-zero nm
-InCtxSet Γ = InCtx Γ , λ x → isProp→isSet (isSetBool _ _)
+InCtxSet Γ = InCtx Γ , λ x → isProp→isSet (isPropInCtx Γ x)
 
 decInCtx : (Γ : Ctx) → Decidable (InCtx Γ)
-decInCtx Γ x _ = onB (memB x Γ)
+decInCtx [] x _ = Sum.inr λ ()
+decInCtx (y ∷ Γ) x _ = onName (decName x y)
   where
-  onB : (b : Bool) → (b ≡ true) Sum.⊎ ((b ≡ true) → ⊥Ty x)
-  onB true = Sum.inl refl
-  onB false = Sum.inr λ p → Empty.rec (false≢true p)
+  onTail : (x ≡ y → Empty.⊥) → DecTy (InCtx Γ) x → DecTy (InCtx (y ∷ Γ)) x
+  onTail ne (Sum.inl v) = Sum.inl (Sum.inr (ne , v))
+  onTail ne (Sum.inr ¬v) = Sum.inr λ where
+    (Sum.inl hit) → Empty.rec (ne hit)
+    (Sum.inr miss) → ¬v (miss .snd)
+
+  onName : Dec (x ≡ y) → DecTy (InCtx (y ∷ Γ)) x
+  onName (yes p) = Sum.inl (Sum.inl p)
+  onName (no ¬p) = onTail ¬p (decInCtx Γ x tt)
 
 -- The grammar.  A proposition, so `unambiguous` is definitional.
 Scope : Ctx → TheoryTy ℓ-zero tm
@@ -77,7 +101,7 @@ Scope Γ (tapp t u) = Scope Γ t × Scope Γ u
 Scope Γ (tlam x t) = Scope (x ∷ Γ) t
 
 isPropScope : (Γ : Ctx) (t : RawTm) → isProp (Scope Γ t)
-isPropScope Γ (tvar x) = isSetBool _ _
+isPropScope Γ (tvar x) = isPropInCtx Γ x
 isPropScope Γ (tapp t u) = isProp× (isPropScope Γ t) (isPropScope Γ u)
 isPropScope Γ (tlam x t) = isPropScope (x ∷ Γ) t
 
