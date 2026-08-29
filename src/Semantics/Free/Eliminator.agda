@@ -26,6 +26,7 @@ open import Cubical.Categories.Displayed.NaturalTransformation.More
 open import Cubical.Categories.Displayed.Functor
 open import Cubical.Categories.Displayed.Presheaf.Uncurried.Representable
 import Cubical.Categories.Displayed.Reasoning as HomᴰReasoning
+open import Cubical.Categories.Instances.Fiber
 
 open import Semantics.Model
 open import Semantics.Displayed.Model
@@ -39,6 +40,8 @@ module _ {ℓCᴰ ℓCᴰ'} (Mᴰ : Modelᴰ FreeModel ℓCᴰ ℓCᴰ') where
   private
     module Cᴰ = Categoryᴰ Cᴰ
     module R = HomᴰReasoning Cᴰ
+    module F = Fibers Cᴰ
+    module Fop = Fibers (Cᴰ ^opᴰ)
 
   open MonoidalStrᴰ MCᴰ
   open NatIsoᴰ
@@ -90,31 +93,39 @@ module _ {ℓCᴰ ℓCᴰ'} (Mᴰ : Modelᴰ FreeModel ℓCᴰ ℓCᴰ') where
       (fᴰ : Cᴰ.Hom[ f ][ elimOb A ⊗ᴰ elimOb B , elimOb D ])
       → ((⊸ᴰ.introᴰ B D fᴰ) ⊗ₕᴰ Cᴰ.idᴰ) Cᴰ.⋆ᴰ (⊸ᴰ.elementᴰ B D)
         Cᴰ.≡[ ⊸βE f ] fᴰ
-    ⊸βᴰ' f fᴰ = {!!}
+    ⊸βᴰ' f fᴰ =
+      F.rectify (F.≡out (F.reind-filler _ ∙ F.≡in (⊸ᴰ.βᴰ _ _ fᴰ)))
 
     ⊸ηᴰ' : ∀ {A B D} (g : Exp A (B ⊸T D))
       (gᴰ : Cᴰ.Hom[ g ][ elimOb A , ⊸ᴰ.vertexᴰ B D ])
       → gᴰ Cᴰ.≡[ ⊸ηE g ]
         ⊸ᴰ.introᴰ B D ((gᴰ ⊗ₕᴰ Cᴰ.idᴰ) Cᴰ.⋆ᴰ (⊸ᴰ.elementᴰ B D))
-    ⊸ηᴰ' g gᴰ = {!!}
+    ⊸ηᴰ' g gᴰ =
+      F.rectify (F.≡out (F.≡in (⊸ᴰ.ηᴰ _ _ gᴰ)
+        ∙ ⊸ᴰ.cong-introᴰ _ _ (sym (F.reind-filler _))))
 
     ⟜βᴰ' : ∀ {A B D} (f : Exp (A ⊗T B) D)
       (fᴰ : Cᴰ.Hom[ f ][ elimOb A ⊗ᴰ elimOb B , elimOb D ])
       → (Cᴰ.idᴰ ⊗ₕᴰ (⟜ᴰ.introᴰ A D fᴰ)) Cᴰ.⋆ᴰ (⟜ᴰ.elementᴰ A D)
         Cᴰ.≡[ ⟜βE f ] fᴰ
-    ⟜βᴰ' f fᴰ = {!!}
+    ⟜βᴰ' f fᴰ =
+      F.rectify (F.≡out (F.reind-filler _ ∙ F.≡in (⟜ᴰ.βᴰ _ _ fᴰ)))
 
     ⟜ηᴰ' : ∀ {A B D} (g : Exp B (D ⟜T A))
       (gᴰ : Cᴰ.Hom[ g ][ elimOb B , ⟜ᴰ.vertexᴰ A D ])
       → gᴰ Cᴰ.≡[ ⟜ηE g ]
         ⟜ᴰ.introᴰ A D ((Cᴰ.idᴰ ⊗ₕᴰ gᴰ) Cᴰ.⋆ᴰ (⟜ᴰ.elementᴰ A D))
-    ⟜ηᴰ' g gᴰ = {!!}
+    ⟜ηᴰ' g gᴰ =
+      F.rectify (F.≡out (F.≡in (⟜ᴰ.ηᴰ _ _ gᴰ)
+        ∙ ⟜ᴰ.cong-introᴰ _ _ (sym (F.reind-filler _))))
 
     ⊕βᴰ' : ∀ {B} (X : hSet ℓ) (A : ⟨ X ⟩ → Ty) (f : ∀ x → Exp (A x) B)
       (fᴰ : ∀ x → Cᴰ.Hom[ f x ][ elimOb (A x) , elimOb B ]) (x : ⟨ X ⟩)
       → (Σᴰ.elementᴰ X A x) Cᴰ.⋆ᴰ (Σᴰ.introᴰ X A fᴰ)
         Cᴰ.≡[ ⊕βE X A f x ] fᴰ x
-    ⊕βᴰ' X A f fᴰ x = {!!}
+    ⊕βᴰ' X A f fᴰ x =
+      Fop.rectify (Fop.≡out (Fop.reind-filler _
+        ∙ Fop.≡in (λ j → Σᴰ.βᴰ _ _ fᴰ j x)))
 
     ⊕ηᴰ' : ∀ {B} (X : hSet ℓ) (A : ⟨ X ⟩ → Ty) (g : Exp (⊕T X A) B)
       (gᴰ : Cᴰ.Hom[ g ][ Σᴰ.vertexᴰ X A , elimOb B ])
@@ -126,7 +137,9 @@ module _ {ℓCᴰ ℓCᴰ'} (Mᴰ : Modelᴰ FreeModel ℓCᴰ ℓCᴰ') where
       (fᴰ : ∀ x → Cᴰ.Hom[ f x ][ elimOb B , elimOb (A x) ]) (x : ⟨ X ⟩)
       → (Πᴰ.introᴰ X A fᴰ) Cᴰ.⋆ᴰ (Πᴰ.elementᴰ X A x)
         Cᴰ.≡[ &βE X A f x ] fᴰ x
-    &βᴰ' X A f fᴰ x = {!!}
+    &βᴰ' X A f fᴰ x =
+      F.rectify (F.≡out (F.reind-filler _
+        ∙ F.≡in (λ j → Πᴰ.βᴰ _ _ fᴰ j x)))
 
     &ηᴰ' : ∀ {B} (X : hSet ℓ) (A : ⟨ X ⟩ → Ty) (g : Exp B (&T X A))
       (gᴰ : Cᴰ.Hom[ g ][ elimOb B , Πᴰ.vertexᴰ X A ])
