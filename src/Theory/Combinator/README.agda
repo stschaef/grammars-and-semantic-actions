@@ -137,8 +137,10 @@
        `data`.  An indexed family gets `SplitError.UnificationStuck` on
        the model's constructors in every branch of the checker, and the
        recursive form additionally makes `isProp` a two-line induction
-       rather than a theorem.  All five judgments do this: `Scope`, `Der`,
-       `Lin`, `Match`, `Layout`, `ResTy`/`MatchTy`.
+       rather than a theorem.  `Scope`, `Lin`, `Match`, `Layout` and
+       `ResTy`/`MatchTy` do this.  `Annotated/Typing` is the one departure,
+       and it is exception 3 below: its judgment is an erasure fibre over
+       an intrinsically typed core, so an indexed `data` on purpose.
 
    2.  DISPATCH WITH `look nodeCover`, never with a pattern match on the
        model element.  This is the convention everything else hangs off.
@@ -221,10 +223,11 @@
 
 
    ============================================================
-   IV.  THE TWO DOCUMENTED EXCEPTIONS
+   IV.  THE THREE DOCUMENTED EXCEPTIONS
    ============================================================
 
-   Both are in `Match`, and both are arguments rather than lapses.
+   The first two are in `Match`, and all three are arguments rather than
+   lapses.
 
    `Match/Judgment`'s `pwild` and `pvar n` do NOT go through `look`.  They
    are not syntax-directed on the value at all -- they hold at every head
@@ -244,6 +247,37 @@
    crossed once per derivation instead of once.  Supplying the missing
    combinator means adding to `Answer/NonDet`, which is a change to the
    backend interface and worth making deliberately.
+
+   `Annotated/Typing`'s judgment is NOT A RECURSION ON THE MODEL, against
+   convention 1.  `Der (Γ , A) t` is `Σ[ c ∈ Core Γ A ] (erase c ≡ t)`: a
+   term of an intrinsically typed core syntax, together with the evidence
+   that it elaborates the source.  The argument is about which claims get
+   checked.  A recursive judgment verifies the checker against itself and
+   itself against nothing, and "this predicate is STLC typing" is exactly
+   the claim nobody was making good on; carrying the core term collapses
+   that layer, since `elab` is `fst`, "the output is well typed" is the
+   type of `fst`, and "the output erases to the input" is `snd`.
+
+   The cost is paid in two places and no more.  `isProp` is a retraction
+   onto the old recursive judgment -- which survives as `Der⁻`, demoted
+   from definition to lemma -- rather than a two-line induction, and
+   `unrollNode` recomputes that fibre instead of finding its premises
+   already separated.  The `SplitError` convention 1 predicts does NOT
+   appear: the core term is matched only against itself, and equations
+   between source terms are projected rather than unified, which is the
+   trick a `Precise` proof needs anyway.
+
+   Worth generalising, since a seventh client will face the choice.  Make
+   the judgment intrinsic when the client HAS an intended semantics its
+   judgment could get wrong -- a typing discipline, a scoping discipline,
+   an elaboration -- and leave it recursive when the judgment is its own
+   specification, as `Layout`'s indentation rule is.  And note what the
+   intrinsic form nearly costs: `Core` resolves a variable by a `Lookup`
+   and not by a numeral, because with a named source language a numeral
+   makes `erase` non-injective under shadowing, the fibre stops being a
+   proposition, and `ND` would count two derivations for `λx.λx.x`.  The
+   judgment being a proposition is a fact about the SOURCE language, and an
+   intrinsic judgment is the place it has to be re-established.
 
 
    ============================================================
