@@ -97,6 +97,29 @@ same-elements o ℓs As p q ms≡ =
   Σ[ ms ∈ interpIn o ↓M ]
     (M .snd .fst o ms Eq.≡ m) × ((a : arities σ o) → A a (ms a))
 
+-- The *dependent* uniform convolution: every slot's grammar may mention the
+-- whole splitting, which is what a binder needs (`lam n t` scopes its body in
+-- `Γ , n`, and `n` is slot zero's value).  `⊗ᵘ[ o ] A` is definitionally
+-- `⊗ᵈ[ o ] (λ _ → A)`, and this is `Combinator/Core`'s `⊗ᴰ` with the slots
+-- unbundled from their `isSet` proofs.
+⊗ᵈ[_] : (o : σ .ops)
+     → (interpIn o ↓M → interpIn o (TheoryTy ℓA))
+     → TheoryTy (ℓ-max ℓM ℓA) (σ .resultSort o)
+⊗ᵈ[ o ] A m =
+  Σ[ ms ∈ interpIn o ↓M ]
+    (M .snd .fst o ms Eq.≡ m) × ((a : arities σ o) → A ms a (ms a))
+
+⊗ᵈ-intro : {o : σ .ops} (A : interpIn o ↓M → interpIn o (TheoryTy ℓA))
+  (ms : interpIn o ↓M) → ((a : arities σ o) → A ms a (ms a))
+  → ⊗ᵈ[ o ] A (op o ms)
+⊗ᵈ-intro A ms xs = ms , Eq.refl , xs
+
+⊗ᵈ-elim : {o : σ .ops} (A : interpIn o ↓M → interpIn o (TheoryTy ℓA))
+  {C : TheoryTy ℓB (σ .resultSort o)}
+  → ({ms : interpIn o ↓M} → ((a : arities σ o) → A ms a (ms a)) → C (op o ms))
+  → ⊗ᵈ[ o ] A ⊢ C
+⊗ᵈ-elim A f _ (ms , Eq.refl , xs) = f xs
+
 ⊗ᵘ-intro : {o : σ .ops} (A : interpIn o (TheoryTy ℓA))
   (ms : interpIn o ↓M) → ((a : arities σ o) → A a (ms a))
   → ⊗ᵘ[ o ] A (op o ms)
@@ -161,6 +184,13 @@ same-elements o ℓs As p q ms≡ =
      → (∀ a → A a ⊢ B a)
      → ⊗ᵘ[ o ] A ⊢ ⊗ᵘ[ o ] B
 ⊗map o f m (m⃗ , e , g) = m⃗ , e , λ a → f a (m⃗ a) (g a)
+
+⊗ᵈmap : (o : σ .ops)
+     {A : interpIn o ↓M → interpIn o (TheoryTy ℓA)}
+     {B : interpIn o ↓M → interpIn o (TheoryTy ℓB)}
+     → (∀ ms a → A ms a ⊢ B ms a)
+     → ⊗ᵈ[ o ] A ⊢ ⊗ᵈ[ o ] B
+⊗ᵈmap o f m (m⃗ , e , g) = m⃗ , e , λ a → f m⃗ a (m⃗ a) (g a)
 
 ⊗ᶠ : {n : ℕ} {ws : Fin n → S} {s : S}
    → (Val ws → ↓M s) → (ℓs : Fin n → Level) → Args n ℓs ws

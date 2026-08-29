@@ -37,6 +37,7 @@ isSetValued {ℓA = ℓA} {ℓX = ℓX} (⊕e Y F) =
 isSetValued ( &e Y F) = ∀ y → isSetValued (F y)
 isSetValued (F &e2 G) = isSetValued F × isSetValued G
 isSetValued (⊗e o F) = ∀ a → isSetValued (F a)
+isSetValued (⊗ᴰe o F) = ∀ ms a → isSetValued (F ms a)
 
 isSet⟦_⟧ : ∀ {ℓX ℓB} {X : Type ℓX} {xs : X → S} {s}
   (F : Functor ℓA X xs s) → isSetValued F
@@ -53,6 +54,8 @@ isSet⟦ F &e2 G ⟧ isSetF A isSetA =
     (isSet⟦ G ⟧ (isSetF .snd) A isSetA)
 isSet⟦ ⊗e o F ⟧ isSetF A isSetA =
   isSet⊗ᵘ o λ a → isSet⟦ F a ⟧ (isSetF a) A isSetA
+isSet⟦ ⊗ᴰe o F ⟧ isSetF A isSetA =
+  isSet⊗ᵈ o λ ms a → isSet⟦ F ms a ⟧ (isSetF ms a) A isSetA
 
 module _ {ℓA ℓX} {X : Type ℓX} {xs : X → S} where
 
@@ -73,6 +76,8 @@ module _ {ℓA ℓX} {X : Type ℓX} {xs : X → S} where
   FP (&e Y F) m sh = Σ[ y ∈ Y ] FP (F y) m (sh y)
   FP (F &e2 G) m (shF , shG) = FP F m shF Sum.⊎ FP G m shG
   FP (⊗e o F) m (ms , e , sh) = Σ[ a ∈ arities σ o ] FP (F a) (ms a) (sh a)
+  FP (⊗ᴰe o F) m (ms , e , sh) =
+    Σ[ a ∈ arities σ o ] FP (F ms a) (ms a) (sh a)
 
   next : ∀ {s} (F : Functor ℓA X xs s) (m : ↓M s) (sh : FS F m)
     → FP F m sh → Ix
@@ -82,6 +87,7 @@ module _ {ℓA ℓX} {X : Type ℓX} {xs : X → S} where
   next (F &e2 G) m (shF , shG) (Sum.inl p) = next F m shF p
   next (F &e2 G) m (shF , shG) (Sum.inr p) = next G m shG p
   next (⊗e o F) m (ms , e , sh) (a , p) = next (F a) (ms a) (sh a) p
+  next (⊗ᴰe o F) m (ms , e , sh) (a , p) = next (F ms a) (ms a) (sh a) p
 
   μIW : (F : (x : X) → Functor ℓA X xs (xs x)) → Ix → Type _
   μIW F = IW
@@ -118,6 +124,8 @@ module _ {ℓA ℓX} {X : Type ℓX} {xs : X → S} where
     getSubtreeF A G m x eG p
   getSubtreeF A (⊗e o F) m x (ms , e , es) (a , p) =
     getSubtreeF A (F a) (ms a) x (es a) p
+  getSubtreeF A (⊗ᴰe o F) m x (ms , e , es) (a , p) =
+    getSubtreeF A (F ms a) (ms a) x (es a) p
 
   nodeF : ∀ {ℓB s} (A : (x : X) → TheoryTy ℓB (xs x))
     (F : Functor ℓA X xs s) → ∀ m (x : X)
@@ -135,6 +143,8 @@ module _ {ℓA ℓX} {X : Type ℓX} {xs : X → S} where
     nodeF A G m x shG (λ p → subtree (Sum.inr p))
   nodeF A (⊗e o F) m x (ms , e , sh) subtree =
     ms , e , λ a → nodeF A (F a) (ms a) x (sh a) (λ p → subtree (a , p))
+  nodeF A (⊗ᴰe o F) m x (ms , e , sh) subtree =
+    ms , e , λ a → nodeF A (F ms a) (ms a) x (sh a) (λ p → subtree (a , p))
 
   reconstructF : ∀ {ℓB s} (A : (x : X) → TheoryTy ℓB (xs x))
     (F : Functor ℓA X xs s) → ∀ m (x : X) (e : ⟦ F ⟧TheoryTy A m)
@@ -150,6 +160,9 @@ module _ {ℓA ℓX} {X : Type ℓX} {xs : X → S} where
     cong₂ _,_ (reconstructF A F m x eF) (reconstructF A G m x eG)
   reconstructF A (⊗e o F) m x (ms , e , es) =
     cong (λ zs → ms , e , zs) (funExt λ a → reconstructF A (F a) (ms a) x (es a))
+  reconstructF A (⊗ᴰe o F) m x (ms , e , es) =
+    cong (λ zs → ms , e , zs)
+      (funExt λ a → reconstructF A (F ms a) (ms a) x (es a))
 
   {-# TERMINATING #-}
   encode : (F : (x : X) → Functor ℓA X xs (xs x))

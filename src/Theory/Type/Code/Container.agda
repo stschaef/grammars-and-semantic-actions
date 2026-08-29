@@ -50,6 +50,8 @@ module _ {ℓA ℓX} {X : Type ℓX} {xs : X → S} where
   Sh (G &e2 G') m = Sh G m × Sh G' m
   Sh (⊗e o G) m =
     Σ[ sp ∈ Split o m ] ((a : arities σ o) → Sh (G a) (parts sp a))
+  Sh (⊗ᴰe o G) m =
+    Σ[ sp ∈ Split o m ] ((a : arities σ o) → Sh (G (parts sp) a) (parts sp a))
 
   Pos : {s : S} (F : Functor ℓA X xs s) (m : ↓M s) → Sh F m → Type ℓPos
   Pos (k A) m sh = ⊥*
@@ -58,6 +60,8 @@ module _ {ℓA ℓX} {X : Type ℓX} {xs : X → S} where
   Pos (&e Y G) m sh = Σ[ y ∈ Y ] Pos (G y) m (sh y)
   Pos (G &e2 G') m (sh , sh') = Pos G m sh ⊎ Pos G' m sh'
   Pos (⊗e o G) m (sp , sh) = Σ[ a ∈ arities σ o ] Pos (G a) (parts sp a) (sh a)
+  Pos (⊗ᴰe o G) m (sp , sh) =
+    Σ[ a ∈ arities σ o ] Pos (G (parts sp) a) (parts sp a) (sh a)
 
   nx : {s : S} (F : Functor ℓA X xs s) (m : ↓M s) (sh : Sh F m)
      → Pos F m sh → Ix
@@ -67,3 +71,4 @@ module _ {ℓA ℓX} {X : Type ℓX} {xs : X → S} where
   nx (G &e2 G') m (sh , sh') (inl p) = nx G m sh p
   nx (G &e2 G') m (sh , sh') (inr p) = nx G' m sh' p
   nx (⊗e o G) m (sp , sh) (a , p) = nx (G a) (parts sp a) (sh a) p
+  nx (⊗ᴰe o G) m (sp , sh) (a , p) = nx (G (parts sp) a) (parts sp a) (sh a) p

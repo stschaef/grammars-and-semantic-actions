@@ -148,6 +148,12 @@ isSet⊗ᵘ o isSetA m =
   isSetΣ (isSetΠ λ a → M .fst (σ .sortOf o a) .snd) λ ms →
   isSet× (isProp→isSet isPropModelEq) (isSetΠ λ a → isSetA a (ms a))
 
+isSet⊗ᵈ : ∀ (o : σ .ops) {A : interpIn o ↓M → interpIn o (TheoryTy ℓA)}
+  → (∀ ms a → isSetTheoryTy (A ms a)) → isSetTheoryTy (⊗ᵈ[ o ] A)
+isSet⊗ᵈ o isSetA m =
+  isSetΣ (isSetΠ λ a → M .fst (σ .sortOf o a) .snd) λ ms →
+  isSet× (isProp→isSet isPropModelEq) (isSetΠ λ a → isSetA ms a (ms a))
+
 isSetExcept : ∀ {s} (E : ∀ {s} → TheoryTy ℓE s) {A : TheoryTy ℓA s}
   → isSetTheoryTy A → isSetTheoryTy E → isSetTheoryTy (Except E A)
 isSetExcept E isSetA isSetE = isSet⊕ isSetA isSetE

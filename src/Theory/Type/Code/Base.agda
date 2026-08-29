@@ -37,6 +37,14 @@ data Functor (ℓA : Level) {ℓX} (X : Type ℓX) (xs : X → S)
   _&e2_ : {s : S} → Functor ℓA X xs s → Functor ℓA X xs s → Functor ℓA X xs s
   ⊗e : (o : σ .ops) → interpIn o (Functor ℓA X xs)
      → Functor ℓA X xs (σ .resultSort o)
+  -- `⊗e`'s dependent sibling: every slot's code may mention the whole
+  -- splitting, which is what a binder needs -- `lam n t` scopes its body in
+  -- `Γ , n`, and `n` is slot zero's value.  This is `Combinator/Core`'s `⊗ᴰ`
+  -- as a code, so a grammar with that dependency can be a `μ` and get its
+  -- `roll`/`unroll` for free.  `⊗e o F` is `⊗ᴰe o (λ _ → F)`.
+  ⊗ᴰe : (o : σ .ops)
+      → ((ms : interpIn o ↓M) → interpIn o (Functor ℓA X xs))
+      → Functor ℓA X xs (σ .resultSort o)
 
 module _ {ℓA ℓX} {X : Type ℓX} {xs : X → S} where
   ⟦_⟧TheoryTy : ∀ {s} → Functor ℓA X xs s → ((x : X) → TheoryTy ℓB (xs x))
@@ -47,6 +55,8 @@ module _ {ℓA ℓX} {X : Type ℓX} {xs : X → S} where
   ⟦ &e Y F ⟧TheoryTy A = &[ y ∈ Y ] ⟦ F y ⟧TheoryTy A
   ⟦ F &e2 F' ⟧TheoryTy A = ⟦ F ⟧TheoryTy A & ⟦ F' ⟧TheoryTy A
   ⟦ ⊗e o F ⟧TheoryTy A = ⊗ᵘ[ o ] λ (a : arities σ o) → ⟦ F a ⟧TheoryTy A
+  ⟦ ⊗ᴰe o F ⟧TheoryTy A =
+    ⊗ᵈ[ o ] λ ms (a : arities σ o) → ⟦ F ms a ⟧TheoryTy A
 
   map : ∀ {s} (F : Functor ℓA X xs s)
     {A : (x : X) → TheoryTy ℓB (xs x)}
@@ -59,6 +69,7 @@ module _ {ℓA ℓX} {X : Type ℓX} {xs : X → S} where
   map (&e Y F) f = &ᴰ-intro λ y → map (F y) f ∘⊢ π y
   map (F &e2 F') f = map F f ,&p map F' f
   map (⊗e o F) f = ⊗map o λ a → map (F a) f
+  map (⊗ᴰe o F) f = ⊗ᵈmap o λ ms a → map (F ms a) f
 
   map-id : ∀ {s} (F : Functor ℓA X xs s) {A : (x : X) → TheoryTy ℓB (xs x)}
     → map F (λ x → id⊢ {A = A x}) ≡ id⊢
@@ -68,6 +79,7 @@ module _ {ℓA ℓX} {X : Type ℓX} {xs : X → S} where
   map-id (&e Y F) i = &ᴰ-intro λ y → map-id (F y) i ∘⊢ π y
   map-id (F &e2 F') i = map-id F i ,&p map-id F' i
   map-id (⊗e o F) i = ⊗map o λ a → map-id (F a) i
+  map-id (⊗ᴰe o F) i = ⊗ᵈmap o λ ms a → map-id (F ms a) i
 
   map-∘ : ∀ {s}
     {A : (x : X) → TheoryTy ℓB (xs x)}
@@ -82,6 +94,7 @@ module _ {ℓA ℓX} {X : Type ℓX} {xs : X → S} where
   map-∘ (&e Y F) f f' i = &ᴰ-intro λ y → map-∘ (F y) f f' i ∘⊢ π y
   map-∘ (F &e2 F') f f' i = map-∘ F f f' i ,&p map-∘ F' f f' i
   map-∘ (⊗e o F) f f' i = ⊗map o λ a → map-∘ (F a) f f' i
+  map-∘ (⊗ᴰe o F) f f' i = ⊗ᵈmap o λ ms a → map-∘ (F ms a) f f' i
 
   map-inv : ∀ {s} (F : Functor ℓA X xs s)
     {A : (x : X) → TheoryTy ℓB (xs x)}

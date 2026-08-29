@@ -157,6 +157,9 @@ module _ {X : Type ℓX} {xs : X → S} where
     Guard (G &e2 G') m root = Guard G m root × Guard G' m root
     Guard (⊗e o G) m root =
       (sp : Split o m) (a : arities σ o) → Guard (G a) (parts sp a) root
+    Guard (⊗ᴰe o G) m root =
+      (sp : Split o m) (a : arities σ o)
+      → Guard (G (parts sp) a) (parts sp a) root
 
     module _ {A B : IFam xs ℓB} (root : Pt xs)
       (rec : (x : X) (m' : ↓M (xs x)) → (x , m') < root → A x m' → B x m')
@@ -171,6 +174,8 @@ module _ {X : Type ℓX} {xs : X → S} where
         mapG G m (g .fst) z , mapG G' m (g .snd) z'
       mapG (⊗e o G) m g (ms , e , h) =
         ms , e , λ a → mapG (G a) (ms a) (g (ms , e) a) (h a)
+      mapG (⊗ᴰe o G) m g (ms , e , h) =
+        ms , e , λ a → mapG (G ms a) (ms a) (g (ms , e) a) (h a)
 
     -- when the recursive call does not look at its guard, `mapG` *is* `map`
     private
@@ -190,6 +195,9 @@ module _ {X : Type ℓX} {xs : X → S} where
       mapG≡map root f (⊗e o G) m g (ms , e , h) =
         cong (λ u → ms , e , u)
           (funExt λ a → mapG≡map root f (G a) (ms a) (g (ms , e) a) (h a))
+      mapG≡map root f (⊗ᴰe o G) m g (ms , e , h) =
+        cong (λ u → ms , e , u)
+          (funExt λ a → mapG≡map root f (G ms a) (ms a) (g (ms , e) a) (h a))
 
     -- coalgebra + algebra + guardedness, by löb
     hylosFromGuard : (F : (x : X) → Functor ℓA X xs (xs x))
