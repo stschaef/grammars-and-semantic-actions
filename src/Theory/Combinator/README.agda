@@ -323,6 +323,24 @@
    `{a,b}` is a node of two different heads -- so prediction, and with it
    this whole framework, needs a chosen head.
 
+   `Instances/Bag` is that paragraph, proved.  `Bag/Failure` refutes
+   `Precise _⊙_`, refutes `Disjoint NodeAt`, and refutes the cover by
+   chosen head as well -- so the gap is not a missing lemma.  `Precise ε·`
+   survives, which is exactly the wrong half: a client over the
+   commutative theory can reach `Ans-node` only at the operation with no
+   slots.
+
+   `Bag/Chosen` is the repair and its price: precision comes back only by
+   CHANGING THE THEORY to one whose free model is `List El`, since
+   `Precise o` quantifies over every element of the result sort and so is
+   a property of the signature that no later side condition can restore.
+   `Bag/Chosen/Quotient` then measures the loss -- `Sorted` is provably
+   not the pullback of ANY predicate on bags, while `Occurs` is, because
+   it is a fold.  The verdict the two modules support is that the
+   framework extends to the NORMAL FORMS of a quotiented theory and not to
+   the theory, and that a client over the normal forms says something
+   about the quotient exactly when its judgment is a homomorphism.
+
    ============================================================
    VI.  ADDENDUM: `Ans-re`, AND A THIRD KIND OF OUTCOME
    ============================================================
