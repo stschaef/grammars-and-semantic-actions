@@ -28,6 +28,7 @@
      Semantics.Displayed.IndexedProductV    the vertical case (what survives reindexing)
      Semantics.Displayed.RightAdjoint       displayed right adjoints, ported to uncurried style
      Semantics.Displayed.Model              displayed models: what a gluing argument is stated against
+     Semantics.Displayed.ModelV             vertical displayed models: what reindexes
      Semantics.Displayed.Weaken             any model is displayed over any other, with constant fibres
 
    The free model
@@ -75,6 +76,7 @@ open import Semantics.Displayed.IndexedProduct
 open import Semantics.Displayed.IndexedProductV
 open import Semantics.Displayed.RightAdjoint
 open import Semantics.Displayed.Model
+open import Semantics.Displayed.ModelV
 open import Semantics.Displayed.Weaken
 
 open import Semantics.Free.Syntax
