@@ -12,6 +12,7 @@
      Semantics.Structure.Biclosed           ⊸ and ⟜ as right adjoints of the partial tensors
      Semantics.Structure.Operation          a signature acting on a category, closed slot by slot
      Semantics.Structure.Preservation       left adjoints preserve set-indexed coproducts
+     Semantics.Structure.CartesianClosed    ⇒, the closure of & (a mixin, not a Model field)
 
    The DSL
      Semantics.Model                        what a model is
@@ -58,6 +59,7 @@ open import Semantics.Signature
 open import Semantics.Structure.IndexedCoproduct
 open import Semantics.Structure.Biclosed
 open import Semantics.Structure.Preservation
+open import Semantics.Structure.CartesianClosed
 open import Semantics.Structure.Operation
 
 open import Semantics.Model
