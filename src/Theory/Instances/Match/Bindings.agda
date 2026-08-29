@@ -15,10 +15,10 @@
    the three answers disagree about: `Dec` collapses it to a decision,
    `Maybe` to its leftmost summand, `ND` to all of them.
 
-   `observeAll` is the `ND` counterpart of `observe`.  `observe` reads a
-   single value out of a `⊤Ty`-map; a nondeterministic answer is a list, so
-   the action is applied under it and the boundary is crossed once per
-   derivation instead of once. -}
+   `ND` reads out through `Answer/NonDet`'s `observeND`, the counterpart
+   of `observe`: a nondeterministic answer is a list, so the action is
+   applied under it and the boundary is crossed once per derivation rather
+   than once. -}
 open import Cubical.Foundations.Prelude
 open import Cubical.Algebra.Theory.Finitary
 open SortedSig
@@ -81,9 +81,8 @@ anyAction (p ∷ ps) =
   semact-⊕ (semact-map (0 ,_) (bindAction p))
            (semact-map (λ r → suc (r .fst) , r .snd) (anyAction ps))
 
-observeAll : {A : TheoryTy ℓA val} {X : Type ℓX}
-  → (⊤Ty ⊢ NDm.ND A) → SemanticAction A X → Val → List X
-observeAll p a v = mapL (λ d → a v d .fst) (NDm.ndToList v (p v tt))
+-- `ND`'s readout is `Answer/NonDet`'s `observeND`, the counterpart of
+-- `observe`; this client no longer rolls its own.
 
 -- The three front ends.  Same grammar, same action, three answers.
 decideMatch : (cs : List Pat) → Val → Maybe Result
@@ -93,7 +92,7 @@ firstMatch : (cs : List Pat) → Val → Maybe Result
 firstMatch cs = observe (CM.matchAny cs) (semact-Maybe (anyAction cs))
 
 allMatches : (cs : List Pat) → Val → List Result
-allMatches cs = observeAll (CN.matchAny cs) (anyAction cs)
+allMatches cs = NDm.observeND (CN.matchAny cs) (anyAction cs)
 
 -- ...and the number of clauses that fire.  Two is a redundant clause list,
 -- zero is a counterexample to exhaustiveness, and nothing but `ND` can say

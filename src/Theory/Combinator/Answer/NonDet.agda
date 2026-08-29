@@ -130,3 +130,18 @@ module NDCombinators {ℓX ℓ<} {X : Type ℓX} (xs : X → S)
 
   parses : {A : Fam ℓA} → Step A → (x : X) → ⊤Ty ⊢ ND (ty (A x))
   parses = fix
+
+
+-- The `ND` counterpart of `SemanticAction/Base`'s `observe`.
+--
+-- `observe` reads a single value out of a `⊤Ty`-map, which is what an
+-- answer with at most one derivation supports.  A nondeterministic answer
+-- is a list, so the action is applied *under* it and the boundary between
+-- the internal term and the external value is crossed once per derivation
+-- rather than once.  Without this a client reads out by hand, which is the
+-- one place `Match/Bindings` used to differ from every other front end.
+open import Theory.Type.SemanticAction.Base σeq V vs 𝒫 using (SemanticAction)
+
+observeND : {s : S} {A : TheoryTy ℓA s} {X : Type ℓp}
+  → (⊤Ty ⊢ ND A) → SemanticAction A X → ↓M s → List X
+observeND p a m = mapL (λ d → a m d .fst) (ndToList m (p m tt))
