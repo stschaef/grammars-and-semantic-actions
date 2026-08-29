@@ -135,16 +135,16 @@ module _ {X : hSet ℓX} {A : ⟨ X ⟩ → Grammar} where
 -- ⊤, ⊥, & and ⊕ are derived, not primitive
 ------------------------------------------------------------------------
 
-private
-  Empty* : hSet ℓX
-  Empty* = Empty.⊥* , isProp→isSet Empty.isProp⊥*
+-- The index sets used to derive the nullary and binary connectives.
+Empty* : hSet ℓX
+Empty* = Empty.⊥* , isProp→isSet Empty.isProp⊥*
 
-  Two : hSet ℓX
-  Two = Lift ℓX Bool , isOfHLevelLift 2 isSetBool
+Two : hSet ℓX
+Two = Lift ℓX Bool , isOfHLevelLift 2 isSetBool
 
-  pair : Grammar → Grammar → ⟨ Two ⟩ → Grammar
-  pair A B (lift true) = A
-  pair A B (lift false) = B
+pair : Grammar → Grammar → ⟨ Two ⟩ → Grammar
+pair A B (lift true) = A
+pair A B (lift false) = B
 
 ⊤ : Grammar
 ⊤ = &ᴰ {X = Empty*} Empty.rec*
