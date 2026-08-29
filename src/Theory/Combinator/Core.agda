@@ -172,6 +172,14 @@ record AnswerFunctor : Typeω where
     Ans-⊕& : {ℓA ℓB : Level} {s : S} {A : TheorySet ℓA s} {B : TheorySet ℓB s}
       → ty (Ans A) & ty (Ans B) ⊢ ty (Ans (A ⊕Set B))
 
+    -- ...and the conjunctive counterpart.  A rule with a side condition
+    -- *and* a premise in the same slot needs this: an operation has exactly
+    -- its arity many slots, so a condition that is not itself an argument
+    -- has to ride along with one.  Linear typing's application rule is the
+    -- case in point -- the partition check travels with the function.
+    Ans-&& : {ℓA ℓB : Level} {s : S} {A : TheorySet ℓA s} {B : TheorySet ℓB s}
+      → ty (Ans A) & ty (Ans B) ⊢ ty (Ans (A &Set B))
+
     -- Every answer can read a decision.  This is how a side condition --
     -- "this name is in scope", "these two types agree" -- enters a grammar
     -- without the grammar naming an answer, and it is the `⊢`-level form of

@@ -100,6 +100,8 @@ NDAnswer .AnswerFunctor.Ans-map& f g m (x , h) =
   ndFromList m (mapL (λ a → f m (a , h)) (ndToList m x))
 NDAnswer .AnswerFunctor.Ans-⊕& =
   appendND ∘⊢ (Monad.fmap NDMonad inl ,&p Monad.fmap NDMonad inr)
+NDAnswer .AnswerFunctor.Ans-&& m (x , y) = ndFromList m
+  (concatMapL (λ a → mapL (λ b → a , b) (ndToList m y)) (ndToList m x))
 NDAnswer .AnswerFunctor.Ans-ofDec m (Sum.inl a) = ηND m a
 NDAnswer .AnswerFunctor.Ans-ofDec m (Sum.inr _) = nilND m tt
 NDAnswer .AnswerFunctor.Ans-node o _ {ms = ms} ws =

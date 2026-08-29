@@ -71,6 +71,9 @@ DecAnswer .AnswerFunctor.Ans = DecSet
 DecAnswer .AnswerFunctor.Ans-map& f g m (Sum.inl a , h) = Sum.inl (f m (a , h))
 DecAnswer .AnswerFunctor.Ans-map& f g m (Sum.inr n , h) = Sum.inr λ b → n (g m (b , h))
 DecAnswer .AnswerFunctor.Ans-⊕& = dec-⊕&
+DecAnswer .AnswerFunctor.Ans-&& m (Sum.inl a , Sum.inl b) = Sum.inl (a , b)
+DecAnswer .AnswerFunctor.Ans-&& m (Sum.inl a , Sum.inr nb) = Sum.inr λ z → nb (z .snd)
+DecAnswer .AnswerFunctor.Ans-&& m (Sum.inr na , _) = Sum.inr λ z → na (z .fst)
 DecAnswer .AnswerFunctor.Ans-ofDec = id⊢
 DecAnswer .AnswerFunctor.Ans-node o prec {As = As} {ms = ms} ws =
   onAll (decΠFin (λ a → strip (ws a)))

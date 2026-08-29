@@ -68,6 +68,9 @@ MaybeAnswer .AnswerFunctor.Ans-map& f g m (Sum.inl a , h) = Sum.inl (f m (a , h)
 MaybeAnswer .AnswerFunctor.Ans-map& f g m (Sum.inr u , h) = Sum.inr u
 MaybeAnswer .AnswerFunctor.Ans-⊕& =
   orElse ∘⊢ (Monad.fmap MaybeMonad inl ,&p Monad.fmap MaybeMonad inr)
+MaybeAnswer .AnswerFunctor.Ans-&& m (Sum.inl a , Sum.inl b) = Sum.inl (a , b)
+MaybeAnswer .AnswerFunctor.Ans-&& m (Sum.inl a , Sum.inr u) = Sum.inr u
+MaybeAnswer .AnswerFunctor.Ans-&& m (Sum.inr u , _) = Sum.inr u
 MaybeAnswer .AnswerFunctor.Ans-ofDec m (Sum.inl a) = Sum.inl a
 MaybeAnswer .AnswerFunctor.Ans-ofDec m (Sum.inr _) = Sum.inr tt
 MaybeAnswer .AnswerFunctor.Ans-node o _ {ms = ms} ws = onAll (travΠFin ws)
