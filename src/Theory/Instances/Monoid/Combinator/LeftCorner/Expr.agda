@@ -34,14 +34,14 @@ open import Cubical.Data.Unit using (Unit ; tt ; tt*)
 import Cubical.Data.Maybe as MB
 
 open import Theory.Instances.Monoid.Combinator.ExprGrammar
-open import Theory.Instances.Monoid.Combinator.Decidable.Productions Tk _≟K_
+open import Theory.Instances.Monoid.Combinator.Decidable.Synthesis Tk _≟K_
 open import Theory.Instances.Monoid.Residual Tk isSetAlphabet
   using (_⊸_ ; ⊸-lam ; ⊸-app ; ⊗ε-unit-r ; ⟦⊗e⟧)
 
--- THE SKELETON, as a `Decidable/Productions` table.  Every production is led by a
--- terminal, which is exactly the form that file demands -- so the recogniser
--- is not hand-rolled here, it is the repo's own LL(1) generator applied to
--- the left-corner transform.
+-- THE SKELETON.  Every production is led by a terminal, which is exactly the
+-- form `Decidable/Productions` demands -- so the recogniser is not hand-rolled
+-- here, it is the repo's own LL(1) generator applied to the left-corner
+-- transform, with the table itself synthesised from the rules below.
 data SK : Type where
   sE sR sT : SK
 
@@ -56,25 +56,50 @@ decSK sR sT = Sum.inr λ ()
 decSK sT sE = Sum.inr λ ()
 decSK sT sR = Sum.inr λ ()
 
+-- The grammar, as rules rather than as a table.  `Synthesis` turns this into
+-- the `Table` that `Gen` wants and, more to the point, *computes* whether it
+-- is LL(1); before, conflict-freedom was implicit in being able to write the
+-- table out, which is a property of the author rather than of the grammar.
+exprRules : Rules SK
+exprRules .Rules.nullable sE = false
+exprRules .Rules.nullable sR = true
+exprRules .Rules.nullable sT = false
+exprRules .Rules.of sE =
+    (‵lp , nt sE ∷ tm ‵rp ∷ nt sR ∷ [])
+  ∷ (‵x  , nt sR ∷ [])
+  ∷ []
+exprRules .Rules.of sR = (‵+ , nt sT ∷ nt sR ∷ []) ∷ []
+exprRules .Rules.of sT =
+    (‵lp , nt sE ∷ tm ‵rp ∷ [])
+  ∷ (‵x  , [])
+  ∷ []
+
+module ES = Synth (sE ∷ sR ∷ sT ∷ []) exprRules
+
+-- ...and the LL(1) certificate, by computation.  `Eq.refl` here is the whole
+-- check: no nonterminal has two rules led by the same terminal.
+exprLL1 : ES.clashes Eq.≡ []
+exprLL1 = Eq.refl
+
 exprTable : Table SK
-exprTable .Table.at sE (tk ‵lp) = led (nt sE ∷ tm ‵rp ∷ nt sR ∷ [])
-exprTable .Table.at sE (tk ‵x)  = led (nt sR ∷ [])
-exprTable .Table.at sE (tk ‵+)  = none
-exprTable .Table.at sE (tk ‵rp) = none
-exprTable .Table.at sE ε₁       = none
-exprTable .Table.at sR (tk ‵+)  = led (nt sT ∷ nt sR ∷ [])
-exprTable .Table.at sR (tk ‵x)  = none
-exprTable .Table.at sR (tk ‵lp) = none
-exprTable .Table.at sR (tk ‵rp) = none
-exprTable .Table.at sR ε₁       = none
-exprTable .Table.at sT (tk ‵lp) = led (nt sE ∷ tm ‵rp ∷ [])
-exprTable .Table.at sT (tk ‵x)  = led []
-exprTable .Table.at sT (tk ‵+)  = none
-exprTable .Table.at sT (tk ‵rp) = none
-exprTable .Table.at sT ε₁       = none
-exprTable .Table.nul sE = false
-exprTable .Table.nul sR = true
-exprTable .Table.nul sT = false
+exprTable = ES.table
+
+-- ...and the check has teeth.  Give `sT` a second rule led by `‵x` and the
+-- clash is reported, rather than the first rule silently winning.
+private
+  badRules : Rules SK
+  badRules .Rules.nullable = exprRules .Rules.nullable
+  badRules .Rules.of sE = exprRules .Rules.of sE
+  badRules .Rules.of sR = exprRules .Rules.of sR
+  badRules .Rules.of sT = (‵x , []) ∷ exprRules .Rules.of sT
+
+  module BS = Synth (sE ∷ sR ∷ sT ∷ []) badRules
+
+  badClash : BS.clashes Eq.≡ ((sT , ‵x) ∷ [])
+  badClash = Eq.refl
+
+  badRejected : BS.synth Eq.≡ MB.nothing
+  badRejected = Eq.refl
 
 open Gen exprTable
 
