@@ -344,3 +344,42 @@ module _ {M : MonoidalCategory ℓM ℓM'} {N : MonoidalCategory ℓN ℓN'}
       ∙ sym (Cᴰ.⋆Assoc _ _ _)
       ∙ Cᴰ.⟨ W⋆η xᴰ yᴰ ⟩⋆⟨ refl ⟩ ⟩
     ∙ R.reind-filler _ _
+
+  private
+    η'-sec : ∀ {x} (xᴰ : Rᴰ.ob[ x ])
+      → (η⁻¹ᴰ'⟨ xᴰ ⟩ Rᴰ.⋆ᴰ ηᴰ'⟨ xᴰ ⟩) Rᴰ.≡[ M.η .nIso x .sec ] Rᴰ.idᴰ
+    η'-sec xᴰ = Cᴰ.rectify $ Cᴰ.≡out $
+        sym (R.reind-filler _ _)
+      ∙ Cᴰ.⟨ sym (R.reind-filler _ _) ⟩⋆⟨ sym (R.reind-filler _ _) ⟩
+      ∙ Cᴰ.⋆Assoc _ _ _
+      ∙ Cᴰ.⟨ refl ⟩⋆⟨ sym (Cᴰ.⋆Assoc _ _ _)
+                    ∙ Cᴰ.⟨ Cᴰ.≡in (liftIn⋆Out (μ≅ _ _) _) ⟩⋆⟨ refl ⟩
+                    ∙ Cᴰ.⋆IdL _ ⟩
+      ∙ Cᴰ.⋆Assoc _ _ _
+      ∙ Cᴰ.⟨ refl ⟩⋆⟨ sym (Cᴰ.⋆Assoc _ _ _)
+                    ∙ Cᴰ.⟨ sym (Cᴰ.≡in (P.─⊗ᴰ─ .F-seqᴰ _ _))
+                         ∙ ⟨ Cᴰ.≡in (liftIn⋆Out ε≅ _) ⟩⊗ₕᴰ⟨ Cᴰ.⋆IdL _ ⟩
+                         ∙ Cᴰ.≡in (P.─⊗ᴰ─ .F-idᴰ) ⟩⋆⟨ refl ⟩
+                    ∙ Cᴰ.⋆IdL _ ⟩
+      ∙ Cᴰ.≡in (P.ηᴰ .nIsoᴰ _ .secᴰ)
+      ∙ sym Rᴰid≡
+
+    η'-ret : ∀ {x} (xᴰ : Rᴰ.ob[ x ])
+      → (ηᴰ'⟨ xᴰ ⟩ Rᴰ.⋆ᴰ η⁻¹ᴰ'⟨ xᴰ ⟩) Rᴰ.≡[ M.η .nIso x .ret ] Rᴰ.idᴰ
+    η'-ret xᴰ = Cᴰ.rectify $ Cᴰ.≡out $
+        sym (R.reind-filler _ _)
+      ∙ Cᴰ.⟨ sym (R.reind-filler _ _) ⟩⋆⟨ sym (R.reind-filler _ _) ⟩
+      ∙ Cᴰ.⋆Assoc _ _ _
+      ∙ Cᴰ.⟨ refl ⟩⋆⟨
+            Cᴰ.⋆Assoc _ _ _
+          ∙ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.⋆Assoc _ _ _ ⟩
+                        ∙ sym (Cᴰ.⋆Assoc _ _ _)
+                        ∙ Cᴰ.⟨ Cᴰ.≡in (P.ηᴰ .nIsoᴰ _ .retᴰ) ⟩⋆⟨ refl ⟩
+                        ∙ Cᴰ.⋆IdL _ ⟩
+          ∙ sym (Cᴰ.⋆Assoc _ _ _)
+          ∙ Cᴰ.⟨ sym (Cᴰ.≡in (P.─⊗ᴰ─ .F-seqᴰ _ _))
+               ∙ ⟨ Cᴰ.≡in (liftOut⋆In ε≅ _) ⟩⊗ₕᴰ⟨ Cᴰ.⋆IdL _ ⟩
+               ∙ Cᴰ.≡in (P.─⊗ᴰ─ .F-idᴰ) ⟩⋆⟨ refl ⟩
+          ∙ Cᴰ.⋆IdL _ ⟩
+      ∙ Cᴰ.≡in (liftOut⋆In (μ≅ _ _) _)
+      ∙ sym Rᴰid≡
