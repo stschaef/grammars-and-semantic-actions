@@ -58,18 +58,17 @@ dec-lit⊗-at c {K = K} = look⊗ br
 
   br : (o : M₁) → ty (▷ (DecSet K)) & Λ₁ o ⊢ DecTy (literal c ⊗ ty K)
   br ε₁ = ¬fibre ε₁ (λ ())
-  br (tk d) = go (d ≟ c)
+  br (tk d) = onTokMatch (d ≟ c)
     where
-    go : (d Eq.≡ c) Sum.⊎ ((d Eq.≡ c) → Empty.⊥)
+    onTokMatch : (d Eq.≡ c) Sum.⊎ ((d Eq.≡ c) → Empty.⊥)
        → ty (▷ (DecSet K)) & Λ₁ (tk d) ⊢ DecTy (literal c ⊗ ty K)
-    go (Sum.inl Eq.refl) = dec-lit⊗↑ c ∘⊢ (id⊢ ,⊗ π₁) ∘⊢ ▷⊗r c
-    go (Sum.inr ne) = ¬fibre (tk d) (λ where Eq.refl → ne Eq.refl)
+    onTokMatch (Sum.inl Eq.refl) = dec-lit⊗↑ c ∘⊢ (id⊢ ,⊗ π₁) ∘⊢ ▷⊗r c
+    onTokMatch (Sum.inr ne) = ¬fibre (tk d) (λ where Eq.refl → ne Eq.refl)
 
 dec-char⊗-at : {K : TheorySet ℓK tt}
   → ty (▷ (DecSet K)) ⊢ DecTy (char ⊗ ty K)
 dec-char⊗-at {K = K} = look⊗ br
   where
-  -- the empty word carries no letter, hence no `char`
   ε-char : Λ₁ ε₁ & (char ⊗ ty K) ⊢ ⊥Ty
   ε-char = ⊕ᴰ-elim dis ∘⊢ &⊕ᴰ-distR ∘⊢ (id⊢ ,&p ⊗⊕ᴰ-distL)
     where
@@ -131,14 +130,13 @@ open RoutedCombinators DecAnswer DecDiv DecCommitting public
 □dec-ε : {ℓK : Level} {D : TheoryTy ℓD tt} → D ⊢ ty (□ (DecSet (ε↑Set ℓK)))
 □dec-ε = □Ans-ε
 
--- ...and so does `mapP`.  This is where the three instances genuinely
--- differ, which is why `Core` has no `mapP`.
+-- This is where the three instances genuinely differ, which is why `Core`
+-- has no `mapP`.
 mapP : {ℓK : Level} {a c : ParserTag} {A : TheorySet ℓA tt} {B : TheorySet ℓB tt}
   → ty A ⊢ ty B → ty B ⊢ ty A
   → Parser ℓK a c A ⊢ Parser ℓK a c B
 mapP = mapP±
 
--- ...and a parser may only give up where there is nothing to decide.
 fail : {ℓK : Level} {a c : ParserTag} {D : TheoryTy ℓD tt}
   → D ⊢ Parser ℓK a c ⊥Set
 fail {c = c} = mkP λ K → ▷next {t = c} (dec-no ∘⊢ ⇒-intro (⊗⊥-annihL ∘⊢ π₂))
@@ -146,12 +144,10 @@ fail {c = c} = mkP λ K → ▷next {t = c} (dec-no ∘⊢ ⇒-intro (⊗⊥-ann
 module Fix {ℓA} (ℓK : Level) (A : TheorySet ℓA tt) where
   open Combinators.Fix DecAnswer ℓK A public
 
-  -- ...which are then used to build deciders
   decide : ty (▷ (ParserSet ℓ𝒦 ⟨□⟩ ⟨□⟩ A)) ⊢ Parser ℓ𝒦 ⟨□⟩ ⟨□⟩ A
     → Decidable (ty A)
   decide = runFix
 
--- ...and the same for a family of nonterminals.
 module FixAll {ℓX ℓA} (ℓK : Level) {X : Type ℓX} (A : X → TheorySet ℓA tt) where
   open Combinators.FixAll DecAnswer ℓK A public
 

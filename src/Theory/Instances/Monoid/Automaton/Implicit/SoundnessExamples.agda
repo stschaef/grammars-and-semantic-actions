@@ -27,21 +27,18 @@ open import Theory.Instances.Monoid.Automaton.Implicit.Soundness
   Bool _≟B_ ℓ-zero
 open import Theory.Instances.Monoid.Regex.Base Bool _≟B_ ℓ-zero using (⟦_⟧)
 
--- `true`
 lit : DetReg ⊤ℙ (¬ℙ ⟦ true ⟧ℙ) true
 lit = ＂ true ＂dr
 
 lit-sound : Parse (compile discAlphabet lit) ≅ ty ⟦ erase lit ⟧
 lit-sound = compile-sound lit
 
--- `true*`
 star : DetReg (¬ℙ ⟦ true ⟧ℙ ∩ℙ ⊤ℙ) (¬ℙ ⟦ true ⟧ℙ) false
 star = ＂ true ＂dr *DR[ (λ _ → Sum.inl tt*) ]
 
 star-sound : Parse (compile discAlphabet star) ≅ ty ⟦ erase star ⟧
 star-sound = compile-sound star
 
--- `true false*`
 seq : DetReg _ (¬ℙ ⟦ true ⟧ℙ) true
 seq =
   ＂ true ＂dr ⊗DR[ (λ _ → Sum.inl tt*) ]
@@ -50,7 +47,6 @@ seq =
 seq-sound : Parse (compile discAlphabet seq) ≅ ty ⟦ erase seq ⟧
 seq-sound = compile-sound seq
 
--- `true | false`
 alt : DetReg _ _ true
 alt =
   _⊕DR[_]_ {notBothNull = Eq.refl} ＂ true ＂dr sep ＂ false ＂dr

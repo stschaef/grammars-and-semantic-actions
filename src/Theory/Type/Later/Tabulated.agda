@@ -1,8 +1,3 @@
--- TODO how much of this actually used?
--- WARNING for now I have been treating this as a place to sequester the
--- semantic reasoning about guarded recursion so that importers of this
--- module can work with a clean interface
--- The implementation are subject to change per experiments w Cass
 {-# OPTIONS --lossy-unification #-}
 -- A memoised `▷`: the delayed hypothesis at a point is a *table* of the
 -- values at the points below it, so a recursive query is a lookup rather
@@ -47,7 +42,6 @@ private variable ℓA ℓX ℓ< : Level
 
 module _ {X : Type ℓX} {xs : X → S} where
 
-  -- a family's value at a point
   At : IFam xs ℓA → IPt xs → Type ℓA
   At A p = A (p .fst) (p .snd)
 
@@ -109,7 +103,6 @@ module _ {X : Type ℓX} (xs : X → S) where
         module G = GuardedIndexed xs O
       module L = G.Fam▷ A isSetA
 
-      -- the tabulated later modality
       ▷ᵗ : IFam xs ℓA
       ▷ᵗ x m = Tbl A (below (x , m))
 
@@ -168,18 +161,17 @@ module _ {X : Type ℓX} (xs : X → S) where
           consCase .(q ∷ below q) q Eq.refl t p1 p2 i =
             φ (q .fst) (q .snd) (p1 i) , p2 i
 
-        -- every cell of the built table holds the fixed point's value there
         build-tab : (p : IPt xs) (a : Acc _<_ p) → build p a ≡ tab (below p)
-        build-tab p (acc r) = helper (view p)
+        build-tab p (acc r) = onChainView (view p)
           where
-          helper : (v : ChainView (below) p)
+          onChainView : (v : ChainView (below) p)
             → buildView p (λ q lt → build q (r q lt)) v ≡ tab (below p)
-          helper (minimal e) = nilCase (below p) e
-          helper (extends q lt e) = consCase (below p) q e (build q (r q lt))
+          onChainView (minimal e) = nilCase (below p) e
+          onChainView (extends q lt e) =
+            consCase (below p) q e (build q (r q lt))
             (cong (build q) (isPropAcc q (r q lt) (O.wf< q)))
             (build-tab q (r q lt))
 
-        -- the guarded fixed-point equation, for the tabulated hypothesis
         löbᵗ-unfold : ∀ x → löbᵗ x ≡ φ x ∘⊢ next⊤ᵗ löbᵗ x
         löbᵗ-unfold x = funExt λ m → funExt λ _ →
           cong (φ x m) (build-tab (x , m) (O.wf< (x , m)))
@@ -193,7 +185,6 @@ module _ {X : Type ℓX} (xs : X → S) where
           φᵗ : ∀ x → ▷ᵗ x ⊢ A x
           φᵗ x = φ x ∘⊢ tabulate x
 
-          -- reading the built table anywhere gives the fixed point's value
           key : (p : IPt xs) (a : Acc _<_ p) {q : IPt xs} (lt : q < p)
             → lookupTbl (find lt) (build φᵗ p a)
               ≡ löbTab (q .fst) (q .snd) tt
@@ -207,7 +198,6 @@ module _ {X : Type ℓX} (xs : X → S) where
               cong lift (key (x , m) (O.wf< (x , m))
                 (W.≤-<-trans h (gq .snd))))
 
-        -- the tabulated fixed point *is* the untabulated one
         löbTab≡löb : löbTab ≡ L.löb φ
         löbTab≡löb = L.löb-uniq φ löbTab
           (λ x → funExt λ m → funExt λ _ → cong (φ x m) (bridge x m))

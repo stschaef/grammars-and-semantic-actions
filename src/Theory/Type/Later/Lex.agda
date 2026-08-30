@@ -1,8 +1,3 @@
--- TODO how much of this actually used?
--- WARNING for now I have been treating this as a place to sequester the
--- semantic reasoning about guarded recursion so that importers of this
--- module can work with a clean interface
--- The implementation are subject to change per experiments w Cass
 {- The lexicographic product of two well-founded orders. -}
 open import Cubical.Foundations.Prelude
 open import Cubical.Foundations.HLevels using (isSet× ; isProp×)
@@ -21,7 +16,6 @@ module _ {ℓA ℓ<A ℓB ℓ<B} (WA : WFOrder ℓA ℓ<A) (WB : WFOrder ℓB �
     module A = WFOrder WA
     module B = WFOrder WB
 
-  -- the first component drops, or it does not and the second drops
   _<lex_ : A.D × B.D → A.D × B.D → Type (ℓ-max ℓ<A (ℓ-max ℓA ℓ<B))
   p <lex q = (p .fst A.< q .fst) ⊎ ((p .fst ≡ q .fst) × (p .snd B.< q .snd))
 
@@ -57,7 +51,6 @@ module _ {ℓA ℓ<A ℓB ℓ<B} (WA : WFOrder ℓA ℓ<A) (WB : WFOrder ℓB �
     { D = A.D × B.D ; isSetD = isSet× A.isSetD B.isSetD ; _<_ = _<lex_
     ; isProp< = isProp<lex ; trans< = trans<lex ; wf< = wf<lex }
 
-  -- decidable when each comparison is, plus equality on the first component
   dec<lex : Discrete A.D → (∀ a a' → Dec (a A.< a'))
     → (∀ b b' → Dec (b B.< b')) → ∀ p q → Dec (p <lex q)
   dec<lex dA decA decB p q with decA (p .fst) (q .fst)

@@ -24,12 +24,10 @@ open import Theory.Type.SemanticAction.Base MonEqns Alphabet (λ _ → tt) listP
 semact-char : SemanticAction char Alphabet
 semact-char m (c , p) = c , tt
 
--- Observing a tensor: each factor is observed at its own half of the split.
 semact-⊗₁ : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt} {X : Type ℓX}
   → SemanticAction A X → SemanticAction (A ⊗ B) X
 semact-⊗₁ a m (ms , e , (p , _)) = a (ms zero) p
 
--- ...and the same at the right factor.
 semact-⊗ᵣ : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt} {X : Type ℓX}
   → SemanticAction B X → SemanticAction (A ⊗ B) X
 semact-⊗ᵣ b m (ms , e , (_ , (q , _))) = b (ms (suc zero)) q
@@ -53,9 +51,8 @@ semact-* {A = A} {X = X} a = semact-rec alg tt
     Bool.false → semact-pure []
     Bool.true → cons
 
--- ...and the same fold, dropping the steps that emit nothing.  The recursion
--- is still `semact-rec`; only the cons step differs, so a lexer never has to
--- filter a token list outside the theory.
+-- The same fold, dropping the steps that emit nothing, so a lexer never has
+-- to filter a token list outside the theory.
 semact-skip* : {A : TheoryTy ℓA tt} {X : Type ℓX}
   → SemanticAction A (Maybe X) → SemanticAction (A *) (List X)
 semact-skip* {A = A} {X = X} a = semact-rec alg tt

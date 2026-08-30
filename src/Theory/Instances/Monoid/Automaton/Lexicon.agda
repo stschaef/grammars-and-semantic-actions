@@ -96,21 +96,21 @@ allFin-intro {n = suc n} p h =
 
 allFin-elim : {n : ℕ} (p : Fin n → Bool)
   → allFin p Eq.≡ true → (i : Fin n) → p i Eq.≡ true
-allFin-elim p h fz = go (p fz) Eq.refl
+allFin-elim p h fz = headTrue (p fz) Eq.refl
   where
-  go : (b : Bool) → p fz Eq.≡ b → p fz Eq.≡ true
-  go true e = e
-  go false e = Empty.rec (true≢false (sym (Eq.eqToPath h)
+  headTrue : (b : Bool) → p fz Eq.≡ b → p fz Eq.≡ true
+  headTrue true e = e
+  headTrue false e = Empty.rec (true≢false (sym (Eq.eqToPath h)
     ∙ cong (_and allFin (λ i → p (fs i))) (Eq.eqToPath e)))
 allFin-elim p h (fs i) = allFin-elim (λ j → p (fs j)) rest i
   where
   rest : allFin (λ j → p (fs j)) Eq.≡ true
-  rest = go (p fz) Eq.refl
+  rest = tailAll (p fz) Eq.refl
     where
-    go : (b : Bool) → p fz Eq.≡ b → allFin (λ j → p (fs j)) Eq.≡ true
-    go true e =
+    tailAll : (b : Bool) → p fz Eq.≡ b → allFin (λ j → p (fs j)) Eq.≡ true
+    tailAll true e =
       Eq.transport (λ b → (b and allFin (λ j → p (fs j))) Eq.≡ true) e h
-    go false e = Empty.rec (true≢false (sym (Eq.eqToPath h)
+    tailAll false e = Empty.rec (true≢false (sym (Eq.eqToPath h)
       ∙ cong (_and allFin (λ j → p (fs j))) (Eq.eqToPath e)))
 
 -- The readout, with its evidence: the least `true`, or a refutation of
@@ -123,11 +123,11 @@ Found {n = n} p =
 
 find : {n : ℕ} (p : Fin n → Bool) → Found p
 find {n = zero} p = Sum.inr λ ()
-find {n = suc n} p = go (p fz) refl
+find {n = suc n} p = findFromHead (p fz) refl
   where
-  go : (b : Bool) → p fz ≡ b → Found p
-  go true e = Sum.inl (fz , e , λ j lt → Empty.rec (¬-<-zero lt))
-  go false e = Sum.rec
+  findFromHead : (b : Bool) → p fz ≡ b → Found p
+  findFromHead true e = Sum.inl (fz , e , λ j lt → Empty.rec (¬-<-zero lt))
+  findFromHead false e = Sum.rec
     (λ x → Sum.inl (fs (x .fst) , x .snd .fst , least (x .fst) (x .snd .snd)))
     (λ h → Sum.inr λ where fz → e ; (fs i) → h i)
     (find (λ i → p (fs i)))
@@ -171,8 +171,6 @@ isSetTup : {m : ℕ} {Ps : Fin m → Type ℓAlph}
 isSetTup {m = zero} h = isSetUnit*
 isSetTup {m = suc m} h = isSet× (h fz) (isSetTup (λ i → h (fs i)))
 
--- The product automaton.
-
 open DeterministicAutomaton
 
 module Product {n : ℕ} (Qs : Fin n → Type ℓAlph)
@@ -188,7 +186,6 @@ module Product {n : ℕ} (Qs : Fin n → Type ℓAlph)
   isSetProdQ : isSet ProdQ
   isSetProdQ = isSetTup sQ
 
-  -- the acceptance profile of a product state: which rules accept here
   accAt : ProdQ → Fin n → Bool
   accAt f i = isAcc (M i) (f ! i)
 
@@ -220,7 +217,7 @@ module Product {n : ℕ} (Qs : Fin n → Type ℓAlph)
   winner : ProdQ → Mb.Maybe (Fin n)
   winner f = firstFin (accAt f)
 
-  -- ...and where it is known, the answer is the least accepting rule.
+  -- Where it is known, the answer is the least accepting rule.
   -- This is `Found`'s left summand at `accAt f`, definitionally, so
   -- `find` produces it with nothing to rebuild.
   Wins : ProdQ → Type ℓ-zero
@@ -229,17 +226,15 @@ module Product {n : ℕ} (Qs : Fin n → Type ℓAlph)
       × ((j : Fin n) → toℕ j < toℕ i → accAt f j ≡ false)
 
   winner! : (f : ProdQ) → isAcc Prod f ≡ true → Wins f
-  winner! f acc = go (find (accAt f))
+  winner! f acc = winsFromFound (find (accAt f))
     where
-    go : Found (accAt f) → Wins f
-    go (Sum.inl x) = x
-    go (Sum.inr h) = Empty.rec (true≢false (sym acc ∙ anyFin-false _ h))
-
-  -- Maximal munch over the product = longest match across the lexicon.
+    winsFromFound : Found (accAt f) → Wins f
+    winsFromFound (Sum.inl x) = x
+    winsFromFound (Sum.inr h) =
+      Empty.rec (true≢false (sym acc ∙ anyFin-false _ h))
 
   scanProd = scan Prod isSetProdQ ProdDead
 
-  -- the greedy run of the whole input, from the initial product state
   runInit : ⊤Ty ⊢ Run Prod (init Prod)
   runInit = π (init Prod) ∘⊢ scanProd ∘⊢ readChars
 
@@ -270,11 +265,11 @@ module Product {n : ℕ} (Qs : Fin n → Type ℓAlph)
     -- pair at every one of the match's characters, and the readout would
     -- be quadratic.
     toTok : (q' : ProdQ) → GreedyMax Prod (init Prod) q' ⊢ Tok
-    toTok q' = go (find (accAt q'))
+    toTok q' = tokFromFound (find (accAt q'))
       where
-      go : Found (accAt q') → GreedyMax Prod (init Prod) q' ⊢ Tok
-      go (Sum.inl x) = σ⊕ q' ∘⊢ σ⊕ x
-      go (Sum.inr h) =
+      tokFromFound : Found (accAt q') → GreedyMax Prod (init Prod) q' ⊢ Tok
+      tokFromFound (Sum.inl x) = σ⊕ q' ∘⊢ σ⊕ x
+      tokFromFound (Sum.inr h) =
         ⊕ᴰ-elim (λ p → Empty.rec
           (true≢false (Eq.eqToPath p ∙ anyFin-false (accAt q') h)))
         ∘⊢ ⊗⊕ᴰ-distL
@@ -298,7 +293,6 @@ module Product {n : ℕ} (Qs : Fin n → Type ℓAlph)
   winsIdx : (f : ProdQ) → Wins f → Fin n
   winsIdx f w = Mb.rec (w .fst) (λ i → i) (winner f)
 
-  -- rule index, lexeme, remainder
   tokAction : SemanticAction Tok (Fin n × String × String)
   tokAction = semact-⊕ᴰ' λ q' → semact-⊕ᴰ' λ w →
     semact-map (λ p → winsIdx q' w , p) (semact-⊗₂ semact-text semact-text)
@@ -309,8 +303,7 @@ module Product {n : ℕ} (Qs : Fin n → Type ℓAlph)
     semact-⊕ (semact-map Mb.just tokAction) (semact-pure Mb.nothing)
     ∘⊢ lexOne
 
-  -- ...observed at a word.  This is the *only* place a `Maybe` appears,
-  -- and it is the external one.
+  -- the `Maybe` here is the external one
   lexOneS : String → Mb.Maybe (Fin n × String × String)
   lexOneS = observe runInit lexAction
 

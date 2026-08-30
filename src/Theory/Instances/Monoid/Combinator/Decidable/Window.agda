@@ -38,15 +38,15 @@ decWindow : {n : Width} → DiscreteEq (Window n)
 decWindow ⟨⟩ ⟨⟩ = Sum.inl Eq.refl
 decWindow ⟨⟩ (c ◂ w') = Sum.inr λ ()
 decWindow (c ◂ w) ⟨⟩ = Sum.inr λ ()
-decWindow (c ◂ w) (d ◂ w') = go (c ≟ d) (decWindow w w')
+decWindow (c ◂ w) (d ◂ w') = onHeadAndTail (c ≟ d) (decWindow w w')
   where
-  go : (c Eq.≡ d) Sum.⊎ ((c Eq.≡ d) → Empty.⊥)
+  onHeadAndTail : (c Eq.≡ d) Sum.⊎ ((c Eq.≡ d) → Empty.⊥)
      → (w Eq.≡ w') Sum.⊎ ((w Eq.≡ w') → Empty.⊥)
      → ((c ◂ w) Eq.≡ (d ◂ w')) Sum.⊎ (((c ◂ w) Eq.≡ (d ◂ w')) → Empty.⊥)
-  go (Sum.inl Eq.refl) (Sum.inl Eq.refl) = Sum.inl Eq.refl
-  go (Sum.inl Eq.refl) (Sum.inr nw) =
+  onHeadAndTail (Sum.inl Eq.refl) (Sum.inl Eq.refl) = Sum.inl Eq.refl
+  onHeadAndTail (Sum.inl Eq.refl) (Sum.inr nw) =
     Sum.inr λ e → nw (Eq.ap (tlOr w) e)
-  go (Sum.inr nc) _ = Sum.inr λ e → nc (Eq.ap (hdOr c) e)
+  onHeadAndTail (Sum.inr nc) _ = Sum.inr λ e → nc (Eq.ap (hdOr c) e)
 
 -- Coarsening the width-`n` cover.  `PushOf` is where the width enters and
 -- the only place it does: `Route`, `routeIn`, `choose` and the fixpoint are

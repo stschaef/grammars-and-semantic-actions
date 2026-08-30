@@ -75,7 +75,6 @@ sQs (fs (fs (fs (fs fz)))) = Space.isSetQ
 
 module Lex = Product Qs Ms Dead sQs
 
--- rule index and matched text, as text
 lex : AS.String → Mb.Maybe (ℕ × AS.String)
 lex s = Mb.map-Maybe (λ x → toℕ (x .fst) , untext (x .snd .fst))
   (Lex.lexOneS (text s))
@@ -94,7 +93,6 @@ _ = refl
 _ : lex "counter7" ≡ Mb.just (1 , "counter7")
 _ = refl
 
--- ...and it stops exactly where the rule stops, not at the end of input
 _ : lex "42abc"    ≡ Mb.just (2 , "42")
 _ = refl
 
@@ -128,12 +126,6 @@ _ = refl
 _ : lex ""         ≡ Mb.nothing
 _ = refl
 
--- 3. At scale.
---
--- Five automata in lockstep over a long identifier.  Timings measured
--- off-tree against a baseline that builds all five rules but lexes
--- nothing; 4x the input costs 4x the time.
-
 xs : ℕ → List UChar
 xs N.zero = []
 xs (N.suc j) = ch 'x' ∷ xs j
@@ -143,6 +135,5 @@ len Mb.nothing = 0
 len (Mb.just x) = length (x .snd .fst)
   where open import Cubical.Data.List using (length)
 
--- a 3200-character identifier, matched in one pass
 _ : len (Lex.lexOneS (xs 3200 ++ (ch '?' ∷ []))) ≡ 3200
 _ = refl

@@ -47,7 +47,7 @@ module _ {Q : Type ℓQ} (Aut : DeterministicAutomaton Q) where
   print-unique b q f =
     funExt λ m → funExt λ t → unambiguous-char* m (f m t) (print b q m t)
 
-  -- ...and re-parsing a printed run returns it: both sides are maps into
+  -- Re-parsing a printed run returns it: both sides are maps into
   -- `Runs q`, which is a proposition.
   module _ (isSetQ : isSet Q) where
     private

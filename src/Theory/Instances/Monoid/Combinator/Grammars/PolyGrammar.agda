@@ -14,8 +14,8 @@
    decides every production: `QTag` is `ℕ ⊎ KTag`, and FIRST(Q) is
    disjoint from FOLLOW(Q), which decides the ε-production too.
 
-   The grammar is `μ polyCode` and nothing more; tag decidability is the
-   parser's business, in `Dyck`. -}
+   The grammar is `μ polyCode`; the tag decidability that `Choice` asks
+   for is derived below. -}
 open import Cubical.Foundations.Prelude
 open import Cubical.Algebra.Theory.Finitary
 open import Cubical.Data.Sum as Sum using (_⊎_)
@@ -59,12 +59,12 @@ private
   zero ≟ℕ zero = Sum.inl Eq.refl
   zero ≟ℕ suc b = Sum.inr λ ()
   suc a ≟ℕ zero = Sum.inr λ ()
-  suc a ≟ℕ suc b = go (a ≟ℕ b)
+  suc a ≟ℕ suc b = onPredEq (a ≟ℕ b)
     where
-    go : (a Eq.≡ b) Sum.⊎ ((a Eq.≡ b) → Empty.⊥)
+    onPredEq : (a Eq.≡ b) Sum.⊎ ((a Eq.≡ b) → Empty.⊥)
        → (suc a Eq.≡ suc b) Sum.⊎ ((suc a Eq.≡ suc b) → Empty.⊥)
-    go (Sum.inl Eq.refl) = Sum.inl Eq.refl
-    go (Sum.inr ne) = Sum.inr λ where Eq.refl → ne Eq.refl
+    onPredEq (Sum.inl Eq.refl) = Sum.inl Eq.refl
+    onPredEq (Sum.inr ne) = Sum.inr λ where Eq.refl → ne Eq.refl
 
 -- The decision the combinators ask for.  It is `Eq.≡` rather than a path:
 -- `Sum.inl Eq.refl` is what makes a matched letter *compute*.
@@ -76,18 +76,18 @@ times ≟ times = Sum.inl Eq.refl
 slash ≟ slash = Sum.inl Eq.refl
 minus ≟ minus = Sum.inl Eq.refl
 caret ≟ caret = Sum.inl Eq.refl
-var v ≟ var w = go (v ≟V w)
+var v ≟ var w = onVarEq (v ≟V w)
   where
-  go : (v Eq.≡ w) Sum.⊎ ((v Eq.≡ w) → Empty.⊥)
+  onVarEq : (v Eq.≡ w) Sum.⊎ ((v Eq.≡ w) → Empty.⊥)
      → (var v Eq.≡ var w) Sum.⊎ ((var v Eq.≡ var w) → Empty.⊥)
-  go (Sum.inl Eq.refl) = Sum.inl Eq.refl
-  go (Sum.inr ne) = Sum.inr λ where Eq.refl → ne Eq.refl
-nat n ≟ nat n' = go (n ≟ℕ n')
+  onVarEq (Sum.inl Eq.refl) = Sum.inl Eq.refl
+  onVarEq (Sum.inr ne) = Sum.inr λ where Eq.refl → ne Eq.refl
+nat n ≟ nat n' = onIndexEq (n ≟ℕ n')
   where
-  go : (n Eq.≡ n') Sum.⊎ ((n Eq.≡ n') → Empty.⊥)
+  onIndexEq : (n Eq.≡ n') Sum.⊎ ((n Eq.≡ n') → Empty.⊥)
      → (nat n Eq.≡ nat n') Sum.⊎ ((nat n Eq.≡ nat n') → Empty.⊥)
-  go (Sum.inl Eq.refl) = Sum.inl Eq.refl
-  go (Sum.inr ne) = Sum.inr λ where Eq.refl → ne Eq.refl
+  onIndexEq (Sum.inl Eq.refl) = Sum.inl Eq.refl
+  onIndexEq (Sum.inr ne) = Sum.inr λ where Eq.refl → ne Eq.refl
 lp ≟ rp = Sum.inr λ ()
 lp ≟ plus = Sum.inr λ ()
 lp ≟ times = Sum.inr λ ()
@@ -166,7 +166,6 @@ open import Theory.Instances.Monoid.Combinator.Core Tok _≟_ public
 open import Theory.Instances.Monoid.Residual Tok isSetAlphabet
   using (⟦⊗e⟧ ; ⟦⊗e⟧⁻ ; ⊗⊕ᴰ-distL ; ⊗⊕ᴰ-distR)
 
--- the continuation level: the one `μ` lands at
 ℓG : Level
 ℓG = ℓ-max ℓM (ℓ-suc ℓ-zero)
 
@@ -251,7 +250,6 @@ private
   restBranch (pow n) = letter caret ⊗ᶜ letter (nat n) ⊗ᶜ nonterm rest
   restBranch stop = eps
 
-  -- ...and `Q`'s, which are `K`'s but for the denominator
   numTailBranch : QTag → Code
   numTailBranch (den m) = letter slash ⊗ᶜ letter (nat m) ⊗ᶜ nonterm rest
   numTailBranch (more t) = restBranch t
@@ -400,11 +398,6 @@ unrollNumTail : NumTail ⊢ ⊕[ t ∈ QTag ] BodyNumTail t
 unrollNumTail =
   ⊕ᴰ-elim (λ t → σ⊕ t ∘⊢ numTailOut t) ∘⊢ unroll polyCode numTail
 
--- ...and the three grammars carrying their h-level, which is what a parser
--- is indexed by.  From here on it is `seq`, `tok`, `_<|>_`, `nil`, `call`
--- and `fix`, as in `Dyck`: three mutually recursive parsers, one per
--- nonterminal, tied by Löb at their `&ᴰ`.
-
 ExprSet : TheorySet ℓG tt
 ExprSet = Expr , isSetPoly expr
 
@@ -508,8 +501,6 @@ CQ : QH → TheorySet ℓG tt
 CQ qden = litSet slash ⊗Set PowSet
 CQ (qmore h) = CK h
 
--- The tables themselves.
-
 rE : M₁ → Maybe ETag
 rE (tk lp) = just paren
 rE (tk (var v)) = just (atom v)
@@ -534,9 +525,8 @@ rNat : M₁ → Maybe ℕ
 rNat (tk (nat n)) = just n
 rNat _ = nothing
 
--- ...and the routes they induce.  `into` is always the same three steps:
--- reassociate the continuation out, forget everything but the leading
--- letter, and name the cell.
+-- Every `into` is the same three steps: reassociate the continuation out,
+-- forget everything but the leading letter, and name the cell.
 
 GuideOf : {Y : Type ℓ-zero} (C : Y → TheorySet ℓG tt) → Type _
 GuideOf C = (K : TheorySet ℓG tt) → Route (λ y → ty (C y) ⊗ ty K) ℓG

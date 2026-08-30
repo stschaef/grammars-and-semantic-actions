@@ -23,6 +23,7 @@ module Theory.Type.Decidable.Route
   where
 
 open import Cubical.Data.Empty as Empty using (⊥)
+
 open import Cubical.Data.Maybe using (Maybe ; just ; nothing)
 import Cubical.Data.Sum as Sum
 import Cubical.Data.Equality as Eq
@@ -41,8 +42,7 @@ open import Theory.Type.Decidable.Base σeq V vs 𝒫
 private variable ℓA ℓB ℓY : Level
 
 -- Deciding an index in `Eq`, so that matching refines.
-DiscreteEq : ∀ {ℓY} → Type ℓY → Type ℓY
-DiscreteEq Y = (y y' : Y) → (y Eq.≡ y') Sum.⊎ ((y Eq.≡ y') → ⊥)
+open import Theory.Type.Decidable.DiscreteEq using (DiscreteEq) public
 
 module _ {s} {Y : Type ℓY} (Φ : Y → TheoryTy ℓA s) where
 
@@ -55,8 +55,8 @@ module _ {s} {Y : Type ℓY} (Φ : Y → TheoryTy ℓA s) where
 
   open Route
 
-  -- THE THEOREM, in context: decisions for the alternatives become a
-  -- decision of their sum.  This is `Searchable⊕` for `Φ`, justified by a
+  -- Decisions for the alternatives become a decision of their sum.
+  -- This is `Searchable⊕` for `Φ`, justified by a
   -- cover rather than by a listing -- so `Y` may be infinite, and the
   -- decisions may come from a continuation rather than from `⊤Ty`.
   --
@@ -98,7 +98,6 @@ module _ {s} {Y : Type ℓY} (Φ : Y → TheoryTy ℓA s) where
           elsewhere (just y₀) y (λ where Eq.refl → ne Eq.refl)
           ∘⊢ π₂ ∘⊢ π₁
 
-  -- ...and closed, which is what a top-level decision wants.
   routeDec : Route ℓB → DiscreteEq Y
     → ((y : Y) → Decidable (Φ y))
     → Decidable (⊕[ y ∈ Y ] Φ y)

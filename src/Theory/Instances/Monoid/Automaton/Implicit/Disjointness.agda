@@ -45,7 +45,6 @@ private variable ℓA ℓB ℓY : Level
 
 -- Generic facts, all about `literal`: none of them mention an automaton.
 
--- `A & -` commutes with a dependent sum, pointwise
 &⊕ᴰ-distR : {A : TheoryTy ℓA tt} {Y : Type ℓY} {B : Y → TheoryTy ℓB tt}
   → A & (⊕[ y ∈ Y ] B y) ⊢ ⊕[ y ∈ Y ] (A & B y)
 &⊕ᴰ-distR m (a , (y , b)) = y , (a , b)
@@ -59,7 +58,6 @@ private variable ℓA ℓB ℓY : Level
 ⊤Ty↑-intro : {A : TheoryTy ℓA tt} → A ⊢ ⊤Ty↑ ℓB
 ⊤Ty↑-intro m a = tt*
 
--- `sameHead` with the tails dropped
 same-first : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt} (c d : Alphabet)
   → (＂ c ＂ ⊗ A) & (＂ d ＂ ⊗ B) ⊢ ⊕[ _ ∈ c ≡ d ] ⊤Ty
 same-first c d = map⊕ᴰ (λ _ → ⊤Ty-intro) ∘⊢ sameHead c d
@@ -90,7 +88,6 @@ module _ {Q : Type ℓAlph} (M : ImplicitDeterministicAutomaton Q) where
   -- `CodeLayer`/`fromCode` -- the one-step observation with the carrier
   -- left free -- now come from `Automaton.Deterministic`.
 
-  -- re-exported so that clients keep writing `fromCode M b q`
   CodeLayer : (A : QL → TheoryTy ℓA tt) (b : Bool) (q : Q+) → TheoryTy _ tt
   CodeLayer = DA.CodeLayer
 
@@ -161,7 +158,6 @@ module _ {Q : Type ℓAlph} (M : ImplicitDeterministicAutomaton Q) where
           ⊢ Trace false fail
     consB = ⊕ᴰ-elim (λ c → STEP c fail) ∘⊢ ⊗⊕ᴰ-distL ∘⊢ star-cons⁻
 
-  -- Trace disjointness at this machine's underlying automaton.
   TraceDisj : (b b' : Bool) (q : Q+)
     → Trace b q & Trace b' q ⊢ ⊕[ _ ∈ b ≡ b' ] ⊤Ty
   TraceDisj b b' = D.TraceDisj (IDA→DA M) b b'

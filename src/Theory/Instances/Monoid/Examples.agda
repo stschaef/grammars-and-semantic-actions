@@ -1,4 +1,5 @@
 {-# OPTIONS -WnoUnsupportedIndexedMatch #-}
+-- Shared fixtures for downstream modules, not standalone demonstrations.
 open import Cubical.Foundations.Prelude
 
 module Theory.Instances.Monoid.Examples

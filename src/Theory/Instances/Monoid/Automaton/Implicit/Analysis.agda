@@ -60,18 +60,19 @@ eqb : Alphabet → Alphabet → Bool
 eqb x y = eqbOf (x ≟ y)
 
 eqb-refl : (x : Alphabet) → eqb x x ≡ true
-eqb-refl x = go (x ≟ x)
+eqb-refl x = eqbAtRefl (x ≟ x)
   where
-  go : (s : (x Eq.≡ x) Sum.⊎ ((x Eq.≡ x) → Empty.⊥)) → eqbOf s ≡ true
-  go (Sum.inl _) = refl
-  go (Sum.inr ne) = Empty.rec (ne Eq.refl)
+  eqbAtRefl : (s : (x Eq.≡ x) Sum.⊎ ((x Eq.≡ x) → Empty.⊥)) → eqbOf s ≡ true
+  eqbAtRefl (Sum.inl _) = refl
+  eqbAtRefl (Sum.inr ne) = Empty.rec (ne Eq.refl)
 
 eqb-true : (x y : Alphabet) → eqb x y ≡ true → x ≡ y
-eqb-true x y = go (x ≟ y)
+eqb-true x y = eqbToPath (x ≟ y)
   where
-  go : (s : (x Eq.≡ y) Sum.⊎ ((x Eq.≡ y) → Empty.⊥)) → eqbOf s ≡ true → x ≡ y
-  go (Sum.inl q) _ = Eq.eqToPath q
-  go (Sum.inr _) p = Empty.rec (false≢true p)
+  eqbToPath : (s : (x Eq.≡ y) Sum.⊎ ((x Eq.≡ y) → Empty.⊥))
+    → eqbOf s ≡ true → x ≡ y
+  eqbToPath (Sum.inl q) _ = Eq.eqToPath q
+  eqbToPath (Sum.inr _) p = Empty.rec (false≢true p)
 
 -- `Bool` scaffolding.  `notTrue` and the `(v : Bool) → x ≡ v` idiom are
 -- how a stuck `Bool` gets inspected *with* its equation, which `with`
@@ -109,7 +110,7 @@ memb : Supp → Alphabet → Bool
 memb [] c = false
 memb (i ∷ is) c = holdsB i c or memb is c
 
--- union is `_++_`, and this is its contravariant half
+-- union of supports is `_++_`
 memb-++-l : (s t : Supp) (c : Alphabet)
   → memb (s ++ t) c ≡ false → memb s c ≡ false
 memb-++-l [] t c p = refl
@@ -141,17 +142,17 @@ private
   ... | Sum.inl _ = Mb.nothing
   ... | Sum.inr ne = Mb.just λ c p q →
         ne (Eq.pathToEq (eqb-true d c p ∙ sym (eqb-true e c q)))
-  disjCls? (one d) (cls Q) = go (Q d) refl
+  disjCls? (one d) (cls Q) = onMembOfD (Q d) refl
     where
-    go : (v : Bool) → Q d ≡ v → Mb.Maybe (DisjCls (one d) (cls Q))
-    go true _ = Mb.nothing
-    go false qd = Mb.just λ c p q →
+    onMembOfD : (v : Bool) → Q d ≡ v → Mb.Maybe (DisjCls (one d) (cls Q))
+    onMembOfD true _ = Mb.nothing
+    onMembOfD false qd = Mb.just λ c p q →
       true≢false (sym q ∙ sym (cong Q (eqb-true d c p)) ∙ qd)
-  disjCls? (cls P) (one e) = go (P e) refl
+  disjCls? (cls P) (one e) = onMembOfE (P e) refl
     where
-    go : (v : Bool) → P e ≡ v → Mb.Maybe (DisjCls (cls P) (one e))
-    go true _ = Mb.nothing
-    go false pe = Mb.just λ c p q →
+    onMembOfE : (v : Bool) → P e ≡ v → Mb.Maybe (DisjCls (cls P) (one e))
+    onMembOfE true _ = Mb.nothing
+    onMembOfE false pe = Mb.just λ c p q →
       true≢false (sym p ∙ sym (cong P (eqb-true e c q)) ∙ pe)
   disjCls? (cls P) (cls Q) = Mb.nothing
 
@@ -175,8 +176,6 @@ disj? (i ∷ is) t with disjClsSupp? i t
         Sum.rec (λ h → f c h q) (λ h → g c h q)
           (orTrue (holdsB i c) (memb is c) p)
 
--- A `DetReg` together with the support of its two indices.
-
 record DetOfB (nn : Bool) : Type (ℓ-suc ℓAlph) where
   constructor det
   field
@@ -190,18 +189,16 @@ open DetOfB public
 DetOf : Type (ℓ-suc ℓAlph)
 DetOf = Σ[ nn ∈ Bool ] DetOfB nn
 
--- ...and this is the whole point: a total side condition out of one
--- evaluated `Bool` plus the global disjointness.
 sideCond : {P Q : ℙ} (sP sQ : Supp)
   → ((c : Alphabet) → memb sP c ≡ false → c ∈ℙ P)
   → ((c : Alphabet) → memb sQ c ≡ false → c ∈ℙ Q)
   → Disj sP sQ
   → (c : Alphabet) → (c ∈ℙ P) Sum.⊎ (c ∈ℙ Q)
-sideCond {P = P} {Q = Q} sP sQ oP oQ dj c = go (memb sP c) refl
+sideCond {P = P} {Q = Q} sP sQ oP oQ dj c = onMembership (memb sP c) refl
   where
-  go : (v : Bool) → memb sP c ≡ v → (c ∈ℙ P) Sum.⊎ (c ∈ℙ Q)
-  go false p = Sum.inl (oP c p)
-  go true p = Sum.inr (oQ c (notTrue (memb sQ c) (dj c p)))
+  onMembership : (v : Bool) → memb sP c ≡ v → (c ∈ℙ P) Sum.⊎ (c ∈ℙ Q)
+  onMembership false p = Sum.inl (oP c p)
+  onMembership true p = Sum.inr (oQ c (notTrue (memb sQ c) (dj c p)))
 
 -- The leaves.  `litAut c` and `satAut P` never step once they have
 -- accepted, so both follow-last supports are empty.
@@ -324,8 +321,6 @@ starDet d with disj? (d .suppFL) (d .suppF)
         , d .outFL c (memb-++-r (d .suppF) _ c p))
       (d .outF))
 
--- The analysis.
---
 -- The two unit clauses are what makes `Regex.Parse`'s output usable at
 -- all: it builds every concatenation as `εr ⊗r …`, and `⊗DR` refuses a
 -- nullable left factor.
@@ -368,9 +363,8 @@ erase (_⊕DR[_]_ {b = true} dr _ dr') = erase dr ⊕r erase dr'
 erase (_⊕DR[_]_ {b = false} dr _ dr') = erase dr ⊕r erase dr'
 erase (dr *DR[ _ ]) = erase dr *r
 
--- Getting the answer out.  As with `Regex.Parse`'s `⟨|_|⟩`, a regex the
--- analysis rejects is a *type* error at the use site rather than a
--- `nothing` to case on.
+-- As with `Regex.Parse`'s `⟨|_|⟩`, a regex the analysis rejects is a type
+-- error at the use site rather than a `nothing` to case on.
 
 IsDet : {ℓ' : Level} {A : Type ℓ'} → Mb.Maybe A → Type ℓ-zero
 IsDet (Mb.just _) = Unit

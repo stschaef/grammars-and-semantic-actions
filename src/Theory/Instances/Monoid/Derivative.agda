@@ -52,7 +52,7 @@ Dl-string-map : (w : String) {C : TheoryTy ℓA tt} {D : TheoryTy ℓB tt}
   → C ⊢ D → Dl-string w C ⊢ Dl-string w D
 Dl-string-map w f m x = f (w ++ m) x
 
--- The character-level names from `Grammar.Derivative.Base`.
+-- The same four operations at a single generator.
 Dr : Alphabet → TheoryTy ℓA tt → TheoryTy ℓA tt
 Dr c = Dr-string (⌈gen c ⌉)
 
@@ -65,10 +65,8 @@ Dl c = Dl-string (⌈gen c ⌉)
 √l : Alphabet → TheoryTy ℓA tt → TheoryTy _ tt
 √l c = √l-string (⌈gen c ⌉)
 
--- ...spelled with a cons rather than through `Dl-string-map`, so the index
+-- Spelled with a cons rather than through `Dl-string-map`, so the index
 -- stays syntactically a cons and inference at `Dl c` does not stall.
--- `Regex/Derivative` keeps its own copy: at `roll↑` the implicit carriers
--- resolve only against a locally-defined one.
 Dl-map : (c : Alphabet) {C : TheoryTy ℓA tt} {D : TheoryTy ℓB tt}
   → C ⊢ D → Dl c C ⊢ Dl c D
 Dl-map c f m x = f (c ∷ m) x

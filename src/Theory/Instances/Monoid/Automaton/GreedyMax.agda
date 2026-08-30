@@ -114,7 +114,6 @@ module _ {Q : Type ℓAlph} (M : DeterministicAutomaton Q) where
 
   -- The bridge to `Trace`.
 
-  -- forget the end state, remembering only that it accepts
   TraceTo→Trace : (b : Bool) (q q' : Q) → b Eq.≡ isAcc q'
     → TraceTo q q' ⊢ Trace b q
   TraceTo→Trace b q q' pf = rec (TraceToTy q') alg q
@@ -129,7 +128,7 @@ module _ {Q : Type ℓAlph} (M : DeterministicAutomaton Q) where
       (stop p) → stopCase r p
       (step c) → STEP c r ∘⊢ ⊗-map lowerTy lowerTy ∘⊢ ⟦⊗e⟧ _ _
 
-  -- ...and recover it.  `Trace b q` is `⊕[ q' ] (b ≡ isAcc q') × TraceTo q q'`
+  -- `Trace b q` is `⊕[ q' ] (b ≡ isAcc q') × TraceTo q q'`
   Trace→TraceTo : (b : Bool) (q : Q)
     → Trace b q ⊢ ⊕[ q' ∈ Q ] (⊕[ _ ∈ b Eq.≡ isAcc q' ] TraceTo q q')
   Trace→TraceTo b q = rec (TraceTy b) alg (lift q)
@@ -174,7 +173,6 @@ module _ {Q : Type ℓAlph} (M : DeterministicAutomaton Q) where
       → δ* (δ q c) w₁ Eq.≡ q' → δ* q w Eq.≡ q'
     endStep q q' c w₁ .(c ∷ w₁) Eq.refl h = h
 
-  -- ...so the `⊕[ q' ]` of `BridgeTy` is a *singleton* sum
   endState : (q q' : Q) (w : String) → TraceTo q q' w → δ* q w Eq.≡ q'
   endState q q' w (roll .w (stop p , x)) =
     endStop q q' w p (x .lower .snd .fst)
@@ -225,12 +223,9 @@ module _ {Q : Type ℓAlph} (M : DeterministicAutomaton Q) where
 
   -- The greedy answer, with maximality typed.
 
-  -- a match: a run ending at an *accepting* state
   Match : Q → Q → TheoryTy _ tt
   Match q q' = ⊕[ _ ∈ true Eq.≡ isAcc q' ] TraceTo q q'
 
-  -- ...together with a refutation of every nonempty continuation of the
-  -- language *of the state it ended in*
   GreedyMax : Q → Q → TheoryTy _ tt
   GreedyMax q q' = Match q q' ⊗ ¬Ty ((L q' & char⁺) ⊗ ⊤Ty)
 
@@ -248,7 +243,6 @@ module _ {Q : Type ℓAlph} (M : DeterministicAutomaton Q) where
         (⊕ᴰ-¬Nullable λ c → ⊗-¬Nullable (literal-¬Nullable c))
         (⊕ᴰ-¬Nullable λ pp → Empty.rec (true≢false (Eq.eqToPath (pp Eq.∙ p)))))
 
-    -- an accepting state's empty run, as a `Match` at itself
     accHere : (q : Q) → isAcc q Eq.≡ true → εTy ⊢ Match q q
     accHere q p = σ⊕ (Eq.sym p) ∘⊢ STOPTo q ∘⊢ liftTy
 
@@ -256,12 +250,12 @@ module _ {Q : Type ℓAlph} (M : DeterministicAutomaton Q) where
     noExt-ε R = ¬Nullable→¬ε (⊗-¬Nullable (&-¬NullableR char⁺-¬Nullable))
 
   scan-nil : εTy ⊢ Table
-  scan-nil = &ᴰ-intro λ q → go q (isAcc q) Eq.refl
+  scan-nil = &ᴰ-intro λ q → emptyRunAt q (isAcc q) Eq.refl
     where
-    go : (q : Q) (b : Bool) → isAcc q Eq.≡ b → εTy ⊢ Run q
-    go q true p =
+    emptyRunAt : (q : Q) (b : Bool) → isAcc q Eq.≡ b → εTy ⊢ Run q
+    emptyRunAt q true p =
       inl ∘⊢ σ⊕ q ∘⊢ (accHere q p ,⊗ noExt-ε (L q)) ∘⊢ ε⊗-intro
-    go q false p = inr ∘⊢ ¬Nullable→¬ε (⊗-¬Nullable (accN q p))
+    emptyRunAt q false p = inr ∘⊢ ¬Nullable→¬ε (⊗-¬Nullable (accN q p))
 
   -- A dead successor is refuted without reading the table.
   --
@@ -282,7 +276,7 @@ module _ {Q : Type ℓAlph} (M : DeterministicAutomaton Q) where
     stepAt : (q : Q) (c : Alphabet) → literal c ⊗ Table ⊢ Run q
     stepAt q c = alive (isDead (δ q c)) Eq.refl
       where
-      -- extending the match is one `STEP`: O(1), and no derivative
+      -- extending the match is one `STEP`, and no derivative
       extMatch : (q' : Q) → literal c ⊗ Match (δ q c) q' ⊢ Match q q'
       extMatch q' = ⊕ᴰ-elim (λ p → σ⊕ p ∘⊢ STEPTo c q q') ∘⊢ ⊗⊕ᴰ-distR
 
@@ -292,7 +286,7 @@ module _ {Q : Type ℓAlph} (M : DeterministicAutomaton Q) where
         ∘⊢ ⊗⊕ᴰ-distR
 
       unmatched : literal c ⊗ ¬Ty (L (δ q c) ⊗ ⊤Ty) ⊢ Run q
-      unmatched = go (isAcc q) Eq.refl
+      unmatched = onAcceptance (isAcc q) Eq.refl
         where
         δ-⊸⁻ : literal c ⊸ L q ⊢ L (δ q c)
         δ-⊸⁻ = ∂→Trace true q c ∘⊢ ⊸→∂⌈⌉ (⌈gen c ⌉) {B = L q}
@@ -301,15 +295,13 @@ module _ {Q : Type ℓAlph} (M : DeterministicAutomaton Q) where
           ⊢ ¬Ty ((L q & char⁺) ⊗ ⊤Ty)
         noMore = noExt-step c ∘⊢ (id⊢ ,⊗ ¬Ty-map (δ-⊸⁻ ,⊗ id⊢))
 
-        go : (b : Bool) → isAcc q Eq.≡ b
-           → literal c ⊗ ¬Ty (L (δ q c) ⊗ ⊤Ty) ⊢ Run q
-        go true p =
+        onAcceptance : (b : Bool) → isAcc q Eq.≡ b
+                     → literal c ⊗ ¬Ty (L (δ q c) ⊗ ⊤Ty) ⊢ Run q
+        onAcceptance true p =
           inl ∘⊢ σ⊕ q ∘⊢ (accHere q p ,⊗ id⊢) ∘⊢ ε⊗-intro ∘⊢ noMore
-        go false p =
+        onAcceptance false p =
           inr ∘⊢ ¬Ty-map ((id⊢ ,& ¬Nullable→char⁺ (accN q p)) ,⊗ id⊢) ∘⊢ noMore
 
-      -- dead: the refutation comes from the certificate, and the tail is
-      -- discarded rather than projected.  Alive: exactly the old path.
       alive : (b : Bool) → isDead (δ q c) Eq.≡ b
         → literal c ⊗ Table ⊢ Run q
       alive true p = unmatched ∘⊢ (id⊢ ,⊗ (deadNo D (δ q c) p ∘⊢ ⊤Ty-intro))
@@ -365,13 +357,11 @@ module _ {Q : Type ℓAlph} (M : DeterministicAutomaton Q) where
     scan : Deadness M → char * ⊢ Table
     scan D = fold*g (Table , isSetTable) char-¬Nullable scan-nil (scan-cons D)
 
-    -- ...and the bridge is an iso.
-    --
-    -- `Automaton/Unambiguous`'s induction, with the acceptance equation
-    -- replaced by the end-state equation.  Together with `endState` --
-    -- which says the `⊕[ q' ]` of `BridgeTy` is a singleton -- it makes
-    -- `BridgeTy b q` a proposition, and two propositions with maps both
-    -- ways are isomorphic.
+    -- The bridge is an iso by `Automaton/Unambiguous`'s induction, with
+    -- the acceptance equation replaced by the end-state equation.
+    -- Together with `endState` -- which says the `⊕[ q' ]` of `BridgeTy`
+    -- is a singleton -- it makes `BridgeTy b q` a proposition, and two
+    -- propositions with maps both ways are isomorphic.
 
     unambiguous-TraceTo : (q q' : Q) (w : String)
       (t t' : TraceTo q q' w) → t ≡ t'
@@ -466,14 +456,10 @@ module _ {Q : Type ℓAlph} (M : DeterministicAutomaton Q) where
     Trace≅TraceTo b q m .Iso.sec t = unambiguous-Trace M b q m _ t
     Trace≅TraceTo b q m .Iso.ret s = isPropBridgeTy b q m _ s
 
-  -- Maximality, cashed in.
-  --
-  -- The cheap state-indexed witness maps into the self-certifying
-  -- word-indexed `Greedy` of `Greedy/Base`: the match is over some `u`,
-  -- and *every* nonempty extension of that same `u` is refuted -- which is
-  -- what "longest" means.  `cancel` is the whole content: it turns a run
-  -- of `q` over `u ++ z` into a run of `q'` over `z`, where the refutation
-  -- already lives.
+  -- The state-indexed witness maps into the word-indexed `Greedy` of
+  -- `Greedy/Base`.  `cancel` is the whole content: it turns a run of `q`
+  -- over `u ++ z` into a run of `q'` over `z`, where the refutation of
+  -- every nonempty extension already lives.
 
   GreedyMax→Greedy : (q : Q) → (⊕[ q' ∈ Q ] GreedyMax q q') ⊢ Greedy (L q)
   GreedyMax→Greedy q = ⊕ᴰ-elim body
@@ -493,19 +479,14 @@ module _ {Q : Type ℓAlph} (M : DeterministicAutomaton Q) where
                , y .snd)
              , (top , tt*)))
 
-  -- ...and therefore the greedy branch of a `Run` is a genuine longest
-  -- match: no strictly longer prefix of the input is accepted from `q`.
   Run→Greedy : (q : Q) → Run q ⊢ Greedy (L q) ⊕ ¬Ty (L q ⊗ ⊤Ty)
   Run→Greedy q = ⊕-elim (inl ∘⊢ GreedyMax→Greedy q) inr
 
-  -- the same fact spelled out.  `u` is the greedy match and `z ++ r` what
-  -- is left; a nonempty `z` with `u ++ z` accepted from `q` is absurd, so
-  -- `u` is the *longest* accepted prefix and not merely an accepted one.
   no-longer-match : (q q' : Q) (u z r : String)
     → TraceTo q q' u                        -- the match, ending at `q'`
-    → ¬Ty ((L q' & char⁺) ⊗ ⊤Ty) (z ++ r)   -- ...and its refutation
+    → ¬Ty ((L q' & char⁺) ⊗ ⊤Ty) (z ++ r)   -- its refutation
     → char⁺ z                               -- a nonempty extension
-    → L q (u ++ z)                          -- ...also accepted from `q`
+    → L q (u ++ z)                          -- also accepted from `q`
     → ⊥Ty (z ++ r)
   no-longer-match q q' u z r t nk cz acc =
     nk (two z r , Eq.refl

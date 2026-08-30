@@ -1,5 +1,5 @@
 -- Subobjects, via the subobject classifier.  A subtype of `A` is a map
--- `A ⊢ Ω`, and `subgrammar p` is its pullback of `true`.
+-- `A ⊢ Ω`, and `subTy p` is its pullback of `true`.
 {-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
 open import Cubical.Foundations.Prelude
 open import Cubical.Foundations.HLevels
@@ -9,7 +9,7 @@ open import Cubical.Algebra.Theory.Finitary
 open SortedSig
 open SortedEqns
 import Theory.Free.Base as FB
-module Theory.Type.Subgrammar.Base
+module Theory.Type.Subtype.Base
   {ℓ ℓ'' ℓv ℓS ℓP} {S : Type ℓS}
   {σ : SortedSig S ℓ}
   (σeq : SortedEqns σ ℓ'')
@@ -50,11 +50,11 @@ false _ _ .snd = Empty.isProp⊥*
 
 -- `p ≡ true ∘⊢ ⊤Ty-intro` is the internal way of saying "`p` holds of every
 -- element of `A`"; every induction principle below produces one.
-module Subgrammar {ℓ'} {s : S} {A : TheoryTy ℓA s} (p : A ⊢ Ω {ℓ' = ℓ'}) where
-  subgrammar : TheoryTy (ℓ-max ℓA ℓ') s
-  subgrammar m = Σ[ x ∈ A m ] ⟨ p m x ⟩
+module SubTy {ℓ'} {s : S} {A : TheoryTy ℓA s} (p : A ⊢ Ω {ℓ' = ℓ'}) where
+  subTy : TheoryTy (ℓ-max ℓA ℓ') s
+  subTy m = Σ[ x ∈ A m ] ⟨ p m x ⟩
 
-  sub-π : subgrammar ⊢ A
+  sub-π : subTy ⊢ A
   sub-π _ = fst
 
   sub-π-pf : p ∘⊢ sub-π ≡ true ∘⊢ ⊤Ty-intro
@@ -75,34 +75,33 @@ module Subgrammar {ℓ'} {s : S} {A : TheoryTy ℓA s} (p : A ⊢ Ω {ℓ' = ℓ
     extract-pf m x =
       transport (sym (cong fst (funExt⁻ (funExt⁻ pB m) x))) tt*
 
-    sub-intro : B ⊢ subgrammar
+    sub-intro : B ⊢ subTy
     sub-intro m x .fst = f m x
     sub-intro m x .snd = extract-pf m x
 
     sub-β : sub-π ∘⊢ sub-intro ≡ f
     sub-β = refl
 
-  module _ {B : TheoryTy ℓB s} (f : B ⊢ subgrammar) where
+  module _ {B : TheoryTy ℓB s} (f : B ⊢ subTy) where
     private
       the-path : p ∘⊢ sub-π ∘⊢ f ≡ true ∘⊢ ⊤Ty-intro
       the-path = cong (_∘⊢ f) sub-π-pf
 
-    -- η holds on the nose: `subgrammar` is a Σ and the second component is a
+    -- η holds on the nose: `subTy` is a Σ and the second component is a
     -- proposition, so nothing has to be transported.
     sub-η : f ≡ sub-intro (sub-π ∘⊢ f) the-path
     sub-η i = f
 
-  -- a section of `sub-π` says `p` holds everywhere
-  subgrammar-section : (f : A ⊢ subgrammar) → sub-π ∘⊢ f ≡ id⊢
+  subTy-section : (f : A ⊢ subTy) → sub-π ∘⊢ f ≡ id⊢
     → p ≡ true ∘⊢ ⊤Ty-intro
-  subgrammar-section f sec =
+  subTy-section f sec =
     cong (p ∘⊢_) (sym sec) ∙ cong (_∘⊢ f) sub-π-pf
 
   isMono-sub-π : isMono sub-π
   isMono-sub-π = injective→isMono λ m x y q →
     Σ≡Prop (λ z → p m z .snd) q
 
-open Subgrammar public
+open SubTy public
 
 -- Induction: to prove `p` of every element of an inductive type it is enough
 -- to prove it of one layer whose subterms already satisfy it.
@@ -113,31 +112,30 @@ module _ {ℓ'} {X : Type ℓX} {xs : X → S}
     p x ∘⊢ roll ∘⊢ map (F x) (λ y → sub-π (p y)) ≡ true ∘⊢ ⊤Ty-intro)
   where
 
-  subgrammar-ind-alg : ∀ x
-    → ⟦ F x ⟧TheoryTy (λ y → subgrammar (p y)) ⊢ subgrammar (p x)
-  subgrammar-ind-alg x =
+  subTy-ind-alg : ∀ x
+    → ⟦ F x ⟧TheoryTy (λ y → subTy (p y)) ⊢ subTy (p x)
+  subTy-ind-alg x =
     sub-intro (p x) (roll ∘⊢ map (F x) (λ y → sub-π (p y))) (pf x)
 
-  subgrammar-ind' : ∀ (x : X) → μ F x ⊢ subgrammar (p x)
-  subgrammar-ind' = rec F subgrammar-ind-alg
+  subTy-ind' : ∀ (x : X) → μ F x ⊢ subTy (p x)
+  subTy-ind' = rec F subTy-ind-alg
 
   -- `sub-π` is an algebra map by `sub-β`, so `rec-section` -- which is the
   -- initiality argument, already packaged -- does the whole induction.
-  sub-π-section : ∀ x → sub-π (p x) ∘⊢ subgrammar-ind' x ≡ id⊢
-  sub-π-section = rec-section F subgrammar-ind-alg (λ y → sub-π (p y)) λ y → refl
+  sub-π-section : ∀ x → sub-π (p x) ∘⊢ subTy-ind' x ≡ id⊢
+  sub-π-section = rec-section F subTy-ind-alg (λ y → sub-π (p y)) λ y → refl
 
-  subgrammar-ind : ∀ (x : X) → p x ≡ true ∘⊢ ⊤Ty-intro
-  subgrammar-ind x =
-    subgrammar-section (p x) (subgrammar-ind' x) (sub-π-section x)
+  subTy-ind : ∀ (x : X) → p x ≡ true ∘⊢ ⊤Ty-intro
+  subTy-ind x =
+    subTy-section (p x) (subTy-ind' x) (sub-π-section x)
 
--- The preimage of a subobject along a map.
 module _ {s : S} {A : TheoryTy ℓA s} {B : TheoryTy ℓB s}
   (f : B ⊢ A) (p : A ⊢ Ω {ℓ' = ℓ'}) where
 
   preimage : TheoryTy (ℓ-max ℓB ℓ') s
-  preimage = subgrammar (p ∘⊢ f)
+  preimage = subTy (p ∘⊢ f)
 
-  preimage-map : preimage ⊢ subgrammar p
+  preimage-map : preimage ⊢ subTy p
   preimage-map = sub-intro p (f ∘⊢ sub-π (p ∘⊢ f)) (sub-π-pf (p ∘⊢ f))
 
 -- Every mono into a set is a subobject.
@@ -148,10 +146,9 @@ module _ {s : S} {A : TheoryTy ℓA s} {B : TheoryTy ℓB s}
   mono-prop m x .fst = Σ[ y ∈ B m ] f m y ≡ x
   mono-prop m x .snd = isMono→hasPropFibers isSetA isMono-f m x
 
-  mono→subgrammar : TheoryTy (ℓ-max ℓA ℓB) s
-  mono→subgrammar = subgrammar mono-prop
+  mono→subTy : TheoryTy (ℓ-max ℓA ℓB) s
+  mono→subTy = subTy mono-prop
 
--- The constantly-`A` proposition, available whenever `A` is unambiguous.
 module _ {s : S} {A : TheoryTy ℓA s} (unambig-A : unambiguous A)
   (B : TheoryTy ℓB s) where
 
@@ -159,5 +156,5 @@ module _ {s : S} {A : TheoryTy ℓA s} (unambig-A : unambiguous A)
   unambiguous-prop m _ .fst = A m
   unambiguous-prop m _ .snd = unambig-A m
 
-  unambiguous→subgrammar : TheoryTy (ℓ-max ℓB ℓA) s
-  unambiguous→subgrammar = subgrammar unambiguous-prop
+  unambiguous→subTy : TheoryTy (ℓ-max ℓB ℓA) s
+  unambiguous→subTy = subTy unambiguous-prop

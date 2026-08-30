@@ -59,10 +59,10 @@ module POSIX (s : AS.String)
   Dead : Deadness DA
   Dead = compileDead discAlphabet (D .snd .dr)
 
-  accepts : String → Bool
-  accepts w = parseInit isSetQ w (readChars w tt) .fst
+  endsAccepting : String → Bool
+  endsAccepting w = parseInit isSetQ w (readChars w tt) .fst
 
-  traceOf : (w : String) → Trace (accepts w) init w
+  traceOf : (w : String) → Trace (endsAccepting w) init w
   traceOf w = parseInit isSetQ w (readChars w tt) .snd
 
 -- `ab*`.  `Regex.Parse` builds this as `εr ⊗r ⟨a⟩r ⊗r ⟨b⟩r *r`, and the
@@ -74,7 +74,6 @@ module M1 = POSIX "ab*"
 _ : erase (M1.D .snd .dr) ≡ ⟨ ch 'a' ⟩r ⊗r ⟨ ch 'b' ⟩r *r
 _ = refl
 
--- one position per literal, and nothing merged
 _ : States (M1.D .snd .dr) ≡ (Unit* Sum.⊎ Unit*)
 _ = refl
 
@@ -135,7 +134,6 @@ _ = M3.traceOf _
 _ : M3.Trace false M3.init (text "ab-c")
 _ = M3.traceOf _
 
--- `\d+`, i.e. `satr isDigit ⊗r satr isDigit *r`
 module M4 = POSIX "\\d+"
 
 _ : M4.Trace true M4.init (text "2026")
@@ -147,8 +145,6 @@ _ = M4.traceOf _
 _ : M4.Trace false M4.init (text "20a")
 _ = M4.traceOf _
 
--- ...and a letter against a class, which *is* decidable: one application
--- of the predicate at that letter
 module M5 = POSIX "(a|[0-9])*"
 
 _ : M5.Trace true M5.init (text "a1a22")
@@ -157,9 +153,8 @@ _ = M5.traceOf _
 _ : M5.Trace false M5.init (text "a1b")
 _ = M5.traceOf _
 
--- ...and at length, to check that the side conditions did not put
--- anything expensive on the transition path.  Each step evaluates one
--- support of size at most two.
+-- At length: each step evaluates one support of size at most two, so the
+-- side conditions put nothing expensive on the transition path.
 
 bs : ℕ → String
 bs zero = []
@@ -188,7 +183,6 @@ _ = λ x → x
 _ : Rejects "ab*b"
 _ = λ x → x
 
--- `a|a` -- the same clash, at its smallest
 _ : Rejects "a|a"
 _ = λ x → x
 

@@ -1,8 +1,4 @@
 {-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
-{- The two trace presentations agree at `true`.  Both are `μ` of a code with
-   the same three summands; the maps are tag renamings, so each direction is
-   a `rec` and each round trip is an `equalizer-ind` whose branches are
-   `refl` up to the induction hypothesis. -}
 open import Cubical.Foundations.Prelude
 open import Cubical.Foundations.Structure
 open import Cubical.WildCat.LocallySmall.Base
@@ -51,11 +47,6 @@ module _ (N : NFA ℓN) where
   PR→Acc : ∀ q → PR.Trace true q ⊢ Acc.Trace q
   PR→Acc = rec (PR.TraceTy true) PRAlg
 
-  -- Both maps are algebra homomorphisms on the nose -- each summand is
-  -- renamed to the summand with the same payload -- so `rec-section` closes
-  -- both round trips.  No equalizer induction is needed: the old proof's
-  -- `equalizer-ind` chains exist only because the homomorphism law was never
-  -- stated separately.
   private
     Acc→PR-homo : ∀ q → Acc→PR q ∘⊢ PRAlg q
                       ≡ roll ∘⊢ map (PR.TraceTy true q) Acc→PR

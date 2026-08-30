@@ -41,7 +41,7 @@ open import Theory.Instances.Monoid.Unitor Alphabet isSetAlphabet
   using (⊗-unit-r∘r⁻ ; ⊗-unit-r⁻∘r)
 open import Theory.Instances.Monoid.Automata.NFA.Base Alphabet isSetAlphabet
 open import Theory.Instances.Monoid.Sat Alphabet isSetAlphabet
-  using (Sat ; satG) public
+  using (Sat ; satTy) public
 
 open WildCatNotation
 open WildCatIso
@@ -87,7 +87,7 @@ module _ (P : Alphabet → Bool) where
   ℓsat = ℓF (ℓ⋆ ℓAlph)
 
   ⟦_⟧st : Lift ℓAlph STATE → TheoryTy ℓsat tt
-  ⟦ lift c-st ⟧st = LiftTheoryTy ℓsat (satG P)
+  ⟦ lift c-st ⟧st = LiftTheoryTy ℓsat (satTy P)
   ⟦ lift ε-st ⟧st = LiftTheoryTy ℓsat εTy
 
   satAlg : TraceAlg ⟦_⟧st
@@ -114,20 +114,20 @@ module _ (P : Alphabet → Bool) where
     post : ∀ t → literal (t .fst) ⊗ εTy ⊢ Trace (lift c-st)
     post t = STEP t ∘⊢ ⊗-map id⊢ (STOP Eq.refl)
 
-    roll↑ : ∀ t → (⟦ branch (lift c-st) (step t Eq.refl) ⟧TheoryTy ⟦_⟧st
+    rollAtStep : ∀ t → (⟦ branch (lift c-st) (step t Eq.refl) ⟧TheoryTy ⟦_⟧st
                   ⊢ ⟦ branch (lift c-st) (step t Eq.refl) ⟧TheoryTy Trace)
                 → ⟦ branch (lift c-st) (step t Eq.refl) ⟧TheoryTy ⟦_⟧st
                   ⊢ Trace (lift c-st)
-    roll↑ t z = roll ∘⊢ σ⊕ (step t Eq.refl) ∘⊢ z
+    rollAtStep t z = roll ∘⊢ σ⊕ (step t Eq.refl) ∘⊢ z
 
   toNFA-homo : ∀ q → toNFA q ∘⊢ satAlg q ≡ roll ∘⊢ map (TraceTy q) toNFA
   toNFA-homo (lift c-st) = ⊕ᴰ≡ _ _ λ where
     (step t Eq.refl) →
       cong (λ z → post t ∘⊢ z ∘⊢ pre t) (⊗-unit-r⁻∘r {A = literal (t .fst)})
-      ∙ cong (roll↑ t) (sym (map-step toNFA t Eq.refl))
+      ∙ cong (rollAtStep t) (sym (map-step toNFA t Eq.refl))
   toNFA-homo (lift ε-st) = ⊕ᴰ≡ _ _ λ where (stop Eq.refl) → refl
 
-  satNFA≅ : Parse ≅ LiftTheoryTy ℓsat (satG P)
+  satNFA≅ : Parse ≅ LiftTheoryTy ℓsat (satTy P)
   satNFA≅ .fun = fromNFA (lift c-st)
   satNFA≅ .inv = toNFA (lift c-st)
   satNFA≅ .sec = cong (λ z → liftTy ∘⊢ z ∘⊢ lowerTy)

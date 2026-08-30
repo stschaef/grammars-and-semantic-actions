@@ -56,10 +56,8 @@ infixr 9 _⋆⊢_
 
 open WildCat
 
--- this is a locally small wildcat
--- Currently its main use is to give access to a WildCatIso
--- record that recovers on the nose the notion of StrongEquivalence
--- used for Grammars
+-- A locally small wildcat: its `WildCatIso` is, on the nose, the notion of
+-- strong equivalence used throughout.
 THEORYTY : ∀ s →
   WildCat (Σω (Liftω Level) (λ (liftω ℓ) → Liftω (TheoryTy ℓ s))) _
 THEORYTY s .Hom[_,_] (_ , liftω A) (_ , liftω B) = A ⊢ B
@@ -79,15 +77,20 @@ module _ {s} (A : TheoryTy ℓA s) (B : TheoryTy ℓB s) where
   _≅_ : Type _
   _≅_ = THEORYTY.WildCatIso (mkThryTy A) (mkThryTy B)
 
--- representables
+-- Indices are compared with `Eq.≡` (`Cubical.Data.Equality`), not the cubical
+-- `_≡_`, everywhere in this library.  Matching an `Eq.refl` refines the index
+-- it equates, so `⊗-elim`, `√-intro⁻` and `disjoint` compute; matching a
+-- `Path` refines nothing and they get stuck.  The cost is that there is no
+-- transport along an `Eq.≡` in general -- `Eq.transport` routes through
+-- `subst` and leaves an `hcomp` even at `Eq.refl` -- so equations are threaded
+-- and projected rather than eliminated; see the note on `⊗-overSplit` in
+-- `Type/Operation/Base.agda`.
 ⌈_⌉ : ∀ {s} → ↓M s → TheoryTy ℓM s
 ⌈ a ⌉ m = m Eq.≡ a
 
 ⌈gen_⌉ : (v : V) → ↓M (vs v)
 ⌈gen v ⌉ = Pres.gen P v
 
--- A generator, regarded as a theory type through its representable.  This
--- notation is independent of the chosen algebraic theory.
 literal : (v : V) → TheoryTy ℓM (vs v)
 literal v = ⌈ ⌈gen v ⌉ ⌉
 

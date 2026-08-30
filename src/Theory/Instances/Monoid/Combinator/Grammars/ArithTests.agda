@@ -37,8 +37,6 @@ import Theory.Instances.Monoid.Combinator.Grammars.Arith
 import Theory.Instances.Monoid.Combinator.Grammars.Arith
   ND.NDAnswer ND.NDDiv ND.NDCommitting as GND
 
--- One parser, three answers.
-
 decArith : Dec.Decidable (Lang Exp)
 decArith = GDec.arith
 
@@ -81,8 +79,6 @@ cases =
   ∷ (lb ∷ rb ∷ [])                             ↦ M.nothing
   ∷ [] )
 
--- ...and the same list at `ND`, where a `just` becomes a one-element
--- enumeration: the grammar is unambiguous, so no string has two parses.
 casesND : List (Dec.String × List Unit)
 casesND =
   ( (nm ∷ [])                                  ↦ (tt ∷ [])

@@ -62,18 +62,11 @@ consSeq x =
   roll ∘⊢ σ⊕ true ∘⊢ σ⊕ x
   ∘⊢ ⊎B→⊗ᵘ (slots x Seq) ∘⊢ ⊎Bmap liftTy liftTy
 
--- fold and case-split
-recSeq : {C : TheoryTy ℓA tt}
-  → ⌈ εᵖ ⌉ ⊢ C → ((x : El) → ⌈ ⌈gen x ⌉ ⌉ ⊎B C ⊢ C)
-  → Seq ⊢ C
-recSeq n c = rec (λ _ → SeqCode) (λ _ → seqLayer n c) tt
-
 caseSeq : {C : TheoryTy ℓA tt}
   → ⌈ εᵖ ⌉ ⊢ C → ((x : El) → ⌈ ⌈gen x ⌉ ⌉ ⊎B Seq ⊢ C)
   → Seq ⊢ C
 caseSeq n c = seqLayer n c ∘⊢ unroll (λ _ → SeqCode) tt
 
--- the ordinary list constructors, for building concrete arrangements
 []ᵍ : Seq εᵖ
 []ᵍ = nilSeq εᵖ Eq.refl
 
@@ -82,6 +75,12 @@ _∷ᵍ_ : (x : El) {m : Bag} → Seq m → Seq (⌈gen x ⌉ ⊙ᵖ m)
 _∷ᵍ_ x {m} s =
   consSeq x (⌈gen x ⌉ ⊙ᵖ m) (two ⌈gen x ⌉ m , Eq.refl , (Eq.refl , s , tt*))
 
--- the underlying list of an arrangement: forget every index
-seqElements : Seq ⊢ K (List El)
-seqElements = recSeq (K-intro []) λ x → Kmap (x ∷_) ∘⊢ K-⊎B₂
+-- One element, arranged.  Written with the unitor rather than by
+-- transporting `x ∷ᵍ []ᵍ` along `⊙-unitR`, because a `subst` at a `μ` does
+-- not reduce -- see the header of `Quicksort/Tests`.
+singletonSeq : (x : El) → ⌈ ⌈gen x ⌉ ⌉ ⊢ Seq
+singletonSeq x =
+  consSeq x ∘⊢ ⊎Bmap id⊢ (nilSeq ∘⊢ εB→⌈ε⌉) ∘⊢ ⊎B-unitR⁻
+
+singleᵍ : (x : El) → Seq ⌈gen x ⌉
+singleᵍ x = singletonSeq x ⌈gen x ⌉ Eq.refl

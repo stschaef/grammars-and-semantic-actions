@@ -49,10 +49,7 @@ as : ℕ → List UChar
 as zero = []
 as (suc n) = ch 'a' ∷ as n
 
--- OLD path: Greedy's scan, projecting the splitting by hand
 oldScan = G.scan UChar isSetAlphabet Lx.Prod Lx.isSetProdQ
-
--- BENCH 473108713
 
 E6 : List UChar → Mb.Maybe (Fin 3)
 E6 w = Sum.rec (λ t → Lx.winner (t .fst)) (λ _ → Mb.nothing)

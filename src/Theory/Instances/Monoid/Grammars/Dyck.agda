@@ -15,7 +15,6 @@ open import Cubical.Data.List using ([])
 open import Cubical.Data.Sigma using (_,_ ; fst ; snd)
 open import Cubical.Data.Unit using (Unit ; tt ; tt*)
 
--- the alphabet: one bracket pair
 data Br : Type ℓ-zero where
   lp rp : Br
 
@@ -74,8 +73,7 @@ private
   -- The production is `S → ( S ) S`, so a node nests three tensors.  Naming
   -- its two proper suffixes -- `afterS` is `) S`, `afterLp` is `S ) S`, the
   -- same names the parsers use -- lets the round-trip proof peel one level at
-  -- a time.  `nodeIn`/`nodeOut` are the same terms as before, so everything
-  -- downstream still computes at `refl`-time.
+  -- a time.
   afterS : TheoryTy _ tt
   afterS = literal rp ⊗ S
 
@@ -144,8 +142,8 @@ unrollS = fromF ∘⊢ unroll dyckF tt
     true → inl ∘⊢ nodeOut
     false → inr ∘⊢ lowerTy
 
--- ...so `rollS`/`unrollS` is an isomorphism, and a parser for `S` transports
--- along it rather than merely mapping both ways.
+-- `rollS`/`unrollS` is therefore an isomorphism, and a parser for `S`
+-- transports along it rather than merely mapping both ways.
 rollS∘unrollS : rollS ∘⊢ unrollS ≡ id⊢
 rollS∘unrollS = funExt λ m → funExt λ where
   (roll .m (true , z)) i → roll m (true , funExt⁻ (funExt⁻ nodeIn∘nodeOut m) z i)
@@ -165,7 +163,6 @@ rollS≅ .WildCatIso.ret = unrollS∘rollS
 nilTree : S []
 nilTree = (rollS ∘⊢ inr) [] εTy-pt
 
--- ...and the tree a parse denotes
 semactS : SemanticAction S Dyck
 semactS = semact-rec alg tt
   where

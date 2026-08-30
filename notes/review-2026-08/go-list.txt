@@ -1,0 +1,230 @@
+src/Theory/Instances/Monoid/Residual.agda:123|   go : (x y w : ↓M tt) → (C ⟜ (A ⊗ B)) x → A y
+        owner: ⟜-uncurry {A = A} {B = B} {C = C} m (ms , e , (f , (a , _))) r b =
+src/Theory/Instances/Monoid/Residual.agda:188|   go : (x y w : ↓M tt) → A x → B y → (x ++ y) Eq.≡ w → C (w ++ m)
+        owner: ⊸-uncurry {A = A} {B = B} {C = C} m f l (ms , e , (a , (b , _))) =
+src/Theory/Instances/Monoid/Residual.agda:203|   go : (x y w : ↓M tt) → A x → (B ⊸ C) y → (x ++ y) Eq.≡ w → C (l ++ w)
+        owner: ⊸⟜-swap {A = A} {B = B} {C = C} m (ms , e , (a , (f , _))) l g =
+src/Theory/Instances/Monoid/Residual.agda:247|   go : (x y w : ↓M tt) → A x → [] Eq.≡ y → (x ++ y) Eq.≡ w → A w
+        owner: ⊗ε-unit-r {A = A} m (ms , e , (a , (u , _))) =
+src/Theory/Instances/Monoid/Residual.agda:288|     go : (m : ↓M tt) (x : (A ⊗ K) m) → triL m x ≡ x
+        owner: module _ {A : TheoryTy ℓ tt} {K : TheoryTy ℓ' tt} where
+src/Theory/Instances/Monoid/Residual.agda:300|     go : (m : ↓M tt) (x : (A ⊗ K) m) → triL⁻ m x ≡ x
+        owner: module _ {A : TheoryTy ℓ tt} {K : TheoryTy ℓ' tt} where
+src/Theory/Instances/Monoid/Residual.agda:310|     go : (m : ↓M tt) (x : (A ⊗ K) m) → triR m x ≡ x
+        owner: module _ {A : TheoryTy ℓ tt} {K : TheoryTy ℓ' tt} where
+src/Theory/Instances/Monoid/Residual.agda:320|     go : (m : ↓M tt) (x : (A ⊗ K) m) → triR⁻ m x ≡ x
+        owner: module _ {A : TheoryTy ℓ tt} {K : TheoryTy ℓ' tt} where
+src/Theory/Instances/Monoid/Residual.agda:332|   go : (x y w : ↓M tt) → x Eq.≡ u → y Eq.≡ v
+        owner: ⌈⌉-cat u v m (ms , e , (p , (q , _))) = go (ms zero) (ms (suc zero)) m p q e
+src/Theory/Instances/Monoid/Residual.agda:339|   go : m Eq.≡ (u ++ v) → (⌈ u ⌉ ⊗ ⌈ v ⌉) m
+        owner: ⌈⌉-split u v m p = go p
+src/Theory/Instances/Monoid/Residual.agda:347|   go : (x y w : ↓M tt) → [] Eq.≡ x → y Eq.≡ v
+        owner: ε⌈⌉-unit-l v m (ms , e , (u , (q , _))) =
+src/Theory/Instances/Monoid/Regex/Parse.agda:105|     go : List AC.Char → ℕ → M.Maybe ℕ
+        owner: RE? = Σ[ n ∈ Nullability ] RE n
+src/Theory/Instances/Monoid/Regex/Parse.agda:114|     go : Src → ℕ → Bool → M.Maybe (ℕ × Src)
+        owner: RE? = Σ[ n ∈ Nullability ] RE n
+src/Theory/Instances/Monoid/Regex/Parse.agda:153|     go : List AC.Char → (UChar → Bool) → M.Maybe (UChar → Bool)
+        owner: RE? = Σ[ n ∈ Nullability ] RE n
+src/Theory/Instances/Monoid/Regex/Parse.agda:168|     go : Src → List AC.Char → M.Maybe ((UChar → Bool) × Src)
+        owner: RE? = Σ[ n ∈ Nullability ] RE n
+src/Theory/Instances/Monoid/Regex/Parse.agda:213|     go : ℕ → RE? → Par RE?
+        owner: -- `piece ::= atom postfix*`.
+src/Theory/Instances/Monoid/Regex/Parse.agda:261|   go : Src → M.Maybe RE?
+        owner: parseRE s = go (AS.primStringToList s)
+src/Theory/Instances/Monoid/Unicode/Base.agda:75|   go : {k : ℕ} → ℕ → Bits k → ℕ
+        owner: toNat = go 1
+src/Theory/Instances/Monoid/Greedy/Examples.agda:123|   go : (dep : ℕ) {A : TheoryTy ℓM tt} {w : String}
+        owner: -- ⊗-shaped on purpose: its witness carries a splitting, and it is that
+src/Theory/Instances/Monoid/Automaton/Greedy.agda:81|     go : (q : Q) (b : Bool) → isAcc q Eq.≡ b → εTy ⊢ Run q
+        owner: module _ {Q : Type ℓAlph} (M : DeterministicAutomaton Q) (isSetQ : isSet Q) where
+src/Theory/Instances/Monoid/Automaton/Greedy.agda:110|         go : (b : Bool) → isAcc q Eq.≡ b
+        owner: module _ {Q : Type ℓAlph} (M : DeterministicAutomaton Q) (isSetQ : isSet Q) where
+src/Theory/Instances/Monoid/Unitor.agda:53|     go : (m : String) (x : ((A ⊗ B) ⊗ C) m)
+        owner: module _ {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt} {C : TheoryTy ℓC tt} where
+src/Theory/Instances/Monoid/Unitor.agda:64|     go : (m : String) (x : (A ⊗ (B ⊗ C)) m)
+        owner: module _ {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt} {C : TheoryTy ℓC tt} where
+src/Theory/Instances/Monoid/Unitor.agda:84|     go : (m : String) (t : (εTy ⊗ A) m) → ⊗ε-unit-l⁻ m (⊗-unit-l {A = A} m t) ≡ t
+        owner: module _ {A : TheoryTy ℓA tt} where
+src/Theory/Instances/Monoid/Unitor.agda:122|     go : (m : String) (t : (A ⊗ εTy) m) → ⊗ε-unit-r⁻ m (⊗ε-unit-r {A = A} m t) ≡ t
+        owner: module _ {A : TheoryTy ℓA tt} where
+src/Theory/Instances/Monoid/Automaton/Implicit/Analysis.agda:65|   go : (s : (x Eq.≡ x) Sum.⊎ ((x Eq.≡ x) → Empty.⊥)) → eqbOf s ≡ true
+        owner: eqb-refl x = go (x ≟ x)
+src/Theory/Instances/Monoid/Automaton/Implicit/Analysis.agda:72|   go : (s : (x Eq.≡ y) Sum.⊎ ((x Eq.≡ y) → Empty.⊥)) → eqbOf s ≡ true → x ≡ y
+        owner: eqb-true x y = go (x ≟ y)
+src/Theory/Instances/Monoid/Automaton/Implicit/Analysis.agda:146|     go : (v : Bool) → Q d ≡ v → Mb.Maybe (DisjCls (one d) (cls Q))
+        owner: Disj s t = (c : Alphabet) → memb s c ≡ true → memb t c ≡ true → Empty.⊥
+src/Theory/Instances/Monoid/Automaton/Implicit/Analysis.agda:152|     go : (v : Bool) → P e ≡ v → Mb.Maybe (DisjCls (cls P) (one e))
+        owner: Disj s t = (c : Alphabet) → memb s c ≡ true → memb t c ≡ true → Empty.⊥
+src/Theory/Instances/Monoid/Automaton/Implicit/Analysis.agda:202|   go : (v : Bool) → memb sP c ≡ v → (c ∈ℙ P) Sum.⊎ (c ∈ℙ Q)
+        owner: sideCond {P = P} {Q = Q} sP sQ oP oQ dj c = go (memb sP c) refl
+src/Theory/Instances/Monoid/Combinator/Decidable/Window.agda:43|   go : (c Eq.≡ d) Sum.⊎ ((c Eq.≡ d) → Empty.⊥)
+        owner: decWindow (c ◂ w) (d ◂ w') = go (c ≟ d) (decWindow w w')
+src/Theory/Instances/Monoid/Automaton/Implicit/Soundness.agda:260|       go : (x : (M .null ≡ false) Sum.⊎ (M' .null ≡ false))
+        owner: module Alt {Q Q' : Type ℓAlph}
+src/Theory/Instances/Monoid/Automaton/Implicit/Soundness.agda:268|       go : (x : (M .null ≡ false) Sum.⊎ (M' .null ≡ false))
+        owner: module Alt {Q Q' : Type ℓAlph}
+src/Theory/Instances/Monoid/Combinator/Decidable/Bracket.agda:84|   go : (x Eq.≡ y) Sum.⊎ ((x Eq.≡ y) → Empty.⊥)
+        owner: decMTok (just x) (just y) = go (x ≟T y)
+src/Theory/Instances/Monoid/Combinator/Decidable/Bracket.agda:92|   go : (s Eq.≡ t) Sum.⊎ ((s Eq.≡ t) → Empty.⊥)
+        owner: decCls (after s) (after t) = go (decMTok s t)
+src/Theory/Instances/Monoid/Combinator/Decidable/Bracket.agda:98|   go : (c Eq.≡ d) Sum.⊎ ((c Eq.≡ d) → Empty.⊥)
+        owner: decCls (headed c) (headed d) = go (c ≟T d)
+src/Theory/Instances/Monoid/Combinator/Decidable/Bracket.agda:288|   go : (u v : List Tok) → u Eq.≡ (c ∷ []) → (u ++ v) Eq.≡ m
+        owner: tr-skip c nb m (ms , e , (lc , (t , tt*))) =
+src/Theory/Instances/Monoid/Combinator/Decidable/Bracket.agda:301|   go : (u v : List Tok) → u Eq.≡ (c ∷ []) → (u ++ v) Eq.≡ m
+        owner: cl-skip c nb m (ms , e , (lc , (t , tt*))) =
+src/Theory/Instances/Monoid/Combinator/Decidable/Bracket.agda:310|   go : (u v : List Tok) → u Eq.≡ (lp ∷ []) → (u ++ v) Eq.≡ m
+        owner: tr-open m (ms , e , (lc , (rest , tt*))) =
+src/Theory/Instances/Monoid/Combinator/Decidable/Bracket.agda:315|     go2 : (a b : List Tok) → (a ++ b) Eq.≡ v
+        owner: tr-open m (ms , e , (lc , (rest , tt*))) =
+src/Theory/Instances/Monoid/Combinator/Decidable/Bracket.agda:324|   go : (u v : List Tok) → u Eq.≡ (lp ∷ []) → (u ++ v) Eq.≡ m
+        owner: tr-wrap m (ms , e , (lc , (rest , tt*))) =
+src/Theory/Instances/Monoid/Combinator/Decidable/Bracket.agda:329|     go2 : (a b : List Tok) → (a ++ b) Eq.≡ v → Transparent a
+        owner: tr-wrap m (ms , e , (lc , (rest , tt*))) =
+src/Theory/Instances/Monoid/Combinator/Decidable/Bracket.agda:334|       go3 : (c d : List Tok) → c Eq.≡ (rp ∷ []) → (c ++ d) Eq.≡ b
+        owner: tr-wrap m (ms , e , (lc , (rest , tt*))) =
+src/Theory/Instances/Monoid/Combinator/Decidable/Bracket.agda:345|   go : (u v : List Tok) → u Eq.≡ (lp ∷ []) → (u ++ v) Eq.≡ m
+        owner: bt-open t m (ms , e , (lc , (rest , tt*))) =
+src/Theory/Instances/Monoid/Combinator/Decidable/Bracket.agda:350|     go2 : (a b : List Tok) → (a ++ b) Eq.≡ v → Closing a × ClosingS a
+        owner: bt-open t m (ms , e , (lc , (rest , tt*))) =
+src/Theory/Instances/Monoid/Combinator/Decidable/Bracket.agda:355|       go3 : (c d : List Tok) → c Eq.≡ (t ∷ []) → (c ++ d) Eq.≡ b
+        owner: bt-open t m (ms , e , (lc , (rest , tt*))) =
+src/Theory/Instances/Monoid/Combinator/Decidable/Bracket.agda:365|   go : (u v : List Tok) → u Eq.≡ (lp ∷ []) → (u ++ v) Eq.≡ m
+        owner: bt-wrap t m (ms , e , (lc , (rest , tt*))) =
+src/Theory/Instances/Monoid/Combinator/Decidable/Bracket.agda:370|     go2 : (a b : List Tok) → (a ++ b) Eq.≡ v → Transparent a
+        owner: bt-wrap t m (ms , e , (lc , (rest , tt*))) =
+src/Theory/Instances/Monoid/Combinator/Decidable/Bracket.agda:375|       go3 : (c d : List Tok) → c Eq.≡ (rp ∷ []) → (c ++ d) Eq.≡ b
+        owner: bt-wrap t m (ms , e , (lc , (rest , tt*))) =
+src/Theory/Instances/Monoid/Combinator/Decidable/Bracket.agda:380|         go4 : (g h : List Tok) → g Eq.≡ (t ∷ []) → (g ++ h) Eq.≡ d
+        owner: bt-wrap t m (ms , e , (lc , (rest , tt*))) =
+src/Theory/Instances/Monoid/Combinator/Decidable/Bracket.agda:387|   go : (u v : List Tok) → u Eq.≡ (vid ∷ []) → (u ++ v) Eq.≡ m
+        owner: bt-vid m (ms , e , (lc , (_ , tt*))) = go (ms fz) (ms (fs fz)) lc e
+src/Theory/Instances/Monoid/Automaton/TokenStream.agda:384|         go : TokStream m → ⊥Ty m
+        owner: module Stream {n : ℕ} (Qs : Fin n → Type ℓAlph)
+src/Theory/Instances/Monoid/Combinator/Grammars/PolyGrammar.agda:64|     go : (a Eq.≡ b) Sum.⊎ ((a Eq.≡ b) → Empty.⊥)
+        owner: data Tok : Type ℓ-zero where
+src/Theory/Instances/Monoid/Combinator/Grammars/PolyGrammar.agda:81|   go : (v Eq.≡ w) Sum.⊎ ((v Eq.≡ w) → Empty.⊥)
+        owner: var v ≟ var w = go (v ≟V w)
+src/Theory/Instances/Monoid/Combinator/Grammars/PolyGrammar.agda:87|   go : (n Eq.≡ n') Sum.⊎ ((n Eq.≡ n') → Empty.⊥)
+        owner: nat n ≟ nat n' = go (n ≟ℕ n')
+src/Theory/Instances/Monoid/Combinator/Decidable/Base.agda:63|     go : (d Eq.≡ c) Sum.⊎ ((d Eq.≡ c) → Empty.⊥)
+        owner: dec-lit⊗-at c {K = K} = look⊗ br
+src/Theory/Instances/Monoid/Combinator/Decidable/Productions.agda:210|     go : (b : Bool)
+        owner: module Gen {X : Type ℓAlph} (T : Table X) where
+src/Theory/Instances/Monoid/Combinator/Incomplete/Base.agda:63|     go : (d Eq.≡ c) Sum.⊎ ((d Eq.≡ c) → Empty.⊥)
+        owner: maybe-lit⊗-at c {K = K} = look⊗ br
+src/Theory/Instances/Monoid/Automaton/GreedyMax.agda:261|     go : (q : Q) (b : Bool) → isAcc q Eq.≡ b → εTy ⊢ Run q
+        owner: module _ {Q : Type ℓAlph} (M : DeterministicAutomaton Q) where
+src/Theory/Instances/Monoid/Automaton/GreedyMax.agda:304|         go : (b : Bool) → isAcc q Eq.≡ b
+        owner: module _ {Q : Type ℓAlph} (M : DeterministicAutomaton Q) where
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1232|   go : List Tree → ℕ
+        owner: nodes (node _ ts) = suc (go ts)
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1419|   go : ATy → ATy → ATy → M.Maybe ATy
+        owner: infer Γ (BFoldr f z xs) =
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1431|   go : DecTy Term w → M.Maybe ATm
+        owner: astOf w = go (parseTm w tt)
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1609|   go : (a Eq.≡ a') Sum.⊎ ((a Eq.≡ a') → Empty.⊥)
+        owner: Ar a b ≟ty Ar a' b' = go (a ≟ty a') (b ≟ty b')
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1617|   go : (a Eq.≡ a') Sum.⊎ ((a Eq.≡ a') → Empty.⊥)
+        owner: Pr a b ≟ty Pr a' b' = go (a ≟ty a') (b ≟ty b')
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1625|   go : (a Eq.≡ a') Sum.⊎ ((a Eq.≡ a') → Empty.⊥)
+        owner: Li a ≟ty Li a' = go (a ≟ty a')
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1659|   go : (y Eq.≡ x) Sum.⊎ ((y Eq.≡ x) → Empty.⊥) → M.Maybe ATy
+        owner: lookupC ((y , B) ∷ Γ) x = go (y ≟T x)
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1711|   go : {A B A' B' : ATy} → Pr A B Eq.≡ Pr A' B' → A Eq.≡ A'
+        owner: unique (tFst p) (tFst q) = go (unique p q)
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1715|   go : {A B A' B' : ATy} → Pr A B Eq.≡ Pr A' B' → B Eq.≡ B'
+        owner: unique (tSnd p) (tSnd q) = go (unique p q)
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1719|   go : {A B A' B' : ATy} → Ar A B Eq.≡ Ar A' B' → B Eq.≡ B'
+        owner: unique (tApp p _) (tApp q _) = go (unique p q)
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1723|   go : {A A' B B' : ATy} → A Eq.≡ A' → B Eq.≡ B' → Pr A B Eq.≡ Pr A' B'
+        owner: unique (tPair p p') (tPair q q') = go (unique p q) (unique p' q')
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1727|   go : {A A' : ATy} → A Eq.≡ A' → Li A Eq.≡ Li A'
+        owner: unique (tCons p _) (tCons q _) = go (unique p q)
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1734|   go : {A B B' : ATy} → B Eq.≡ B' → Ar A B Eq.≡ Ar A B'
+        owner: unique (tLam p) (tLam q) = go (unique p q)
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1738|   go : {Γ : Ctx} {x : Tok} {u : ATm} {A A' B B' : ATy} → A Eq.≡ A'
+        owner: unique (tLet p p') (tLet q q') = go (unique p q) p' q'
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1794|   go : (r : M.Maybe ATy) → lookupC Γ x Eq.≡ r → Dec (Ty? Γ (Nm x))
+        owner: typed? Γ (Nm x) = go (lookupC Γ x) Eq.refl
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1799|   go : Dec (Ty? Γ t) → Dec (Ty? Γ (Suc t))
+        owner: typed? Γ (Suc t) = go (typed? Γ t)
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1808|   go : Dec (Ty? Γ t) → Dec (Ty? Γ (Fst t))
+        owner: typed? Γ (Fst t) = go (typed? Γ t)
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1818|   go : Dec (Ty? Γ t) → Dec (Ty? Γ (Snd t))
+        owner: typed? Γ (Snd t) = go (typed? Γ t)
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1828|   go : Dec (Ty? Γ a) → Dec (Ty? Γ b) → Dec (Ty? Γ (Pair a b))
+        owner: typed? Γ (Pair a b) = go (typed? Γ a) (typed? Γ b)
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1834|   go : Dec (Ty? Γ f) → Dec (Ty? Γ a) → Dec (Ty? Γ (App f a))
+        owner: typed? Γ (App f a) = go (typed? Γ f) (typed? Γ a)
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1851|   go : Dec (Ty? Γ h) → Dec (Ty? Γ t) → Dec (Ty? Γ (Cons h t))
+        owner: typed? Γ (Cons h t) = go (typed? Γ h) (typed? Γ t)
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1863|   go : Dec (Ty? Γ c) → Dec (Ty? Γ a) → Dec (Ty? Γ b) → Dec (Ty? Γ (Ite c a b))
+        owner: typed? Γ (Ite c a b) = go (typed? Γ c) (typed? Γ a) (typed? Γ b)
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1877|   go : Dec (Ty? Γ z) → Dec (Ty? Γ s) → Dec (Ty? Γ n) → Dec (Ty? Γ (Rec z s n))
+        owner: typed? Γ (Rec z s n) = go (typed? Γ z) (typed? Γ s) (typed? Γ n)
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1893|   go : Dec (Ty? ((x , A) ∷ Γ) t) → Dec (Ty? Γ (Lam x A t))
+        owner: typed? Γ (Lam x A t) = go (typed? ((x , A) ∷ Γ) t)
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1898|   go : Dec (Ty? Γ f) → Dec (Ty? Γ z) → Dec (Ty? Γ xs)
+        owner: typed? Γ (Foldr f z xs) = go (typed? Γ f) (typed? Γ z) (typed? Γ xs)
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1922|   go : Dec (Ty? Γ t) → Dec (Ty? Γ (Let x t u))
+        owner: typed? Γ (Let x t u) = go (typed? Γ t)
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1930|     go2 : Dec (Ty? ((x , A) ∷ Γ) u) → Dec (Ty? Γ (Let x t u))
+        owner: typed? Γ (Let x t u) = go (typed? Γ t)
+src/Theory/Instances/Monoid/Strings.agda:193|   go : (x y n : String) → x Eq.≡ (c ∷ []) → y Eq.≡ w → (x ++ y) Eq.≡ n
+        owner: lits→⌈⌉ (c ∷ w) m (ms , e , (lc , (r , _))) =
+src/Theory/Instances/Monoid/Strings.agda:200|   go : m Eq.≡ [] → εTy m
+        owner: ⌈⌉→lits [] m p = go p
+src/Theory/Instances/Monoid/Strings.agda:204|   go : m Eq.≡ (c ∷ w) → (＂ c ＂ ⊗ lits w) m
+        owner: ⌈⌉→lits (c ∷ w) m p = go p
+src/Theory/Instances/Monoid/Strings.agda:322|     go : (m : String) (x : (A ⊗ B ⊗ C ⊗ K) m) → pentL m x ≡ pentR m x
+        owner: module _ {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt} {C : TheoryTy ℓC tt}
+src/Theory/Instances/Monoid/Strings.agda:333|     go : (m : String) (x : ((A ⊗ B ⊗ C) ⊗ K) m) → pent⁻L m x ≡ pent⁻R m x
+        owner: module _ {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt} {C : TheoryTy ℓC tt}
+src/Theory/Instances/Monoid/Regex/Sat.agda:76|     go : (b : Bool) → P d ≡ b
+        owner: dec-sat⊗-at P {K = K} = look⊗ br
+src/Theory/Instances/Monoid/Lookahead/Window.agda:77|     go : (u u' : ↓M tt) → u Eq.≡ (c ∷ []) → (u ++ u') Eq.≡ m → Λw w u'
+        owner: -- a model element, so it stays private: it is how disjointness is
+src/Theory/Instances/Monoid/Lookahead/Window.agda:92|   go : (Σ[ w ∈ Window n ] Λw w m) → Σ[ w ∈ Window (more n) ] Λw w (c ∷ m)
+        owner: Λw-total {n = more n} (c ∷ m) _ = go (Λw-total {n = n} m tt)
+src/Theory/Instances/Monoid/KleeneStar/Guarded.agda:68|   go : (u v : String) → A u → (u ++ v) ≡ [] → ⊥Ty m
+        owner: ⊗-¬Nullable {A = A} nu m (t , eps) =
+src/Theory/Instances/Monoid/KleeneStar/Guarded.agda:79|   go : (u v : String) → B v → (u ++ v) ≡ [] → ⊥Ty m
+        owner: ⊗-¬NullableR {B = B} nu m (t , eps) =
+src/Theory/Instances/Monoid/KleeneStar/Guarded.agda:100|   go : (u v : String) → A u → v ◂ (u ++ v)
+        owner: ¬Nullable→NonNull {A = A} nu m ms e =
+src/Theory/Instances/Monoid/Automaton/Lexicon.agda:101|   go : (b : Bool) → p fz Eq.≡ b → p fz Eq.≡ true
+        owner: allFin-elim p h fz = go (p fz) Eq.refl
+src/Theory/Instances/Monoid/Automaton/Lexicon.agda:110|     go : (b : Bool) → p fz Eq.≡ b → allFin (λ j → p (fs j)) Eq.≡ true
+        owner: allFin-elim p h (fs i) = allFin-elim (λ j → p (fs j)) rest i
+src/Theory/Instances/Monoid/Automaton/Lexicon.agda:128|   go : (b : Bool) → p fz ≡ b → Found p
+        owner: find {n = suc n} p = go (p fz) refl
+src/Theory/Instances/Monoid/Automaton/Lexicon.agda:234|     go : Found (accAt f) → Wins f
+        owner: module Product {n : ℕ} (Qs : Fin n → Type ℓAlph)
+src/Theory/Instances/Monoid/Automaton/Lexicon.agda:275|       go : Found (accAt q') → GreedyMax Prod (init Prod) q' ⊢ Tok
+        owner: module Product {n : ℕ} (Qs : Fin n → Type ℓAlph)
+src/Theory/Instances/Monoid/Combinator/Core.agda:96|     go : (b Eq.≡ b') Sum.⊎ ((b Eq.≡ b') → Empty.⊥) → ⊥Ty m
+        owner: module PushOf (ℓB : Level) {I : Type ℓAlph} (Λ : I → TheoryTy ℓM tt)
+src/Theory/Instances/Monoid/Combinator/Core.agda:116|   go : (c Eq.≡ d) Sum.⊎ ((c Eq.≡ d) → Empty.⊥)
+        owner: decM₁ (tk c) (tk d) = go (c ≟ d)
+src/Theory/Instances/Monoid/Combinator/Decidable/Lookahead.agda:91|             go : (y' Eq.≡ y) Sum.⊎ ((y' Eq.≡ y) → Empty.⊥)
+        owner: private variable ℓD ℓY ℓΛ : Level
+src/Theory/Instances/Monoid/Combinator/NonDet/Base.agda:110|     go : (d Eq.≡ c) Sum.⊎ ((d Eq.≡ c) → Empty.⊥)
+        owner: nd-lit⊗-at c {K = K} = look⊗ br
+src/Theory/Instances/Bags/Partition.agda:41|   go : (b : Bool) → le y x Eq.≡ b
+        owner: sideOf x y = go (le y x) Eq.refl
+src/Theory/Type/Later/Tabulated.agda:175|           helper : (v : ChainView (below) p)
+        owner: module _ {X : Type ℓX} (xs : X → S) where
+src/Theory/Type/Decidable/Base.agda:121|   go : (m : ↓M _) (z : DecAt A m)
+        owner: dec-retract-id {A = A} d = funExt λ m → funExt λ u → go m (d m u)
+src/Theory/Type/Decidable/Base.agda:132|   go : (m : ↓M _) (z : DecAt A m)
+        owner: dec-retract-∘ {A = A} f g f' g' d = funExt λ m → funExt λ u → go m (d m u)
+src/Theory/Type/Decidable/Base.agda:219|     go : (y' Eq.≡ y) Sum.⊎ ((y' Eq.≡ y) → ⊥) → A y' ⊢ DecTy (A y)
+        owner: dec-cover {A = A} decY c y = cover-elim c step
+src/Grammar/Derivative/Base.agda:65|       foo : √l c A (c ∷ w)
+        owner: √l c A = (literal c ⊗ ⊤) ⇒ (literal c ⊗ A)
+src/Grammar/Derivative/Base.agda:68|       bar : (literal c ⊗ A) (c ∷ w)
+        owner: √l c A = (literal c ⊗ ⊤) ⇒ (literal c ⊗ A)
+src/Theory/Type/Guarded/Justification.agda:259|         go : (n : ℕ) (p : Pt xs) → fuel p NO.≤ n → A (p .fst) (p .snd)
+        owner: module _ {X : Type ℓX} {xs : X → S} where

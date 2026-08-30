@@ -15,15 +15,17 @@ module Theory.Instances.Bags.Quicksort.Base
 
 open import Cubical.Data.FinData using (Fin) renaming (zero to fzero ; suc to fsuc)
 open import Cubical.Data.Unit using (tt ; tt*)
+open import Cubical.HITs.PropositionalTruncation as PT using (∥_∥₁)
 
 open import Theory.Instances.Monoid.Base
 open import Theory.Instances.Bags.Base El
 open import Theory.Instances.Bags.Order El le
 open import Theory.Instances.Bags.Rank El
 open import Theory.Instances.Bags.Sequence El
+open import Theory.Instances.Bags.Generation El isSetEl using (arrange)
 open import Theory.Instances.Bags.Sorted.Base El le
 open import Theory.Instances.Bags.Sorted.HLevels El isSetEl le
-open import Theory.Instances.Bags.Partition El le leTotal
+open import Theory.Instances.Bags.Partition El isSetEl le leTotal
 open import Theory.Instances.Bags.Join El isSetEl le leTrans
 open import Theory.Type.Top.Base BagEqns El (λ _ → tt) closingPresentation
 
@@ -57,3 +59,9 @@ private
 
 quicksort : Seq ⊢ Sorted
 quicksort = ⇒-app ∘⊢ ((löb step tt ∘⊢ ⊤Ty-intro) ,& id⊢)
+
+-- Every bag can be sorted.  `quicksort` sorts an *arrangement*; `arrange`
+-- supplies one -- merely, since a bag has many and no canonical one -- and
+-- the composite is the statement about bags that the sorter alone is not.
+sortBag : (m : Bag) → ∥ Sorted m ∥₁
+sortBag m = PT.map (quicksort m) (arrange m)

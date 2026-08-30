@@ -36,7 +36,6 @@ open import Theory.Instances.Monoid.Residual Alphabet isSetAlphabet
   using (_⊸_ ; ⊸-lam ; ⊸-lam⁻ ; ⊸-app)
 open import Theory.Type.Monad.NonDet
   MonEqns Alphabet (λ _ → tt) listPresentation public
--- `Types` hides this `Δ` in favour of the one from `Strings`
 import Theory.Type.SemanticAction.Base
   MonEqns Alphabet (λ _ → tt) listPresentation as SA
 
@@ -79,7 +78,7 @@ ND⊗r {A = A} {B = B} = ⊸-lam⁻ (rec (λ _ → ListCode B) (λ _ → alg) tt
     true → ⊸-lam (cons (id⊢ ,⊗ (lowerTy ∘⊢ π₁))
                        (⊸-app ∘⊢ (id⊢ ,⊗ (lowerTy ∘⊢ π₂))))
 
--- ...and the choice.  `Incomplete`'s counterpart is `orElse`.
+-- `Incomplete`'s counterpart is `orElse`.
 nd-⊕& : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt} → ND A & ND B ⊢ ND (A ⊕ B)
 nd-⊕& = appendND ∘⊢ (fmapND inl ,&p fmapND inr)
 
@@ -105,12 +104,12 @@ nd-lit⊗-at c {K = K} = look⊗ br
   where
   br : (o : M₁) → ty (▷ (NDSet K)) & Λ₁ o ⊢ ND (literal c ⊗ ty K)
   br ε₁ = nilND ∘⊢ ⊤Ty-intro
-  br (tk d) = go (d ≟ c)
+  br (tk d) = onTokMatch (d ≟ c)
     where
-    go : (d Eq.≡ c) Sum.⊎ ((d Eq.≡ c) → Empty.⊥)
+    onTokMatch : (d Eq.≡ c) Sum.⊎ ((d Eq.≡ c) → Empty.⊥)
        → ty (▷ (NDSet K)) & Λ₁ (tk d) ⊢ ND (literal c ⊗ ty K)
-    go (Sum.inl Eq.refl) = ND⊗r ∘⊢ (id⊢ ,⊗ π₁) ∘⊢ ▷⊗r c
-    go (Sum.inr _) = nilND ∘⊢ ⊤Ty-intro
+    onTokMatch (Sum.inl Eq.refl) = ND⊗r ∘⊢ (id⊢ ,⊗ π₁) ∘⊢ ▷⊗r c
+    onTokMatch (Sum.inr _) = nilND ∘⊢ ⊤Ty-intro
 
 nd-char⊗-at : {K : TheorySet ℓK tt}
   → ty (▷ (NDSet K)) ⊢ ND (char ⊗ ty K)
@@ -127,8 +126,8 @@ nd-ε = ⊕ᴰ-elim br ∘⊢ Λ-total
   br ε₁ = ηND ∘⊢ lowerTy
   br (tk c) = nilND ∘⊢ ⊤Ty-intro
 
--- ...which is all `Core` asks for.  `ND` is covariant, so it also gets the
--- one-directional `mapP` and a `fail` at any grammar.
+-- `ND` is covariant, so it also gets the one-directional `mapP` and a
+-- `fail` at any grammar.
 
 NDAnswer : AnswerFunctor
 NDAnswer .AnswerFunctor.ℓAns = ℓF
@@ -143,15 +142,14 @@ NDCov : CovariantAnswer NDAnswer
 NDCov .CovariantAnswer.Ans-map = fmapND
 NDCov .CovariantAnswer.Ans-empty = nilND
 
--- ...and the same two lines at `ND`, from `NDMonad`'s laws.
 NDLawful : LawfulAnswer NDAnswer
 NDLawful .LawfulAnswer.Ans-≅-id = Monad.fmap-id NDMonad
 NDLawful .LawfulAnswer.Ans-≅-⋆ φ ψ =
   sym (Monad.fmap-∘ NDMonad (ψ .fun) (φ .fun))
 
--- ...and the same two, derived the same way.  Routing at `ND` enumerates
--- only the branch the route names; the others are dropped, not refuted, so
--- the enumeration is complete exactly when the route is correct.
+-- Routing at `ND` enumerates only the branch the route names; the others
+-- are dropped, not refuted, so the enumeration is complete exactly when the
+-- route is correct.
 NDDiv : DivariantAnswer NDAnswer
 NDDiv = FromCov.div NDAnswer NDCov
 
@@ -170,7 +168,6 @@ Parses A = ⊤Ty ⊢ ND A
 module Fix {ℓA} (ℓK : Level) (A : TheorySet ℓA tt) where
   open Combinators.Fix NDAnswer ℓK A public
 
-  -- ...which are then used to enumerate
   parses : ty (▷ (ParserSet ℓ𝒦 ⟨□⟩ ⟨□⟩ A)) ⊢ Parser ℓ𝒦 ⟨□⟩ ⟨□⟩ A
     → Parses (ty A)
   parses = runFix

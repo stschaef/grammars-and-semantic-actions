@@ -1,0 +1,1252 @@
+src/Theory/Base.agda:82| -- representables
+            83| ⌈_⌉ : ∀ {s} → ↓M s → TheoryTy ℓM s
+src/Theory/Free/Base.agda:36| -- equations but with Eq
+            37|     satStrict : (e : σeq .eqns)
+src/Theory/Free/Closing.agda:18| -- The quotiented terms is the canonical presentation of the free model
+            19| closingPresentation : FreePresentation (Cl.ℓClosing ℓS ℓ ℓ'' ℓv)
+src/Theory/Free/Term.agda:1| -- Free model on a signature (i.e. a theory without equations)
+            2| {-# OPTIONS -WnoUnsupportedIndexedMatch #-}
+src/Theory/Free/Term.agda:112| -- a generator's child tuple is empty, so it *is* `genT v`
+            113|   noKids : (λ ()) ≡ sub
+src/Theory/Instances/Bags/Generation.agda:35| -- combining two views: whichever side offers a generator gives one
+            36|   joinView : (a b : Bag) → View a → View b → View (a ⊙ᵖ b)
+src/Theory/Instances/Bags/Generation.agda:73| -- the fold puts every bag back where it started
+            74|   fold-fst : (m : Bag) → fold m .fst ≡ m
+src/Theory/Instances/Bags/Join.agda:33| -- the pivot together with the sorted half above it
+            34| Pivot : El → TheoryTy _ tt
+src/Theory/Instances/Bags/Join.agda:39| -- given the right half, the left half's sortedness extends to the whole
+            40|     JN : Fam _
+src/Theory/Instances/Bags/Join.agda:81| -- put the guard on the tail, then split the bound along the tensor
+            82|       pre : (⌈ ⌈gen y ⌉ ⌉ ⊎B (Sorted & Above y)) & (Below x & ▷ tt)
+src/Theory/Instances/Bags/Join.agda:113| -- the join itself: two sorted halves around a pivot make a sorted whole
+            114|   join : (Sorted & Below x) ⊎B Pivot x ⊢ Sorted
+src/Theory/Instances/Bags/Order.agda:138| -- opaque: its result is a bound, never something an answer is read from
+            139| opaque
+src/Theory/Instances/Bags/Order.agda:160| -- a fold that is ⊤ at every generator is ⊤ everywhere
+            161| bagAll-⊤ : (m : Bag) → bagAll (λ _ → ⊤P) m
+src/Theory/Instances/Bags/Partition.agda:28| -- an arrangement split in two, each half bounded by the pivot
+            29| Halves : El → TheoryTy _ tt
+src/Theory/Instances/Bags/Partition.agda:32| -- which side of the pivot a generator falls on
+            33| side : El → Bool → El → hProp ℓ-zero
+src/Theory/Instances/Bags/Quicksort/Tests.agda:72| -- read the sorted arrangement back off as a list
+            73| sort : {m : Bag} → Seq m → List ℕ
+src/Theory/Instances/Bags/Rank.agda:57| -- the recursive order: both bounds are structural, with no transport
+            58|   ltLeft : (a b : ℕ) → a <ℕ suc (a + b)
+src/Theory/Instances/Bags/Rank.agda:118| -- peeling a generator: the cofactor is one shorter
+            119|   ▷-cons : ∀ {ℓB} (y : El) {B : TheoryTy ℓB tt}
+src/Theory/Instances/Bags/Rank.agda:123| -- ... and splitting what the generator left: both halves are below it
+            124|   ▷-split : ∀ {ℓB} (y : El) {B C : TheoryTy ℓB tt}
+src/Theory/Instances/Bags/Sequence.agda:42| -- the two slots of `atSeq x`, as the uniform tuple the code produces
+            43|   slots : ∀ {ℓC} (x : El) (C : TheoryTy ℓC tt) → Fin 2 → TheoryTy _ tt
+src/Theory/Instances/Bags/Sequence.agda:65| -- fold and case-split
+            66| recSeq : {C : TheoryTy ℓA tt}
+src/Theory/Instances/Bags/Sequence.agda:76| -- the ordinary list constructors, for building concrete arrangements
+            77| []ᵍ : Seq εᵖ
+src/Theory/Instances/Bags/Sequence.agda:85| -- the underlying list of an arrangement: forget every index
+            86| seqElements : Seq ⊢ K (List El)
+src/Theory/Instances/Bags/Sorted/Base.agda:44| -- the layer, in ⊎B coordinates: the only place the code's shape is unpacked
+            45| module _ {ℓC ℓD} {C : TheoryTy ℓC tt} {D : TheoryTy ℓD tt}
+src/Theory/Instances/Bags/Sorted/Base.agda:73| -- the underlying list of a sorted arrangement: forget every index
+            74| elements : Sorted ⊢ K (List El)
+src/Theory/Instances/Bags/Sorted/HLevels.agda:24| -- a representable is prop-valued: it is an equality in a set
+            25|   isSet⌈⌉ : (a : Bag) → isSetTheoryTy ⌈ a ⌉
+src/Theory/Instances/Lambda/Base.agda:72| -- as for app and lam: `Fin 1` has no η, so the motive sees the tuple
+            73|   var-elim : ((ms : (b : Fin 1) → ↓M (LSortOf varOp b))
+src/Theory/Instances/Lambda/Signature.agda:2| -- Signature of Lambda ASTs
+            3| open import Cubical.Foundations.Prelude
+src/Theory/Instances/Monoid/Automata/NFA/Base.agda:133| -- the labelled summand, named so its two directions can be stated
+            134|     stepBranch : (t : ⟨ transition ⟩) → Functor (ℓ⋆ ℓN) States (λ _ → tt) tt
+src/Theory/Instances/Monoid/Automaton/Demo.agda:78| -- rule index and matched text, as text
+            79| lex : AS.String → Mb.Maybe (ℕ × AS.String)
+src/Theory/Instances/Monoid/Automaton/Demo.agda:97| -- ...and it stops exactly where the rule stops, not at the end of input
+            98| _ : lex "42abc"    ≡ Mb.just (2 , "42")
+src/Theory/Instances/Monoid/Automaton/Demo.agda:146| -- a 3200-character identifier, matched in one pass
+            147| _ : len (Lex.lexOneS (xs 3200 ++ (ch '?' ∷ []))) ≡ 3200
+src/Theory/Instances/Monoid/Automaton/Deterministic.agda:65| -- the level a trace lands at: `μ` adds the index's level to the code's
+            66|   ℓT : Level
+src/Theory/Instances/Monoid/Automaton/Deterministic.agda:73| -- the labelled summand, named so its two directions can be stated
+            74|   stepBranch : (q : Q) (c : Alphabet) → Functor ℓM QL (λ _ → tt) tt
+src/Theory/Instances/Monoid/Automaton/Deterministic.agda:85| -- an algebra over the trace code, indexed as `rec` wants it
+            86|   TraceAlg : Bool → (QL → TheoryTy ℓB tt) → Type _
+src/Theory/Instances/Monoid/Automaton/Deterministic.agda:167| -- `STEP` transposed along `literal c ⊗ - ⊣ literal c ⊸ -`
+            168|   Trace→∂ : (b : Bool) (q : Q) (c : Alphabet)
+src/Theory/Instances/Monoid/Automaton/Deterministic.agda:196| -- `parse`: the whole table, in one pass.
+            198|   private
+src/Theory/Instances/Monoid/Automaton/Deterministic.agda:199| -- `Tag b q` is `(b ≡ isAcc q) ⊎ Alphabet`, by its two constructors
+            200|     isSetTag : (b : Bool) (q : Q) → isSet (Tag b q)
+src/Theory/Instances/Monoid/Automaton/Disjoint.agda:79| -- both stop: the two acceptance equations meet at `isAcc q`
+            80|       stopStop : (q : Q) → b Eq.≡ isAcc q
+src/Theory/Instances/Monoid/Automaton/Disjoint.agda:105| -- ...so the run of a word from a state is unique, bit and all.
+            106|   Runs : Q → TheoryTy _ tt
+src/Theory/Instances/Monoid/Automaton/GreedyExamples.agda:42| -- The greedy scan over that automaton.
+            44| munch : String → String
+src/Theory/Instances/Monoid/Automaton/GreedyExamples.agda:49| -- `a b*` on "abbab": the longest accepted prefix is "abb"
+            50| _ : munch (a ∷ b ∷ b ∷ a ∷ b ∷ []) ≡ a ∷ b ∷ b ∷ []
+src/Theory/Instances/Monoid/Automaton/GreedyExamples.agda:61| -- nothing accepts here, so the scan reports no match rather than ε
+            62| _ : munch (b ∷ b ∷ []) ≡ []
+src/Theory/Instances/Monoid/Automaton/GreedyMax.agda:117| -- forget the end state, remembering only that it accepts
+            118|   TraceTo→Trace : (b : Bool) (q q' : Q) → b Eq.≡ isAcc q'
+src/Theory/Instances/Monoid/Automaton/GreedyMax.agda:132| -- ...and recover it.  `Trace b q` is `⊕[ q' ] (b ≡ isAcc q') × TraceTo q q'`
+            133|   Trace→TraceTo : (b : Bool) (q : Q)
+src/Theory/Instances/Monoid/Automaton/GreedyMax.agda:162| -- The end state is a function of the word: `δ*`.
+            164|   δ* : Q → String → Q
+src/Theory/Instances/Monoid/Automaton/GreedyMax.agda:177| -- ...so the `⊕[ q' ]` of `BridgeTy` is a *singleton* sum
+            178|   endState : (q q' : Q) (w : String) → TraceTo q q' w → δ* q w Eq.≡ q'
+src/Theory/Instances/Monoid/Automaton/GreedyMax.agda:228| -- a match: a run ending at an *accepting* state
+            229|   Match : Q → Q → TheoryTy _ tt
+src/Theory/Instances/Monoid/Automaton/GreedyMax.agda:244| -- a state rejecting ε has no empty run
+            245|     accN : (q : Q) → isAcc q Eq.≡ false → ¬Nullable (L q)
+src/Theory/Instances/Monoid/Automaton/GreedyMax.agda:251| -- an accepting state's empty run, as a `Match` at itself
+            252|     accHere : (q : Q) → isAcc q Eq.≡ true → εTy ⊢ Match q q
+src/Theory/Instances/Monoid/Automaton/GreedyMax.agda:285| -- extending the match is one `STEP`: O(1), and no derivative
+            286|       extMatch : (q' : Q) → literal c ⊗ Match (δ q c) q' ⊢ Match q q'
+src/Theory/Instances/Monoid/Automaton/GreedyMax.agda:396| -- the recursive call stands in the clause body, as in `Unambiguous`
+            397|       main (unambiguous-TraceTo (δ q d) q' (ns (suc zero))
+src/Theory/Instances/Monoid/Automaton/GreedyMaxExamples.agda:26| -- the matched prefix: the left factor of the greedy witness' splitting
+            27| munch : String → String
+src/Theory/Instances/Monoid/Automaton/GreedyMaxExamples.agda:32| -- ...and the state it ended in, which the type now pins down
+            33| munchEnd : String → Sum._⊎_ _ _
+src/Theory/Instances/Monoid/Automaton/GreedyMaxExamples.agda:38| -- `a b*` on "abbab": the longest accepted prefix is "abb"
+            39| _ : munch (a ∷ b ∷ b ∷ a ∷ b ∷ []) ≡ a ∷ b ∷ b ∷ []
+src/Theory/Instances/Monoid/Automaton/GreedyMaxExamples.agda:50| -- nothing accepts here, so the scan reports no match rather than ε
+            51| _ : munch (b ∷ b ∷ []) ≡ []
+src/Theory/Instances/Monoid/Automaton/Implicit.agda:40| -- Freely adjoined states.
+            42| data FreelyAddInitial (Q : Type ℓ) : Type ℓ where
+src/Theory/Instances/Monoid/Automaton/Implicit.agda:89| -- ...and the state sets are sets, which is all `parse` needs of them.
+            90| module _ (Q : Type ℓ) where
+src/Theory/Instances/Monoid/Automaton/Implicit.agda:116| -- The record, and its determinisation-free reading as a DFA.
+            118| record ImplicitDeterministicAutomaton (Q : Type ℓAlph) : Type ℓAlph where
+src/Theory/Instances/Monoid/Automaton/Implicit.agda:139| -- no subset construction: the states are already deterministic
+            140|   IDA→DA : DeterministicAutomaton (FreelyAddFail+Initial Q)
+src/Theory/Instances/Monoid/Automaton/Implicit/Analysis.agda:112| -- union is `_++_`, and this is its contravariant half
+            113| memb-++-l : (s t : Supp) (c : Alphabet)
+src/Theory/Instances/Monoid/Automaton/Implicit/Analysis.agda:178| -- A `DetReg` together with the support of its two indices.
+            180| record DetOfB (nn : Bool) : Type (ℓ-suc ℓAlph) where
+src/Theory/Instances/Monoid/Automaton/Implicit/AnalysisExamples.agda:77| -- one position per literal, and nothing merged
+            78| _ : States (M1.D .snd .dr) ≡ (Unit* Sum.⊎ Unit*)
+src/Theory/Instances/Monoid/Automaton/Implicit/AnalysisExamples.agda:138| -- `\d+`, i.e. `satr isDigit ⊗r satr isDigit *r`
+            139| module M4 = POSIX "\\d+"
+src/Theory/Instances/Monoid/Automaton/Implicit/AnalysisExamples.agda:191| -- `a|a` -- the same clash, at its smallest
+            192| _ : Rejects "a|a"
+src/Theory/Instances/Monoid/Automaton/Implicit/AnalysisExamples.agda:201| -- both branches nullable, which `⊕DR`'s `notBothNull` forbids
+            202| _ : Rejects "a?|b?"
+src/Theory/Instances/Monoid/Automaton/Implicit/Compile.agda:78| -- a decidable character class, as the set it denotes
+            79| ⟦_⟧sat : (Alphabet → Bool) → ℙ
+src/Theory/Instances/Monoid/Automaton/Implicit/Compile.agda:193| -- `b` is the *negation* of nullability, so `null` is `not b`.
+            194|   nullOf : {¬FL ¬F : ℙ}
+src/Theory/Instances/Monoid/Automaton/Implicit/Compile.agda:197| -- a letter outside the first set never leaves the initial state
+            198|   δᵢ-fail : {¬FL ¬F : ℙ}
+src/Theory/Instances/Monoid/Automaton/Implicit/Compile.agda:202| -- ...and outside the follow-last set never leaves an accepting one
+            203|   δq-fail : {¬FL ¬F : ℙ}
+src/Theory/Instances/Monoid/Automaton/Implicit/Compile.agda:343| -- ...and its dead state, which is the freely added `fail`
+            344|   compileDead : {¬FL ¬F : ℙ} (dr : DetReg ¬FL ¬F b) → Deadness (compileDA dr)
+src/Theory/Instances/Monoid/Automaton/Implicit/Disjointness.agda:48| -- `A & -` commutes with a dependent sum, pointwise
+            49| &⊕ᴰ-distR : {A : TheoryTy ℓA tt} {Y : Type ℓY} {B : Y → TheoryTy ℓB tt}
+src/Theory/Instances/Monoid/Automaton/Implicit/Disjointness.agda:62| -- `sameHead` with the tails dropped
+            63| same-first : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt} (c d : Alphabet)
+src/Theory/Instances/Monoid/Automaton/Implicit/Disjointness.agda:93| -- re-exported so that clients keep writing `fromCode M b q`
+            94|   CodeLayer : (A : QL → TheoryTy ℓA tt) (b : Bool) (q : Q+) → TheoryTy _ tt
+src/Theory/Instances/Monoid/Automaton/Implicit/Disjointness.agda:164| -- Trace disjointness at this machine's underlying automaton.
+            165|   TraceDisj : (b b' : Bool) (q : Q+)
+src/Theory/Instances/Monoid/Automaton/Implicit/RegExp.agda:57| -- one position, reached exactly by its own letter
+            58|   litAut : (c : Alphabet) → ImplicitDeterministicAutomaton (Unit* {ℓAlph})
+src/Theory/Instances/Monoid/Automaton/Implicit/RegExp.agda:76| -- Alternation: disjoint firsts, and not both nullable.
+            78|   module _ {Q Q' : Type ℓAlph}
+src/Theory/Instances/Monoid/Automaton/Implicit/RegExp.agda:124| -- Star: the same condition against itself, so a loop is unambiguous.
+            126|   module _ {Q : Type ℓAlph}
+src/Theory/Instances/Monoid/Automaton/Implicit/RegExpExamples.agda:48| -- `a b*`, as an implicit automaton.
+            50| private
+src/Theory/Instances/Monoid/Automaton/Implicit/RegExpExamples.agda:93| -- accepted: `a`, and `a` followed by any number of `b`s
+            94| _ : Trace true init (a ∷ [])
+src/Theory/Instances/Monoid/Automaton/Implicit/Soundness.agda:81| -- The compiler's discrete alphabet, once.
+            83| disc : Discrete Alphabet
+src/Theory/Instances/Monoid/Automaton/Implicit/Soundness.agda:90| -- The base cases.
+            92| module Leaves where
+src/Theory/Instances/Monoid/Automaton/Implicit/Soundness.agda:245| -- Into the alternation.
+            247|     ⟦_⟧M : FreelyAddInitial Q → TheoryTy _ tt
+src/Theory/Instances/Monoid/Automaton/Implicit/Soundness.agda:373| -- ...and back out of it.
+            375|     ⟦_⟧⊕ : FreelyAddInitial (Q Sum.⊎ Q') → TheoryTy _ tt
+src/Theory/Instances/Monoid/Automaton/Implicit/Soundness.agda:502| -- The right factor, as what to do once the left one has accepted.
+            504|     ⟦_⟧M' : FreelyAddInitial Q' → TheoryTy _ tt
+src/Theory/Instances/Monoid/Automaton/Implicit/Soundness.agda:589| -- The left factor, in continuation-passing form.
+            591|     ⟦_⟧M : FreelyAddInitial Q → TheoryTy _ tt
+src/Theory/Instances/Monoid/Automaton/Implicit/Soundness.agda:658| -- ...and back: a trace of the concatenation splits at the join.
+            660|     ⟦_⟧⊗ : FreelyAddInitial (Q Sum.⊎ Q') → TheoryTy _ tt
+src/Theory/Instances/Monoid/Automaton/Implicit/Soundness.agda:807| -- Splicing a further run in at an accepting state.
+            809|     module Paste (q : Q) (accEq : true Eq.≡ M .acc q) where
+src/Theory/Instances/Monoid/Automaton/Implicit/Soundness.agda:889| -- One iteration of the body, as a continuation.
+            891|     ⟦_⟧M : FreelyAddInitial Q → TheoryTy _ tt
+src/Theory/Instances/Monoid/Automaton/Implicit/Soundness.agda:956| -- ...and back: a run of the star is a list of runs of the body.
+            958|     ⟦_⟧* : FreelyAddInitial Q → TheoryTy _ tt
+src/Theory/Instances/Monoid/Automaton/Implicit/Soundness.agda:1063| -- functoriality of the star, as a fold
+            1064| map* : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt} → A ⊢ B → A * ⊢ B *
+src/Theory/Instances/Monoid/Automaton/Implicit/Soundness.agda:1097| -- The two maps, by induction on the deterministic regular expression.
+            1099| fromAut : {¬FL ¬F : ℙ} (dr : DetReg ¬FL ¬F b)
+src/Theory/Instances/Monoid/Automaton/Implicit/Soundness.agda:1205| -- The theorem.
+            1207| compile-sound : {¬FL ¬F : ℙ} (dr : DetReg ¬FL ¬F b)
+src/Theory/Instances/Monoid/Automaton/Implicit/SoundnessExamples.agda:30| -- `true`
+            31| lit : DetReg ⊤ℙ (¬ℙ ⟦ true ⟧ℙ) true
+src/Theory/Instances/Monoid/Automaton/Implicit/SoundnessExamples.agda:37| -- `true*`
+            38| star : DetReg (¬ℙ ⟦ true ⟧ℙ ∩ℙ ⊤ℙ) (¬ℙ ⟦ true ⟧ℙ) false
+src/Theory/Instances/Monoid/Automaton/Implicit/SoundnessExamples.agda:44| -- `true false*`
+            45| seq : DetReg _ (¬ℙ ⟦ true ⟧ℙ) true
+src/Theory/Instances/Monoid/Automaton/Implicit/SoundnessExamples.agda:53| -- `true | false`
+            54| alt : DetReg _ _ true
+src/Theory/Instances/Monoid/Automaton/Lexicon.agda:85| -- "every rule is dead": the product's deadness test, and its elimination
+            86| allFin : {n : ℕ} → (Fin n → Bool) → Bool
+src/Theory/Instances/Monoid/Automaton/Lexicon.agda:174| -- The product automaton.
+            176| open DeterministicAutomaton
+src/Theory/Instances/Monoid/Automaton/Lexicon.agda:191| -- the acceptance profile of a product state: which rules accept here
+            192|   accAt : ProdQ → Fin n → Bool
+src/Theory/Instances/Monoid/Automaton/Lexicon.agda:238| -- Maximal munch over the product = longest match across the lexicon.
+            240|   scanProd = scan Prod isSetProdQ ProdDead
+src/Theory/Instances/Monoid/Automaton/Lexicon.agda:242| -- the greedy run of the whole input, from the initial product state
+            243|   runInit : ⊤Ty ⊢ Run Prod (init Prod)
+src/Theory/Instances/Monoid/Automaton/Lexicon.agda:301| -- rule index, lexeme, remainder
+            302|   tokAction : SemanticAction Tok (Fin n × String × String)
+src/Theory/Instances/Monoid/Automaton/LexiconExamples.agda:61| -- One token: the winning rule's index, and the text it matched.
+            63| lexS : AS.String → Mb.Maybe (ℕ × AS.String)
+src/Theory/Instances/Monoid/Automaton/LexiconExamples.agda:72| -- Priority breaks the tie: both rules match all five characters.
+            73| _ : lexS "where" ≡ Mb.just (0 , "where")
+src/Theory/Instances/Monoid/Automaton/LexiconExamples.agda:76| -- ...and that really is a tie, not a keyword-only match
+            77| _ : Rkw.accepts (text "where") ≡ true
+src/Theory/Instances/Monoid/Automaton/LexiconExamples.agda:83| -- ...while at "wherever" only the identifier rule is still alive
+            84| _ : Rkw.accepts (text "wherever") ≡ false
+src/Theory/Instances/Monoid/Automaton/LexiconExamples.agda:90| -- the same pair for the other keyword
+            91| _ : lexS "let" ≡ Mb.just (0 , "let")
+src/Theory/Instances/Monoid/Automaton/LexiconExamples.agda:100| -- a number, and a number the identifier rule cannot extend
+            101| _ : lexS "42" ≡ Mb.just (2 , "42")
+src/Theory/Instances/Monoid/Automaton/LexiconExamples.agda:107| -- no rule matches, so there is no token -- not an empty one
+            108| _ : lexS "?" ≡ Mb.nothing
+src/Theory/Instances/Monoid/Automaton/Print.agda:45| -- `char *` is a proposition, so `print` is the only map a run has into it.
+            46|   print-unique : (b : Bool) (q : Q) (f : Trace b q ⊢ char *) → f ≡ print b q
+src/Theory/Instances/Monoid/Automaton/ScratchPerf.agda:52| -- OLD path: Greedy's scan, projecting the splitting by hand
+            53| oldScan = G.scan UChar isSetAlphabet Lx.Prod Lx.isSetProdQ
+src/Theory/Instances/Monoid/Automaton/ScratchPerf.agda:55| -- BENCH 473108713
+            57| E6 : List UChar → Mb.Maybe (Fin 3)
+src/Theory/Instances/Monoid/Automaton/SuffixChain.agda:39| -- the proper suffixes of a word, nearest first
+            40|   suffixes : SPt → List SPt
+src/Theory/Instances/Monoid/Automaton/SuffixChain.agda:44| -- a proper-suffix witness *is* a position in that list
+            45|   findSuf : (p q : SPt) → Below q p → q ∈ᴾ suffixes p
+src/Theory/Instances/Monoid/Automaton/SuffixChain.agda:50| -- ...and dropping a letter extends the list by exactly one cell
+            51|   viewSuf : (p : SPt) → ChainView (λ _ → tt) suffixOrder suffixes p
+src/Theory/Instances/Monoid/Automaton/TokenStream.agda:106| -- a nonempty word is a `char⁺`, built rather than derived
+            107|   char⁺-cons : (c : Alphabet) (y : String) → char⁺ (c ∷ y)
+src/Theory/Instances/Monoid/Automaton/TokenStream.agda:127| -- no longer match is possible from the state the greedy match ended in
+            128|   NoExt : ProdQ → TheoryTy _ tt
+src/Theory/Instances/Monoid/Automaton/TokenStream.agda:165| -- one layer, as a sum of connectives rather than a code
+            166|   StreamLayer : TheoryTy _ tt
+src/Theory/Instances/Monoid/Automaton/TokenStream.agda:208| -- `Match` forgets its end state and remembers that it accepts
+            209|     matchToL : (q' : ProdQ) → Match Prod q₀ q' ⊢ L q₀
+src/Theory/Instances/Monoid/Automaton/TokenStream.agda:233| -- ...hence no token is empty, which is the whole payment
+            234|       matchNN : (q' : ProdQ) → ¬Nullable (Match Prod q₀ q')
+src/Theory/Instances/Monoid/Automaton/TokenStream.agda:258| -- `GreedyMax`'s own `isSetMatch`/`isSetTable` are private there
+            259|       isSetMatchAt : (q q' : ProdQ) → isSetTheoryTy (Match Prod q q')
+src/Theory/Instances/Monoid/Automaton/TokenStream.agda:336| -- the tok layer of the rival parse
+            337|         rival : (q'' : ProdQ)
+src/Theory/Instances/Monoid/Automaton/TokenStream.agda:368| -- ...and the mirror, when this match is the longer one
+            369|           shorter : (y : String) → u ≡ (u'' ++ y) → z'' ≡ (y ++ z) → ⊥Ty m
+src/Theory/Instances/Monoid/Automaton/TokenStream.agda:409| -- nothing matches: the word is a stream exactly when it is empty
+            410|       noneBranch : GD.▷ tt & ¬Ty (L q₀ ⊗ ⊤Ty) ⊢ DecStream
+src/Theory/Instances/Monoid/Automaton/TokenStream.agda:457| -- the display boundary.  The `Maybe` is external, as in `Lexicon`.
+            458|     tokeniseS : String → Mb.Maybe (List (Fin n × String))
+src/Theory/Instances/Monoid/Automaton/TokenStreamExamples.agda:34| -- The same five rules as `Automaton/Demo`, in priority order.
+            36| module Kw    = POSIX "let|in|where"
+src/Theory/Instances/Monoid/Automaton/TokenStreamExamples.agda:78| -- rule indices and lexemes, as text
+            79| toks : AS.String → Mb.Maybe (List (ℕ × AS.String))
+src/Theory/Instances/Monoid/Automaton/TokenStreamExamples.agda:83| -- one token, the way `Demo` reads it
+            84| lex1 : AS.String → Mb.Maybe (ℕ × AS.String)
+src/Theory/Instances/Monoid/Automaton/TokenStreamExamples.agda:104| -- 2. Several tokens, which `lexOne` cannot say anything about.
+            106| _ : toks "let x42"
+src/Theory/Instances/Monoid/Automaton/TokenStreamExamples.agda:143| -- 5. At scale: 19 tokens in one pass.
+            144| _ : Mb.map-Maybe L.length
+src/Theory/Instances/Monoid/Automaton/Unambiguous.agda:11| -- the letters and the splittings agree by the precision of `literal`
+            12|    (`flat` + cons-injectivity) and the tails by the inductive hypothesis. -}
+src/Theory/Instances/Monoid/Automaton/Unambiguous.agda:45| -- the empty splitting is nullary, and its index equation is a proposition
+            46| isPropεTy : (m : String) → isProp (εTy m)
+src/Theory/Instances/Monoid/Automaton/Unambiguous.agda:55| -- stop / stop
+            56|   unambiguous-Trace b q w (roll .w (stop p , x)) (roll .w (stop p' , x')) =
+src/Theory/Instances/Monoid/Automaton/Unambiguous.agda:61| -- stop / step
+            62|   unambiguous-Trace b q w (roll .w (stop p , x)) (roll .w (step d , ns , e' , f')) =
+src/Theory/Instances/Monoid/Automaton/Unambiguous.agda:66| -- step / stop
+            67|   unambiguous-Trace b q w (roll .w (step c , ms , e , f)) (roll .w (stop p' , x')) =
+src/Theory/Instances/Monoid/Automaton/Unambiguous.agda:71| -- step / step
+            72|   unambiguous-Trace b q w (roll .w (step c , ms , e , f)) (roll .w (step d , ns , e' , f')) =
+src/Theory/Instances/Monoid/Automaton/Unambiguous.agda:105| -- the line of types the two tails live over
+            106|     Fam : I → Type ℓT
+src/Theory/Instances/Monoid/Automaton/Unambiguous.agda:125| -- ...i.e. `Trace b q` is unambiguous in the sense of `Unambiguity/Base`
+            126|   unambiguousTrace : (b : Bool) (q : Q) → unambiguous (Trace b q)
+src/Theory/Instances/Monoid/Automaton/Unambiguous.agda:129| -- and therefore subterminal: any two maps into it agree
+            130|   subterminalTrace : (b : Bool) (q : Q) → subterminal (Trace b q)
+src/Theory/Instances/Monoid/Backreference/Base.agda:32| -- A right factor that may read the left factor's parse.
+            33| Dep : TheoryTy ℓ tt → (ℓ' : Level) → Type _
+src/Theory/Instances/Monoid/Backreference/Base.agda:84| -- `⊗ᴰ` is functorial in its left factor, at a fixed indexed continuation.
+            85| ⊗ᴰ-mapL : {A : TheoryTy ℓ tt} {B : TheoryTy ℓ' tt}
+src/Theory/Instances/Monoid/Backreference/Base.agda:107| -- `ε` determines its yield too: the empty string.
+            108| module _ {C : String → TheoryTy ℓ tt} where
+src/Theory/Instances/Monoid/Backreference/Parser.agda:60| -- The publishing parser
+            62| Cont : (ℓK : Level) → Type _
+src/Theory/Instances/Monoid/Backreference/Parser.agda:93| -- Sequencing a capture group with what follows it
+            95| module _ {D : TheoryTy ℓD tt} where
+src/Theory/Instances/Monoid/Backreference/Parser.agda:174| -- `ParserD` as a `TheorySet`, so it can sit under `▷` and be Löb'd.
+            175| ParserSetD : (ℓK : Level) (a c : ParserTag) → TheorySet ℓA tt → TheorySet _ tt
+src/Theory/Instances/Monoid/Backreference/Parser.agda:193| -- A closed publishing parser is available at every suffix.
+            194| boxD : {ℓK : Level} {ℓD : Level} {D : TheoryTy ℓD tt} {A : TheorySet ℓA tt}
+src/Theory/Instances/Monoid/Backreference/Regex.agda:37| -- Nullability (copied from `Regex.Base`)
+            39| data Nullability : Type ℓ-zero where
+src/Theory/Instances/Monoid/Backreference/Regex.agda:57| -- The syntax
+            59| data REB : ℕ → Nullability → Type ℓAlph where
+src/Theory/Instances/Monoid/Backreference/Regex.agda:66| -- a capture group, scoping over everything that follows it
+            67|   grpr : ∀ {ν ν'} → REB n ν → REB (suc n) ν' → REB n (ν ·ν ν')
+src/Theory/Instances/Monoid/Backreference/Regex.agda:68| -- ...and a reference back to one
+            69|   brefr : Fin n → REB n nullable
+src/Theory/Instances/Monoid/Backreference/Regex.agda:81| -- what the enclosing groups matched
+            82| Env : ℕ → Type ℓM
+src/Theory/Instances/Monoid/Backreference/Regex.agda:99| -- Semantics: a regex in scope `n` denotes a family of grammars
+            101| ⟦_⟧ : ∀ {ν} (r : REB n ν) → Env n → TheorySet (lv r) tt
+src/Theory/Instances/Monoid/Backreference/Regex.agda:161| -- A closed regex decides its own language.
+            162| decide-b : ∀ {ν} (r : REB 0 ν) (ℓK : Level) → Decidable (ty (⟦ r ⟧ λ ()))
+src/Theory/Instances/Monoid/Backreference/RegexTests.agda:32| -- `(ab)\1`
+            34| abab : REB 0 notNullable
+src/Theory/Instances/Monoid/Backreference/RegexTests.agda:46| -- `(a|b)\1` -- the group varies, so the reference is doing work
+            48| alt : REB 0 notNullable
+src/Theory/Instances/Monoid/Backreference/RegexTests.agda:63| -- `(a)(b)\1\2` -- two groups; `brefr zero` is the innermost
+            65| two-groups : REB 0 notNullable
+src/Theory/Instances/Monoid/Backreference/RegexTests.agda:74| -- `((a)b)\1` -- a group inside a group's body, which is what `seqDᴰ` is for
+            76| nested : REB 0 notNullable
+src/Theory/Instances/Monoid/Backreference/RegexTests.agda:85| -- `((a|b)*)\1` -- the copy language `{ww}`, which is not context free
+            87| copyRE : REB 0 nullable
+src/Theory/Instances/Monoid/Backreference/Stress/Common.agda:36| -- `((a|b)*)\1` : the copy language {ww}
+            37| copyRE : REB 0 nullable
+src/Theory/Instances/Monoid/Backreference/Stress/Common.agda:40| -- `(a|b)*` : the same star with no backreference -- the control
+            41| starRE : REB 0 nullable
+src/Theory/Instances/Monoid/Backreference/Stress/Common.agda:44| -- `((a|aa)*)\1` : an ambiguous group, where the alternation cannot commit
+            45| ambigRE : REB 0 nullable
+src/Theory/Instances/Monoid/Backreference/Stress/Common.agda:48| -- `(a)(b)(a)(b)\1\2\3\4`
+            49| fourRE : REB 0 notNullable
+src/Theory/Instances/Monoid/Backreference/Stress/Common.agda:55| -- `(a|b)\1\1` : one capture, referenced twice
+            56| twiceRE : REB 0 notNullable
+src/Theory/Instances/Monoid/Backreference/Stress/Common.agda:59| -- a literal run of `k+1` a's
+            60| repA : ∀ {n} → ℕ → REB n notNullable
+src/Theory/Instances/Monoid/Backreference/Stress/Common.agda:64| -- `(a^{k+1})\1` : a long *literal* group, so the reference is long
+            65| litbackRE : ℕ → REB 0 notNullable
+src/Theory/Instances/Monoid/Backreference/Stress/Common.agda:68| -- `k`-deep left-nested capture groups, total yield `a^{k+1}`
+            69| nestBody : ∀ {n} → ℕ → REB n notNullable
+src/Theory/Instances/Monoid/Backreference/Stress/Common.agda:73| -- ...referenced from outside: stresses `seqDᴰ` at depth
+            74| deepRE : ℕ → REB 0 notNullable
+src/Theory/Instances/Monoid/Backreference/Stress/Common.agda:119| -- ...and the same with the reference, still no trailing star.
+            120| ctlGrpTailRefRE : REB 0 notNullable
+src/Theory/Instances/Monoid/Backreference/StressTests.agda:35| -- CopyPos128
+            36| _ : matches copyRE (a ∷ b ∷ b ∷ a ∷ a ∷ b ∷ b ∷ b ∷ b ∷ b ∷ a ∷ a ∷ b ∷ b ∷ a ∷ a ∷ b ∷ b ∷ b ∷
+src/Theory/Instances/Monoid/Backreference/StressTests.agda:39| -- CopyNeg128
+            40| _ : matches copyRE (b ∷ b ∷ b ∷ a ∷ a ∷ b ∷ a ∷ a ∷ b ∷ b ∷ a ∷ a ∷ a ∷ b ∷ b ∷ a ∷ a ∷ a ∷ a ∷
+src/Theory/Instances/Monoid/Backreference/StressTests.agda:43| -- StarPos128
+            44| _ : matches starRE (a ∷ b ∷ b ∷ a ∷ b ∷ b ∷ b ∷ a ∷ b ∷ a ∷ b ∷ a ∷ b ∷ a ∷ b ∷ b ∷ b ∷ a ∷ a ∷
+src/Theory/Instances/Monoid/Backreference/StressTests.agda:47| -- LitBack32
+            48| _ : matches (litbackRE 31) (a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷
+src/Theory/Instances/Monoid/Backreference/StressTests.agda:51| -- Deep15
+            52| _ : matches (deepRE 15) (a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a 
+src/Theory/Instances/Monoid/Backreference/StressTests.agda:55| -- TwicePos
+            56| _ : matches twiceRE (a ∷ a ∷ a ∷ []) ≡ M.just tt
+src/Theory/Instances/Monoid/Backreference/StressTests.agda:59| -- TwiceNeg
+            60| _ : matches twiceRE (a ∷ b ∷ a ∷ []) ≡ M.nothing
+src/Theory/Instances/Monoid/Backreference/StressTests.agda:63| -- AmbigPos20
+            64| _ : matches ambigRE (a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a 
+src/Theory/Instances/Monoid/Backreference/StressTests.agda:67| -- AmbigNeg12
+            68| _ : matches ambigRE (a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ b ∷ []) ≡ M.nothing
+src/Theory/Instances/Monoid/Combinator/Core.agda:46| -- the grammar `Maybe` of `Types` shadows this one, so it stays qualified
+            47| import Cubical.Data.Maybe as MB
+src/Theory/Instances/Monoid/Combinator/Core.agda:121| -- ...and the one-token cover is the instance the LL(1) parsers use.
+            122| module Push (ℓB : Level) {Y : Type ℓAlph} (r : M₁ → MB.Maybe Y) =
+src/Theory/Instances/Monoid/Combinator/Core.agda:188| -- `Lift` has η, so both round trips are `refl`.
+            189|   lift≅ : A ≅ LiftTheoryTy ℓB A
+src/Theory/Instances/Monoid/Combinator/Core.agda:195| -- the unit on the right, at the lifted `ε` a continuation carries
+            196|   ⊗ε↑-unit-r≅ : (A ⊗ LiftTheoryTy ℓB εTy) ≅ A
+src/Theory/Instances/Monoid/Combinator/Core.agda:295| -- A parser for A turns answers about a grammar K into answers about A ⊗ K
+            296|   Parser : (ℓK : Level) → ParserTag → ParserTag → TheorySet ℓA tt → TheoryTy _ tt
+src/Theory/Instances/Monoid/Combinator/Core.agda:324| -- weakening the domain tag, uniformly in the tag it starts at
+            325|   pw : {ℓK : Level} {a c : ParserTag} {A : TheorySet ℓA tt}
+src/Theory/Instances/Monoid/Combinator/Core.agda:342| -- Combinators under an arbitray hypothesis D
+            343|   module _ {D : TheoryTy ℓD tt} where
+src/Theory/Instances/Monoid/Combinator/Core.agda:370| -- a closed parser is available at every suffix
+            371|     box : {ℓK : Level} {A : TheorySet ℓA tt} → ⊤Ty ⊢ Parser ℓK ⟨□⟩ ⟨□⟩ A
+src/Theory/Instances/Monoid/Combinator/Core.agda:378| -- A parser under the hypothesis ⊤ is sufficent for answering about A
+            379|   runP : (ℓK : Level) {A : TheorySet ℓA tt}
+src/Theory/Instances/Monoid/Combinator/Core.agda:384| -- Build parsers as fixpoints
+            385|   module Fix {ℓA} (ℓK : Level) (A : TheorySet ℓA tt) where
+src/Theory/Instances/Monoid/Combinator/Core.agda:390| -- Call the hypothetical parser on a strictly smaller suffix
+            391|     call : ty (▷ (ParserSet ℓ𝒦 ⟨□⟩ ⟨□⟩ A)) ⊢ Parser ℓ𝒦 ⟨▷⟩ ⟨▷⟩ A
+src/Theory/Instances/Monoid/Combinator/Core.agda:394| -- Guarded fixpoints build closed parsers
+            395|     fix : ty (▷ (ParserSet ℓ𝒦 ⟨□⟩ ⟨□⟩ A)) ⊢ Parser ℓ𝒦 ⟨□⟩ ⟨□⟩ A
+src/Theory/Instances/Monoid/Combinator/Core.agda:399| -- ...which are then used to answer
+            400|     runFix : ty (▷ (ParserSet ℓ𝒦 ⟨□⟩ ⟨□⟩ A)) ⊢ Parser ℓ𝒦 ⟨□⟩ ⟨□⟩ A
+src/Theory/Instances/Monoid/Combinator/Decidable/Arith.agda:55| -- Rejected: each `no` is a refutation, not an absence.
+            57| no-nil : ¬Ty E []
+src/Theory/Instances/Monoid/Combinator/Decidable/Arrow.agda:263| -- Accepted
+            265| yes-id : L (vid ∷ [])
+src/Theory/Instances/Monoid/Combinator/Decidable/Arrow.agda:268| -- (x) => x
+            269| yes-arrow : L (lp ∷ vid ∷ rp ∷ ar ∷ vid ∷ [])
+src/Theory/Instances/Monoid/Combinator/Decidable/Arrow.agda:272| -- (x, y) => x
+            273| yes-arrow2 : L (lp ∷ vid ∷ cm ∷ vid ∷ rp ∷ ar ∷ vid ∷ [])
+src/Theory/Instances/Monoid/Combinator/Decidable/Arrow.agda:276| -- (x, y, z) => x
+            277| yes-arrow3 : L (lp ∷ vid ∷ cm ∷ vid ∷ cm ∷ vid ∷ rp ∷ ar ∷ vid ∷ [])
+src/Theory/Instances/Monoid/Combinator/Decidable/Arrow.agda:281| -- (x).f
+            282| yes-member : L (lp ∷ vid ∷ rp ∷ dot ∷ vid ∷ [])
+src/Theory/Instances/Monoid/Combinator/Decidable/Arrow.agda:285| -- ((x) => x).f  -- the outer `(` is resolved only after matching it
+            286| yes-nested : L (lp ∷ lp ∷ vid ∷ rp ∷ ar ∷ vid ∷ rp ∷ dot ∷ vid ∷ [])
+src/Theory/Instances/Monoid/Combinator/Decidable/Arrow.agda:290| -- (x) => (x).f
+            291| yes-body : L (lp ∷ vid ∷ rp ∷ ar ∷ lp ∷ vid ∷ rp ∷ dot ∷ vid ∷ [])
+src/Theory/Instances/Monoid/Combinator/Decidable/Arrow.agda:295| -- ((x, y) => x).f
+            296| yes-deep : L (lp ∷ lp ∷ vid ∷ cm ∷ vid ∷ rp ∷ ar ∷ vid ∷ rp ∷ dot ∷ vid ∷ [])
+src/Theory/Instances/Monoid/Combinator/Decidable/Arrow.agda:301| -- Refuted
+            303| no-nil : ¬Ty L []
+src/Theory/Instances/Monoid/Combinator/Decidable/Arrow.agda:306| -- (x)  -- a bracket with neither `=>` nor `.f` after it
+            307| no-bare : ¬Ty L (lp ∷ vid ∷ rp ∷ [])
+src/Theory/Instances/Monoid/Combinator/Decidable/Arrow.agda:310| -- (x) =>  -- no body
+            311| no-nobody : ¬Ty L (lp ∷ vid ∷ rp ∷ ar ∷ [])
+src/Theory/Instances/Monoid/Combinator/Decidable/Arrow.agda:314| -- (x,) => x  -- trailing comma
+            315| no-trailing : ¬Ty L (lp ∷ vid ∷ cm ∷ rp ∷ ar ∷ vid ∷ [])
+src/Theory/Instances/Monoid/Combinator/Decidable/Arrow.agda:318| -- x.f  -- member access needs the parens
+            319| no-unparen : ¬Ty L (vid ∷ dot ∷ vid ∷ [])
+src/Theory/Instances/Monoid/Combinator/Decidable/Arrow.agda:325| -- ((x) => x)  -- matched, but nothing after the match
+            326| no-nested-bare : ¬Ty L (lp ∷ lp ∷ vid ∷ rp ∷ ar ∷ vid ∷ rp ∷ [])
+src/Theory/Instances/Monoid/Combinator/Decidable/Base.agda:72| -- the empty word carries no letter, hence no `char`
+            73|   ε-char : Λ₁ ε₁ & (char ⊗ ty K) ⊢ ⊥Ty
+src/Theory/Instances/Monoid/Combinator/Decidable/Base.agda:141| -- ...and a parser may only give up where there is nothing to decide.
+            142| fail : {ℓK : Level} {a c : ParserTag} {D : TheoryTy ℓD tt}
+src/Theory/Instances/Monoid/Combinator/Decidable/Base.agda:149| -- ...which are then used to build deciders
+            150|   decide : ty (▷ (ParserSet ℓ𝒦 ⟨□⟩ ⟨□⟩ A)) ⊢ Parser ℓ𝒦 ⟨□⟩ ⟨□⟩ A
+src/Theory/Instances/Monoid/Combinator/Decidable/Base.agda:154| -- ...and the same for a family of nonterminals.
+            155| module FixAll {ℓX ℓA} (ℓK : Level) {X : Type ℓX} (A : X → TheorySet ℓA tt) where
+src/Theory/Instances/Monoid/Combinator/Decidable/Bracket.agda:192| -- a bracket opened, then closed by the body itself
+            193| transp-open : {q n : List Tok} → ClosingS q → Transparent n
+src/Theory/Instances/Monoid/Combinator/Decidable/Bracket.agda:207| -- ...and what the classifier then says.
+            209| cls-open : {p : List Tok} → Transparent p → (t : Tok) (y : List Tok)
+src/Theory/Instances/Monoid/Combinator/Decidable/Bracket.agda:213| -- ...and for a word that swallows its own closing bracket
+            214| cls-close : {q : List Tok} → Closing q → (t : Tok) (y : List Tok)
+src/Theory/Instances/Monoid/Combinator/Decidable/Bracket.agda:244| -- and the index is discrete, which is the other thing `PushOf` asks for
+            245| decClsEq : DiscreteEq Cls
+src/Theory/Instances/Monoid/Combinator/Decidable/Bracket.agda:260| -- the two carriers, as grammars
+            261| TranspG ClosG : TheoryTy ℓ-zero tt
+src/Theory/Instances/Monoid/Combinator/Decidable/Bracket.agda:280| -- a letter that is not a bracket
+            281| tr-lit : (c : Tok) → NotBr c → literal c ⊢ TranspG
+src/Theory/Instances/Monoid/Combinator/Decidable/Bracket.agda:305| -- a bracket closed by the body itself, then a transparent tail
+            306| tr-open : literal lp ⊗ (ClosG ⊗ TranspG) ⊢ TranspG
+src/Theory/Instances/Monoid/Combinator/Decidable/Bracket.agda:319| -- ...and a bracket closed by a following `)`
+            320| tr-wrap : literal lp ⊗ (TranspG ⊗ (literal rp ⊗ TranspG)) ⊢ TranspG
+src/Theory/Instances/Monoid/Combinator/Decidable/Bracket.agda:338| -- ...and the three class memberships a router needs.
+            340| bt-open : (t : Tok)
+src/Theory/Instances/Monoid/Combinator/Decidable/Dyck.agda:28| -- Some tests running it
+            30| no-lp : ¬Ty S (lp ∷ [])
+src/Theory/Instances/Monoid/Combinator/Decidable/Lambda.agda:69| -- Every `Eq.refl` below is the parser running.
+            71| yes-v : Term (v ∷ [])
+src/Theory/Instances/Monoid/Combinator/Decidable/ListLit.agda:22| -- three tokens: `[`, `]`, `,`, and a number `n`
+            23| data Tok : Type ℓ-zero where
+src/Theory/Instances/Monoid/Combinator/Decidable/ListLit.agda:47| -- `n (',' n)*`
+            48| items : ⊤Ty ⊢ Parser ℓG ⟨▷⟩ ⟨□⟩ _
+src/Theory/Instances/Monoid/Combinator/Decidable/ListLit.agda:51| -- `'[' items? ']'`
+            52| listP : ⊤Ty ⊢ Parser ℓG ⟨▷⟩ ⟨□⟩ _
+src/Theory/Instances/Monoid/Combinator/Decidable/Lookahead.agda:42| -- Choice indexed by a cover
+            44| module Predictive
+src/Theory/Instances/Monoid/Combinator/Decidable/Lookahead.agda:57| -- the grammar the branches present: one summand per class
+            58|   Alt : TheorySet (ℓ-max ℓY ℓG) tt
+src/Theory/Instances/Monoid/Combinator/Decidable/Lookahead.agda:66| -- a branch other than the observed one is refuted by the cover alone
+            67|       elsewhere : (y y' : Y) → (y' Eq.≡ y → Empty.⊥)
+src/Theory/Instances/Monoid/Combinator/Decidable/Lookahead.agda:73| -- ...so at the observed class, that branch's decision is the whole one
+            74|       atClass : (y : Y)
+src/Theory/Instances/Monoid/Combinator/Decidable/Lookahead.agda:96| -- the whole use of the cover: `total` names the class, the class decides
+            97|     commit : ty (&ᴰSet Dec·) ⊢ DecTy (ty Alt ⊗ ty K)
+src/Theory/Instances/Monoid/Combinator/Decidable/Lookahead.agda:108| -- Width 1: the cover of `Lookahead/Base`, and the two ways to pay `lead`
+            110| Λ-cover : Cover M₁ Λ₁
+src/Theory/Instances/Monoid/Combinator/Decidable/Lookahead.agda:114| -- a bare literal *is* its class, on the nose
+            115| leadLit : (c : Alphabet) → ty (litSet c) ⊗ ⊤Ty ⊢ Λ₁ (tk c)
+src/Theory/Instances/Monoid/Combinator/Decidable/Lookahead.agda:118| -- ...and a branch leading with `c` claims it, whatever follows
+            119| leadTok : (c : Alphabet) (X : TheorySet ℓG tt)
+src/Theory/Instances/Monoid/Combinator/Decidable/Lookahead.agda:123| -- ...and a class with no branch claims it vacuously
+            124| ⊥Set↑ : TheorySet ℓG tt
+src/Theory/Instances/Monoid/Combinator/Decidable/Productions.agda:47| -- a symbol of a production body: a terminal, or another nonterminal
+            48| data Item (X : Type ℓAlph) : Type ℓAlph where
+src/Theory/Instances/Monoid/Combinator/Decidable/Productions.agda:73| -- The table, as an indexed functor
+            75|   itemCode : Item X → Functor ℓM X (λ _ → tt) tt
+src/Theory/Instances/Monoid/Combinator/Decidable/Productions.agda:123| -- ...and as a family of grammars
+            125|   S : X → TheoryTy ℓG tt
+src/Theory/Instances/Monoid/Combinator/Decidable/Productions.agda:146| -- one summand per class, which is what `choose` decides
+            147|   C : (x : X) (o : M₁) → TheorySet ℓG tt
+src/Theory/Instances/Monoid/Combinator/Decidable/Productions.agda:164| -- the class sum and the ε-production are the two halves of the unrolling
+            165|   rollAlt : (x : X) → ty (Pred.Alt x) ⊕ ty (nulSet x) ⊢ S x
+src/Theory/Instances/Monoid/Combinator/Decidable/Productions.agda:198| -- the leading terminal is where the step is paid for
+            199|   prodP : {o : M₁} (p : Prod X o) → ty (▷ Pall) ⊢ Parser ℓG ⟨□⟩ ⟨□⟩ (prodSet p)
+src/Theory/Instances/Monoid/Combinator/Decidable/Productions.agda:206| -- the ε-production, if there is one, and a refutation if there is not
+            207|   nulP : (x : X) → ty (▷ Pall) ⊢ Parser ℓG ⟨□⟩ ⟨□⟩ (nulSet x)
+src/Theory/Instances/Monoid/Combinator/Decidable/Productions.agda:226| -- Reading the parse tree out
+            228|   private
+src/Theory/Instances/Monoid/Combinator/Decidable/Productions.agda:232| -- the nonterminal items of a body, in order
+            233|     kids : (β : List (Item X)) → ∀ m → ⟦ bodyCode β ⟧TheoryTy Kst m → List Tree
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:997| -- the three nonterminals
+            998| data NT : Type ℓ-zero where
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1002| -- A ::= bool | nat | arr A A | prod A A | list A
+            1003| stlc .Table.at Ty (tk kbool) = led []
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1009| -- v ::= f | g | n | x | xs
+            1010| stlc .Table.at Var (tk vf) = led []
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1016| -- t ::= ...
+            1017| stlc .Table.at Tm (tk ktrue) = led []
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1056| -- Raw syntax: a program is the token list these build.
+            1058| Src : Type ℓ-zero
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1117| -- numerals, so the programs can mention numbers
+            1118| `num : ℕ → Src
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1124| -- types
+            1125| yes-nat : Type′ `nat
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1134| -- terms
+            1135| idSrc : Src
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1189| -- how big those really are, as token lists
+            1190| fib-size : length fibSrc ≡ 65
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1198| -- the two languages do not accept each other
+            1199| no-type-as-term : ¬Ty Term `nat
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1205| -- a binder with no annotation
+            1206| no-bare-lam : ¬Ty Term (klam ∷ vx ∷ kdot ∷ vx ∷ [])
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1209| -- an `if` with no `else` branch
+            1210| no-half-if : ¬Ty Term (kif ∷ ktrue ∷ kthen ∷ kzero ∷ [])
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1213| -- a recursor short one argument
+            1214| no-short-natrec : ¬Ty Term (knatrec ∷ kzero ∷ kzero ∷ [])
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1217| -- a keyword in a type position
+            1218| no-kw-type : ¬Ty Type′ (karr ∷ knat ∷ ktrue ∷ [])
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1221| -- and a whole program with one token too many
+            1222| no-trailing : ¬Ty Term (sumSrc ++ (kzero ∷ []))
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1225| -- The parse tree, as data.
+            1227| open import Cubical.Data.Nat using (_+_)
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1247| -- Pass 1: the concrete tree becomes an abstract one.
+            1249| import Cubical.Data.Maybe as M
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1426| -- The whole front end: token list → parse tree → AST → scoped → typed.
+            1428| astOf : (w : Src) → M.Maybe ATm
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1441| -- ...run on the two programs.
+            1443| add-type : tyOf addSrc ≡ M.just (Ar Na (Ar Na Na))
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1463| -- the parser rejects: a type is not a term
+            1464| parse-rejects : astOf `nat ≡ M.nothing
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1467| -- the scope checker rejects: `x` is free, though it parsed fine
+            1468| unbound-parses : astOf (`var vx) ≡ M.just (Nm vx)
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1474| -- the typechecker rejects: `if` on a number, though it scoped fine
+            1475| badIf : Src
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1488| -- ...and a few more type errors
+            1489| badSuc : tyOf (`suc `true) ≡ M.nothing
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1551| -- ...and the decision, one clause per former
+            1552| private
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1693| -- the context is deterministic...
+            1694| justInj : {A B : ATy} → M.just A Eq.≡ M.just B → A Eq.≡ B
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1701| -- ...and so, every binder being annotated, is the typing
+            1702| unique : {Γ : Ctx} {t : ATm} {A B : ATy} → Typed Γ t A → Typed Γ t B → A Eq.≡ B
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1742| -- views, so a former that needs a shaped type says so once
+            1743| data ArV : ATy → Type ℓ-zero where
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1961| -- scope checking: a derivation, and for a free variable a refutation
+            1962| fib-scoped : Scoped [] fibAST
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1971| -- ...but bound under a binder that binds it
+            1972| bound-scoped : Scoped [] (Lam vx Na (Nm vx))
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1975| -- type checking: a derivation carrying its type
+            1976| fib-typed : Ty? [] fibAST
+src/Theory/Instances/Monoid/Combinator/Decidable/STLC.agda:1994| -- ...and refutations of *every* derivation, which is what completeness buys
+            1995| badIf-refuted : Ty? [] badIfAST → Empty.⊥
+src/Theory/Instances/Monoid/Combinator/Decidable/Widths.agda:41| -- The two lookahead windows, at width `k+2`.
+            43| aFill : (n : Width) → Window n
+src/Theory/Instances/Monoid/Combinator/Decidable/Widths.agda:51| -- The grammar, indexed by the width
+            53| data NT : Type ℓ-zero where
+src/Theory/Instances/Monoid/Combinator/Decidable/Widths.agda:72| -- `n` copies of `a`, right-nested so the body matches `Λw`'s shape
+            73| pow : Width → Code → Code
+src/Theory/Instances/Monoid/Combinator/Decidable/Widths.agda:136| -- Bodies, and the one unrolling.  Both are inductions on the width.
+            138|   lit↑ : Tok → TheorySet ℓG tt
+src/Theory/Instances/Monoid/Combinator/Decidable/Widths.agda:180| -- every body begins with `a`, which is one unrolling
+            181|   firstS : Lang St ⊢ literal ta ⊗ ⊤Ty
+src/Theory/Instances/Monoid/Combinator/Decidable/Widths.agda:201| -- The route, at width `k+2`, and the parser.
+            203|   module PW = PushW (more (more kk)) (rt kk)
+src/Theory/Instances/Monoid/Combinator/Decidable/Widths.agda:225| -- `k+1` tokens, then the rest: one `seq` per `a`, by induction
+            226|     powP : {ℓD : Level} {D : TheoryTy ℓD tt} (n : Width) {X : TheorySet ℓG tt}
+src/Theory/Instances/Monoid/Combinator/Decidable/WidthsTests.agda:19| -- k = 0: `S ::= a S b | a c`, separated at width 2, not at width 1.
+            21| module K0 = Gram none
+src/Theory/Instances/Monoid/Combinator/Decidable/WidthsTests.agda:45| -- k = 1: two leading `a`s, so width 3 is needed.
+            47| module K1 = Gram (more none)
+src/Theory/Instances/Monoid/Combinator/Decidable/WidthsTests.agda:62| -- k = 2: three leading `a`s, width 4.
+            64| module K2 = Gram (more (more none))
+src/Theory/Instances/Monoid/Combinator/Grammars/Arith.agda:36| -- a literal, relabelled to the lifted `literal` the grammar's body uses
+            37|   tokL : {ℓD : Level} {D : TheoryTy ℓD tt} (c : Tok)
+src/Theory/Instances/Monoid/Combinator/Grammars/ArithGrammar.agda:28| -- The alphabet
+            30| data Tok : Type where
+src/Theory/Instances/Monoid/Combinator/Grammars/ArithGrammar.agda:51| -- The grammar
+            53| data NT : Type ℓ-zero where
+src/Theory/Instances/Monoid/Combinator/Grammars/ArithGrammar.agda:160| -- the type a `Choice.Guide` unfolds to, stated without the answer
+            161| GuideOf : {Y : Type ℓ-zero} (C : Y → TheorySet ℓG tt) → Type _
+src/Theory/Instances/Monoid/Combinator/Grammars/ArithTests.agda:40| -- One parser, three answers.
+            42| decArith : Dec.Decidable (Lang Exp)
+src/Theory/Instances/Monoid/Combinator/Grammars/Dyck.agda:33| -- what the inner `S` is followed by
+            34| afterS : TheorySet ℓG tt
+src/Theory/Instances/Monoid/Combinator/Grammars/Dyck.agda:37| -- what a `(` is followed by
+            38| afterLp : TheorySet ℓG tt
+src/Theory/Instances/Monoid/Combinator/Grammars/Dyck.agda:44| -- `) S`
+            45|   tail′ : ty (▷ (ParserSet ℓG ⟨□⟩ ⟨□⟩ Sset)) ⊢ Parser ℓG ⟨▷⟩ ⟨□⟩ afterS
+src/Theory/Instances/Monoid/Combinator/Grammars/Dyck.agda:48| -- `S ) S`
+            49|   mid : ty (▷ (ParserSet ℓG ⟨□⟩ ⟨□⟩ Sset)) ⊢ Parser ℓG ⟨▷⟩ ⟨▷⟩ afterLp
+src/Theory/Instances/Monoid/Combinator/Grammars/Dyck.agda:52| -- `( S ) S`
+            53|   nodeP : ty (▷ (ParserSet ℓG ⟨□⟩ ⟨□⟩ Sset))
+src/Theory/Instances/Monoid/Combinator/Grammars/DyckTests.agda:33| -- One parser, three answers.
+            35| decDyck : Dec.Decidable S
+src/Theory/Instances/Monoid/Combinator/Grammars/DyckTests.agda:76| -- exactly one parse each: the enumeration witnesses unambiguity
+            77| nd-trees : passes
+src/Theory/Instances/Monoid/Combinator/Grammars/PolyGrammar.agda:169| -- the continuation level: the one `μ` lands at
+            170| ℓG : Level
+src/Theory/Instances/Monoid/Combinator/Grammars/PolyGrammar.agda:180| -- E ::= ( E ) K | v K | n Q | - E
+            181| ETag : Type ℓ-zero
+src/Theory/Instances/Monoid/Combinator/Grammars/PolyGrammar.agda:189| -- K ::= + E | * E | ^ n K | ε
+            190| KTag : Type ℓ-zero
+src/Theory/Instances/Monoid/Combinator/Grammars/PolyGrammar.agda:254| -- ...and `Q`'s, which are `K`'s but for the denominator
+            255|   numTailBranch : QTag → Code
+src/Theory/Instances/Monoid/Combinator/Grammars/PolyGrammar.agda:488| -- The branch families, as sets: `ty (CE t)` is `BodyExpr t` on the nose.
+            490| NatBr : ℕ → TheorySet ℓG tt
+src/Theory/Instances/Monoid/Combinator/Grammars/PolyGrammar.agda:511| -- The tables themselves.
+            513| rE : M₁ → Maybe ETag
+src/Theory/Instances/Monoid/Combinator/Grammars/Polynomial.agda:63| -- `n K`, the numeral a `^` or a `/` is followed by, routed over `ℕ`
+            64|   natP : Hyp ⊢ Parser ℓG ⟨▷⟩ ⟨□⟩ PowSet
+src/Theory/Instances/Monoid/Combinator/Grammars/Polynomial.agda:70| -- the three `K`-heads, shared with `Q`
+            71|   addP : Hyp ⊢ Parser ℓG ⟨▷⟩ ⟨□⟩ (CK hadd)
+src/Theory/Instances/Monoid/Combinator/Grammars/Polynomial.agda:80| -- the ε-production, the one branch no route names
+            81|   stopP : Hyp ⊢ Parser ℓG ⟨□⟩ ⟨□⟩ (ε↑Set ℓG)
+src/Theory/Instances/Monoid/Combinator/Grammars/Polynomial.agda:96| -- `) K`
+            97|     tail′ : Hyp ⊢ Parser ℓG ⟨▷⟩ ⟨□⟩ (litSet rp ⊗Set RestSet)
+src/Theory/Instances/Monoid/Combinator/Grammars/Polynomial.agda:100| -- `E ) K`
+            101|     mid : Hyp ⊢ Parser ℓG ⟨▷⟩ ⟨▷⟩ (ExprSet ⊗Set (litSet rp ⊗Set RestSet))
+src/Theory/Instances/Monoid/Combinator/Grammars/PolynomialTests.agda:47| -- One parser, three answers.
+            49| decPoly : Dec.Decidable Expr
+src/Theory/Instances/Monoid/Combinator/Grammars/Regex.agda:52| -- The star raises a universe, so the denotation's level is a recursion too.
+            53| ℓReg : Reg t → Level
+src/Theory/Instances/Monoid/Combinator/Grammars/Regex.agda:69| -- The parse tree an expression admits: the expression's own shape.
+            71| Tree : Reg t → Type ℓAlph
+src/Theory/Instances/Monoid/Combinator/Grammars/RegexTests.agda:48| -- The expressions.  Written once, at no answer at all.
+            50| ab : Reg ⟨▷⟩
+src/Theory/Instances/Monoid/Combinator/Grammars/RegexTests.agda:56| -- ...and the same compiler at three answers.
+            58| decAmb : String → M.Maybe (Tree amb)
+src/Theory/Instances/Monoid/Combinator/Grammars/RegexTests.agda:73| -- `ab` is unambiguous, so the answers agree up to `just`/singleton.
+            75| ab-dec : passes
+src/Theory/Instances/Monoid/Combinator/Grammars/RegexTests.agda:115| -- ...and the leftmost of that fan is what the other two commit to.
+            116| amb-dec : passes
+src/Theory/Instances/Monoid/Combinator/Incomplete/Base.agda:97| -- `fmapM` is `bind (η ∘⊢ -)`, so both laws are the monad laws.
+            98| MaybeLawful : LawfulAnswer MaybeAnswer
+src/Theory/Instances/Monoid/Combinator/Incomplete/Base.agda:137| -- ...which are then used to build tests
+            138|   test : ty (▷ (ParserSet ℓ𝒦 ⟨□⟩ ⟨□⟩ A)) ⊢ Parser ℓ𝒦 ⟨□⟩ ⟨□⟩ A → Test (ty A)
+src/Theory/Instances/Monoid/Combinator/Incomplete/Dyck.agda:25| -- Sound but not complete: `nothing` is a refusal, not a refutation
+            26| testDyck : Test S
+src/Theory/Instances/Monoid/Combinator/Incomplete/ListLit.agda:22| -- three tokens: `[`, `]`, `,`, and a number `n`
+            23| data Tok : Type ℓ-zero where
+src/Theory/Instances/Monoid/Combinator/Incomplete/ListLit.agda:47| -- `n (',' n)*`
+            48| items : ⊤Ty ⊢ Parser ℓG ⟨▷⟩ ⟨□⟩ (litSet nm ⊗Set StarSet (litSet cm ⊗Set litSet nm))
+src/Theory/Instances/Monoid/Combinator/Incomplete/ListLit.agda:51| -- `'[' items? ']'`
+            52| listP : ⊤Ty ⊢ Parser ℓG ⟨▷⟩ ⟨□⟩ ((litSet lb ⊗Set
+src/Theory/Instances/Monoid/Combinator/NonDet/Base.agda:39| -- `Types` hides this `Δ` in favour of the one from `Strings`
+            40| import Theory.Type.SemanticAction.Base
+src/Theory/Instances/Monoid/Combinator/NonDet/Base.agda:82| -- ...and the choice.  `Incomplete`'s counterpart is `orElse`.
+            83| nd-⊕& : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt} → ND A & ND B ⊢ ND (A ⊕ B)
+src/Theory/Instances/Monoid/Combinator/NonDet/Base.agda:86| -- Externalising an enumeration: the fold that `semact-*` is for the star.
+            87| semact-ND : {A : TheoryTy ℓA tt} {X : Type ℓX}
+src/Theory/Instances/Monoid/Combinator/NonDet/Base.agda:146| -- ...and the same two lines at `ND`, from `NDMonad`'s laws.
+            147| NDLawful : LawfulAnswer NDAnswer
+src/Theory/Instances/Monoid/Combinator/NonDet/Base.agda:173| -- ...which are then used to enumerate
+            174|   parses : ty (▷ (ParserSet ℓ𝒦 ⟨□⟩ ⟨□⟩ A)) ⊢ Parser ℓ𝒦 ⟨□⟩ ⟨□⟩ A
+src/Theory/Instances/Monoid/Combinator/Syntax.agda:35| -- NOT public: `Reg`'s constructors would collide with other regex syntaxes
+            36| open import Theory.Instances.Monoid.Combinator.Grammars.Regex Alphabet _≟_
+src/Theory/Instances/Monoid/Combinator/Syntax.agda:42| -- Repetition.
+            44| module _ (ℓK : Level) (A : TheorySet ℓA tt) where
+src/Theory/Instances/Monoid/Combinator/Syntax.agda:61| -- `A ⁺`
+            62|   some : ⊤Ty ⊢ Parser ℓE ⟨▷⟩ ⟨□⟩ A
+src/Theory/Instances/Monoid/Combinator/Syntax.agda:68| -- `p?`
+            69|   option : {ℓK : Level} {A : TheorySet ℓA tt}
+src/Theory/Instances/Monoid/Combinator/Syntax.agda:74| -- `l p r`
+            75|   between : {ℓK : Level} {a b c : ParserTag}
+src/Theory/Instances/Monoid/Combinator/Syntax.agda:112| -- ...and the answer, at whatever `𝒯` is.
+            113| regex : (r : Reg t) → ⊤Ty ⊢ ty (Ans ⟦ r ⟧)
+src/Theory/Instances/Monoid/Convolution.agda:74| -- The nullary convolution, which mentions no slot family at all.
+            75| module _ {X : Type ℓX} {xs : X → Unit} where
+src/Theory/Instances/Monoid/Convolution.agda:87| -- ...so `map` at a nullary summand carries no information.
+            88|   ⊗e-ε-map : {A : (x : X) → TheoryTy ℓB tt} {B : (x : X) → TheoryTy ℓC tt}
+src/Theory/Instances/Monoid/Derivative.agda:55| -- The character-level names from `Grammar.Derivative.Base`.
+            56| Dr : Alphabet → TheoryTy ℓA tt → TheoryTy ℓA tt
+src/Theory/Instances/Monoid/Derivative/General.agda:39| -- matching the equation, so the cast vanishes on canonical input
+            40|   cast : {X : String → Type ℓA} {x y : String} → x Eq.≡ y → X x → X y
+src/Theory/Instances/Monoid/Derivative/General.agda:43| -- The two formers, and the adjunction between them.
+            45| opaque
+src/Theory/Instances/Monoid/Derivative/General.agda:46| -- sss-00PP
+            47|   ∂[_]_ : TheoryTy ℓA tt → TheoryTy ℓB tt → TheoryTy (ℓ-max ℓM (ℓ-max ℓA ℓB)) tt
+src/Theory/Instances/Monoid/Derivative/General.agda:50| -- sss-00PR
+            51|   √[_]_ : TheoryTy ℓA tt → TheoryTy ℓC tt → TheoryTy (ℓ-max ℓM (ℓ-max ℓA ℓC)) tt
+src/Theory/Instances/Monoid/Derivative/General.agda:90| -- Everything below uses only the adjunction.
+            92| module _ {A : TheoryTy ℓA tt} where
+src/Theory/Instances/Monoid/Derivative/General.agda:120| -- reindexing the weight, from `√-reweight` above
+            121| ∂-weight : {A : TheoryTy ℓA tt} {A' : TheoryTy ℓB tt} {B : TheoryTy ℓC tt}
+src/Theory/Instances/Monoid/Derivative/General.agda:149| -- ...and the residual, which agrees only here
+            150|   ∂⌈⌉→⊸ : (w : String) {B : TheoryTy ℓB tt} → ∂[ ⌈ w ⌉ ] B ⊢ ⌈ w ⌉ ⊸ B
+src/Theory/Instances/Monoid/Determinization/WeakEquivalence.agda:145| -- The decidable finite set of states reachable from q-start
+            146|     ε-reach : ⟨ N.Q ⟩ → ⟨ FinSetDecℙ N.Q ⟩
+src/Theory/Instances/Monoid/Extension.agda:211| -- `⊗ₑ` against the raw two-slot tensor, and against `⌈ εᵖ ⌉`.
+            213| ⊗ᵘ→⊗ₑ : (P : Fin 2 → TheoryTy ℓA tt)
+src/Theory/Instances/Monoid/Extension.agda:227| -- The unitors.
+            229| ⊗ₑ-unitL⁻ : {A : TheoryTy ℓA tt} → A ⊢ ε⊗ ⊗ₑ A
+src/Theory/Instances/Monoid/Extension.agda:267| -- The residual, right adjoint to `_⊗ₑ_` in its second argument.
+            269| infixr 12 _⊸ₑ_
+src/Theory/Instances/Monoid/Extension.agda:286| -- Constant grammars, and how `⊗ₑ` and `⊕ᴰ` pass through them.
+            288| K : ∀ {ℓ} → Type ℓ → TheoryTy ℓ tt
+src/Theory/Instances/Monoid/Grammars/Dyck.agda:18| -- the alphabet: one bracket pair
+            19| data Br : Type ℓ-zero where
+src/Theory/Instances/Monoid/Grammars/Dyck.agda:168| -- ...and the tree a parse denotes
+            169| semactS : SemanticAction S Dyck
+src/Theory/Instances/Monoid/Greedy/Base.agda:29| -- one or more characters
+            30| char⁺ : TheoryTy _ tt
+src/Theory/Instances/Monoid/Greedy/Base.agda:65| -- the `char⁺` witness splits the matched prefix
+            66|   pl = t .snd .snd .fst .snd
+src/Theory/Instances/Monoid/Greedy/Base.agda:75| -- the whole word is both `c ∷ ms1` and `d ∷ (ks1 ++ ns1)`
+            76|   whole : c ∷ ms (suc zero) ≡ d ∷ (ks1 ++ ns1)
+src/Theory/Instances/Monoid/Greedy/Base.agda:115| -- one character, O(1)
+            116|   extendAt : (c : Alphabet)
+src/Theory/Instances/Monoid/Greedy/Base.agda:120| -- ...and what it gives up: the prefix parse
+            121|   GreedyAt→prefix : GreedyAt A R ⊢ A ⊗ ⊤Ty
+src/Theory/Instances/Monoid/Greedy/Examples.agda:56| -- what is left of `a+` once it has matched: the residual
+            57| aStar : RE nullable
+src/Theory/Instances/Monoid/Greedy/Examples.agda:63| -- the match itself, decided rather than asserted
+            64| match : ty ⟦ aPlus ⟧ (text "aaa")
+src/Theory/Instances/Monoid/Greedy/Examples.agda:91| -- ...and what it matched, read back out
+            92| _ : untext (greedily .fst fz) ≡ "aaa"
+src/Theory/Instances/Monoid/Greedy/Examples.agda:98| -- the parse tree agrees with the splitting
+            99| _ : untext (yield aPlus (text "aaa") (greedily .snd .snd .fst) .fst) ≡ "aaa"
+src/Theory/Instances/Monoid/Greedy/Examples.agda:122| -- n applications of `extendAt`, each O(1)
+            123|   go : (dep : ℕ) {A : TheoryTy ℓM tt} {w : String}
+src/Theory/Instances/Monoid/Greedy/Examples.agda:129| -- the far end of the chain: the match sits at aⁿ, the rest is "b"
+            130|   seed : (n : ℕ) → Dln (suc n) A₀ [] → GreedyAt (Dln (suc n) A₀) Rest (text "b")
+src/Theory/Instances/Monoid/GuardedSplit.agda:58| -- ... and what it gets: the hypothesis alongside the right slot
+            59|   ▷⊛r : {X : TheoryTy ℓX tt} {B : TheoryTy ℓB tt}
+src/Theory/Instances/Monoid/KleeneStar.agda:134| -- `roll*`/`unroll*` against `εTy` rather than the code's lifted one
+            135| roll↑ : {A : TheoryTy ℓA tt} → (A ⊗ (A *)) ⊕ εTy ⊢ A *
+src/Theory/Instances/Monoid/KleeneStar.agda:167| -- ...so a parser relabels along an isomorphism, not a mere pair of maps.
+            168|   roll↑≅ : ((A ⊗ (A *)) ⊕ εTy) ≅ (A *)
+src/Theory/Instances/Monoid/KleeneStar/Guarded.agda:72| -- ...and the mirror, for a nullable head with a non-nullable tail
+            73| ⊗-¬NullableR : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt}
+src/Theory/Instances/Monoid/KleeneStar/Guarded.agda:106| -- the family being fixed: the fold itself, as an internal function
+            107|     Fam : TheorySet _ tt
+src/Theory/Instances/Monoid/KleeneStar/Guarded.agda:118| -- the delayed fold reaches the tail because the head was paid for
+            119|       step : (A ⊗ (A *)) & GB.▷ tt ⊢ ty B
+src/Theory/Instances/Monoid/KleeneStar/Guarded.agda:125| -- ...and Löb closes it.  One combinator, no pragma.
+            126|     fold*g : A * ⊢ ty B
+src/Theory/Instances/Monoid/KleeneStar/GuardedTests.agda:29| -- the client states non-nullability internally, and never sees the order
+            30| nn : ¬Nullable (literal a)
+src/Theory/Instances/Monoid/KleeneStar/GuardedTests.agda:33| -- the fold, by guarded recursion
+            34| len : SemanticAction ((literal a) *) ℕ
+src/Theory/Instances/Monoid/KleeneStar/GuardedTests.agda:41| -- ...and it computes
+            42| _ : countAs [] ≡ M.just 0
+src/Theory/Instances/Monoid/KleeneStar/Map.agda:44| -- A retraction of the elements is a retraction of the lists.
+            45| module _ {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt}
+src/Theory/Instances/Monoid/KleeneStar/Map.agda:90| -- ...so an isomorphism of elements is an isomorphism of lists.
+            91|   *≅ : (A *) ≅ (B *)
+src/Theory/Instances/Monoid/KleeneStar/Read.agda:57| -- ...so `readChars` is *the* list of characters of a word.
+            58| readChars-section : readChars ∘⊢ ⊤Ty-intro ≡ id⊢
+src/Theory/Instances/Monoid/KleeneStar/Unambiguous.agda:70| -- an `A` piece is never empty, so a nil layer never meets a cons layer
+            71|     nil-cons : {X : Type ℓX} (u v : String) → A u → (u ++ v) ≡ [] → X
+src/Theory/Instances/Monoid/KleeneStar/Unambiguous.agda:87| -- the nil layer is nullary, and its index equation is a proposition
+            88|     isPropNil : (m : String)
+src/Theory/Instances/Monoid/KleeneStar/Unambiguous.agda:96| -- nil / nil
+            97|   unambig m (roll .m (false , z)) (roll .m (false , z')) =
+src/Theory/Instances/Monoid/KleeneStar/Unambiguous.agda:99| -- nil / cons
+            100|   unambig m (roll .m (false , ms , e , f)) (roll .m (true , ns , e' , f')) =
+src/Theory/Instances/Monoid/KleeneStar/Unambiguous.agda:103| -- cons / nil
+            104|   unambig m (roll .m (true , ms , e , f)) (roll .m (false , ns , e' , f')) =
+src/Theory/Instances/Monoid/Lex/Base.agda:30| -- `nothing` skips the matched text, `just t` emits a token.
+            31| Emit : {T : Type ℓTok} {A : TheoryTy ℓA tt} → Type _
+src/Theory/Instances/Monoid/Lex/Base.agda:35| -- the token stream grammar: a repetition of whatever one token is
+            36|   Tokens : TheorySet (ℓF ℓA) tt
+src/Theory/Instances/Monoid/Lex/Regex.agda:36| -- one token
+            37| tokenRE : Lexicon → RE notNullable
+src/Theory/Instances/Monoid/Lex/Regex.agda:40| -- ...and the stream, which is the lexer's grammar
+            41| tokensRE : Lexicon → RE nullable
+src/Theory/Instances/Monoid/Lex/Regex.agda:49| -- the tokenisation itself, when there is one
+            50| Tokenisation : (rs : Lexicon) → String → Type (lv (tokensRE rs))
+src/Theory/Instances/Monoid/Lex/Regex.agda:77| -- which rule matched, and what it took
+            78| which : (rs : Lexicon) → SemanticAction (ty ⟦ tokenRE rs ⟧) (ℕ × List Alphabet)
+src/Theory/Instances/Monoid/ListPresentation.agda:113| -- `gen v = v ∷ []` folds to `ρ v ⊙ ε`, so this is the unit law, not refl.
+            114| listPresentation .recGen isSetX α sat ρ v = Laws.⊛unitR α sat ρ (ρ v)
+src/Theory/Instances/Monoid/Lookahead/Base.agda:29| -- The fibres of the classifying map Σ* ↠ M₁.
+            30| Λ₁ : M₁ → TheoryTy ℓAlph tt
+src/Theory/Instances/Monoid/Lookahead/Base.agda:88| -- the empty string is decidable: the lookahead cover already decides it
+            89| dec-ε : Decidable εTy
+src/Theory/Instances/Monoid/Lookahead/Window.agda:7| -- so `Λw ⟨⟩` is `εTy` with budget remaining and `⊤Ty` without.  Without
+            8|    that asymmetry short and full windows overlap and there is no cover.
+src/Theory/Instances/Monoid/Lookahead/Window.agda:33| -- the lookahead width, as a unary numeral
+            34| data Width : Type ℓ-zero where
+src/Theory/Instances/Monoid/Lookahead/Window.agda:43| -- a word of length at most n: the input, truncated to a n-token window
+            44| data Window : Width → Type ℓAlph where
+src/Theory/Instances/Monoid/Phase.agda:77| -- what this phase recognises, over *this* alphabet
+            78|     Gr : TheoryTy ℓA tt
+src/Theory/Instances/Monoid/Phase.agda:79| -- ...decided, so a failure is a refutation and not a dropped error
+            80|     dec : Decidable Gr
+src/Theory/Instances/Monoid/Phase.agda:81| -- ...and what it hands the next phase: a word over the next alphabet
+            82|     emit : SemanticAction Gr (List Out)
+src/Theory/Instances/Monoid/Phase/Display.agda:57| -- `AS.String` is a monoid too; this is its fold.
+            58|   cat : List AS.String → AS.String
+src/Theory/Instances/Monoid/Phase/Display.agda:69| -- ε prints as nothing at all.
+            70|     Display-εTy : Display εTy
+src/Theory/Instances/Monoid/Phase/Display.agda:73| -- a literal prints as its own letter; the index is known statically
+            74|     Display-lit : {c : Alphabet} → Display ＂ c ＂
+src/Theory/Instances/Monoid/Phase/Display.agda:77| -- ...and `char` reads the letter the parse selected
+            78|     Display-char : Display char
+src/Theory/Instances/Monoid/Phase/Display.agda:81| -- concatenation, at the splitting the tensor already carries
+            82|     Display-⊗ : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt}
+src/Theory/Instances/Monoid/Phase/Display.agda:88| -- whichever side of the sum the parse is on
+            89|     Display-⊕ : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt}
+src/Theory/Instances/Monoid/Phase/Display.agda:94| -- the star is the fold of the pieces, in order
+            95|     Display-* : {A : TheoryTy ℓA tt} → {{Display A}} → Display (A *)
+src/Theory/Instances/Monoid/Phase/Display.agda:106| -- nothing to print, vacuously
+            107|     Display-⊥Ty : Display ⊥Ty
+src/Theory/Instances/Monoid/Phase/Display.agda:139| -- ...and the tagged version, when the index can be named.
+            140|   displayΣ-tagged : {Y : Type ℓY} {A : Y → TheoryTy ℓA tt}
+src/Theory/Instances/Monoid/Phase/Display.agda:149| -- the resolved record itself, for the places that need to hand it on
+            150|   theDisplay : {A : TheoryTy ℓA tt} → {{Display A}} → Display A
+src/Theory/Instances/Monoid/Phase/Display.agda:222| -- `a (b|c) d*`
+            223|   Alt Ds Tail G : TheoryTy _ tt
+src/Theory/Instances/Monoid/Phase/Display.agda:242| -- The point of the file: no projection out of `parse` appears here.
+            243|   _ : display (a ∷ b ∷ d ∷ d ∷ []) parse ≡ "abdd"
+src/Theory/Instances/Monoid/Phase/Display.agda:246| -- the other summand, same printer
+            247|   parse' : G (a ∷ c ∷ [])
+src/Theory/Instances/Monoid/Phase/Display.agda:254| -- `⊤Ty` prints its index, through `read`.
+            255|   _ : display {A = ⊤Ty} (text "hello") tt ≡ "hello"
+src/Theory/Instances/Monoid/Phase/Display.agda:258| -- `char *`, resolved from `Display-char` and `Display-*`
+            259|   chars : (char *) (ch 'x' ∷ ch 'y' ∷ [])
+src/Theory/Instances/Monoid/Phase/Display.agda:270| -- `String*`, whose instance is bespoke because it is a `μ`
+            271|   _ : display {A = String*} (text "hi") (read (text "hi") tt) ≡ "hi"
+src/Theory/Instances/Monoid/Phase/Display.agda:315| -- `[[:alpha:]_][[:alnum:]_]*`
+            316|   ident : RE notNullable
+src/Theory/Instances/Monoid/Pipeline/Dyck.agda:17| -- re-exports `isSetAlphabet`, so `Phase` below is at the same instance
+            18| open import Theory.Instances.Monoid.Lex.Regex UChar _≟U_ (ℓ-suc ℓ-zero)
+src/Theory/Instances/Monoid/Pipeline/Dyck.agda:103| -- The lexer alone: brackets kept, whitespace dropped.
+            104| _ : lex "(())" ≡ Mb.just (lp ∷ lp ∷ rp ∷ rp ∷ [])
+src/Theory/Instances/Monoid/Pipeline/Dyck.agda:113| -- `[` is in no rule, so the lexer refutes every tokenisation.
+            114| _ : lex "([)]" ≡ Mb.nothing
+src/Theory/Instances/Monoid/Pipeline/Dyck.agda:117| -- End to end.
+            118| _ : pipeline "" ≡ ok done
+src/Theory/Instances/Monoid/Pipeline/Dyck.agda:130| -- Whitespace changes nothing but the source text.
+            131| _ : pipeline "( ( ) )" ≡ ok (nest (nest done done) done)
+src/Theory/Instances/Monoid/Pipeline/Dyck.agda:148| -- deeper, and with the whitespace rule firing repeatedly
+            149| _ : pipeline "((()))" ≡ ok (nest (nest (nest done done) done) done)
+src/Theory/Instances/Monoid/Precise.agda:90| -- ...and so is `char`, which fixes the splitting without fixing the letter
+            91| char⊗-precise : {K : TheoryTy ℓA tt} → char ⊗ ¬Ty K ⊢ ¬Ty (char ⊗ K)
+src/Theory/Instances/Monoid/Precise.agda:147| -- `startsWith g`, spelled out so that this module need not name it
+            148|   headed : (g : Alphabet) (d v : ↓M tt) → v ≡ g ∷ d → (literal g ⊗ ⊤Ty) v
+src/Theory/Instances/Monoid/Regex/Base.agda:172| -- ...so the two together are a decision, with no case left open.
+            173| decNullable : ∀ {n} (r : RE n)
+src/Theory/Instances/Monoid/Regex/Derivative.agda:66| -- The derivative itself
+            68| δ : ∀ {n} → RE n → Alphabet → RE?
+src/Theory/Instances/Monoid/Regex/Derivative.agda:132| -- `Dl` across the connectives.
+            134| private variable ℓA ℓB : Level
+src/Theory/Instances/Monoid/Regex/Derivative.agda:138| -- forget which side the split fell on
+            139|   Dl-⊗-out : Dl c (A ⊗ B) ⊢ (Dl c A ⊗ B) ⊕ Dl c B
+src/Theory/Instances/Monoid/Regex/Derivative.agda:149| -- ...and put it back, on the left
+            150|   Dl-⊗-in-l : (Dl c A ⊗ B) ⊢ Dl c (A ⊗ B)
+src/Theory/Instances/Monoid/Regex/Derivative.agda:156| -- ...or on the right, which costs a witness that `A` accepts ε
+            157|   Dl-⊗-in-r : (εTy ⊢ A) → Dl c B ⊢ Dl c (A ⊗ B)
+src/Theory/Instances/Monoid/Regex/Derivative.agda:163| -- when `A` cannot be ε the split must be `c`-headed
+            164|   Dl-⊗-out! : ¬Nullable A → Dl c (A ⊗ B) ⊢ Dl c A ⊗ B
+src/Theory/Instances/Monoid/Regex/Derivative.agda:181| -- a map of grammars acts on derivatives by applying it one letter in
+            182| Dl-map : (c : Alphabet) {C : TheoryTy ℓA tt} {D : TheoryTy ℓB tt}
+src/Theory/Instances/Monoid/Regex/Derivative.agda:192| -- an `εTy` element carries `[] Eq.≡ m`, so `c ∷ m` is `c ∷ []`
+            193| δ-sound ⟨ d ⟩r c with d ≟ c
+src/Theory/Instances/Monoid/Regex/Derivative.agda:213| -- `εTy (c ∷ m)` would make `[]` a cons
+            214| δ-complete εr c m x = Empty.rec (LP.¬nil≡cons (Eq.eqToPath (x .snd .fst)))
+src/Theory/Instances/Monoid/Regex/Examples.agda:43| -- ...displayed as text, so a case reads as text in, text out
+            44|   show : M.Maybe (List UChar) → M.Maybe AS.String
+src/Theory/Instances/Monoid/Regex/Examples.agda:49| -- 1. Each regex is named once; the table says what it consumes.
+            51| ident num strLit dotted date : RE notNullable
+src/Theory/Instances/Monoid/Regex/Examples.agda:128| -- ...and the tokenisations, written out.
+            130| _ : passes (lex at
+src/Theory/Instances/Monoid/Regex/Examples.agda:164| -- `?` is in no rule, so *nothing* tokenises this input
+            165| noq : NoTokenisation lexicon (text "x?")
+src/Theory/Instances/Monoid/Regex/Notation.agda:39| -- `[abc]`
+            40| oneOfr : List Alphabet → RE notNullable
+src/Theory/Instances/Monoid/Regex/Notation.agda:43| -- `[^abc]`
+            44| noneOfr : List Alphabet → RE notNullable
+src/Theory/Instances/Monoid/Regex/Notation.agda:50| -- `r?`
+            51| _?r : ∀ {n} → RE n → RE nullable
+src/Theory/Instances/Monoid/Regex/Notation.agda:71| -- `"abc"`
+            72| strr : (w : List Alphabet) → RE (nullb w)
+src/Theory/Instances/Monoid/Regex/Notation.agda:83| -- `r{n}`
+            84| repr : (n : ℕ) → RE notNullable → RE (zerob n)
+src/Theory/Instances/Monoid/Regex/Notation.agda:88| -- `r{,n}` -- at most n
+            89| atMostr : (n : ℕ) → RE notNullable → RE nullable
+src/Theory/Instances/Monoid/Regex/Notation.agda:93| -- `r{n,m}` -- n copies, then up to  more
+            94| betweenr : (n extra : ℕ) → RE notNullable → RE (zerob n)
+src/Theory/Instances/Monoid/Regex/Parse.agda:32| -- A regex whose nullability is only known once it is built
+            34| RE? : Type ℓ-zero
+src/Theory/Instances/Monoid/Regex/Parse.agda:69| -- A parser of characters, in the metalanguage
+            71| private
+src/Theory/Instances/Monoid/Regex/Parse.agda:90| -- what may not stand for itself
+            91|   special : List AC.Char
+src/Theory/Instances/Monoid/Regex/Parse.agda:123| -- Escapes and the named classes
+            125| private
+src/Theory/Instances/Monoid/Regex/Parse.agda:161| -- Bracket expressions
+            163| private
+src/Theory/Instances/Monoid/Regex/Parse.agda:164| -- `[:name:]` -- the leading `[` is already consumed
+            165|   posixName : Par (UChar → Bool)
+src/Theory/Instances/Monoid/Regex/Parse.agda:236| -- `{n}` or `{n,m}`
+            237|     bound g acc n ('}' ∷ cs') = rep? n 0 acc >>=? λ r → post g r cs'
+src/Theory/Instances/Monoid/Regex/Parse.agda:256| -- The entry point
+            258| parseRE : AS.String → M.Maybe RE?
+src/Theory/Instances/Monoid/Regex/Parse.agda:280| -- ...and its two projections
+            281| ∥_∥ : (s : AS.String) → {_ : IsJust (parseRE s)} → Nullability
+src/Theory/Instances/Monoid/Regex/ParseTests.agda:38| -- concatenation, alternation, star
+            40| _ : Yes "ab" "ab"
+src/Theory/Instances/Monoid/Regex/ParseTests.agda:58| -- postfix operators
+            60| _ : Yes "ab?c" "ac"
+src/Theory/Instances/Monoid/Regex/ParseTests.agda:84| -- classes, ranges, escapes
+            86| _ : Yes "[a-z]+" "hello"
+src/Theory/Instances/Monoid/Regex/ParseTests.agda:107| -- the ones a real lexicon is made of
+            109| _ : Yes "-?[0-9]+" "-407"
+src/Theory/Instances/Monoid/Regex/ParseTests.agda:121| -- Nullability is read off the elaborated regex, not asserted
+            123| _ : ∥ "a*" ∥ ≡ nullable
+src/Theory/Instances/Monoid/Regex/Sat.agda:62| -- no accepted letter sits at the front of a word of class `o`
+            63|   miss : (o : M₁) → ((x : Sat P) → o Eq.≡ tk (x .fst) → Empty.⊥)
+src/Theory/Instances/Monoid/Regex/Tests.agda:2| -- The regex parser runs: every case is `decide-r` on a written regex.
+            3| open import Cubical.Foundations.Prelude
+src/Theory/Instances/Monoid/Regex/Tests.agda:31| -- `a b`
+            33| ab : RE notNullable
+src/Theory/Instances/Monoid/Regex/Tests.agda:45| -- `a *`
+            47| as : RE nullable
+src/Theory/Instances/Monoid/Regex/Tests.agda:59| -- `(a | b) *` -- alternation under a star
+            61| abs : RE nullable
+src/Theory/Instances/Monoid/Regex/Tests.agda:85| -- `. +` -- one or more of anything
+            87| anyPlus : RE notNullable
+src/Theory/Instances/Monoid/Regex/Tests.agda:106| -- `[a] [^a] *`
+            107| cls : RE notNullable
+src/Theory/Instances/Monoid/Regex/Tests.agda:122| -- `anyr` still works, now as a definition
+            123| _ : matches (anyr *r) (a ∷ b ∷ a ∷ []) ≡ M.just tt
+src/Theory/Instances/Monoid/Regex/Tests.agda:128| -- `[ab] ?`
+            129| optSet : RE nullable
+src/Theory/Instances/Monoid/Regex/Tests.agda:141| -- `"aba"`, a literal word
+            142| word : RE notNullable
+src/Theory/Instances/Monoid/Regex/Tests.agda:151| -- a{3}
+            152| aaa : RE notNullable
+src/Theory/Instances/Monoid/Regex/Tests.agda:161| -- `a{1,3}` -- one, then up to two more
+            162| oneToThree : RE notNullable
+src/Theory/Instances/Monoid/Regex/Tests.agda:177| -- `[^b] +`
+            178| notBs : RE notNullable
+src/Theory/Instances/Monoid/Regex/Unicode.agda:63| -- `[lo-hi]`
+            64| rangeR : AC.Char → AC.Char → RE notNullable
+src/Theory/Instances/Monoid/Regex/Unicode.agda:67| -- `[c]`
+            68| charR : AC.Char → RE notNullable
+src/Theory/Instances/Monoid/Regex/Unicode.agda:87| -- `\D`, `\S`, `\W` -- free, because a class is a predicate
+            88| notDigitR notSpaceR notWordR : RE notNullable
+src/Theory/Instances/Monoid/Regex/Unicode.agda:93| -- `.` -- POSIX's dot excludes the newline
+            94| dotR : RE notNullable
+src/Theory/Instances/Monoid/Regex/Unicode.agda:114| -- `[…]`
+            115| bracketR : List Item → RE notNullable
+src/Theory/Instances/Monoid/Regex/Unicode.agda:118| -- `[^…]`
+            119| bracketNotR : List Item → RE notNullable
+src/Theory/Instances/Monoid/Regex/UnicodeTests.agda:25| -- the parse of `s` as an `r`, or a refutation of every parse
+            26|   Yes : ∀ {n} (r : RE n) (s : AS.String) → Type _
+src/Theory/Instances/Monoid/Regex/UnicodeTests.agda:40| -- `[a-z]+` -- a range, which a general alphabet cannot express
+            42| lowers : RE notNullable
+src/Theory/Instances/Monoid/Regex/UnicodeTests.agda:61| -- the letter a `satr` matched, read back out
+            62| satChar : {P : UChar → Bool} → SemanticAction (satTy P) UChar
+src/Theory/Instances/Monoid/Regex/UnicodeTests.agda:65| -- head and tail of the identifier
+            66| identChars : SemanticAction (ty ⟦ ident ⟧) (UChar × List UChar)
+src/Theory/Instances/Monoid/Regex/UnicodeTests.agda:82| -- `-?[0-9]+` -- a signed integer
+            84| int : RE notNullable
+src/Theory/Instances/Monoid/Regex/UnicodeTests.agda:111| -- a literal word, and `[0-9]{2,4}`
+            113| kw : RE notNullable
+src/Theory/Instances/Monoid/Residual.agda:52| -- `Fin 2` has no definitional η, so a reassembled splitting needs this path.
+            53| two-η : {P : Fin 2 → Type ℓ} (f : (i : Fin 2) → P i)
+src/Theory/Instances/Monoid/Residual.agda:59| -- ...and this is the only thing the two transposes' β laws are missing.
+            60| ⊗-split-η : {A : TheoryTy ℓ tt} {B : TheoryTy ℓ' tt}
+src/Theory/Instances/Monoid/Residual.agda:91| -- β spends the split's equation and then `⊗-split-η`; η is on the nose.
+            92|   ⟜-β : (e : A ⊗ B ⊢ C) → ⟜-intro⁻ (⟜-intro e) ≡ e
+src/Theory/Instances/Monoid/Residual.agda:108| -- contravariance in the thing still wanted: every dot movement is this
+            109| ⟜-precomp : {B : TheoryTy ℓ tt} {B' : TheoryTy ℓ' tt} {C : TheoryTy ℓ'' tt}
+src/Theory/Instances/Monoid/Residual.agda:117| -- uncurrying one factor off the right, the only place associativity is spent
+            118| ⟜-uncurry : {A : TheoryTy ℓ tt} {B : TheoryTy ℓ' tt} {C : TheoryTy ℓ'' tt}
+src/Theory/Instances/Monoid/Residual.agda:129| -- a residual that wants nothing more is what it produces
+            130| ⟜-unitr : {C : TheoryTy ℓ tt} → C ⟜ εTy ⊢ C
+src/Theory/Instances/Monoid/Residual.agda:192| -- feeding the left slot at the unit: this is how a parser is started
+            193| ⊸-unitl : {A : TheoryTy ℓ tt} {C : TheoryTy ℓ' tt} → εTy ⊢ A → A ⊸ C ⊢ C
+src/Theory/Instances/Monoid/Residual.agda:207| -- the left residual turns a dependent sum on its left into a product
+            208| ⊸⊕ᴰ : {Y : Type ℓY} {A : Y → TheoryTy ℓ tt} {C : TheoryTy ℓ' tt}
+src/Theory/Instances/Monoid/Residual.agda:251| -- naturality of the left unitor's inverse, in the slot it does not touch
+            252| ⊗-unit-l⁻-nat : {K : TheoryTy ℓ tt} {L : TheoryTy ℓ' tt} (f : K ⊢ L)
+src/Theory/Instances/Monoid/Residual.agda:266| -- named so `⊗-tri-l⁻` can hand `unit-l≡` the tuple it transports
+            267|     triL⁻in : A ⊗ K ⊢ εTy ⊗ (A ⊗ K)
+src/Theory/Instances/Monoid/Residual.agda:284| -- the empty half of the split is dropped by `⊗-unit-l`, at `refl`
+            285|   ⊗-tri-l : triL ≡ id⊢
+src/Theory/Instances/Monoid/Residual.agda:306| -- an empty *right* half instead: `⊗ε-unit-r` pays `++-unit-r`
+            307|   ⊗-tri-r : triR ≡ id⊢
+src/Theory/Instances/Monoid/Residual.agda:342| -- the unit law, at a representable: Eq-clean, unlike `⊗-unit-l`
+            343| ε⌈⌉-unit-l : (v : ↓M tt) → εTy ⊗ ⌈ v ⌉ ⊢ ⌈ v ⌉
+src/Theory/Instances/Monoid/Residual.agda:355| -- ...and the mirror, in the right factor
+            356| ⊗⊕ᴰ-distR : {Y : Type ℓY} {A : TheoryTy ℓ tt} {C : Y → TheoryTy ℓ' tt}
+src/Theory/Instances/Monoid/Residual/Laws.agda:46| -- Pre-composition in the argument slot is on the nose.
+            47|   ⟜-precomp-intro⁻ : {B' : TheoryTy ℓ''' tt} (g : B' ⊢ B) (f : A ⊢ C ⟜ B)
+src/Theory/Instances/Monoid/Residual/Laws.agda:52| -- ...and so is uncurrying a pre-composition in the *result* slot.
+            53|   ⟜-intro⁻-nat : {A' : TheoryTy ℓ''' tt} (f : A ⊢ C ⟜ B) (h : A' ⊢ A)
+src/Theory/Instances/Monoid/Residual/Laws.agda:58| -- `⟜-app` is `⟜-intro⁻` at the identity, so this is the previous law.
+            59|   ⟜-app-intro⁻ : {A' : TheoryTy ℓ''' tt} (f : A' ⊢ C ⟜ B)
+src/Theory/Instances/Monoid/SemanticAction.agda:27| -- Observing a tensor: each factor is observed at its own half of the split.
+            28| semact-⊗₁ : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt} {X : Type ℓX}
+src/Theory/Instances/Monoid/SemanticAction.agda:32| -- ...and the same at the right factor.
+            33| semact-⊗ᵣ : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt} {X : Type ℓX}
+src/Theory/Instances/Monoid/SequentialUnambiguity/Base.agda:57| -- transport along maps, in either argument
+            58| ⊛∘⊢-r : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt} {C : TheoryTy ℓC tt}
+src/Theory/Instances/Monoid/SequentialUnambiguity/Base.agda:66| -- ...and through each connective on the right
+            67| ⊛-⊗l : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt} {C : TheoryTy ℓC tt}
+src/Theory/Instances/Monoid/SequentialUnambiguity/Base.agda:98| -- `c ∉FollowLast εTy` unfolds to `¬Nullable (εTy ⊗ startsWith c)`
+            99| ⊛-εL c = Sum.inl (⊗-¬NullableR ¬Nullable-startsWith)
+src/Theory/Instances/Monoid/SequentialUnambiguity/Base.agda:114| -- two different characters cannot both head the same word
+            115|     lit-first-clash : (d e : Alphabet) → (d ≡ e → Empty.⊥)
+src/Theory/Instances/Monoid/SequentialUnambiguity/Base.agda:126| -- The right factor's first character, made explicit.
+            127| ¬Null→⊕first : {B : TheoryTy ℓB tt}
+src/Theory/Instances/Monoid/SequentialUnambiguity/Base.agda:132| -- ...and `⊤Ty` on the right of a `startsWith` is absorbed.
+            133| startsWith⊗⊤ : {c : Alphabet} → startsWith c ⊗ ⊤Ty ⊢ startsWith c
+src/Theory/Instances/Monoid/SequentialUnambiguity/Base.agda:157| -- `⊕` on the left of a `&`, the mirror of `⊕-elim&`.
+            158| private
+src/Theory/Instances/Monoid/SequentialUnambiguity/Base.agda:178| -- ...and at three factors, which is the shape the star argument wants.
+            179| factor⊗3 : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt}
+src/Theory/Instances/Monoid/SequentialUnambiguity/Base.agda:213| -- `B` empty: the `c` is the one that follows `A`
+            214|     emptyB : (A ⊗ ((B & εTy) ⊗ startsWith c)) & (A ⊗ B) ⊢ ⊥Ty
+src/Theory/Instances/Monoid/SequentialUnambiguity/Base.agda:313| -- a nonempty `A *` is an `A` followed by an `A *`
+            314|     nonmt* : ((A *) & char⁺) ⊢ A ⊗ (A *)
+src/Theory/Instances/Monoid/SequentialUnambiguity/Base.agda:342| -- the prefix before the `c` is empty, so `c` opens the whole `A *`
+            343|       emptyPrefix : D₀ & (S₁ & (A *)) ⊢ ⊥Ty
+src/Theory/Instances/Monoid/SequentialUnambiguity/Base.agda:347| -- ...the trailing `A *` is empty, so the `c` has nowhere to sit
+            348|       tailEmpty : (D₀ & W) & ((A *) & εTy) ⊢ ⊥Ty
+src/Theory/Instances/Monoid/SequentialUnambiguity/Base.agda:431| -- `_#_` unfolds to exactly `#→disjoint`'s hypothesis
+            432| disjointFirsts→ : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt}
+src/Theory/Instances/Monoid/SequentialUnambiguity/First.agda:44| -- a word beginning with `c`
+            45| startsWith : Alphabet → TheoryTy ℓM tt
+src/Theory/Instances/Monoid/SequentialUnambiguity/First.agda:90| -- the two splittings agree on the head letter
+            91|     d≡c : d ≡ c
+src/Theory/Instances/Monoid/SequentialUnambiguity/First.agda:125| -- separation: no character can begin both
+            126| _#_ : TheoryTy ℓA tt → TheoryTy ℓB tt → Type _
+src/Theory/Instances/Monoid/SequentialUnambiguity/First.agda:145| -- Every nonempty word begins with some character.
+            146| char⁺→⊕startsWith : char⁺ ⊢ ⊕[ c ∈ Alphabet ] startsWith c
+src/Theory/Instances/Monoid/SequentialUnambiguity/First.agda:167| -- The star.  With `A` non-nullable, one unrolling is enough.
+            168| ∉First*-notnull : {A : TheoryTy ℓA tt} {c : Alphabet}
+src/Theory/Instances/Monoid/SequentialUnambiguity/Nullable.agda:37| -- `¬Nullable` transfers backwards along any map.
+            38| ¬Nullable-map : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt}
+src/Theory/Instances/Monoid/SequentialUnambiguity/Nullable.agda:76| -- a non-nullable grammar is refuted at ε
+            77| ¬Nullable→¬ε : {A : TheoryTy ℓA tt} → ¬Nullable A → εTy ⊢ ¬Ty A
+src/Theory/Instances/Monoid/SequentialUnambiguity/Nullable.agda:80| -- the two ways a tensor inherits non-nullability
+            81| ¬Nullable⊗l : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt}
+src/Theory/Instances/Monoid/Strings.agda:61| -- the carrier: strings, as the free monoid -- here, the list type itself
+            62| String : Type ℓM
+src/Theory/Instances/Monoid/Strings.agda:170| -- the left unit law: an empty first factor is no factor
+            171| ⊗-unit-l : {A : TheoryTy ℓA tt} → εTy ⊗ A ⊢ A
+src/Theory/Instances/Monoid/Strings.agda:208| -- the carrier is a set, so a splitting's index equation is a proposition
+            209| isSetString : isSet String
+src/Theory/Instances/Monoid/Strings.agda:239| -- `Eq.transport` along a `pathToEq` is transport along the path itself.
+            240| transportEq : {A : TheoryTy ℓA tt} {x y : String} (p : x ≡ y) (a : A x)
+src/Theory/Instances/Monoid/Strings.agda:248| -- ...so `⊗-unit-l` is the second projection, over any path of indices.
+            249| unit-l≡ : {A : TheoryTy ℓA tt} (m : String) (t : (εTy ⊗ A) m)
+src/Theory/Instances/Monoid/Strings.agda:264| -- functoriality of `⊗-map`, slotwise
+            265| ⊗-map-∘ : {A B C D E F : TheoryTy ℓM tt}
+src/Theory/Instances/Monoid/Strings.agda:270| -- naturality of `Eq.transport`, which is all `⊗-unit-l` does
+            271| transportEq-nat : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt} (f : A ⊢ B)
+src/Theory/Instances/Monoid/Strings.agda:425| -- `op ε· ns` is `[]` on the nose, so the nullary tuple never appears.
+            426|   consNotNil : (ms : arities MonSig _⊙_ → String)
+src/Theory/Instances/Monoid/Strings.agda:512| -- the unit's inverse.  `⊗-unit-l⁻` above lands in `⊤Ty`, which is weaker.
+            513| ε⊗-intro : {A : TheoryTy ℓA tt} → A ⊢ εTy ⊗ A
+src/Theory/Instances/Monoid/Strings.agda:520| -- The `Grammar/String/Terminal.agda` equivalence, recaptured.
+            521| String*≅⊤Ty : String* ≅ ⊤Ty
+src/Theory/Instances/Monoid/Suffix/Base.agda:62| -- a proper suffix is shorter, which is what makes the relation a poset
+            63| ◂-length : ∀ {w} v → w ◂ v → length w NO.< length v
+src/Theory/Instances/Monoid/Suffix/Base.agda:80| -- deciding a proper suffix means deciding equality against each tail
+            81| dec◂ : Discrete Alphabet → ∀ w v → NB.Dec (w ◂ v)
+src/Theory/Instances/Monoid/Suffix/Base.agda:89| -- accessibility is structural recursion on the string
+            90| private
+src/Theory/Instances/Monoid/Suffix/Base.agda:108| -- points of the one-nonterminal indexing: a memo row per suffix
+            109| SPt : Type ℓM
+src/Theory/Instances/Monoid/Suffix/Base.agda:135| -- appending a non-empty prefix lands strictly below
+            136| ◂-cons : (c : Alphabet) (u w : String) → w ◂ (c ∷ (u ++ w))
+src/Theory/Instances/Monoid/Suffix/Base.agda:156| -- the hypothesis, read after one token has been consumed
+            157|   ▷-tok : (c : Alphabet) → Dl c (▷ tt) ⊢ A tt
+src/Theory/Instances/Monoid/Suffix/Base.agda:161| -- the payment `▷⊛r` asks for is `◂-lit`
+            162|     payTok : (c : Alphabet) → PayR suffixLöb {X = literal c}
+src/Theory/Instances/Monoid/Suffix/Base.agda:171| -- the same guard at an empty continuation: the shape a parser consumes
+            172|   ▷-tok⊗ : (c : Alphabet) → ▷ tt & (literal c ⊗ ⊤Ty) ⊢ literal c ⊗ (A tt & ⊤Ty)
+src/Theory/Instances/Monoid/Suffix/Base.agda:189| -- `▷? ⟨▷⟩` is "at every proper suffix", `▷? ⟨□⟩` is that and here too
+            190| ▷? : ParserTag → TheorySet ℓA tt → TheorySet (ℓ-max ℓA ℓM) tt
+src/Theory/Instances/Monoid/Suffix/Base.agda:199| -- the modality is functorial, lax over `&`, and holds a closed term
+            200| ▷map : {t : ParserTag} → ty A ⊢ ty B → ty (▷? t A) ⊢ ty (▷? t B)
+src/Theory/Instances/Monoid/Suffix/Base.agda:215| -- reading the term here, and forgetting it
+            216| □here : ty (□ A) ⊢ ty A
+src/Theory/Instances/Monoid/Suffix/Base.agda:222| -- what holds at every proper suffix holds one step down, in both flavours
+            223| ▷δ : ty (▷ A) ⊢ ty (▷ (▷ A))
+src/Theory/Instances/Monoid/Suffix/Base.agda:229| -- ...so a term made from the delayed one is available here as well
+            230| ▷□ : (ty (▷ A) ⊢ ty B) → ty (▷ A) ⊢ ty (□ B)
+src/Theory/Instances/Monoid/Suffix/Base.agda:233| -- the token payment: a letter in the left slot puts the right one below
+            234| ▷⊗r : (c : Alphabet) {C : TheoryTy ℓC tt}
+src/Theory/Instances/Monoid/Suffix/Base.agda:238| -- ...and Löb at a grammar
+            239| löbG : (ty (▷ A) ⊢ ty A) → ⊤Ty ⊢ ty A
+src/Theory/Instances/Monoid/Suffix/Base.agda:246| -- the call took a proper suffix, or stayed put and dropped the rank
+            247|   Step : Pt xs → Pt xs → Type ℓM
+src/Theory/Instances/Monoid/Suffix/Base.agda:250| -- the call consumed something...
+            251|   shorter : {y z : X} {v W : String} → v ◂ W → Step (z , v) (y , W)
+src/Theory/Instances/Monoid/Suffix/Base.agda:254| -- ...or it stayed where it was and the rank dropped
+            255|   dropped : {y z : X} {v : String} → rank z NO.< rank y → Step (z , v) (y , v)
+src/Theory/Instances/Monoid/Thompson/Base.agda:6| -- no loss, but the side condition is now a typing rule.  And `satr`
+            7|    needs one transition per satisfying character, so the construction needs
+src/Theory/Instances/Monoid/Thompson/Base.agda:57| -- where each regex's automaton lands
+            58| reLevel : ∀ {n} → RE n → Level
+src/Theory/Instances/Monoid/Thompson/Construction/Epsilon.agda:43| -- the level a one-state automaton's traces land at
+            44| ℓε : Level
+src/Theory/Instances/Monoid/Thompson/Construction/KleeneStar.agda:156| -- `N`'s trace as a `*NFA` trace still owing the rest of the list
+            157|   ⟦_⟧N : ⟨ N .Q ⟩ → TheoryTy (ℓ-max (ℓF (ℓ⋆ ℓN)) ℓN) tt
+src/Theory/Instances/Monoid/Thompson/Construction/KleeneStar.agda:174| -- ...and the list of them, folded back into one trace
+            175|   N*Alg : ∀ (_ : Unit) → ⟦ StarCode A.Parse ⟧TheoryTy (λ _ → Trace (Sum.inl tt))
+src/Theory/Instances/Monoid/Thompson/Construction/KleeneStar.agda:191| -- the shapes `ret`'s branches pass through
+            192|     starA : ∀ {ℓD} {D : TheoryTy ℓD tt}
+src/Theory/Instances/Monoid/Thompson/Construction/KleeneStar.agda:334| -- `NAlg`'s three bodies at the equalizer carrier
+            335|     U-acc : ∀ q (acc : true Eq.≡ N .isAcc q)
+src/Theory/Instances/Monoid/Thompson/Construction/KleeneStar.agda:357| -- the shapes each branch passes through
+            358|     nA : ∀ {ℓD} {D : TheoryTy ℓD tt} q
+src/Theory/Instances/Monoid/Thompson/Construction/LinearProduct.agda:224| -- ...and the tails they are composed with, named so `cong` has a domain.
+            225|     tail-acc : ∀ q (acc : true Eq.≡ N .isAcc q)
+src/Theory/Instances/Monoid/Thompson/Construction/LinearProduct.agda:232| -- the crossing branch, at its two intermediate shapes
+            233|     accL : ∀ q (acc : true Eq.≡ N .isAcc q)
+src/Theory/Instances/Monoid/Thompson/Construction/LinearProduct.agda:257| -- the branch as `NAlg` leaves it, before `map-step` is applied
+            258|     lhs-step : (t : ⟨ N .transition ⟩)
+src/Theory/Instances/Monoid/Thompson/Construction/LinearProduct.agda:267| -- ...and after, with the two reassociations left adjacent
+            268|     mid-step : (t : ⟨ N .transition ⟩)
+src/Theory/Instances/Monoid/Thompson/Construction/LinearProduct.agda:284| -- the `N'` side, exactly the `Sum` construction's shape
+            285|     stepN'-comp : (t : ⟨ N' .transition ⟩)
+src/Theory/Instances/Monoid/Thompson/Construction/LinearProduct.agda:388| -- the map each `⊕ᴰ≡` branch is precomposed with
+            389|     hOf : ∀ q (tg : A.Tag q) → ⟦ A.branch q tg ⟧TheoryTy Eqr ⊢ A.Trace q
+src/Theory/Instances/Monoid/Thompson/Construction/LinearProduct.agda:404| -- `NAlg`'s three bodies, at the equalizer carrier
+            405|     V-acc : ∀ q (acc : true Eq.≡ N .isAcc q)
+src/Theory/Instances/Monoid/Thompson/Construction/LinearProduct.agda:427| -- the shapes each branch passes through
+            428|     accA : ∀ {ℓD} {D : TheoryTy ℓD tt} q
+src/Theory/Instances/Monoid/Thompson/Construction/LinearProduct.agda:448| -- the five shapes the labelled branch passes through
+            449|     stepA : (t : ⟨ N .transition ⟩)
+src/Theory/Instances/Monoid/Thompson/Construction/Literal.agda:114| -- rolling up a `step` summand, named so `cong` has a domain to solve
+            115|     roll↑ : ∀ t → (⟦ branch c-st (step t Eq.refl) ⟧TheoryTy ⟦_⟧st
+src/Theory/Instances/Monoid/Thompson/Construction/Sum.agda:174| -- ...and back: each sub-automaton's trace embeds by renaming transitions.
+            175|   ⟦_⟧N : ⟨ N .Q ⟩ → TheoryTy ℓ⊕ tt
+src/Theory/Instances/Monoid/Thompson/Equivalence.agda:52| -- the level a regex's automaton's traces land at
+            53| reNFALevel : ∀ {n} → RE n → Level
+src/Theory/Instances/Monoid/Thompson/Equivalence.agda:63| -- `Regex.Base`'s `⟦_⟧`, at the level the traces live at
+            64| ⟦_⟧nfa : ∀ {n} (r : RE n) → TheoryTy (reNFALevel r) tt
+src/Theory/Instances/Monoid/Types.agda:42| -- `at` clashes with the `_at_` of `SemanticAction`, which every test uses
+            43| open import Theory.Type.Decidable.Base MonEqns Alphabet (λ _ → tt) listPresentation public
+src/Theory/Instances/Monoid/Unicode/Base.agda:46| -- structural, so it reduces to `Eq.refl` -- the whole point
+            47| _≟Bits_ : {k : ℕ} (x y : Bits k) → (x Eq.≡ y) Sum.⊎ ((x Eq.≡ y) → Empty.⊥)
+src/Theory/Instances/Monoid/Unicode/Base.agda:58| -- 21 bits span 0 .. 0x10FFFF, which is every code point
+            59| UChar : Type ℓ-zero
+src/Theory/Instances/Monoid/Unicode/Base.agda:83| -- the code point back out, so a range can be decided by comparison
+            84| code : UChar → ℕ
+src/Theory/Instances/Monoid/Unicode/Base.agda:87| -- text enters the theory here and nowhere else
+            88| text : AS.String → List UChar
+src/Theory/Instances/Monoid/Unicode/Base.agda:91| -- ...and leaves here, which is what lets a test state its result as text
+            92| unch : UChar → AC.Char
+src/Theory/Instances/STLC/Base.agda:69| -- h-level of the sorts and operations, for the term presentation below.
+            70| private
+src/Theory/Type/Bottom/Base.agda:35| -- the same at the lifted empty type, so a client never has to unfold it
+            36|   ⊥Ty↑-elim : ∀ {ℓB} → ⊥Ty↑ {s = s} ℓB ⊢ A
+src/Theory/Type/Code/Base.agda:1| -- Codes for strictly positive functors
+            2| {-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
+src/Theory/Type/Code/Container.agda:1| -- TODO is this actually used?
+            2| {-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
+src/Theory/Type/Decidable/Base.agda:1| -- TODO how much of this is actually used?
+            2| open import Cubical.Foundations.Prelude
+src/Theory/Type/Decidable/Route.agda:43| -- Deciding an index in `Eq`, so that matching refines.
+            44| DiscreteEq : ∀ {ℓY} → Type ℓY → Type ℓY
+src/Theory/Type/Decidable/Route.agda:101| -- ...and closed, which is what a top-level decision wants.
+            102|   routeDec : Route ℓB → DiscreteEq Y
+src/Theory/Type/Equivalence/Base.agda:62| -- A retract is a weak equivalence one of whose composites is the identity.
+            63| record _isRetractOf_ {s : S} (A : TheoryTy ℓA s) (B : TheoryTy ℓB s)
+src/Theory/Type/Equivalence/Base.agda:79| -- Monomorphisms
+            80| isMono : {s : S} {A : TheoryTy ℓA s} {B : TheoryTy ℓB s} → A ⊢ B → Typeω
+src/Theory/Type/Equivalence/Base.agda:125| -- ...and conversely, pointwise injectivity is monicity.
+            126|   injective→isMono : ((m : ↓M s) (x y : A m) → f m x ≡ f m y → x ≡ y) → isMono f
+src/Theory/Type/Guarded/Base.agda:1| -- An interface to guarded recursion
+            2| {-# OPTIONS --lossy-unification #-}
+src/Theory/Type/Guarded/Base.agda:27| -- where a guarded recursion is at: an index and an input
+            28| Pt : {X : Type ℓX} (xs : X → S) → Type (ℓ-max ℓX ℓM)
+src/Theory/Type/Guarded/Base.agda:48| -- the β-rule: what `next` promised is what `app` delivers
+            49|       app-next : (t : ∀ x → ⊤Ty ⊢ A x)
+src/Theory/Type/Guarded/Base.agda:91| -- the β-law comes with it, rather than being a separate `refl`
+            92|     fold-unfold : {A : (x : X) → TheoryTy (ℓ-max (ℓF ℓA) ℓX) (xs x)}
+src/Theory/Type/Guarded/Justification.agda:88| -- memoising changes the cost, not the value
+            89|       löbMemo≡löbFrom : (φ : ∀ x → T.L.▷ x ⊢ A x)
+src/Theory/Type/Guarded/Justification.agda:147| -- Guardedness of a code: every recursive leaf sits strictly below the root.
+            148|   module _ (O : IPtOrder xs ℓ<) where
+src/Theory/Type/Guarded/Justification.agda:175| -- when the recursive call does not look at its guard, `mapG` *is* `map`
+            176|     private
+src/Theory/Type/Guarded/Justification.agda:194| -- coalgebra + algebra + guardedness, by löb
+            195|     hylosFromGuard : (F : (x : X) → Functor ℓA X xs (xs x))
+src/Theory/Type/Guarded/Justification.agda:201| -- the löb family is `A ⇒ B` pointwise, which is where `isSetB` is spent
+            202|       Fn : {ℓB : Level} (A B : IFam xs ℓB) → IFam xs ℓB
+src/Theory/Type/Guarded/Justification.agda:258| -- the fuel is spent one unit per step, structurally
+            259|         go : (n : ℕ) (p : Pt xs) → fuel p NO.≤ n → A (p .fst) (p .snd)
+src/Theory/Type/Guarded/Justification.agda:265| -- how much fuel was left over does not change the value
+            266|         go-irr : (n n' : ℕ) (p : Pt xs)
+src/Theory/Type/HLevels.agda:163| -- a proposition at one end of a line of types fills the whole line
+            164| isPropPathP : ∀ {ℓ} (T : I → Type ℓ) → isProp (T i0)
+src/Theory/Type/Later/Lex.agda:24| -- the first component drops, or it does not and the second drops
+            25|   _<lex_ : A.D × B.D → A.D × B.D → Type (ℓ-max ℓ<A (ℓ-max ℓA ℓ<B))
+src/Theory/Type/Later/Lex.agda:28| -- the two disjuncts exclude each other, so the sum is a prop
+            29|   isProp<lex : ∀ p q → isProp (p <lex q)
+src/Theory/Type/Later/Lex.agda:60| -- decidable when each comparison is, plus equality on the first component
+            61|   dec<lex : Discrete A.D → (∀ a a' → Dec (a A.< a'))
+src/Theory/Type/Later/Tabulated.agda:50| -- a family's value at a point
+            51|   At : IFam xs ℓA → IPt xs → Type ℓA
+src/Theory/Type/Later/Tabulated.agda:54| -- the position of a cell in a table
+            55|   data _∈ᴾ_ (p : IPt xs) : List (IPt xs) → Type (ℓ-max ℓX ℓM) where
+src/Theory/Type/Later/Tabulated.agda:59| -- the memo table: one materialised cell per listed point
+            60|   Tbl : IFam xs ℓA → List (IPt xs) → Type ℓA
+src/Theory/Type/Later/Tabulated.agda:97| -- an enumeration of the points below each point, presented as a chain
+            98|     record Chain : Type (ℓ-max (ℓ-max ℓX ℓM) ℓ<) where
+src/Theory/Type/Later/Tabulated.agda:112| -- the tabulated later modality
+            113|       ▷ᵗ : IFam xs ℓA
+src/Theory/Type/Later/Tabulated.agda:129| -- a table is a delayed hypothesis: read it at every point below
+            130|       tabulate : ∀ x → ▷ᵗ x ⊢ L.▷ x
+src/Theory/Type/Later/Tabulated.agda:139| -- the shared cell: `t` is a variable, so both its uses are one thunk
+            140|           cell : (q : IPt xs) → Tbl A (below q) → Tbl A (q ∷ below q)
+src/Theory/Type/Later/Tabulated.agda:149| -- the table at `p`, built once from the table at its predecessor
+            150|         build : (p : IPt xs) → Acc _<_ p → Tbl A (below p)
+src/Theory/Type/Later/Tabulated.agda:171| -- every cell of the built table holds the fixed point's value there
+            172|         build-tab : (p : IPt xs) (a : Acc _<_ p) → build p a ≡ tab (below p)
+src/Theory/Type/Later/Tabulated.agda:182| -- the guarded fixed-point equation, for the tabulated hypothesis
+            183|         löbᵗ-unfold : ∀ x → löbᵗ x ≡ φ x ∘⊢ next⊤ᵗ löbᵗ x
+src/Theory/Type/Later/Tabulated.agda:187| -- an ordinary guarded step, solved by the memo table
+            188|       module _ (φ : ∀ x → L.▷ x ⊢ A x) where
+src/Theory/Type/Later/Tabulated.agda:196| -- reading the built table anywhere gives the fixed point's value
+            197|           key : (p : IPt xs) (a : Acc _<_ p) {q : IPt xs} (lt : q < p)
+src/Theory/Type/Later/Tabulated.agda:210| -- the tabulated fixed point *is* the untabulated one
+            211|         löbTab≡löb : löbTab ≡ L.löb φ
+src/Theory/Type/Monad/Base.agda:1| -- TODO how much of this Monad/ dir is actually used?
+            2| open import Cubical.Foundations.Prelude
+src/Theory/Type/Operation/Base.agda:1| -- Lifting an operation from a theory to a type constructor
+            2| {-# OPTIONS -WnoUnsupportedIndexedMatch #-}
+src/Theory/Type/Operation/Base.agda:92| -- uniform levels
+            93| ⊗ᵘ[_] : (o : σ .ops)
+src/Theory/Type/Operation/Base.agda:176| -- projecting a slot out of the tuples
+            177| argAt : (n : ℕ) (ℓs : Fin n → Level) (ws : Fin n → S)
+src/Theory/Type/Operation/Base.agda:201| -- Map an operation convolution with independently varying input levels.
+            202| ⊗map[_][_] : (o : σ .ops) (ℓs : arities σ o → Level)
+src/Theory/Type/Operation/Base.agda:217| -- Equations of the theory lift to isos of the convolutional liftings
+            218| eqn→Iso :
+src/Theory/Type/Operation/Base.agda:249| -- the convolution of representables is the representable at the composite
+            250| ⊗⌈⌉Iso : (o : σ .ops) (ms : interpIn o ↓M) (m : ↓M (σ .resultSort o))
+src/Theory/Type/Operation/Base.agda:261| -- A term that is a variable convolves to nothing
+            262| unVar : {n : ℕ} {ws : Fin n → S} {ℓs : Fin n → Level}
+src/Theory/Type/PropositionalTruncation/Base.agda:59| -- ...so truncating an unambiguous type does nothing.
+            60| ∥∥idem : ∀ {s} {A : TheoryTy ℓA s} → unambiguous A → A ≅ ∥ A ∥
+src/Theory/Type/PropositionalTruncation/Base.agda:84| -- the image factorisation: a map into `A` factors through `∃subgrammar`
+            85|   ∃-intro : {C : TheoryTy ℓA s} (f : C ⊢ A) → C ⊢ ∥ B ∥ → C ⊢ ∃subgrammar
+src/Theory/Type/Representable/Base.agda:24| -- Yoneda: a map out of a representable is a point
+            25| yoIso : ∀ {s} {A : TheoryTy ℓA s} (m : ↓M s) → Iso (⌈ m ⌉ ⊢ A) (A m)
+src/Theory/Type/Representable/Base.agda:31| -- precomposition with a pointwise iso
+            32| precompIso : ∀ {s} {A : TheoryTy ℓA s} {A' : TheoryTy ℓA' s}
+src/Theory/Type/Subgrammar/Base.agda:95| -- a section of `sub-π` says `p` holds everywhere
+            96|   subgrammar-section : (f : A ⊢ subgrammar) → sub-π ∘⊢ f ≡ id⊢
+src/Theory/Type/Subgrammar/Base.agda:133| -- The preimage of a subobject along a map.
+            134| module _ {s : S} {A : TheoryTy ℓA s} {B : TheoryTy ℓB s}
+src/Theory/Type/Subgrammar/Base.agda:143| -- Every mono into a set is a subobject.
+            144| module _ {s : S} {A : TheoryTy ℓA s} {B : TheoryTy ℓB s}
+src/Theory/Type/Subgrammar/Base.agda:154| -- The constantly-`A` proposition, available whenever `A` is unambiguous.
+            155| module _ {s : S} {A : TheoryTy ℓA s} (unambig-A : unambiguous A)
+src/Theory/Type/Unambiguity/Disjoint.agda:132| -- The point of `≈`: between unambiguous types it is already a `≅`.
+            133| ≈→≅ : unambiguous A → unambiguous B → A ≈ B → A ≅ B

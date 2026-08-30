@@ -102,7 +102,7 @@ roll* : {ℓA : Level} {A : TheoryTy ℓA tt}
 roll* = ⊕-elim CONS NIL
 
 -- Every word is a list of characters: `Strings.read` at the star rather
--- than at `String*`.  This is how an input is presented to a fold.
+-- than at `String*`.
 readChars : ⊤Ty ⊢ char *
 readChars [] _ = NIL _ (lift εTy-pt)
 readChars (c ∷ w) _ =
@@ -164,7 +164,6 @@ module _ {A : TheoryTy ℓA tt} where
     (roll .m (false , (ms , e , u))) i →
       roll m (false , ms , e , funExt {f = λ ()} {g = u} (λ ()) i)
 
-  -- ...so a parser relabels along an isomorphism, not a mere pair of maps.
   roll↑≅ : ((A ⊗ (A *)) ⊕ εTy) ≅ (A *)
   roll↑≅ .fun = roll↑
   roll↑≅ .inv = unroll↑

@@ -30,7 +30,6 @@ open import Theory.Instances.Monoid.Base
 open import Theory.Instances.Monoid.Strings Alphabet isSetAlphabet
 open import Theory.Type.Cover.Base MonEqns Alphabet (λ _ → tt) listPresentation
 
--- the lookahead width, as a unary numeral
 data Width : Type ℓ-zero where
   none : Width
   more : Width → Width
@@ -40,7 +39,6 @@ w1 = more none
 w2 = more w1
 w3 = more w2
 
--- a word of length at most n: the input, truncated to a n-token window
 data Window : Width → Type ℓAlph where
   ⟨⟩  : {n : Width} → Window n
   _◂_ : {n : Width} → Alphabet → Window n → Window (more n)
@@ -72,11 +70,11 @@ private
   Λw-sound {n = none} ⟨⟩ m _ = Eq.refl
   Λw-sound {n = more n} ⟨⟩ .[] (_ , Eq.refl , _) = Eq.refl
   Λw-sound {n = more n} (c ◂ w) m (ms , e , (lc , (v , _))) =
-    go (ms zero) (ms (suc zero)) lc e v
+    afterHead (ms zero) (ms (suc zero)) lc e v
     where
-    go : (u u' : ↓M tt) → u Eq.≡ (c ∷ []) → (u ++ u') Eq.≡ m → Λw w u'
+    afterHead : (u u' : ↓M tt) → u Eq.≡ (c ∷ []) → (u ++ u') Eq.≡ m → Λw w u'
        → win (more n) m Eq.≡ (c ◂ w)
-    go .(c ∷ []) u' Eq.refl Eq.refl v' = Eq.ap (c ◂_) (Λw-sound w u' v')
+    afterHead .(c ∷ []) u' Eq.refl Eq.refl v' = Eq.ap (c ◂_) (Λw-sound w u' v')
 
 Λw-disjoint : {n : Width} → Disjoint (Λw {n})
 Λw-disjoint w w' ne m (v , v') =
@@ -87,10 +85,12 @@ private
 Λw-total : {n : Width} → Total (Λw {n})
 Λw-total {n = none} m _ = ⟨⟩ , lift tt
 Λw-total {n = more n} [] _ = ⟨⟩ , ((λ ()) , Eq.refl , tt*)
-Λw-total {n = more n} (c ∷ m) _ = go (Λw-total {n = n} m tt)
+Λw-total {n = more n} (c ∷ m) _ = extendWindow (Λw-total {n = n} m tt)
   where
-  go : (Σ[ w ∈ Window n ] Λw w m) → Σ[ w ∈ Window (more n) ] Λw w (c ∷ m)
-  go (w , v) = (c ◂ w) , (two (c ∷ []) m , Eq.refl , (Eq.refl , (v , tt*)))
+  extendWindow :
+    (Σ[ w ∈ Window n ] Λw w m) → Σ[ w ∈ Window (more n) ] Λw w (c ∷ m)
+  extendWindow (w , v) =
+    (c ◂ w) , (two (c ∷ []) m , Eq.refl , (Eq.refl , (v , tt*)))
 
 
 windowCover : (n : Width) → Cover (Window n) (Λw {n})

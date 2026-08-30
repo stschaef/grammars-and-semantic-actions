@@ -62,23 +62,22 @@ literal-¬Nullable c m (lc , (_ , ee , _)) =
 ⊗-¬Nullable : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt}
   → ¬Nullable A → ¬Nullable (A ⊗ B)
 ⊗-¬Nullable {A = A} nu m (t , eps) =
-  go (t .fst zero) (t .fst (suc zero)) (t .snd .snd .fst)
+  atSplitOfEmpty (t .fst zero) (t .fst (suc zero)) (t .snd .snd .fst)
      (Eq.eqToPath (t .snd .fst) ∙ sym (Eq.eqToPath (eps .snd .fst)))
   where
-  go : (u v : String) → A u → (u ++ v) ≡ [] → ⊥Ty m
-  go [] v a p = nu [] (a , εTy-pt)
-  go (c ∷ u) v a p = Empty.rec (L.¬cons≡nil p)
+  atSplitOfEmpty : (u v : String) → A u → (u ++ v) ≡ [] → ⊥Ty m
+  atSplitOfEmpty [] v a p = nu [] (a , εTy-pt)
+  atSplitOfEmpty (c ∷ u) v a p = Empty.rec (L.¬cons≡nil p)
 
--- ...and the mirror, for a nullable head with a non-nullable tail
 ⊗-¬NullableR : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt}
   → ¬Nullable B → ¬Nullable (A ⊗ B)
 ⊗-¬NullableR {B = B} nu m (t , eps) =
-  go (t .fst zero) (t .fst (suc zero)) (t .snd .snd .snd .fst)
+  atSplitOfEmpty (t .fst zero) (t .fst (suc zero)) (t .snd .snd .snd .fst)
      (Eq.eqToPath (t .snd .fst) ∙ sym (Eq.eqToPath (eps .snd .fst)))
   where
-  go : (u v : String) → B v → (u ++ v) ≡ [] → ⊥Ty m
-  go [] v b p = nu [] (subst B p b , εTy-pt)
-  go (c ∷ u) v b p = Empty.rec (L.¬cons≡nil p)
+  atSplitOfEmpty : (u v : String) → B v → (u ++ v) ≡ [] → ⊥Ty m
+  atSplitOfEmpty [] v b p = nu [] (subst B p b , εTy-pt)
+  atSplitOfEmpty (c ∷ u) v b p = Empty.rec (L.¬cons≡nil p)
 
 ⊥-¬Nullable : ¬Nullable (⊥Ty {s = tt})
 ⊥-¬Nullable m (b , _) = b
@@ -91,19 +90,18 @@ literal-¬Nullable c m (lc , (_ , ee , _)) =
 char-¬Nullable : ¬Nullable char
 char-¬Nullable m ((c , lc) , eps) = literal-¬Nullable c m (lc , eps)
 
--- ...and the bridge.  A head that is an `A` cannot be `[]`, so what follows
--- it is a *proper* suffix.  This is the only place the two readings meet.
+-- A head that is an `A` cannot be `[]`, so what follows it is a *proper*
+-- suffix.  This is the only place the two readings meet.
 ¬Nullable→NonNull : {A : TheoryTy ℓA tt} → ¬Nullable A → NonNull A
 ¬Nullable→NonNull {A = A} nu m ms e =
-  Eq.transport (ms (suc zero) ◂_) e ∘ go (ms zero) (ms (suc zero))
+  Eq.transport (ms (suc zero) ◂_) e ∘ atSplit (ms zero) (ms (suc zero))
   where
-  go : (u v : String) → A u → v ◂ (u ++ v)
-  go [] v h = Empty.rec (lower (nu [] (h , εTy-pt)))
-  go (c ∷ u) v h = ◂-cons c u v
+  atSplit : (u v : String) → A u → v ◂ (u ++ v)
+  atSplit [] v h = Empty.rec (lower (nu [] (h , εTy-pt)))
+  atSplit (c ∷ u) v h = ◂-cons c u v
 
 module _ {A : TheoryTy ℓA tt} (B : TheorySet ℓB tt) (nu : ¬Nullable A) where
   private
-    -- the family being fixed: the fold itself, as an internal function
     Fam : TheorySet _ tt
     Fam = (A * ⇒ ty B) , isSet⇒ (isSetTy B)
 
@@ -115,23 +113,17 @@ module _ {A : TheoryTy ℓA tt} (B : TheorySet ℓB tt) (nu : ¬Nullable A) wher
 
   module _ (nil : εTy ⊢ ty B) (cons : A ⊗ ty B ⊢ ty B) where
     private
-      -- the delayed fold reaches the tail because the head was paid for
       step : (A ⊗ (A *)) & GB.▷ tt ⊢ ty B
       step = cons ∘⊢ (id⊢ ,⊗ (⇒-app ∘⊢ &-swap)) ∘⊢ ▷⊛r GB.suffixLöb pay
 
       body : GB.▷ tt & (A *) ⊢ ty B
       body = ⊕-elim& (step ∘⊢ &-swap) (nil ∘⊢ π₂) ∘⊢ (id& unroll↑)
 
-    -- ...and Löb closes it.  One combinator, no pragma.
     fold*g : A * ⊢ ty B
     fold*g = ⇒-app ∘⊢ ((GB.löb (λ _ → ⇒-intro body) tt ∘⊢ ⊤Ty-intro) ,& id⊢)
 
--- The two star actions, by löb.  `SemanticAction.semact-*` and
--- `semact-skip*` are `rec`, so the pragma sits under every action; these
--- are the same folds with `fold*g` underneath.
---
--- The price is `isSet X`: löb fixes a family and wants it set-valued,
--- where `rec` did not.
+-- The two star actions, by löb.  The price is `isSet X`: löb fixes a family
+-- and wants it set-valued, where `rec` did not.
 
 open import Cubical.Data.List.Properties using (isOfHLevelList)
 open import Cubical.Data.Sigma using (_×_ ; _,_ ; fst ; snd)

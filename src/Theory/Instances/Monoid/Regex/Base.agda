@@ -31,7 +31,7 @@ open import Theory.Instances.Monoid.KleeneStar.Guarded Alphabet isSetAlphabet
 open import Theory.Instances.Monoid.Residual Alphabet isSetAlphabet
   using (⊗ε-unit-l⁻)
 open import Theory.Instances.Monoid.Regex.Sat Alphabet _≟_ ℓ
-  using (Sat ; satG ; satSet ; satTok) public
+  using (Sat ; satTy ; satSet ; satTok ; semact-sat) public
 
 -- Whether a regex may match the empty word.  A `Bool` here would say
 -- nothing about which of the two truth values means what, and the
@@ -130,7 +130,7 @@ parse▷ (r *r) ℓK p = Empty.rec (ν≢ν̸ p)
 decide-r : ∀ {n} (r : RE n) (ℓK : Level) → Decidable (ty ⟦ r ⟧)
 decide-r r ℓK = runP ℓK (parse r ℓK)
 
-sat-¬Nullable : {P : Alphabet → Bool} → ¬Nullable (satG P)
+sat-¬Nullable : {P : Alphabet → Bool} → ¬Nullable (satTy P)
 sat-¬Nullable m ((x , lc) , eps) = literal-¬Nullable (x .fst) m (lc , eps)
 
 re-¬Nullable : ∀ {n} (r : RE n) → n ≡ notNullable → ¬Nullable (ty ⟦ r ⟧)
@@ -150,10 +150,6 @@ re-¬Nullable (_⊕r_ {nullable} {n'} r r') p = Empty.rec (ν≢ν̸ p)
 re-¬Nullable (r *r) p = Empty.rec (ν≢ν̸ p)
 
 -- Nullability is decided, and the index is what decides it.
---
--- `re-¬Nullable` above gives one direction.  With the other, the syntactic
--- index is not bookkeeping: it answers the semantic question "does this
--- regex match the empty word", correctly, for every regex.
 
 re-Nullable : ∀ {n} (r : RE n) → n ≡ nullable → εTy ⊢ ty ⟦ r ⟧
 re-Nullable εr p = id⊢
@@ -169,7 +165,6 @@ re-Nullable (_⊕r_ {notNullable} {nullable} r r') p = inr ∘⊢ re-Nullable r'
 re-Nullable (_⊕r_ {notNullable} {notNullable} r r') p = Empty.rec (ν≢ν̸ (sym p))
 re-Nullable (r *r) p = roll↑ ∘⊢ inr
 
--- ...so the two together are a decision, with no case left open.
 decNullable : ∀ {n} (r : RE n)
   → (εTy ⊢ ty ⟦ r ⟧) Sum.⊎ ¬Nullable (ty ⟦ r ⟧)
 decNullable {nullable} r = Sum.inl (re-Nullable r refl)

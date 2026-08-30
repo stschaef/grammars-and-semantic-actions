@@ -45,8 +45,6 @@ open import Theory.Instances.Monoid.Automaton.Implicit.RegExp L2 isSetAlphabet
 
 open ImplicitDeterministicAutomaton
 
--- `a b*`, as an implicit automaton.
-
 private
   -- `litAut c` never steps once it has accepted, so its follow set is
   -- empty and every sequencing condition holds on the left.
@@ -84,21 +82,18 @@ open DeterministicAutomaton DA using (parseInit ; Trace ; init)
 -- the accepting parse tree, and `Trace false init w` is the witness
 -- that the automaton ran to a non-accepting state.
 
-accepts : String → Bool
-accepts w = parseInit isSetQ w (readChars w tt) .fst
+endsAccepting : String → Bool
+endsAccepting w = parseInit isSetQ w (readChars w tt) .fst
 
-traceOf : (w : String) → Trace (accepts w) init w
+traceOf : (w : String) → Trace (endsAccepting w) init w
 traceOf w = parseInit isSetQ w (readChars w tt) .snd
 
--- accepted: `a`, and `a` followed by any number of `b`s
 _ : Trace true init (a ∷ [])
 _ = traceOf _
 
 _ : Trace true init (a ∷ b ∷ b ∷ b ∷ [])
 _ = traceOf _
 
--- rejected, each for its own reason: empty, wrong first letter, a
--- second `a`, and an `a` after the `b`s
 _ : Trace false init []
 _ = traceOf _
 
@@ -111,17 +106,9 @@ _ = traceOf _
 _ : Trace false init (a ∷ b ∷ a ∷ [])
 _ = traceOf _
 
--- ...at scale.  Both directions: an accepting run of length n and a
--- rejecting one of length n+1, built at typechecking time.
---
--- Measured off-tree, against a 3.5s baseline (accept and reject
--- together, so roughly 2n characters per row):
---
---     n:     0    50   200   800  3200  12800  25600
---   sec:   3.5   3.1   3.5   3.6   5.2   13.8   26.7
---
--- ~0.45ms/char, and doubling the input from 12800 to 25600 costs 2.25x
--- the marginal time.  Linear.
+-- At scale, in both directions: an accepting run of length n and a
+-- rejecting one of length n+1, built at typechecking time.  The parse is
+-- linear in the input.
 
 bs : ℕ → String
 bs zero = []

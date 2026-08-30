@@ -61,9 +61,12 @@ Above Below : El → TheoryTy ℓ-zero tt
 Above x = bagAll (aboveEl x)
 Below x = bagAll (belowEl x)
 
--- `nothing` is +∞: an upper bound for the input, and a lower bound that
--- only the empty bag can meet.  That is what pins the accumulator to `ε`
--- at the top call, and it is what makes the step case go through.
+isSetAbove : (x : El) → ∀ m → isSet (Above x m)
+isSetAbove x m = isProp→isSet (isPropBagAll (aboveEl x) m)
+
+isSetBelow : (x : El) → ∀ m → isSet (Below x m)
+isSetBelow x m = isProp→isSet (isPropBagAll (belowEl x) m)
+
 belowElM aboveElM : Maybe El → El → hProp ℓ-zero
 belowElM nothing y = ⊤P
 belowElM (just x) y = belowEl x y
@@ -135,7 +138,7 @@ private
   tmMono P Q h (node _⊙_ ts) (a , b) =
     tmMono P Q h (ts zero) a , tmMono P Q h (ts (suc zero)) b
 
--- opaque: its result is a bound, never something an answer is read from
+-- its result is a bound, never something an answer is read from
 opaque
   bagAll-mono : (p q : El → hProp ℓ-zero)
     → (∀ y → ⟨ p y ⟩ → ⟨ q y ⟩) → bagAll p ⊢ bagAll q
@@ -157,7 +160,6 @@ private
   tmTrue P h (node ε· ts) = tt*
   tmTrue P h (node _⊙_ ts) = tmTrue P h (ts zero) , tmTrue P h (ts (suc zero))
 
--- a fold that is ⊤ at every generator is ⊤ everywhere
 bagAll-⊤ : (m : Bag) → bagAll (λ _ → ⊤P) m
 bagAll-⊤ =
   CE.elimProp BagEqns

@@ -8,18 +8,20 @@
 
 ## Getting Started
 ### Compiling the Repository
-Running `make` from the `src` directory will compile `README.agda` which imports
-the entirety of the project. This may take longer than 30 minutes, as it will
-also compile the dependencies from `cubical` and `cubical-categorical-logic` if
-they are not already built. You may also build `README.agda` interactively by
-loading the file with
+Running `make` from the `src` directory runs `agda --build-library`, which
+typechecks every module under `src`. This may take longer than 30 minutes, as it
+will also compile the dependencies from `cubical` and `cubical-categorical-logic`
+if they are not already built. You may also load any individual module
+interactively with
 [agda-mode](https://agda.readthedocs.io/en/v2.7.0.1/tools/emacs-mode.html).
 
-If the compilation of `README.agda` doesn't immediately crash, and you can see
-it checking submodules, it is very likely that the there will be no technical
-difficulties. We have also included the target `make litmus` which builds only
-the `Grammar` submodule as a shorter litmus test to check for issues of
-technical compatibility.
+As a shorter check for technical compatibility, typecheck a single leaf module,
+for example
+
+    agda Theory/Instances/Monoid/Pipeline/STLCTests.agda
+
+which pulls in most of the library. `make stress` times the stress suites
+individually.
 
 #### Memory Requirement
 
@@ -206,7 +208,22 @@ Given as `read` in `Grammar.String.Terminal`.
 Given as `string≅⊤` in `Grammar.String.Terminal`.
 
 ## Project Layout
-The codebase is in the `src` directory, and it is split into the following submodules,
+
+The codebase contains two generations of the library.
+
+**The current tree is `Theory`**, which generalises "grammars" to types in the
+internal language of an arbitrary finitary algebraic theory. `Theory/Type`
+defines the connectives, `Theory/Base` the theory types and terms, and
+`Theory/Instances` the instances: `Theory/Instances/Monoid` recovers the grammar
+library below (strings are the free monoid), and `Theory/Instances/Bags` is a
+second instance in which the same DSL expresses sorting. `Cubical/Algebra/Theory`
+is the theory framework itself.
+
+**The submodules listed below are the earlier generation**, kept for the paper
+artifact. Nothing under `Theory` imports them and nothing in them imports
+`Theory`, but `agda --build-library` still typechecks them, so they account for
+roughly 40% of a full build.
+
 - `String` - contains the definition as the list type over some fixed alphabet, and some associated utilities. `String := List ⟨ Alphabet ⟩`, where `Alphabet : hSet ℓ-zero`
 - `Grammar` - defining the primitive linear types in Dependent Lambek Calculus. Linear types are encoded as functions from strings to types, written as `Grammar ℓA = String → Type ℓA`.
 - `Term` - defining parse transformers between grammars. A parse transformer between `A` and `B` is written as the type `A ⊢ B` (or `Term A B`).

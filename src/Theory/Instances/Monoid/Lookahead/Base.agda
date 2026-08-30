@@ -85,6 +85,5 @@ private
   ε-branch (tk c) =
     dec-no ∘⊢ ⇒-intro (Λ-disjoint (tk c) ε₁ (λ ()) ∘⊢ (id⊢ ,&p liftTy))
 
--- the empty string is decidable: the lookahead cover already decides it
 dec-ε : Decidable εTy
 dec-ε = ⊕ᴰ-elim ε-branch ∘⊢ Λ-total

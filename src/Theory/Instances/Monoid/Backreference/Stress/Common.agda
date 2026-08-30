@@ -1,7 +1,6 @@
 {-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
 -- Shared setup for the stress cases: one alphabet, one `matches`, and the
--- patterns under test.  Each case module asserts exactly one equation, so
--- its wall time minus `Base0`'s is the cost of that single decision.
+-- patterns under test.
 open import Cubical.Foundations.Prelude
 import Cubical.Data.Sum as Sum
 import Cubical.Data.Empty as Empty
@@ -70,7 +69,7 @@ nestBody : ∀ {n} → ℕ → REB n notNullable
 nestBody N.zero = ⟨ a ⟩r
 nestBody (N.suc j) = grpr (nestBody j) ⟨ a ⟩r
 
--- ...referenced from outside: stresses `seqDᴰ` at depth
+-- referenced from outside: stresses `seqDᴰ` at depth
 deepRE : ℕ → REB 0 notNullable
 deepRE j = grpr (nestBody j) (brefr zero)
 
@@ -116,7 +115,7 @@ ctlGrpTailRE : REB 0 notNullable
 ctlGrpTailRE =
   ((⟨ a ⟩r ⊕r ⟨ b ⟩r) *r) ⊗r grpr (⟨ a ⟩r ⊗r ⟨ b ⟩r) (⟨ a ⟩r ⊗r ⟨ b ⟩r)
 
--- ...and the same with the reference, still no trailing star.
+-- the same with the reference, still no trailing star
 ctlGrpTailRefRE : REB 0 notNullable
 ctlGrpTailRefRE =
   ((⟨ a ⟩r ⊕r ⟨ b ⟩r) *r) ⊗r grpr (⟨ a ⟩r ⊗r ⟨ b ⟩r) (brefr zero)

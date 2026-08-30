@@ -23,6 +23,7 @@
 open import Cubical.Foundations.Prelude
 open import Cubical.Algebra.Theory.Finitary
 import Cubical.Data.Equality as Eq
+import Cubical.Data.Sum as Sum
 open import Cubical.Data.Nat using (ℕ)
 open import Cubical.Data.FinData using (Fin ; zero ; suc)
 open import Cubical.Data.Unit using (Unit ; tt ; tt*)
@@ -58,6 +59,8 @@ open import Theory.Base MonPlusEqns El (λ _ → tt) closingPresentation public
 open import Theory.Type.Lift.Base MonPlusEqns El (λ _ → tt)
   closingPresentation public
 open import Theory.Type.Sum.Base MonPlusEqns El (λ _ → tt)
+  closingPresentation public
+open import Theory.Type.Sum.Binary.Base MonPlusEqns El (λ _ → tt)
   closingPresentation public
 open import Theory.Type.Operation.Base MonPlusEqns El (λ _ → tt)
   closingPresentation public
@@ -208,8 +211,6 @@ private
     ∘⊢ eqn→inv (mon assoc) (three ℓA ℓB ℓC) (A , B , C , tt*)
     ∘⊢ toTmA⁻ {A = A} {B = B} {C = C}
 
--- `⊗ₑ` against the raw two-slot tensor, and against `⌈ εᵖ ⌉`.
-
 ⊗ᵘ→⊗ₑ : (P : Fin 2 → TheoryTy ℓA tt)
   → ⊗ᵘ[ _⊙_ ] P ⊢ P zero ⊗ₑ P (suc zero)
 ⊗ᵘ→⊗ₑ P m (ms , e , h) = ms , e , (h zero , h (suc zero) , tt*)
@@ -223,8 +224,6 @@ private
 
 ⌈ε⌉→ε⊗ : ⌈ εᵖ ⌉ ⊢ ε⊗
 ⌈ε⌉→ε⊗ m Eq.refl = (λ ()) , Eq.refl , tt*
-
--- The unitors.
 
 ⊗ₑ-unitL⁻ : {A : TheoryTy ℓA tt} → A ⊢ ε⊗ ⊗ₑ A
 ⊗ₑ-unitL⁻ m a =
@@ -283,7 +282,7 @@ _⊸ₑ_ : TheoryTy ℓA tt → TheoryTy ℓB tt → TheoryTy _ tt
 ⊸ₑ-intro⁻ {B = B} {C = C} f =
   ⊸ₑ-app {A = B} {B = C} ∘⊢ ⊗ₑmap f (id⊢ {A = B})
 
--- Constant grammars, and how `⊗ₑ` and `⊕ᴰ` pass through them.
+-- Constant types, and how `⊗ₑ` and `⊕ᴰ` pass through them.
 
 K : ∀ {ℓ} → Type ℓ → TheoryTy ℓ tt
 K P _ = P
@@ -311,3 +310,10 @@ K-⊗ₑ₂ m (ms , e , (a , p , tt*)) = p
 ⊗ₑ⊕ᴰ-dist : ∀ {ℓY} {Y : Type ℓY} {A : Y → TheoryTy ℓA tt} {B : TheoryTy ℓB tt}
   → (⊕[ y ∈ Y ] A y) ⊗ₑ B ⊢ ⊕[ y ∈ Y ] (A y ⊗ₑ B)
 ⊗ₑ⊕ᴰ-dist m (ms , e , ((y , a) , b , tt*)) = y , (ms , e , (a , b , tt*))
+
+-- The same over the binary sum, so a two-way case need not be indexed by
+-- `Bool` just to reach a distribution law.
+⊗ₑ⊕-dist : {A : TheoryTy ℓA tt} {A' : TheoryTy ℓA' tt} {B : TheoryTy ℓB tt}
+  → (A ⊕ A') ⊗ₑ B ⊢ (A ⊗ₑ B) ⊕ (A' ⊗ₑ B)
+⊗ₑ⊕-dist m (ms , e , (Sum.inl a , b , tt*)) = Sum.inl (ms , e , (a , b , tt*))
+⊗ₑ⊕-dist m (ms , e , (Sum.inr a , b , tt*)) = Sum.inr (ms , e , (a , b , tt*))

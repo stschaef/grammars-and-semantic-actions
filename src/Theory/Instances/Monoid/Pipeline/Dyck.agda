@@ -26,9 +26,6 @@ import Theory.Instances.Monoid.Combinator.Decidable.Base
 import Theory.Instances.Monoid.Combinator.Grammars.Dyck
   Dec.DecAnswer as GDec
 
-------------------------------------------------------------------------
--- 1.  The token alphabet.
-
 -- Exactly the two brackets: whitespace never becomes a token, so there is
 -- nothing else for the parser to see.
 --
@@ -40,9 +37,6 @@ import Theory.Instances.Monoid.Combinator.Grammars.Dyck
 -- two-element type this is.
 Tok : Type ℓ-zero
 Tok = Br
-
-------------------------------------------------------------------------
--- 2.  Phase one: the lexer, over `UChar`.
 
 -- Three POSIX rules, in priority order: `(`, `)`, one whitespace
 -- character.  Whitespace is a rule and not a filter, because the lexer's
@@ -60,7 +54,7 @@ emitTok =
 
 lexPhase : Phase (lv (tokensRE lexicon)) Tok
 lexPhase = record
-  { Gr = ty ⟦ tokensRE lexicon ⟧
+  { Ty = ty ⟦ tokensRE lexicon ⟧
   ; dec = lexer lexicon
   ; emit = semact-skip* emitTok
   }
@@ -68,15 +62,9 @@ lexPhase = record
 lex : AS.String → Mb.Maybe (List Tok)
 lex s = runPhase lexPhase (text s)
 
-------------------------------------------------------------------------
--- 3.  Phase two: the Dyck parser, over `Tok`.
-
 parseToks : List Tok → Mb.Maybe Dyck
 parseToks = Dec.observe GDec.dyck (Dec.semact-dec semactS)
 
-------------------------------------------------------------------------
--- 4.  The composite.
---
 -- `Phase` gives no composition, so the join is metalanguage.  Keeping the
 -- two failures apart is the point: `Maybe (Maybe Dyck)` would say only
 -- that something went wrong.
@@ -98,56 +86,26 @@ pipeline s = onLexed (lex s)
   onLexed (Mb.just ts) = onParsed ts (parseToks ts)
 
 ------------------------------------------------------------------------
--- 5.  It runs.  Every `refl` below is both phases computing.
+-- Display.
+--
+-- The canonical readback: a `Dyck` re-printed as the balanced string it
+-- is.  `nest inner rest` is the production `S -> ( S ) S`, so it prints
+-- as its bracket pair around `inner`, followed by `rest`.  With this a
+-- test states its expectation as text rather than as a constructor tree.
 
--- The lexer alone: brackets kept, whitespace dropped.
-_ : lex "(())" ≡ Mb.just (lp ∷ lp ∷ rp ∷ rp ∷ [])
-_ = refl
+showDyck : Dyck → AS.String
+showDyck done = ""
+showDyck (nest inner rest) =
+  AS.primStringAppend "("
+    (AS.primStringAppend (showDyck inner)
+      (AS.primStringAppend ")" (showDyck rest)))
 
-_ : lex "( ( ) )" ≡ Mb.just (lp ∷ lp ∷ rp ∷ rp ∷ [])
-_ = refl
+-- The pipeline's answer, as text: the re-printed tree, or which phase
+-- refused.  This is what the suites in `Pipeline/DyckTests` compare.
+report : Result → AS.String
+report lexFail = "lex error"
+report (parseFail _) = "parse error"
+report (ok d) = showDyck d
 
-_ : lex "" ≡ Mb.just []
-_ = refl
-
--- `[` is in no rule, so the lexer refutes every tokenisation.
-_ : lex "([)]" ≡ Mb.nothing
-_ = refl
-
--- End to end.
-_ : pipeline "" ≡ ok done
-_ = refl
-
-_ : pipeline "()" ≡ ok (nest done done)
-_ = refl
-
-_ : pipeline "(())" ≡ ok (nest (nest done done) done)
-_ = refl
-
-_ : pipeline "(()())" ≡ ok (nest (nest done (nest done done)) done)
-_ = refl
-
--- Whitespace changes nothing but the source text.
-_ : pipeline "( ( ) )" ≡ ok (nest (nest done done) done)
-_ = refl
-
-_ : pipeline "  ( )  " ≡ ok (nest done done)
-_ = refl
-
--- The two failures stay apart: an unknown character is the lexer's, an
--- unbalanced bracket is the parser's.
-_ : pipeline "([)]" ≡ lexFail
-_ = refl
-
-_ : pipeline "(()" ≡ parseFail (lp ∷ lp ∷ rp ∷ [])
-_ = refl
-
-_ : pipeline ")(" ≡ parseFail (rp ∷ lp ∷ [])
-_ = refl
-
--- deeper, and with the whitespace rule firing repeatedly
-_ : pipeline "((()))" ≡ ok (nest (nest (nest done done) done) done)
-_ = refl
-
-_ : pipeline "(\n  ()\n)" ≡ ok (nest (nest done done) done)
-_ = refl
+check : AS.String → AS.String
+check s = report (pipeline s)

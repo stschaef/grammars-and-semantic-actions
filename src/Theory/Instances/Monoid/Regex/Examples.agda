@@ -40,13 +40,9 @@ private
   matched : ∀ {n} (r : RE n) → AS.String → M.Maybe (List UChar)
   matched r = λ w → observe (decide-r r ℓr) (semact-dec (yield r)) (text w)
 
-  -- ...displayed as text, so a case reads as text in, text out
   show : M.Maybe (List UChar) → M.Maybe AS.String
   show M.nothing = M.nothing
   show (M.just cs) = M.just (untext cs)
-
-
--- 1. Each regex is named once; the table says what it consumes.
 
 ident num strLit dotted date : RE notNullable
 ident  = reOf "[[:alpha:]_][[:alnum:]_]*"
@@ -93,8 +89,8 @@ _ : passes ((λ w → show (matched date w)) at
     ∷ []))
 _ = refl
 
--- 2. A lexer is a lexicon of those.  Its parse tree *is* the
---    tokenisation; the action below only names the rules.
+-- A lexer is a lexicon of those.  Its parse tree *is* the tokenisation; the
+-- action below only names the rules.
 
 data Tok : Type ℓ-zero where
   KW    : AS.String → Tok
@@ -125,8 +121,6 @@ private
             (semact-dec (semact-map (List.map name) (tokens lexicon))) (text w)
     where import Cubical.Data.List as List
 
--- ...and the tokenisations, written out.
-
 _ : passes (lex at
     ( "let x = 42"
         ↦ M.just (KW "let" ∷ WS ∷ Ident "x" ∷ WS ∷ Op "=" ∷ WS ∷ Num "42" ∷ [])
@@ -134,15 +128,6 @@ _ : passes (lex at
         ↦ M.just (Ident "x" ∷ Op "+" ∷ Num "1" ∷ [])
     ∷ "where"
         ↦ M.just (KW "where" ∷ [])
-    -- NOT maximal munch, and this file is kept for the contrast.  `where`
-    -- is tried before the identifier rule and wins on a prefix, so
-    -- "wherever" splits; a greedy lexer gives `Ident "wherever"`, and
-    -- `Automaton/Demo` does exactly that on the same five rules.  The
-    -- ordered-choice path has never been rewired onto the automaton
-    -- scan, so the case stays here, and stays wrong, as the record of
-    -- what first-match costs.
-    ∷ "wherever"
-        ↦ M.just (KW "where" ∷ Ident "ver" ∷ [])
     ∷ ""
         ↦ M.just []
     ∷ "x ? y"
@@ -150,10 +135,17 @@ _ : passes (lex at
     ∷ []))
 _ = refl
 
--- 3. The same answers taken directly instead of through `observe`.
---    `lexer` is a decision, so its yes branch *is* a `Tokenisation` and
---    its no branch refutes every tokenisation -- the `M.nothing` above
---    is that refutation, narrowed to a `Maybe` for display.
+-- Ordered choice, not maximal munch: `where` is tried before the identifier
+-- rule and wins on a prefix.  A greedy lexer gives `Ident "wherever"`, as
+-- `Automaton/Demo` does on these same five rules; kept here for the contrast.
+wherever-first-match-splits :
+  lex "wherever" ≡ M.just (KW "where" ∷ Ident "ver" ∷ [])
+wherever-first-match-splits = refl
+
+-- The same answers taken directly instead of through `observe`.  `lexer` is
+-- a decision, so its yes branch *is* a `Tokenisation` and its no branch
+-- refutes every tokenisation -- the `M.nothing` above is that refutation,
+-- narrowed to a `Maybe` for display.
 
 letx : Tokenisation lexicon (text "let x")
 letx = theYes (lexer lexicon (text "let x") tt) Eq.refl
@@ -161,6 +153,5 @@ letx = theYes (lexer lexicon (text "let x") tt) Eq.refl
 n42 : Tokenisation lexicon (text "-42")
 n42 = theYes (lexer lexicon (text "-42") tt) Eq.refl
 
--- `?` is in no rule, so *nothing* tokenises this input
 noq : NoTokenisation lexicon (text "x?")
 noq = theNo (lexer lexicon (text "x?") tt) Eq.refl

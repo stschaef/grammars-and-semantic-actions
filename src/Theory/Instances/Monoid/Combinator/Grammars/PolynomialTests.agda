@@ -44,8 +44,6 @@ import Theory.Instances.Monoid.Combinator.Grammars.Polynomial
 import Theory.Instances.Monoid.Combinator.Grammars.Polynomial
   Bool _≟B_ ND.NDAnswer ND.NDDiv ND.NDCommitting as GND
 
--- One parser, three answers.
-
 decPoly : Dec.Decidable Expr
 decPoly = GDec.poly
 

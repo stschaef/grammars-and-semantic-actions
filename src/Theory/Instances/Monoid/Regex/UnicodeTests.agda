@@ -40,7 +40,7 @@ private
 -- `[a-z]+` -- a range, which a general alphabet cannot express
 
 lowers : RE notNullable
-lowers = lowerR +r
+lowers = lowerr +r
 
 lowers-abc : Yes lowers "abc"
 lowers-abc = yes lowers "abc" Eq.refl
@@ -55,16 +55,11 @@ lowers-ε = no lowers "" Eq.refl
 -- recovers the characters, so the test says *what* was matched.
 
 ident : RE notNullable
-ident = bracketR (classI isAlpha ∷ chI '_' ∷ [])
-   ⊗r (bracketR (classI isAlnum ∷ chI '_' ∷ []) *r)
+ident = bracketr (classI isAlpha ∷ chI '_' ∷ [])
+   ⊗r (bracketr (classI isAlnum ∷ chI '_' ∷ []) *r)
 
--- the letter a `satr` matched, read back out
-satChar : {P : UChar → Bool} → SemanticAction (satG P) UChar
-satChar m (x , _) = x .fst , tt
-
--- head and tail of the identifier
 identChars : SemanticAction (ty ⟦ ident ⟧) (UChar × List UChar)
-identChars = semact-⊗₂ satChar (semact-* satChar)
+identChars = semact-⊗₂ semact-sat (semact-* semact-sat)
 
 readIdent : (s : AS.String) → Yes ident s → UChar × List UChar
 readIdent s w = identChars (text s) w .fst
@@ -82,7 +77,7 @@ ident-42foo = no ident "42foo" Eq.refl
 -- `-?[0-9]+` -- a signed integer
 
 int : RE notNullable
-int = (charR '-') ?r ⊗r (digitR +r)
+int = (charr '-') ?r ⊗r (digitr +r)
 
 int-407 : Yes int "407"
 int-407 = yes int "407" Eq.refl
@@ -97,7 +92,7 @@ int-bad = no int "4-07" Eq.refl
 -- do over a 21-bit alphabet
 
 strLit : RE notNullable
-strLit = charR '"' ⊗r (bracketNotR (chI '"' ∷ []) *r) ⊗r charR '"'
+strLit = charr '"' ⊗r (bracketNotr (chI '"' ∷ []) *r) ⊗r charr '"'
 
 strLit-empty : Yes strLit "\"\""
 strLit-empty = yes strLit "\"\"" Eq.refl
@@ -108,7 +103,7 @@ strLit-body = yes strLit "\"hi there\"" Eq.refl
 strLit-open : No strLit "\"unterminated"
 strLit-open = no strLit "\"unterminated" Eq.refl
 
--- a literal word, and `[0-9]{2,4}`
+-- a literal word
 
 kw : RE notNullable
 kw = strU "let"
@@ -119,8 +114,9 @@ kw-yes = yes kw "let" Eq.refl
 kw-no : No kw "le"
 kw-no = no kw "le" Eq.refl
 
+-- `[0-9]{2,4}`
 twoToFour : RE notNullable
-twoToFour = betweenr 2 2 digitR
+twoToFour = betweenr 2 2 digitr
 
 n2 : Yes twoToFour "42"
 n2 = yes twoToFour "42" Eq.refl

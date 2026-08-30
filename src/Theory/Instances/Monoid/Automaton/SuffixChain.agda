@@ -36,18 +36,16 @@ open import Theory.Type.Guarded.Justification MonEqns Alphabet (λ _ → tt)
   listPresentation using (löbMemo)
 
 private
-  -- the proper suffixes of a word, nearest first
+  -- nearest first
   suffixes : SPt → List SPt
   suffixes (x , []) = []
   suffixes (x , c ∷ v) = (x , v) ∷ suffixes (x , v)
 
-  -- a proper-suffix witness *is* a position in that list
   findSuf : (p q : SPt) → Below q p → q ∈ᴾ suffixes p
   findSuf (x , []) q lt = Empty.rec (lt .lower)
   findSuf (x , c ∷ v) (y , u) (Sum.inl Eq.refl) = here
   findSuf (x , c ∷ v) q (Sum.inr i) = there (findSuf (x , v) q i)
 
-  -- ...and dropping a letter extends the list by exactly one cell
   viewSuf : (p : SPt) → ChainView (λ _ → tt) suffixOrder suffixes p
   viewSuf (x , []) = minimal Eq.refl
   viewSuf (x , c ∷ v) = extends (x , v) (Sum.inl Eq.refl) Eq.refl

@@ -91,14 +91,14 @@ module PushOf (ℓB : Level) {I : Type ℓAlph} (Λ : I → TheoryTy ℓM tt)
   covers .total =
     ⊕ᴰ-elim (λ b → σ⊕ (r b) ∘⊢ atCell b) ∘⊢ cov .total
   covers .disjoint v v' ne m
-    (lift ((b , p) , t) , lift ((b' , p') , t')) = go (decI b b')
+    (lift ((b , p) , t) , lift ((b' , p') , t')) = onCellEq (decI b b')
     where
-    go : (b Eq.≡ b') Sum.⊎ ((b Eq.≡ b') → Empty.⊥) → ⊥Ty m
-    go (Sum.inl Eq.refl) = Empty.rec (ne (same p p'))
+    onCellEq : (b Eq.≡ b') Sum.⊎ ((b Eq.≡ b') → Empty.⊥) → ⊥Ty m
+    onCellEq (Sum.inl Eq.refl) = Empty.rec (ne (same p p'))
       where
       same : {u u' : MB.Maybe Y} → r b Eq.≡ u → r b Eq.≡ u' → u Eq.≡ u'
       same Eq.refl Eq.refl = Eq.refl
-    go (Sum.inr nb) = cov .disjoint b b' nb m (t , t')
+    onCellEq (Sum.inr nb) = cov .disjoint b b' nb m (t , t')
 
 -- The `isSet` a routed sum is indexed by.  A definition rather than an
 -- inlined `Discrete→isSet` so that a grammar may name the *same* proof the
@@ -111,14 +111,13 @@ decM₁ : DiscreteEq M₁
 decM₁ ε₁ ε₁ = Sum.inl Eq.refl
 decM₁ ε₁ (tk c) = Sum.inr λ ()
 decM₁ (tk c) ε₁ = Sum.inr λ ()
-decM₁ (tk c) (tk d) = go (c ≟ d)
+decM₁ (tk c) (tk d) = onTokEq (c ≟ d)
   where
-  go : (c Eq.≡ d) Sum.⊎ ((c Eq.≡ d) → Empty.⊥)
+  onTokEq : (c Eq.≡ d) Sum.⊎ ((c Eq.≡ d) → Empty.⊥)
      → (tk c Eq.≡ tk d) Sum.⊎ ((tk c Eq.≡ tk d) → Empty.⊥)
-  go (Sum.inl Eq.refl) = Sum.inl Eq.refl
-  go (Sum.inr ne) = Sum.inr λ where Eq.refl → ne Eq.refl
+  onTokEq (Sum.inl Eq.refl) = Sum.inl Eq.refl
+  onTokEq (Sum.inr ne) = Sum.inr λ where Eq.refl → ne Eq.refl
 
--- ...and the one-token cover is the instance the LL(1) parsers use.
 module Push (ℓB : Level) {Y : Type ℓAlph} (r : M₁ → MB.Maybe Y) =
   PushOf ℓB Λ₁ lookaheadCover decM₁ r
 
@@ -192,7 +191,6 @@ module _ {A : TheoryTy ℓA tt} where
   lift≅ .sec = refl
   lift≅ .ret = refl
 
-  -- the unit on the right, at the lifted `ε` a continuation carries
   ⊗ε↑-unit-r≅ : (A ⊗ LiftTheoryTy ℓB εTy) ≅ A
   ⊗ε↑-unit-r≅ .fun = ⊗ε-unit-r ∘⊢ (id⊢ ,⊗ lowerTy)
   ⊗ε↑-unit-r≅ .inv = (id⊢ ,⊗ liftTy) ∘⊢ ⊗ε-unit-r⁻
@@ -292,7 +290,9 @@ module Combinators (𝒯 : AnswerFunctor) where
     ⊢ ty (▷? t (Ans (K ⊕Set L)))
   ▷Ans-⊕& = ▷map Ans-⊕& ∘⊢ ▷lax
 
-  -- A parser for A turns answers about a grammar K into answers about A ⊗ K
+  -- A parser is continuation-passing and polymorphic in the continuation:
+  -- quantifying over every `K` is what lets `seq` instantiate the outer
+  -- parser at `B ⊗ K` and so associate without a coercion.
   Parser : (ℓK : Level) → ParserTag → ParserTag → TheorySet ℓA tt → TheoryTy _ tt
   Parser ℓK a c A =
     &[ K ∈ TheorySet ℓK tt ]
@@ -321,7 +321,6 @@ module Combinators (𝒯 : AnswerFunctor) where
     → Parser ℓK a ⟨□⟩ A ⊢ Parser ℓK a ⟨▷⟩ A
   pless = mkP λ K → ▷wk ∘⊢ pAt id⊢ K
 
-  -- weakening the domain tag, uniformly in the tag it starts at
   pw : {ℓK : Level} {a c : ParserTag} {A : TheorySet ℓA tt}
     → Parser ℓK a c A ⊢ Parser ℓK ⟨□⟩ c A
   pw {a = ⟨▷⟩} = pmore
@@ -339,7 +338,6 @@ module Combinators (𝒯 : AnswerFunctor) where
     ⊢ ty (▷ (Ans (A ⊗Set K)))
   pApp K = ▷map (□here ∘⊢ pAt id⊢ K) ∘⊢ ▷lax ∘⊢ (id⊢ ,&p ▷δ□)
 
-  -- Combinators under an arbitray hypothesis D
   module _ {D : TheoryTy ℓD tt} where
 
     infixr 15 _<|>_
@@ -367,7 +365,6 @@ module Combinators (𝒯 : AnswerFunctor) where
     nil : {ℓK : Level} → D ⊢ Parser ℓK ⟨□⟩ ⟨□⟩ εSet
     nil = mkP λ K → ▷Ans-≅ ⊗ε-unit-l≅ ∘⊢ π₂
 
-    -- a closed parser is available at every suffix
     box : {ℓK : Level} {A : TheorySet ℓA tt} → ⊤Ty ⊢ Parser ℓK ⟨□⟩ ⟨□⟩ A
       → D ⊢ Parser ℓK ⟨▷⟩ ⟨▷⟩ A
     box p = mkP λ K → pApp K ∘⊢ (▷next {t = ⟨▷⟩} p ,&p id⊢)
@@ -375,13 +372,11 @@ module Combinators (𝒯 : AnswerFunctor) where
   □Ans-ε : {ℓK : Level} {D : TheoryTy ℓD tt} → D ⊢ ty (□ (Ans (ε↑Set ℓK)))
   □Ans-ε = ▷next {t = ⟨□⟩} (Ans-≅ lift≅ ∘⊢ Ans-ε)
 
-  -- A parser under the hypothesis ⊤ is sufficent for answering about A
   runP : (ℓK : Level) {A : TheorySet ℓA tt}
     → ⊤Ty ⊢ Parser (ℓ-max ℓM ℓK) ⟨□⟩ ⟨□⟩ A → ⊤Ty ⊢ ty (Ans A)
   runP _ p =
     Ans-≅ ⊗ε↑-unit-r≅ ∘⊢ □here ∘⊢ pAt p (ε↑Set _) ∘⊢ (id⊢ ,& □Ans-ε)
 
-  -- Build parsers as fixpoints
   module Fix {ℓA} (ℓK : Level) (A : TheorySet ℓA tt) where
 
     ℓ𝒦 : Level
@@ -391,12 +386,10 @@ module Combinators (𝒯 : AnswerFunctor) where
     call : ty (▷ (ParserSet ℓ𝒦 ⟨□⟩ ⟨□⟩ A)) ⊢ Parser ℓ𝒦 ⟨▷⟩ ⟨▷⟩ A
     call = mkP pApp
 
-    -- Guarded fixpoints build closed parsers
     fix : ty (▷ (ParserSet ℓ𝒦 ⟨□⟩ ⟨□⟩ A)) ⊢ Parser ℓ𝒦 ⟨□⟩ ⟨□⟩ A
       → ⊤Ty ⊢ Parser ℓ𝒦 ⟨□⟩ ⟨□⟩ A
     fix = löbG {A = ParserSet ℓ𝒦 ⟨□⟩ ⟨□⟩ A}
 
-    -- ...which are then used to answer
     runFix : ty (▷ (ParserSet ℓ𝒦 ⟨□⟩ ⟨□⟩ A)) ⊢ Parser ℓ𝒦 ⟨□⟩ ⟨□⟩ A
       → ⊤Ty ⊢ ty (Ans A)
     runFix φ = runP ℓK (fix φ)
@@ -460,8 +453,8 @@ module FromCov (𝒯 : AnswerFunctor) (cov : CovariantAnswer 𝒯) where
     step MB.nothing = Ans-empty ∘⊢ ⊤Ty-intro
     step (MB.just y₀) = Ans-map (σ⊕ y₀) ∘⊢ π y₀ ∘⊢ π₁
 
--- ...and the one a divariant answer buys: relabelling a parser along a
--- `roll`/`unroll` pair.  This is what makes a *grammar* answer-generic.
+-- Relabelling a parser along a `roll`/`unroll` pair is what makes a
+-- *grammar* answer-generic.
 module DivCombinators (𝒯 : AnswerFunctor) (div : DivariantAnswer 𝒯) where
   open Combinators 𝒯
   open DivariantAnswer div public
@@ -519,9 +512,8 @@ module RoutedCombinators (𝒯 : AnswerFunctor)
       ▷map (commit g K) ∘⊢ ▷laxᴰ (λ y → Ans (C y ⊗Set K))
       ∘⊢ (&ᴰ-intro λ y → pAt (p y) K)
 
--- What the laws buy: `Ans-≅ φ` is itself an isomorphism.  So an answer is
--- genuinely *transported* by a combinator, never merely mapped -- which is
--- the sentence this module's header asserts, now derived.
+-- What the laws buy: `Ans-≅ φ` is itself an isomorphism, so an answer is
+-- genuinely *transported* by a combinator, never merely mapped.
 module LawfulCombinators (𝒯 : AnswerFunctor) (law : LawfulAnswer 𝒯) where
   open Combinators 𝒯
   open LawfulAnswer law public

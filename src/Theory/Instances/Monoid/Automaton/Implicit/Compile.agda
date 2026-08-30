@@ -53,12 +53,9 @@ private variable
   ℓ : Level
   b b' : Bool
 
--- Sets of letters.
---
--- `Cubical.Foundations.Powerset.More`, which the old `DetReg` used for
--- `ℙ`, is not in this cubical, and its `ℙ` is `ℓ-zero`-only anyway.
--- Nothing below inspects a membership proof, so the h-level the old
--- development kept is not needed and a bare predicate does.
+-- Sets of letters, as bare predicates: `Cubical.Foundations.Powerset` is
+-- `ℓ-zero`-only, and nothing below inspects a membership proof, so the
+-- h-level a powerset would carry is not needed.
 
 ℙ : Type (ℓ-suc ℓAlph)
 ℙ = Alphabet → Type ℓAlph
@@ -75,7 +72,6 @@ _∩ℙ_ : ℙ → ℙ → ℙ
 ⟦_⟧ℙ : Alphabet → ℙ
 ⟦ c ⟧ℙ c' = c ≡ c'
 
--- a decidable character class, as the set it denotes
 ⟦_⟧sat : (Alphabet → Bool) → ℙ
 ⟦ P ⟧sat c = Lift ℓAlph (P c ≡ true)
 
@@ -199,7 +195,6 @@ module _ (discAlpha : Discrete Alphabet) where
     → (dr : DetReg ¬FL ¬F b) (c : Alphabet) → c ∈ℙ ¬F
     → fail ≡ compile dr .δᵢ c
 
-  -- ...and outside the follow-last set never leaves an accepting one
   δq-fail : {¬FL ¬F : ℙ}
     → (dr : DetReg ¬FL ¬F b) (c : Alphabet) → c ∈ℙ ¬FL
     → (q : States dr) → compile dr .acc q ≡ true → fail ≡ compile dr .δq q c
@@ -316,13 +311,9 @@ module _ (discAlpha : Discrete Alphabet) where
     ... | Sum.inl _ = δᵢ-fail dr c c∉F
     ... | Sum.inr _ = δq-fail dr c c∉FL q accq
 
-  -- What the semantic layer consumes.
-  --
-  -- `¬NullableAut`, `¬FirstAut` and `¬FollowLastAut` take precisely
-  -- these three, and turn them into the disjointness facts about
-  -- `Parse (compile dr)` that `⊕Aut≅`/`⊗Aut≅` need.  Nothing here
-  -- mentions a grammar, so that port can land on top without touching
-  -- this file.
+  -- `¬NullableAut`, `¬FirstAut` and `¬FollowLastAut` take precisely these
+  -- three, and turn them into the disjointness facts about
+  -- `Parse (compile dr)` that `⊕Aut≅`/`⊗Aut≅` need.
 
   compileNotNull : {¬FL ¬F : ℙ}
     → (dr : DetReg ¬FL ¬F true) → compile dr .null ≡ false
@@ -332,15 +323,14 @@ module _ (discAlpha : Discrete Alphabet) where
     → (dr : DetReg ¬FL ¬F false) → compile dr .null ≡ true
   compileNullable = nullOf
 
-  -- ...and the DFA, by relabelling.  No subset construction: `DetReg`
-  -- is exactly the fragment whose positions are already deterministic.
+  -- No subset construction: `DetReg` is exactly the fragment whose
+  -- positions are already deterministic.
 
   compileDA : {¬FL ¬F : ℙ}
     → (dr : DetReg ¬FL ¬F b)
     → DeterministicAutomaton (FreelyAddFail+Initial (States dr))
   compileDA dr = IDA→DA (compile dr)
 
-  -- ...and its dead state, which is the freely added `fail`
   compileDead : {¬FL ¬F : ℙ} (dr : DetReg ¬FL ¬F b) → Deadness (compileDA dr)
   compileDead dr = failDead (compile dr)
 

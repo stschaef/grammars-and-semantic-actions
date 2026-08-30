@@ -81,7 +81,6 @@ module _ {A : TheoryTy ℓ tt} {B : String → TheoryTy ℓ' tt}
     split = ++-assocEq (ms zero) (ns zero) (ns (suc zero))
        Eq.∙ (Eq.ap (ms zero ++_) f Eq.∙ e)
 
--- `⊗ᴰ` is functorial in its left factor, at a fixed indexed continuation.
 ⊗ᴰ-mapL : {A : TheoryTy ℓ tt} {B : TheoryTy ℓ' tt}
   {C : String → TheoryTy ℓ'' tt}
   → A ⊢ B → ⊗ᴰ A (λ l _ → C l) ⊢ ⊗ᴰ B (λ l _ → C l)
@@ -104,7 +103,6 @@ module _ {A : TheoryTy ℓ tt} {B : TheoryTy ℓ' tt}
   ⊗ᴰ⊕-distL⁻ m (Sum.inl (ms , e , (a , (c , _)))) = ms , e , (Sum.inl a , (c , tt*))
   ⊗ᴰ⊕-distL⁻ m (Sum.inr (ms , e , (b , (c , _)))) = ms , e , (Sum.inr b , (c , tt*))
 
--- `ε` determines its yield too: the empty string.
 module _ {C : String → TheoryTy ℓ tt} where
   ⊗ᴰ-ε : ⊗ᴰ εTy (λ l _ → C l) ⊢ εTy ⊗ C []
   ⊗ᴰ-ε m (ms , e , (u , (cont , _))) =

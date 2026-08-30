@@ -30,7 +30,6 @@ Count = Act.Δ ℕ , isSet⊕ᴰ isSetℕ (λ _ → isSet⊤Ty)
 nn : ¬Nullable (literal a)
 nn = literal-¬Nullable a
 
--- the fold, by guarded recursion
 len : SemanticAction ((literal a) *) ℕ
 len = fold*g Count nn (semact-pure 0) (semact-map suc (semact-⊗ᵣ id⊢))
 
@@ -38,7 +37,6 @@ countAs : String → M.Maybe ℕ
 countAs = observe (runP (ℓ-suc ℓ-zero) (many (ℓ-suc ℓ-zero) (litSet a) (tok a)))
                   (semact-Maybe len)
 
--- ...and it computes
 _ : countAs [] ≡ M.just 0
 _ = refl
 

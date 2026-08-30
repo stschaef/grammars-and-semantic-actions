@@ -34,8 +34,6 @@ open import Theory.Instances.Monoid.Backreference.Parser Alphabet _≟_ ℓ publ
 
 private variable n : ℕ
 
--- Nullability (copied from `Regex.Base`)
-
 data Nullability : Type ℓ-zero where
   nullable notNullable : Nullability
 
@@ -54,8 +52,6 @@ _+ν_ : Nullability → Nullability → Nullability
 nullable +ν _ = nullable
 notNullable +ν y = y
 
--- The syntax
-
 data REB : ℕ → Nullability → Type ℓAlph where
   εr   : REB n nullable
   ⊥r   : REB n notNullable
@@ -65,7 +61,6 @@ data REB : ℕ → Nullability → Type ℓAlph where
   _*r  : REB n notNullable → REB n nullable
   -- a capture group, scoping over everything that follows it
   grpr : ∀ {ν ν'} → REB n ν → REB (suc n) ν' → REB n (ν ·ν ν')
-  -- ...and a reference back to one
   brefr : Fin n → REB n nullable
 
 infixr 20 _⊗r_
@@ -78,7 +73,6 @@ r +r = r ⊗r (r *r)
 
 infix 30 _+r
 
--- what the enclosing groups matched
 Env : ℕ → Type ℓM
 Env n = Fin n → String
 

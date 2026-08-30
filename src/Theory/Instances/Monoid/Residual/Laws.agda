@@ -34,8 +34,6 @@ module _ {A : TheoryTy ℓ tt} {B : TheoryTy ℓ' tt} {C : TheoryTy ℓ'' tt} wh
   ⟜-post-intro⁻ X f = funExt λ m → funExt λ where
     (ms , Eq.refl , (a , (b , _))) → refl
 
-  -- The two together, which is the shape a client actually meets: a map out
-  -- of the residual's result and a map into its argument.
   ⟜-post-precomp-intro⁻ : {C' : TheoryTy ℓ''' tt} {ℓ⁗ : Level}
     {B' : TheoryTy ℓ⁗ tt} (X : C ⊢ C') (g : B' ⊢ B) (f : A ⊢ C ⟜ B)
     → ⟜-intro⁻ (⟜-post X ∘⊢ ⟜-precomp g ∘⊢ f)
@@ -43,13 +41,11 @@ module _ {A : TheoryTy ℓ tt} {B : TheoryTy ℓ' tt} {C : TheoryTy ℓ'' tt} wh
   ⟜-post-precomp-intro⁻ X g f = funExt λ m → funExt λ where
     (ms , Eq.refl , (a , (b , _))) → refl
 
-  -- Pre-composition in the argument slot is on the nose.
   ⟜-precomp-intro⁻ : {B' : TheoryTy ℓ''' tt} (g : B' ⊢ B) (f : A ⊢ C ⟜ B)
     → ⟜-intro⁻ {A = A} {B = B'} {C = C} (⟜-precomp g ∘⊢ f)
       ≡ ⟜-intro⁻ f ∘⊢ ⊗-map (id⊢ {A = A}) g
   ⟜-precomp-intro⁻ g f = refl
 
-  -- ...and so is uncurrying a pre-composition in the *result* slot.
   ⟜-intro⁻-nat : {A' : TheoryTy ℓ''' tt} (f : A ⊢ C ⟜ B) (h : A' ⊢ A)
     → ⟜-intro⁻ {A = A'} {B = B} {C = C} (f ∘⊢ h)
       ≡ ⟜-intro⁻ f ∘⊢ ⊗-map h (id⊢ {A = B})

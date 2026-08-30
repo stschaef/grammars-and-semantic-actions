@@ -1,5 +1,6 @@
 {- Sorted arrangements: `Seq`'s code with each tail bounded below by its
-   head.  `recSorted` is its elim rule, in the same ⊎B coordinates. -}
+   head.  `caseSorted` is its elim rule, in the same ⊎B coordinates; the
+   recursor is `Sorted/Fold.recSortedg`. -}
 {-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
 open import Cubical.Foundations.Prelude
 open import Cubical.Algebra.Theory.Finitary
@@ -64,13 +65,3 @@ caseSorted : {C : TheoryTy ℓA tt}
   → ⌈ εᵖ ⌉ ⊢ C → ((x : El) → ⌈ ⌈gen x ⌉ ⌉ ⊎B (Sorted & Above x) ⊢ C)
   → Sorted ⊢ C
 caseSorted n c = sortedLayer n c ∘⊢ unroll (λ _ → SortedCode) tt
-
-recSorted : {C : TheoryTy ℓA tt}
-  → ⌈ εᵖ ⌉ ⊢ C → ((x : El) → ⌈ ⌈gen x ⌉ ⌉ ⊎B (C & Above x) ⊢ C)
-  → Sorted ⊢ C
-recSorted n c = rec (λ _ → SortedCode) (λ _ → sortedLayer n c) tt
-
--- the underlying list of a sorted arrangement: forget every index
-elements : Sorted ⊢ K (List El)
-elements =
-  recSorted (K-intro []) λ x → Kmap (x ∷_) ∘⊢ K-⊎B₂ ∘⊢ ⊎Bmap id⊢ π₁

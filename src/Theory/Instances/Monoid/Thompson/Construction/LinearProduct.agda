@@ -192,10 +192,8 @@ module _ (N : NFA ℓN) (N' : NFA ℓN') where
   N→⊗NFA : ∀ q → A.Trace q ⊗ A'.Parse ⊢ Trace (Sum.inl q)
   N→⊗NFA q = ⟜-intro⁻ (N→⟜ q) ∘⊢ ⊗-map id⊢ (N'→⊗NFA (N' .init))
 
-  -- One `rec-section` covers both `⊗NFA` states at once.  The old proof
-  -- needed two separate equalizer inductions padded with `⊤*`, because
-  -- `equalizer-ind` forces a carrier at *every* state; a homomorphism law
-  -- does not.
+  -- One `rec-section` covers both `⊗NFA` states at once: `equalizer-ind`
+  -- forces a carrier at *every* state, a homomorphism law does not.
   gmap : ∀ q → ⟦ q ⟧⊗ ⊢ Trace q
   gmap (Sum.inl q) = N→⊗NFA q
   gmap (Sum.inr q') = N'→⊗NFA q' ∘⊢ lowerTy
@@ -221,7 +219,6 @@ module _ (N : NFA ℓN) (N' : NFA ℓN') where
     W-step t = STEP (Sum.inl t) ∘⊢ ⊗-map id⊢ ⟜-app ∘⊢ ⊗-assoc
       ∘⊢ ⊗-map (⊗-map id⊢ (N→⟜ (N .dst t))) id⊢
 
-    -- ...and the tails they are composed with, named so `cong` has a domain.
     tail-acc : ∀ q (acc : true Eq.≡ N .isAcc q)
       → (εTy ⊗ Trace (Sum.inr (N' .init)) ⊢ Trace (Sum.inl q))
       → ⟦ branch (Sum.inl q) (stepε (N-acc q acc) Eq.refl) ⟧TheoryTy ⟦_⟧⊗
@@ -229,7 +226,6 @@ module _ (N : NFA ℓN) (N' : NFA ℓN') where
     tail-acc q acc z =
       z ∘⊢ ⊗-map id⊢ P' ∘⊢ ⊗ε-unit-l⁻ ∘⊢ lowerTy ∘⊢ lowerTy
 
-    -- the crossing branch, at its two intermediate shapes
     accL : ∀ q (acc : true Eq.≡ N .isAcc q)
       → (εTy ⊗ A'.Parse ⊢ Trace (Sum.inr (N' .init)))
       → ⟦ branch (Sum.inl q) (stepε (N-acc q acc) Eq.refl) ⟧TheoryTy ⟦_⟧⊗
@@ -254,7 +250,6 @@ module _ (N : NFA ℓN) (N' : NFA ℓN') where
     NAlg-step t = ⟜-intro (STEP (Sum.inl t) ∘⊢ ⊗-map id⊢ ⟜-app ∘⊢ ⊗-assoc
       ∘⊢ ⊗-map (A.step-out t Eq.refl) id⊢)
 
-    -- the branch as `NAlg` leaves it, before `map-step` is applied
     lhs-step : (t : ⟨ N .transition ⟩)
       → (⟦ A.branch (N .src t) (A.step t Eq.refl) ⟧TheoryTy A.Trace
         ⊢ ⟦ A.branch (N .src t) (A.step t Eq.refl) ⟧TheoryTy ⟦_⟧N)
@@ -264,7 +259,6 @@ module _ (N : NFA ℓN) (N' : NFA ℓN') where
       ⟜-intro⁻ (NAlg-step t ∘⊢ z ∘⊢ A.step-in t Eq.refl)
         ∘⊢ ⊗-map id⊢ P' ∘⊢ ⊗-assoc⁻ ∘⊢ step-out (Sum.inl t) Eq.refl
 
-    -- ...and after, with the two reassociations left adjacent
     mid-step : (t : ⟨ N .transition ⟩)
       → (literal (N .label t) ⊗ (A.Trace (N .dst t) ⊗ A'.Parse)
         ⊢ literal (N .label t) ⊗ (A.Trace (N .dst t) ⊗ A'.Parse))
@@ -281,7 +275,6 @@ module _ (N : NFA ℓN) (N' : NFA ℓN') where
     tail-step t z =
       z ∘⊢ ⊗-map id⊢ P' ∘⊢ ⊗-assoc⁻ ∘⊢ step-out (Sum.inl t) Eq.refl
 
-    -- the `N'` side, exactly the `Sum` construction's shape
     stepN'-comp : (t : ⟨ N' .transition ⟩)
       → (⟦ A'.branch (N' .src t) (A'.step t Eq.refl) ⟧TheoryTy A'.Trace
         ⊢ ⟦ A'.branch (N' .src t) (A'.step t Eq.refl) ⟧TheoryTy ⟦_⟧N')
@@ -385,9 +378,8 @@ module _ (N : NFA ℓN) (N' : NFA ℓN') where
     F' : Trace (Sum.inr (N' .init)) ⊢ A'.Parse
     F' = fromN' (N' .init)
 
-    -- the map each `⊕ᴰ≡` branch is precomposed with
-    hOf : ∀ q (tg : A.Tag q) → ⟦ A.branch q tg ⟧TheoryTy Eqr ⊢ A.Trace q
-    hOf q tg = roll ∘⊢ map (A.TraceTy q) eqπ ∘⊢ σ⊕ tg
+    roll-branch : ∀ q (tg : A.Tag q) → ⟦ A.branch q tg ⟧TheoryTy Eqr ⊢ A.Trace q
+    roll-branch q tg = roll ∘⊢ map (A.TraceTy q) eqπ ∘⊢ σ⊕ tg
 
     -- Both sides of the induction, uncurried once.  `⟜-β` is the only
     -- non-definitional step.
@@ -401,7 +393,6 @@ module _ (N : NFA ℓN) (N' : NFA ℓN') where
       → ⟜-intro⁻ (secR q ∘⊢ h) ≡ ⊗-map h id⊢
     secR-uncurry q h = ⟜-β _
 
-    -- `NAlg`'s three bodies, at the equalizer carrier
     V-acc : ∀ q (acc : true Eq.≡ N .isAcc q)
       → ⟦ A.branch q (A.stop acc) ⟧TheoryTy Eqr ⊗ Trace (Sum.inr (N' .init))
       ⊢ Trace (Sum.inl q)
@@ -424,7 +415,6 @@ module _ (N : NFA ℓN) (N' : NFA ℓN') where
       ∘⊢ ⊗-map (map (A.branch (N .src t) (A.step t Eq.refl))
                     (λ x → N→⟜ x ∘⊢ eqπ x)) id⊢
 
-    -- the shapes each branch passes through
     accA : ∀ {ℓD} {D : TheoryTy ℓD tt} q
       → (D ⊗ Trace (Sum.inr (N' .init)) ⊢ Trace (Sum.inl q))
       → D ⊗ A'.Parse ⊢ A.Trace q ⊗ A'.Parse
@@ -445,7 +435,6 @@ module _ (N : NFA ℓN) (N' : NFA ℓN') where
       → D ⊗ A'.Parse ⊢ A.Trace q ⊗ A'.Parse
     accC q acc z d = ⊗-map (A.STOP acc) id⊢ ∘⊢ ⊗-map d z
 
-    -- the five shapes the labelled branch passes through
     stepA : (t : ⟨ N .transition ⟩)
       → (⟦ branch (Sum.inl (N .src t)) (step (Sum.inl t) Eq.refl) ⟧TheoryTy Trace
         ⊢ ⟦ branch (Sum.inl (N .src t)) (step (Sum.inl t) Eq.refl) ⟧TheoryTy ⟦_⟧⊗)
@@ -498,23 +487,23 @@ module _ (N : NFA ℓN) (N' : NFA ℓN') where
   ⊗NFA-sec : ∀ q → fromNFA (Sum.inl q) ∘⊢ N→⊗NFA q ≡ id⊢
   ⊗NFA-sec q =
     sym (secL-uncurry q id⊢)
-    ∙ cong ⟜-intro⁻ (equalizer-ind A.TraceTy C⟜ secL secR pf q)
+    ∙ cong ⟜-intro⁻ (equalizer-ind A.TraceTy C⟜ secL secR branch-eq q)
     ∙ secR-uncurry q id⊢
     where
-    pf : ∀ q → secL q ∘⊢ roll ∘⊢ map (A.TraceTy q) eqπ
+    branch-eq : ∀ q → secL q ∘⊢ roll ∘⊢ map (A.TraceTy q) eqπ
              ≡ secR q ∘⊢ roll ∘⊢ map (A.TraceTy q) eqπ
-    pf q = ⊕ᴰ≡ _ _ λ where
+    branch-eq q = ⊕ᴰ≡ _ _ λ where
       (A.stop acc) → cong ⟜-intro
-        ( secL-uncurry q (hOf q (A.stop acc))
+        ( secL-uncurry q (roll-branch q (A.stop acc))
         ∙ cong (accA q) (⟜-β (V-acc q acc))
         ∙ cong (λ z → accB q acc z (lowerTy ∘⊢ lowerTy)) (⊗-unit-l-nat↑ F')
         ∙ cong (λ z → accB2 q acc z (lowerTy ∘⊢ lowerTy))
                (⊗-unit-l⁻∘l {A = A'.Parse})
         ∙ cong (λ z → accC q acc z (lowerTy ∘⊢ lowerTy))
                (fromN'-section (N' .init))
-        ∙ sym (secR-uncurry q (hOf q (A.stop acc))) )
+        ∙ sym (secR-uncurry q (roll-branch q (A.stop acc))) )
       (A.step t Eq.refl) → cong ⟜-intro
-        ( secL-uncurry (N .src t) (hOf (N .src t) (A.step t Eq.refl))
+        ( secL-uncurry (N .src t) (roll-branch (N .src t) (A.step t Eq.refl))
         ∙ cong (accA (N .src t)) (⟜-β (V-step t))
         ∙ cong (stepA t) (map-step fromNFA (Sum.inl t) Eq.refl)
         ∙ cong (stepB t) (A.map-step (λ x → N→⟜ x ∘⊢ eqπ x) t Eq.refl)
@@ -525,9 +514,11 @@ module _ (N : NFA ℓN) (N' : NFA ℓN') where
         ∙ cong (stepD t) (⊗-assoc⁻∘⊗-assoc {A = literal (N .label t)}
                             {B = Eqr (N .dst t)} {C = A'.Parse})
         ∙ cong (stepE t) (sym (A.map-step eqπ t Eq.refl))
-        ∙ sym (secR-uncurry (N .src t) (hOf (N .src t) (A.step t Eq.refl))) )
+        ∙ sym (secR-uncurry (N .src t)
+                 (roll-branch (N .src t) (A.step t Eq.refl))) )
       (A.stepε t Eq.refl) → cong ⟜-intro
-        ( secL-uncurry (N .ε-src t) (hOf (N .ε-src t) (A.stepε t Eq.refl))
+        ( secL-uncurry (N .ε-src t)
+            (roll-branch (N .ε-src t) (A.stepε t Eq.refl))
         ∙ cong (accA (N .ε-src t)) (⟜-β (V-ε t))
         ∙ cong (εA t) (sym (secL-uncurry (N .ε-dst t)
                               (eqπ (N .ε-dst t) ∘⊢ lowerTy)))
@@ -535,7 +526,8 @@ module _ (N : NFA ℓN) (N' : NFA ℓN') where
             (cong (_∘⊢ lowerTy)
                   (eq-π-pf (secL (N .ε-dst t)) (secR (N .ε-dst t)))))
         ∙ cong (εA t) (secR-uncurry (N .ε-dst t) (eqπ (N .ε-dst t) ∘⊢ lowerTy))
-        ∙ sym (secR-uncurry (N .ε-src t) (hOf (N .ε-src t) (A.stepε t Eq.refl))) )
+        ∙ sym (secR-uncurry (N .ε-src t)
+                 (roll-branch (N .ε-src t) (A.stepε t Eq.refl))) )
 
   ⊗NFA≅ : Parse ≅ (A.Parse ⊗ A'.Parse)
   ⊗NFA≅ .fun = fromNFA (Sum.inl (N .init))

@@ -75,19 +75,13 @@ module Lex = Stream Qs Ms Dead sQs
 noNullRule : isAcc Lex.Prod (init Lex.Prod) Eq.≡ false
 noNullRule = Eq.refl
 
--- rule indices and lexemes, as text
 toks : AS.String → Mb.Maybe (List (ℕ × AS.String))
 toks s = Mb.map-Maybe (L.map (λ x → toℕ (x .fst) , untext (x .snd)))
   (Lex.tokeniseS noNullRule (text s))
 
--- one token, the way `Demo` reads it
 lex1 : AS.String → Mb.Maybe (ℕ × AS.String)
 lex1 s = Mb.map-Maybe (λ x → toℕ (x .fst) , untext (x .snd .fst))
   (Lex.lexOneS (text s))
-
--- 1. The `wherever`/`where` pair comes out the same through the stream
---    as through `lexOne`: longest match beats priority, priority beats a
---    tie, and the stream adds only that nothing is left over.
 
 _ : lex1 "wherever" ≡ Mb.just (1 , "wherever")
 _ = refl
@@ -101,8 +95,6 @@ _ = refl
 _ : toks "where" ≡ Mb.just ((0 , "where") ∷ [])
 _ = refl
 
--- 2. Several tokens, which `lexOne` cannot say anything about.
-
 _ : toks "let x42"
   ≡ Mb.just ((0 , "let") ∷ (4 , " ") ∷ (1 , "x42") ∷ [])
 _ = refl
@@ -111,23 +103,14 @@ _ : toks "1+2"
   ≡ Mb.just ((2 , "1") ∷ (3 , "+") ∷ (2 , "2") ∷ [])
 _ = refl
 
--- 3. The empty word is a stream -- the `nil` summand -- and a word with
---    no lexing is refuted rather than dropped.
-
 _ : toks "" ≡ Mb.just []
 _ = refl
 
 _ : toks "?" ≡ Mb.nothing
 _ = refl
 
--- ...including when the failure is in the middle: `let ?` lexes two
--- tokens and then cannot continue, and the whole word is refuted.
 _ : toks "let ?" ≡ Mb.nothing
 _ = refl
-
--- 4. The same thing as a `Phase`: `runPhase` is `observe` of the phase's
---    own decision and emission, so the greedy lexer now fits the
---    interface that `dec : Decidable Gr` used to exclude.
 
 phaseToks : AS.String → Mb.Maybe (List (ℕ × AS.String))
 phaseToks s = Mb.map-Maybe (L.map (λ x → toℕ (x .fst) , untext (x .snd)))
@@ -140,7 +123,6 @@ _ = refl
 _ : phaseToks "?" ≡ Mb.nothing
 _ = refl
 
--- 5. At scale: 19 tokens in one pass.
 _ : Mb.map-Maybe L.length
       (Lex.tokeniseS noNullRule (text "let x1 = y2 + 33 in where wherever z"))
   ≡ Mb.just 19

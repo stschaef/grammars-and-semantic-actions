@@ -54,7 +54,6 @@ sequentiallyUnambiguous A B =
 
 syntax sequentiallyUnambiguous A B = A ⊛ B
 
--- transport along maps, in either argument
 ⊛∘⊢-r : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt} {C : TheoryTy ℓC tt}
   → A ⊛ B → C ⊢ B → A ⊛ C
 ⊛∘⊢-r sep f c = Sum.map (λ x → x) (∉First∘⊢ f) (sep c)
@@ -63,7 +62,6 @@ syntax sequentiallyUnambiguous A B = A ⊛ B
   → A ⊛ B → C ⊢ A → C ⊛ B
 ⊛∘⊢-l sep f c = Sum.map (∉FollowLast∘⊢ f) (λ x → x) (sep c)
 
--- ...and through each connective on the right
 ⊛-⊗l : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt} {C : TheoryTy ℓC tt}
   → A ⊛ B → ¬Nullable B → A ⊛ (B ⊗ C)
 ⊛-⊗l sep nu c = Sum.map (λ x → x) (∉First⊗l nu) (sep c)
@@ -129,7 +127,6 @@ module _ {A : TheoryTy ℓA tt} (c : Alphabet)
 ¬Null→⊕first nu =
   &⊕ᴰ-distR ∘⊢ (id⊢ ,& (char⁺→⊕startsWith ∘⊢ ¬Nullable→char⁺ nu))
 
--- ...and `⊤Ty` on the right of a `startsWith` is absorbed.
 startsWith⊗⊤ : {c : Alphabet} → startsWith c ⊗ ⊤Ty ⊢ startsWith c
 startsWith⊗⊤ = ⊗-map id⊢ ⊤Ty-intro ∘⊢ ⊗-assoc
 
@@ -154,18 +151,15 @@ startsWith⊗⊤ = ⊗-map id⊢ ⊤Ty-intro ∘⊢ ⊗-assoc
   ∘⊢ (π₁ ,& (⊗⊕ᴰ-distR ∘⊢ ⊗-map id⊢ (⊗⊕ᴰ-distL ∘⊢ ⊗-map (¬Null→⊕first nu) id⊢)
              ∘⊢ π₂))
 
--- `⊕` on the left of a `&`, the mirror of `⊕-elim&`.
 private
   ⊕-elim&L : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt}
     {C : TheoryTy ℓC tt} {D : TheoryTy ℓD tt}
     → A & D ⊢ B → C & D ⊢ B → (A ⊕ C) & D ⊢ B
   ⊕-elim&L f g = ⊕-elim& (f ∘⊢ &-swap) (g ∘⊢ &-swap) ∘⊢ &-swap
 
--- The keystone.  Two ways of reading one word as `A` followed by something
--- must cut it in the same place, because the letter at which the two cuts
--- differ would have to both follow `A` and open the right factor.  This is
--- `Precise.⊗&-align`; the old proof went through the external splitting
--- trichotomy and two four-fold `⊕ᴰ-elim`s.
+-- Two ways of reading one word as `A` followed by something must cut it in
+-- the same place, because the letter at which the two cuts differ would have
+-- to both follow `A` and open the right factor.  This is `Precise.⊗&-align`.
 ⊗&-distL : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt} {C : TheoryTy ℓC tt}
   → A ⊛ B → A ⊛ C → (A ⊗ B) & (A ⊗ C) ⊢ (A & A) ⊗ (B & C)
 ⊗&-distL {A = A} {B = B} {C = C} sepB sepC =
@@ -175,7 +169,6 @@ private
   → (A & A) ⊗ (B & C) ⊢ (A ⊗ B) & (A ⊗ C)
 ⊗&-distL⁻ = ⊗-map π₁ π₁ ,& ⊗-map π₂ π₂
 
--- ...and at three factors, which is the shape the star argument wants.
 factor⊗3 : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt}
   {C : TheoryTy ℓC tt} {D : TheoryTy ℓD tt}
   → A ⊛ B → ¬Nullable B
@@ -218,8 +211,6 @@ module _ {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt} {c : Alphabet}
       ∘⊢ ⊗&-distL (∉FollowLast→⊛ c hFLA disc) sep
       ∘⊢ ((⊗-map (⊗ε-unit-r ∘⊢ ⊗-map id⊢ π₂) id⊢ ∘⊢ ⊗-assoc⁻) ,&p id⊢)
 
-    -- ...and the other copy of `B` is empty, so the whole `c`-suffix sits
-    -- past a complete `A`
     tailEmpty : (A ⊗ ((B & char⁺) ⊗ startsWith c)) & (A ⊗ (B & εTy)) ⊢ ⊥Ty
     tailEmpty =
       ⊛→must-split sep⁺ ¬Nullable-&char⁺
@@ -344,15 +335,12 @@ module _ {A : TheoryTy ℓA tt} {c : Alphabet}
       emptyPrefix =
         π₂ ∘⊢ (id⊢ ,&p (∉First* hFA ∘⊢ ((⊗-unit-l ∘⊢ ⊗-map π₂ id⊢) ,&p id⊢)))
 
-      -- ...the trailing `A *` is empty, so the `c` has nowhere to sit
       tailEmpty : (D₀ & W) & ((A *) & εTy) ⊢ ⊥Ty
       tailEmpty =
         char⁺-¬Nullable
         ∘⊢ ((¬Nullable→char⁺ (¬Nullable⊗r ¬Nullable-startsWith) ∘⊢ π₂ ∘⊢ π₁)
             ,& (π₂ ∘⊢ π₂))
 
-      -- ...and the real case: both cuts are pinned and the tail's own
-      -- refutation applies
       full : (D₀ & W) & ((A *) & char⁺) ⊢ ⊥Ty
       full =
         ⊗⊥-annihR

@@ -38,8 +38,6 @@ open import Theory.Instances.Monoid.Combinator.Decidable.Window Tok _≟T_ (ℓ-
 open import Theory.Instances.Monoid.Residual Tok isSetAlphabet
   using (⟦⊗e⟧ ; ⟦⊗e⟧⁻)
 
--- The two lookahead windows, at width `k+2`.
-
 aFill : (n : Width) → Window n
 aFill none = ⟨⟩
 aFill (more n) = ta ◂ aFill n
@@ -47,8 +45,6 @@ aFill (more n) = ta ◂ aFill n
 aThenC : (n : Width) → Window (more n)
 aThenC none = tc ◂ ⟨⟩
 aThenC (more n) = ta ◂ aThenC n
-
--- The grammar, indexed by the width
 
 data NT : Type ℓ-zero where
   St : NT
@@ -133,7 +129,7 @@ module Gram (kk : Width) where
   LangSet : NT → TheorySet ℓG tt
   LangSet N = Lang N , isSetμ Sys isSetSys N
 
-  -- Bodies, and the one unrolling.  Both are inductions on the width.
+  -- Both the bodies and the unrolling are inductions on the width.
 
   lit↑ : Tok → TheorySet ℓG tt
   lit↑ c = LiftTheoryTy ℓG (literal c) , isSetLiftTheoryTy (isSetLiteral c)
@@ -177,7 +173,6 @@ module Gram (kk : Width) where
 
   -- What each production leads with, at width `k+2`.
 
-  -- every body begins with `a`, which is one unrolling
   firstS : Lang St ⊢ literal ta ⊗ ⊤Ty
   firstS = ⊕ᴰ-elim br ∘⊢ unroll Sys St
     where
@@ -197,8 +192,6 @@ module Gram (kk : Width) where
     (id⊢ ,⊗ (liftTy ∘⊢ ⊤Ty-intro)) ∘⊢ ⊗-assoc
     ∘⊢ (firstS ,⊗ id⊢) ∘⊢ (id⊢ ,⊗ ⊤Ty-intro) ∘⊢ ⊗-assoc
   leadNest (more n) = (lowerTy ,⊗ leadNest n) ∘⊢ ⊗-assoc
-
-  -- The route, at width `k+2`, and the parser.
 
   module PW = PushW (more (more kk)) (rt kk)
   module CS = Choice (decTg St) (Cb St)

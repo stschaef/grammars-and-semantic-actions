@@ -54,7 +54,6 @@ unambiguous-char* : (m : String) → isProp ((char *) m)
 unambiguous-char* =
   unambiguous-* char-¬Nullable char-SeqUnambig unambiguous-char
 
--- ...so `readChars` is *the* list of characters of a word.
 readChars-section : readChars ∘⊢ ⊤Ty-intro ≡ id⊢
 readChars-section =
   funExt λ m → funExt λ xs → unambiguous-char* m (readChars m tt) xs

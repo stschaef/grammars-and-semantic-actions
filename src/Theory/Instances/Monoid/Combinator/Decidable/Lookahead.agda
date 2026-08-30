@@ -39,8 +39,6 @@ open import Theory.Instances.Monoid.Residual Alphabet isSetAlphabet
 
 private variable ℓD ℓY ℓΛ : Level
 
--- Choice indexed by a cover
-
 module Predictive
   {Y : Type ℓY}
   (_≟Y_ : (y y' : Y) → (y Eq.≡ y') Sum.⊎ ((y Eq.≡ y') → Empty.⊥))
@@ -54,7 +52,6 @@ module Predictive
     (λ p → yes (Eq.eqToPath p)) (λ ¬p → no λ p → ¬p (Eq.pathToEq p)) (y ≟Y y')
     where open import Cubical.Relation.Nullary.Base using (yes ; no)
 
-  -- the grammar the branches present: one summand per class
   Alt : TheorySet (ℓ-max ℓY ℓG) tt
   Alt = ⊕ᴰSet isSetY C
 
@@ -70,7 +67,6 @@ module Predictive
         cov .disjoint y y' (λ e → ne (Eq.sym e))
         ∘⊢ (id⊢ ,&p (lead y' ∘⊢ (id⊢ ,⊗ ⊤Ty-intro)))
 
-      -- ...so at the observed class, that branch's decision is the whole one
       atClass : (y : Y)
         → ty (&ᴰSet Dec·) & Λ y ⊢ DecTy (ty Alt ⊗ ty K)
       atClass y = ⊕-elim& yes' no' ∘⊢ (π₂ ,& (π y ∘⊢ π₁))
@@ -86,14 +82,14 @@ module Predictive
           Ctx = Λ y & ¬Ty (ty (C y) ⊗ ty K)
 
           branch : (y' : Y) → Ctx & (ty (C y') ⊗ ty K) ⊢ ⊥Ty
-          branch y' = go (y' ≟Y y)
+          branch y' = onSameClass (y' ≟Y y)
             where
-            go : (y' Eq.≡ y) Sum.⊎ ((y' Eq.≡ y) → Empty.⊥)
+            onSameClass : (y' Eq.≡ y) Sum.⊎ ((y' Eq.≡ y) → Empty.⊥)
                → Ctx & (ty (C y') ⊗ ty K) ⊢ ⊥Ty
-            go (Sum.inl Eq.refl) = ⇒-app ∘⊢ ((π₂ ∘⊢ π₁) ,& π₂)
-            go (Sum.inr ne) = elsewhere y y' ne ∘⊢ ((π₁ ∘⊢ π₁) ,& π₂)
+            onSameClass (Sum.inl Eq.refl) = ⇒-app ∘⊢ ((π₂ ∘⊢ π₁) ,& π₂)
+            onSameClass (Sum.inr ne) = elsewhere y y' ne ∘⊢ ((π₁ ∘⊢ π₁) ,& π₂)
 
-    -- the whole use of the cover: `total` names the class, the class decides
+    -- `total` names the class; the class decides.
     commit : ty (&ᴰSet Dec·) ⊢ DecTy (ty Alt ⊗ ty K)
     commit = ⊕ᴰ-elim atClass ∘⊢ &⊕ᴰ-distR ∘⊢ (id⊢ ,& (cov .total ∘⊢ ⊤Ty-intro))
 
@@ -115,12 +111,10 @@ module Predictive
 leadLit : (c : Alphabet) → ty (litSet c) ⊗ ⊤Ty ⊢ Λ₁ (tk c)
 leadLit c = id⊢
 
--- ...and a branch leading with `c` claims it, whatever follows
 leadTok : (c : Alphabet) (X : TheorySet ℓG tt)
   → ty (litSet c ⊗Set X) ⊗ ⊤Ty ⊢ Λ₁ (tk c)
 leadTok c X = (id⊢ ,⊗ ⊤Ty-intro) ∘⊢ ⊗-assoc
 
--- ...and a class with no branch claims it vacuously
 ⊥Set↑ : TheorySet ℓG tt
 ⊥Set↑ = LiftTheoryTy ℓG ⊥Ty , isSetLiftTheoryTy isSet⊥Ty
 

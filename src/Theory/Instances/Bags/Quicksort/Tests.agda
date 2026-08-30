@@ -47,6 +47,7 @@ module Theory.Instances.Bags.Quicksort.Tests where
 
 open import Cubical.Data.List using (List ; [] ; _∷_)
 open import Cubical.Data.Nat using (ℕ ; zero ; suc ; isSetℕ)
+open import Cubical.HITs.PropositionalTruncation using (∥_∥₁)
 
 le : ℕ → ℕ → Bool
 le zero _ = true
@@ -64,56 +65,72 @@ leTrans (suc x) zero z () q
 leTrans (suc x) (suc y) zero p ()
 leTrans (suc x) (suc y) (suc z) p q = leTrans x y z p q
 
+open import Theory.Type.SemanticAction.Suite using (Row ; passes ; _↦_)
+
 open import Theory.Instances.Bags.Base ℕ
 open import Theory.Instances.Bags.Sequence ℕ
 open import Theory.Instances.Bags.Sorted.Base ℕ le
+open import Theory.Instances.Bags.Sorted.Fold ℕ isSetℕ le
+open import Theory.Instances.Bags.Sequence.Fold ℕ isSetℕ using (_++ᵍ_)
 open import Theory.Instances.Bags.Quicksort.Base ℕ isSetℕ le leTotal leTrans
 
--- read the sorted arrangement back off as a list
 sort : {m : Bag} → Seq m → List ℕ
-sort {m} s = elements m (quicksort m s)
+sort {m} s = elementsg m (quicksort m s)
 
-_ : sort ([]ᵍ) ≡ []
-_ = refl
+-- `Seq` is indexed by the bag it arranges, so a suite's inputs do not share
+-- one type and `_at_` cannot be used directly; this applies `sort` at the
+-- row instead, and `passes` then discharges the suite with one `refl`.
+infix 6 _·↦_
+_·↦_ : {m : Bag} → Seq m → List ℕ → Row (List ℕ)
+s ·↦ expected = sort s ↦ expected
 
-_ : sort (3 ∷ᵍ []ᵍ) ≡ 3 ∷ []
-_ = refl
+small : passes
+  ( []ᵍ                              ·↦ []
+  ∷ (3 ∷ᵍ []ᵍ)                       ·↦ (3 ∷ [])
+  -- pitfall 1 in miniature: `2 ∷ᵍ 1` leaves the transported half empty and
+  -- `1 ∷ᵍ 2` does not, so only the second one used to hang.  Keep both.
+  ∷ (2 ∷ᵍ 1 ∷ᵍ []ᵍ)                  ·↦ (1 ∷ 2 ∷ [])
+  ∷ (1 ∷ᵍ 2 ∷ᵍ []ᵍ)                  ·↦ (1 ∷ 2 ∷ [])
+  ∷ (3 ∷ᵍ 1 ∷ᵍ 2 ∷ᵍ []ᵍ)             ·↦ (1 ∷ 2 ∷ 3 ∷ [])
+  ∷ (2 ∷ᵍ 2 ∷ᵍ 1 ∷ᵍ []ᵍ)             ·↦ (1 ∷ 2 ∷ 2 ∷ [])
+  ∷ (5 ∷ᵍ 3 ∷ᵍ 8 ∷ᵍ 1 ∷ᵍ 2 ∷ᵍ []ᵍ)   ·↦ (1 ∷ 2 ∷ 3 ∷ 5 ∷ 8 ∷ [])
+  ∷ [])
+small = refl
 
--- pitfall 1 in miniature: `2 ∷ᵍ 1` leaves the transported half empty and
--- `1 ∷ᵍ 2` does not, so only the second one used to hang
-_ : sort (2 ∷ᵍ 1 ∷ᵍ []ᵍ) ≡ 1 ∷ 2 ∷ []
-_ = refl
+-- Already sorted and reverse sorted: the pivot choice is worst case, so the
+-- recursion is `n` deep rather than `log n`.
+worstCasePivot : passes
+  ( (1 ∷ᵍ 2 ∷ᵍ 3 ∷ᵍ 4 ∷ᵍ 5 ∷ᵍ 6 ∷ᵍ 7 ∷ᵍ 8 ∷ᵍ []ᵍ)
+      ·↦ (1 ∷ 2 ∷ 3 ∷ 4 ∷ 5 ∷ 6 ∷ 7 ∷ 8 ∷ [])
+  ∷ (8 ∷ᵍ 7 ∷ᵍ 6 ∷ᵍ 5 ∷ᵍ 4 ∷ᵍ 3 ∷ᵍ 2 ∷ᵍ 1 ∷ᵍ []ᵍ)
+      ·↦ (1 ∷ 2 ∷ 3 ∷ 4 ∷ 5 ∷ 6 ∷ 7 ∷ 8 ∷ [])
+  ∷ [])
+worstCasePivot = refl
 
-_ : sort (1 ∷ᵍ 2 ∷ᵍ []ᵍ) ≡ 1 ∷ 2 ∷ []
-_ = refl
+shuffled32 : passes
+  ( ( 29 ∷ᵍ 10 ∷ᵍ 20 ∷ᵍ 11 ∷ᵍ 30 ∷ᵍ  6 ∷ᵍ  8 ∷ᵍ 23 ∷ᵍ
+       1 ∷ᵍ 15 ∷ᵍ  9 ∷ᵍ 16 ∷ᵍ 24 ∷ᵍ 25 ∷ᵍ 22 ∷ᵍ 14 ∷ᵍ
+      26 ∷ᵍ 28 ∷ᵍ  7 ∷ᵍ 17 ∷ᵍ 27 ∷ᵍ 19 ∷ᵍ 12 ∷ᵍ  4 ∷ᵍ
+      18 ∷ᵍ  3 ∷ᵍ  2 ∷ᵍ 32 ∷ᵍ 13 ∷ᵍ  5 ∷ᵍ 31 ∷ᵍ 21 ∷ᵍ []ᵍ)
+      ·↦ ( 1 ∷  2 ∷  3 ∷  4 ∷  5 ∷  6 ∷  7 ∷  8 ∷  9 ∷ 10 ∷ 11 ∷
+          12 ∷ 13 ∷ 14 ∷ 15 ∷ 16 ∷ 17 ∷ 18 ∷ 19 ∷ 20 ∷ 21 ∷ 22 ∷
+          23 ∷ 24 ∷ 25 ∷ 26 ∷ 27 ∷ 28 ∷ 29 ∷ 30 ∷ 31 ∷ 32 ∷ [])
+  ∷ [])
+shuffled32 = refl
 
-_ : sort (3 ∷ᵍ 1 ∷ᵍ 2 ∷ᵍ []ᵍ) ≡ 1 ∷ 2 ∷ 3 ∷ []
-_ = refl
+-- Concatenation, which the guarded fold makes compute: sorting a join is
+-- sorting the whole.
+concatenation : passes
+  ( ((3 ∷ᵍ []ᵍ) ++ᵍ (1 ∷ᵍ 2 ∷ᵍ []ᵍ))            ·↦ (1 ∷ 2 ∷ 3 ∷ [])
+  ∷ (([]ᵍ) ++ᵍ (2 ∷ᵍ 1 ∷ᵍ []ᵍ))                 ·↦ (1 ∷ 2 ∷ [])
+  ∷ ((5 ∷ᵍ 3 ∷ᵍ []ᵍ) ++ᵍ (8 ∷ᵍ 1 ∷ᵍ 2 ∷ᵍ []ᵍ))  ·↦ (1 ∷ 2 ∷ 3 ∷ 5 ∷ 8 ∷ [])
+  ∷ [])
+concatenation = refl
 
-_ : sort (2 ∷ᵍ 2 ∷ᵍ 1 ∷ᵍ []ᵍ) ≡ 1 ∷ 2 ∷ 2 ∷ []
-_ = refl
-
-_ : sort (5 ∷ᵍ 3 ∷ᵍ 8 ∷ᵍ 1 ∷ᵍ 2 ∷ᵍ []ᵍ) ≡ 1 ∷ 2 ∷ 3 ∷ 5 ∷ 8 ∷ []
-_ = refl
-
--- already sorted and reverse sorted: the pivot choice is worst case, so the
--- recursion is `n` deep rather than `log n`
-_ : sort (1 ∷ᵍ 2 ∷ᵍ 3 ∷ᵍ 4 ∷ᵍ 5 ∷ᵍ 6 ∷ᵍ 7 ∷ᵍ 8 ∷ᵍ []ᵍ)
-  ≡ 1 ∷ 2 ∷ 3 ∷ 4 ∷ 5 ∷ 6 ∷ 7 ∷ 8 ∷ []
-_ = refl
-
-_ : sort (8 ∷ᵍ 7 ∷ᵍ 6 ∷ᵍ 5 ∷ᵍ 4 ∷ᵍ 3 ∷ᵍ 2 ∷ᵍ 1 ∷ᵍ []ᵍ)
-  ≡ 1 ∷ 2 ∷ 3 ∷ 4 ∷ 5 ∷ 6 ∷ 7 ∷ 8 ∷ []
-_ = refl
-
-_ : sort ( 29 ∷ᵍ 10 ∷ᵍ 20 ∷ᵍ 11 ∷ᵍ 30 ∷ᵍ  6 ∷ᵍ  8 ∷ᵍ 23 ∷ᵍ
-            1 ∷ᵍ 15 ∷ᵍ  9 ∷ᵍ 16 ∷ᵍ 24 ∷ᵍ 25 ∷ᵍ 22 ∷ᵍ 14 ∷ᵍ
-           26 ∷ᵍ 28 ∷ᵍ  7 ∷ᵍ 17 ∷ᵍ 27 ∷ᵍ 19 ∷ᵍ 12 ∷ᵍ  4 ∷ᵍ
-           18 ∷ᵍ  3 ∷ᵍ  2 ∷ᵍ 32 ∷ᵍ 13 ∷ᵍ  5 ∷ᵍ 31 ∷ᵍ 21 ∷ᵍ []ᵍ)
-  ≡  1 ∷  2 ∷  3 ∷  4 ∷  5 ∷  6 ∷  7 ∷  8 ∷  9 ∷ 10 ∷ 11 ∷
-    12 ∷ 13 ∷ 14 ∷ 15 ∷ 16 ∷ 17 ∷ 18 ∷ 19 ∷ 20 ∷ 21 ∷ 22 ∷
-    23 ∷ 24 ∷ 25 ∷ 26 ∷ 27 ∷ 28 ∷ 29 ∷ 30 ∷ 31 ∷ 32 ∷ []
-_ = refl
+-- ...and the statement about bags rather than arrangements.  `∥_∥₁` is
+-- opaque, so this checks that the bridge elaborates, not that it computes.
+_ : ∥ Sorted (⌈gen 2 ⌉ ⊙ᵖ (⌈gen 1 ⌉ ⊙ᵖ εᵖ)) ∥₁
+_ = sortBag _
 
 {- Measured ceiling, past what is checked above: 64 shuffled elements is
    about 4s, 128 about 65s, 256 over 3 minutes, and a worst-case pivot

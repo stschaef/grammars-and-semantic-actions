@@ -171,7 +171,6 @@ module _ (N : NFA ℓN) where
   N→⟜ : ∀ q → A.Trace q ⊢ ⟦ q ⟧N
   N→⟜ = rec A.TraceTy NAlg
 
-  -- ...and the list of them, folded back into one trace
   N*Alg : ∀ (_ : Unit) → ⟦ StarCode A.Parse ⟧TheoryTy (λ _ → Trace (Sum.inl tt))
                        ⊢ Trace (Sum.inl tt)
   N*Alg _ = ⊕ᴰ-elim λ where
@@ -188,7 +187,6 @@ module _ (N : NFA ℓN) where
     T* : A.Parse * ⊢ Trace (Sum.inl tt)
     T* = to*NFA (Sum.inl tt)
 
-    -- the shapes `ret`'s branches pass through
     starA : ∀ {ℓD} {D : TheoryTy ℓD tt}
       → (D ⊢ ⟦ starBranch A.Parse true ⟧TheoryTy (λ _ → Trace (Sum.inl tt)))
       → (⟦ branch (Sum.inl tt) (stepε inr' Eq.refl) ⟧TheoryTy ⟦_⟧* ⊢ D)
@@ -196,12 +194,12 @@ module _ (N : NFA ℓN) where
         ⊢ Trace (Sum.inl tt)
     starA z d = N*Alg tt ∘⊢ σ⊕ true ∘⊢ z ∘⊢ d
 
-    stepA : (t : ⟨ N .transition ⟩)
+    mid-step : (t : ⟨ N .transition ⟩)
       → (literal (N .label t) ⊗ (A.Trace (N .dst t) ⊗ (A.Parse *))
         ⊢ literal (N .label t) ⊗ (A.Trace (N .dst t) ⊗ (A.Parse *)))
       → ⟦ branch (Sum.inr (N .src t)) (step t Eq.refl) ⟧TheoryTy ⟦_⟧*
         ⊢ Trace (Sum.inr (N .src t))
-    stepA t z = STEP t ∘⊢ ⊗-map id⊢ (to*NFA (Sum.inr (N .dst t))) ∘⊢ z
+    mid-step t z = STEP t ∘⊢ ⊗-map id⊢ (to*NFA (Sum.inr (N .dst t))) ∘⊢ z
       ∘⊢ step-out t Eq.refl
 
     W-step : (t : ⟨ N .transition ⟩)
@@ -286,7 +284,7 @@ module _ (N : NFA ℓN) where
     (step t Eq.refl) →
       cong (lhs-step t) (A.map-step N→⟜ t Eq.refl)
       ∙ cong (tail-step t) (⟜-β (W-step t))
-      ∙ cong (stepA t) (⊗-assoc∘⊗-assoc⁻ {A = literal (N .label t)}
+      ∙ cong (mid-step t) (⊗-assoc∘⊗-assoc⁻ {A = literal (N .label t)}
                           {B = A.Trace (N .dst t)} {C = A.Parse *})
       ∙ cong (roll-step t) (sym (map-step to*NFA t Eq.refl))
     (stepε inr' ())
@@ -319,8 +317,8 @@ module _ (N : NFA ℓN) where
     eqπ : ∀ x → Eqr x ⊢ A.Trace x
     eqπ x = eq-π (nL x) (nR x)
 
-    hOf : ∀ q (tg : A.Tag q) → ⟦ A.branch q tg ⟧TheoryTy Eqr ⊢ A.Trace q
-    hOf q tg = roll ∘⊢ map (A.TraceTy q) eqπ ∘⊢ σ⊕ tg
+    roll-branch : ∀ q (tg : A.Tag q) → ⟦ A.branch q tg ⟧TheoryTy Eqr ⊢ A.Trace q
+    roll-branch q tg = roll ∘⊢ map (A.TraceTy q) eqπ ∘⊢ σ⊕ tg
 
     nL-uncurry : ∀ {ℓD} {D : TheoryTy ℓD tt} q (h : D ⊢ A.Trace q)
       → ⟜-intro⁻ (nL q ∘⊢ h)
@@ -331,7 +329,6 @@ module _ (N : NFA ℓN) where
       → ⟜-intro⁻ (nR q ∘⊢ h) ≡ ⊗-map h F*
     nR-uncurry q h = ⟜-β _
 
-    -- `NAlg`'s three bodies at the equalizer carrier
     U-acc : ∀ q (acc : true Eq.≡ N .isAcc q)
       → ⟦ A.branch q (A.stop acc) ⟧TheoryTy Eqr ⊗ Trace (Sum.inl tt)
       ⊢ Trace (Sum.inr q)
@@ -354,109 +351,111 @@ module _ (N : NFA ℓN) where
       ∘⊢ ⊗-map (map (A.branch (N .src t) (A.step t Eq.refl))
                     (λ x → N→⟜ x ∘⊢ eqπ x)) id⊢
 
-    -- the shapes each branch passes through
-    nA : ∀ {ℓD} {D : TheoryTy ℓD tt} q
+    accA : ∀ {ℓD} {D : TheoryTy ℓD tt} q
       → (D ⊗ Trace (Sum.inl tt) ⊢ Trace (Sum.inr q))
       → D ⊗ Trace (Sum.inl tt) ⊢ A.Trace q ⊗ (A.Parse *)
-    nA q z = from*NFA (Sum.inr q) ∘⊢ z
+    accA q z = from*NFA (Sum.inr q) ∘⊢ z
 
-    nB : ∀ {ℓD} {D : TheoryTy ℓD tt} q (acc : true Eq.≡ N .isAcc q)
+    accB : ∀ {ℓD} {D : TheoryTy ℓD tt} q (acc : true Eq.≡ N .isAcc q)
       → (εTy ⊗ Trace (Sum.inl tt) ⊢ A.Parse *) → (D ⊢ εTy)
       → D ⊗ Trace (Sum.inl tt) ⊢ A.Trace q ⊗ (A.Parse *)
-    nB q acc z d = ⊗-map (A.STOP acc) id⊢ ∘⊢ ⊗ε-unit-l⁻ ∘⊢ z ∘⊢ ⊗-map d id⊢
+    accB q acc z d = ⊗-map (A.STOP acc) id⊢ ∘⊢ ⊗ε-unit-l⁻ ∘⊢ z ∘⊢ ⊗-map d id⊢
 
-    nC : ∀ {ℓD} {D : TheoryTy ℓD tt} q (acc : true Eq.≡ N .isAcc q)
+    accC : ∀ {ℓD} {D : TheoryTy ℓD tt} q (acc : true Eq.≡ N .isAcc q)
       → (εTy ⊗ (A.Parse *) ⊢ εTy ⊗ (A.Parse *)) → (D ⊢ εTy)
       → D ⊗ Trace (Sum.inl tt) ⊢ A.Trace q ⊗ (A.Parse *)
-    nC q acc z d = ⊗-map (A.STOP acc) id⊢ ∘⊢ z ∘⊢ ⊗-map d F*
+    accC q acc z d = ⊗-map (A.STOP acc) id⊢ ∘⊢ z ∘⊢ ⊗-map d F*
 
-    εB : ∀ {ℓD} {D : TheoryTy ℓD tt} (t : ⟨ N .ε-transition ⟩)
+    εA : ∀ {ℓD} {D : TheoryTy ℓD tt} (t : ⟨ N .ε-transition ⟩)
       → (D ⊗ Trace (Sum.inl tt) ⊢ A.Trace (N .ε-dst t) ⊗ (A.Parse *))
       → D ⊗ Trace (Sum.inl tt) ⊢ A.Trace (N .ε-src t) ⊗ (A.Parse *)
-    εB t z = ⊗-map (A.STEPε t) id⊢ ∘⊢ z
+    εA t z = ⊗-map (A.STEPε t) id⊢ ∘⊢ z
 
-    sA : (t : ⟨ N .transition ⟩)
+    stepA : (t : ⟨ N .transition ⟩)
       → (⟦ branch (Sum.inr (N .src t)) (step t Eq.refl) ⟧TheoryTy Trace
         ⊢ ⟦ branch (Sum.inr (N .src t)) (step t Eq.refl) ⟧TheoryTy ⟦_⟧*)
       → ⟦ A.branch (N .src t) (A.step t Eq.refl) ⟧TheoryTy Eqr
         ⊗ Trace (Sum.inl tt) ⊢ A.Trace (N .src t) ⊗ (A.Parse *)
-    sA t z = ⊗-map (A.STEP t) id⊢ ∘⊢ ⊗-assoc⁻ ∘⊢ step-out t Eq.refl
+    stepA t z = ⊗-map (A.STEP t) id⊢ ∘⊢ ⊗-assoc⁻ ∘⊢ step-out t Eq.refl
       ∘⊢ z ∘⊢ step-in t Eq.refl
       ∘⊢ ⊗-map id⊢ ⟜-app ∘⊢ ⊗-assoc ∘⊢ ⊗-map (A.step-out t Eq.refl) id⊢
       ∘⊢ ⊗-map (map (A.branch (N .src t) (A.step t Eq.refl))
                     (λ x → N→⟜ x ∘⊢ eqπ x)) id⊢
 
-    sB : (t : ⟨ N .transition ⟩)
+    stepB : (t : ⟨ N .transition ⟩)
       → (⟦ A.branch (N .src t) (A.step t Eq.refl) ⟧TheoryTy Eqr
         ⊢ ⟦ A.branch (N .src t) (A.step t Eq.refl) ⟧TheoryTy ⟦_⟧N)
       → ⟦ A.branch (N .src t) (A.step t Eq.refl) ⟧TheoryTy Eqr
         ⊗ Trace (Sum.inl tt) ⊢ A.Trace (N .src t) ⊗ (A.Parse *)
-    sB t z = ⊗-map (A.STEP t) id⊢ ∘⊢ ⊗-assoc⁻
+    stepB t z = ⊗-map (A.STEP t) id⊢ ∘⊢ ⊗-assoc⁻
       ∘⊢ ⊗-map id⊢ (from*NFA (Sum.inr (N .dst t)) ∘⊢ ⟜-app)
       ∘⊢ ⊗-assoc ∘⊢ ⊗-map (A.step-out t Eq.refl ∘⊢ z) id⊢
 
-    sC : (t : ⟨ N .transition ⟩)
+    stepC : (t : ⟨ N .transition ⟩)
       → (Eqr (N .dst t) ⊗ Trace (Sum.inl tt)
         ⊢ A.Trace (N .dst t) ⊗ (A.Parse *))
       → ⟦ A.branch (N .src t) (A.step t Eq.refl) ⟧TheoryTy Eqr
         ⊗ Trace (Sum.inl tt) ⊢ A.Trace (N .src t) ⊗ (A.Parse *)
-    sC t z = ⊗-map (A.STEP t) id⊢ ∘⊢ ⊗-assoc⁻ ∘⊢ ⊗-map id⊢ z ∘⊢ ⊗-assoc
+    stepC t z = ⊗-map (A.STEP t) id⊢ ∘⊢ ⊗-assoc⁻ ∘⊢ ⊗-map id⊢ z ∘⊢ ⊗-assoc
       ∘⊢ ⊗-map (A.step-out t Eq.refl) id⊢
 
-    sD : (t : ⟨ N .transition ⟩)
+    stepD : (t : ⟨ N .transition ⟩)
       → ((literal (N .label t) ⊗ Eqr (N .dst t)) ⊗ Trace (Sum.inl tt)
         ⊢ (literal (N .label t) ⊗ Eqr (N .dst t)) ⊗ Trace (Sum.inl tt))
       → ⟦ A.branch (N .src t) (A.step t Eq.refl) ⟧TheoryTy Eqr
         ⊗ Trace (Sum.inl tt) ⊢ A.Trace (N .src t) ⊗ (A.Parse *)
-    sD t z = ⊗-map (A.STEP t) id⊢
+    stepD t z = ⊗-map (A.STEP t) id⊢
       ∘⊢ ⊗-map (⊗-map id⊢ (eqπ (N .dst t))) F*
       ∘⊢ z ∘⊢ ⊗-map (A.step-out t Eq.refl) id⊢
 
-    sE : (t : ⟨ N .transition ⟩)
+    stepE : (t : ⟨ N .transition ⟩)
       → (⟦ A.branch (N .src t) (A.step t Eq.refl) ⟧TheoryTy Eqr
         ⊢ ⟦ A.branch (N .src t) (A.step t Eq.refl) ⟧TheoryTy A.Trace)
       → ⟦ A.branch (N .src t) (A.step t Eq.refl) ⟧TheoryTy Eqr
         ⊗ Trace (Sum.inl tt) ⊢ A.Trace (N .src t) ⊗ (A.Parse *)
-    sE t z = ⊗-map (roll ∘⊢ σ⊕ (A.step t Eq.refl) ∘⊢ z) F*
+    stepE t z = ⊗-map (roll ∘⊢ σ⊕ (A.step t Eq.refl) ∘⊢ z) F*
 
   nested-induction : ∀ q
     → from*NFA (Sum.inr q) ∘⊢ ⟜-intro⁻ (N→⟜ q) ≡ ⊗-map id⊢ F*
   nested-induction q =
     sym (nL-uncurry q id⊢)
-    ∙ cong ⟜-intro⁻ (equalizer-ind A.TraceTy C⟜ nL nR pf q)
+    ∙ cong ⟜-intro⁻ (equalizer-ind A.TraceTy C⟜ nL nR branch-eq q)
     ∙ nR-uncurry q id⊢
     where
-    pf : ∀ q → nL q ∘⊢ roll ∘⊢ map (A.TraceTy q) eqπ
+    branch-eq : ∀ q → nL q ∘⊢ roll ∘⊢ map (A.TraceTy q) eqπ
              ≡ nR q ∘⊢ roll ∘⊢ map (A.TraceTy q) eqπ
-    pf q = ⊕ᴰ≡ _ _ λ where
+    branch-eq q = ⊕ᴰ≡ _ _ λ where
       (A.stop acc) → cong ⟜-intro
-        ( nL-uncurry q (hOf q (A.stop acc))
-        ∙ cong (nA q) (⟜-β (U-acc q acc))
-        ∙ cong (λ z → nB q acc z (lowerTy ∘⊢ lowerTy)) (⊗-unit-l-nat↑ F*)
-        ∙ cong (λ z → nC q acc z (lowerTy ∘⊢ lowerTy))
+        ( nL-uncurry q (roll-branch q (A.stop acc))
+        ∙ cong (accA q) (⟜-β (U-acc q acc))
+        ∙ cong (λ z → accB q acc z (lowerTy ∘⊢ lowerTy)) (⊗-unit-l-nat↑ F*)
+        ∙ cong (λ z → accC q acc z (lowerTy ∘⊢ lowerTy))
                (⊗-unit-l⁻∘l {A = A.Parse *})
-        ∙ sym (nR-uncurry q (hOf q (A.stop acc))) )
+        ∙ sym (nR-uncurry q (roll-branch q (A.stop acc))) )
       (A.step t Eq.refl) → cong ⟜-intro
-        ( nL-uncurry (N .src t) (hOf (N .src t) (A.step t Eq.refl))
-        ∙ cong (nA (N .src t)) (⟜-β (U-step t))
-        ∙ cong (sA t) (map-step from*NFA t Eq.refl)
-        ∙ cong (sB t) (A.map-step (λ x → N→⟜ x ∘⊢ eqπ x) t Eq.refl)
-        ∙ cong (sC t) (sym (nL-uncurry (N .dst t) (eqπ (N .dst t))))
-        ∙ cong (sC t) (cong ⟜-intro⁻ (eq-π-pf (nL (N .dst t)) (nR (N .dst t))))
-        ∙ cong (sC t) (nR-uncurry (N .dst t) (eqπ (N .dst t)))
-        ∙ cong (sD t) (⊗-assoc⁻∘⊗-assoc {A = literal (N .label t)}
+        ( nL-uncurry (N .src t) (roll-branch (N .src t) (A.step t Eq.refl))
+        ∙ cong (accA (N .src t)) (⟜-β (U-step t))
+        ∙ cong (stepA t) (map-step from*NFA t Eq.refl)
+        ∙ cong (stepB t) (A.map-step (λ x → N→⟜ x ∘⊢ eqπ x) t Eq.refl)
+        ∙ cong (stepC t) (sym (nL-uncurry (N .dst t) (eqπ (N .dst t))))
+        ∙ cong (stepC t)
+               (cong ⟜-intro⁻ (eq-π-pf (nL (N .dst t)) (nR (N .dst t))))
+        ∙ cong (stepC t) (nR-uncurry (N .dst t) (eqπ (N .dst t)))
+        ∙ cong (stepD t) (⊗-assoc⁻∘⊗-assoc {A = literal (N .label t)}
                           {B = Eqr (N .dst t)} {C = Trace (Sum.inl tt)})
-        ∙ cong (sE t) (sym (A.map-step eqπ t Eq.refl))
-        ∙ sym (nR-uncurry (N .src t) (hOf (N .src t) (A.step t Eq.refl))) )
+        ∙ cong (stepE t) (sym (A.map-step eqπ t Eq.refl))
+        ∙ sym (nR-uncurry (N .src t)
+                 (roll-branch (N .src t) (A.step t Eq.refl))) )
       (A.stepε t Eq.refl) → cong ⟜-intro
-        ( nL-uncurry (N .ε-src t) (hOf (N .ε-src t) (A.stepε t Eq.refl))
-        ∙ cong (nA (N .ε-src t)) (⟜-β (U-ε t))
-        ∙ cong (εB t) (sym (nL-uncurry (N .ε-dst t)
+        ( nL-uncurry (N .ε-src t) (roll-branch (N .ε-src t) (A.stepε t Eq.refl))
+        ∙ cong (accA (N .ε-src t)) (⟜-β (U-ε t))
+        ∙ cong (εA t) (sym (nL-uncurry (N .ε-dst t)
                               (eqπ (N .ε-dst t) ∘⊢ lowerTy)))
-        ∙ cong (εB t) (cong ⟜-intro⁻
+        ∙ cong (εA t) (cong ⟜-intro⁻
             (cong (_∘⊢ lowerTy) (eq-π-pf (nL (N .ε-dst t)) (nR (N .ε-dst t)))))
-        ∙ cong (εB t) (nR-uncurry (N .ε-dst t) (eqπ (N .ε-dst t) ∘⊢ lowerTy))
-        ∙ sym (nR-uncurry (N .ε-src t) (hOf (N .ε-src t) (A.stepε t Eq.refl))) )
+        ∙ cong (εA t) (nR-uncurry (N .ε-dst t) (eqπ (N .ε-dst t) ∘⊢ lowerTy))
+        ∙ sym (nR-uncurry (N .ε-src t)
+                 (roll-branch (N .ε-src t) (A.stepε t Eq.refl))) )
 
   private
     nilW : ∀ {ℓD} {D : TheoryTy ℓD tt}

@@ -119,11 +119,8 @@ _ = refl
 _ : matches cls (b ∷ []) ≡ M.nothing
 _ = refl
 
--- `anyr` still works, now as a definition
 _ : matches (anyr *r) (a ∷ b ∷ a ∷ []) ≡ M.just tt
 _ = refl
-
--- The surface syntax.
 
 -- `[ab] ?`
 optSet : RE nullable

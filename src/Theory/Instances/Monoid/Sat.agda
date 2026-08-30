@@ -1,7 +1,4 @@
 {-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
-{- The characters a `Bool`-predicate accepts, and the grammar of one such
-   character.  Split out of `Regex/Sat` so that Thompson can use it without
-   the decidable-parser stack that file sits on. -}
 open import Cubical.Foundations.Prelude
 open import Cubical.Foundations.HLevels
 open import Cubical.Algebra.Theory.Finitary
@@ -19,6 +16,8 @@ open import Theory.Instances.Monoid.Base
 open import Theory.Instances.Monoid.Strings Alphabet isSetAlphabet
 open import Theory.Type.HLevels MonEqns Alphabet (λ _ → tt) listPresentation
   using (TheorySet ; isSet⊕ᴰ)
+open import Theory.Type.SemanticAction.Base MonEqns Alphabet (λ _ → tt)
+  listPresentation using (SemanticAction ; semact-⊕ᴰ' ; semact-pure)
 
 Sat : (Alphabet → Bool) → Type ℓAlph
 Sat P = Σ[ c ∈ Alphabet ] (P c ≡ true)
@@ -26,9 +25,14 @@ Sat P = Σ[ c ∈ Alphabet ] (P c ≡ true)
 isSetSat : (P : Alphabet → Bool) → isSet (Sat P)
 isSetSat P = isSetΣ isSetAlphabet λ _ → isProp→isSet (isSetBool _ _)
 
-satG : (P : Alphabet → Bool) → TheoryTy ℓM tt
-satG P = ⊕[ x ∈ Sat P ] literal (x .fst)
+satTy : (P : Alphabet → Bool) → TheoryTy ℓM tt
+satTy P = ⊕[ x ∈ Sat P ] literal (x .fst)
 
 satSet : (P : Alphabet → Bool) → TheorySet ℓM tt
 satSet P =
-  satG P , isSet⊕ᴰ (isSetSat P) λ _ _ → isProp→isSet isPropEqString
+  satTy P , isSet⊕ᴰ (isSetSat P) λ _ _ → isProp→isSet isPropEqString
+
+-- `satTy P` is a `⊕ᴰ` over the witnesses, so this is that sum's elimination
+-- and not a look at the model.
+semact-sat : {P : Alphabet → Bool} → SemanticAction (satTy P) Alphabet
+semact-sat = semact-⊕ᴰ' λ x → semact-pure (x .fst)

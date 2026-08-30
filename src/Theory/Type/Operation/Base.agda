@@ -89,7 +89,6 @@ same-elements o ℓs As p q ms≡ =
   → same-elements o ℓs As p q ms≡ → p ≡ q
 ⊗≡ o ℓs As p q ms≡ xs≡ = ⊗PathP o ℓs As ms≡ xs≡
 
--- uniform levels
 ⊗ᵘ[_] : (o : σ .ops)
      → interpIn o (TheoryTy ℓA)
      → TheoryTy (ℓ-max ℓM ℓA) (σ .resultSort o)
@@ -142,8 +141,8 @@ same-elements o ℓs As p q ms≡ =
   → ⊗[ o ][ ℓs ] As m → ⊗[ o ][ ℓs' ] As' m
 ⊗-overSplit m f t = t .fst , t .snd .fst , f (t .fst) (t .snd .fst) (t .snd .snd)
 
--- ... with a value carried alongside, which is how a delayed hypothesis
--- reaches the slots
+-- The same, with a value carried alongside: this is how a delayed hypothesis
+-- reaches the slots.
 ⊗&-overSplit : {o : σ .ops} {ℓs ℓs' : arities σ o → Level}
   {As : Args (σ .arity o) ℓs (σ .sortOf o)}
   {As' : Args (σ .arity o) ℓs' (σ .sortOf o)}
@@ -173,7 +172,6 @@ same-elements o ℓs As p q ms≡ =
     → TheoryTy _ s
 ⟪ t ⟫[ ℓs ] = ⊗ᶠ (λ ρ → eval ρ t) ℓs
 
--- projecting a slot out of the tuples
 argAt : (n : ℕ) (ℓs : Fin n → Level) (ws : Fin n → S)
       → Args n ℓs ws → (i : Fin n) → TheoryTy (ℓs i) (ws i)
 argAt (suc n) ℓs ws (A , As) zero = A
@@ -214,7 +212,6 @@ private
     → eval ρ (σeq .lhs e) Eq.≡ eval ρ (σeq .rhs e)
   satEq = satStrict
 
--- Equations of the theory lift to isos of the convolutional liftings
 eqn→Iso :
   (e : σeq .eqns) (ℓs : vars σeq e → Level)
   (m : Args (σeq .varCount e) ℓs (σeq .varSort e)) →
@@ -246,7 +243,6 @@ eqn→inv :
   ⟪ σeq .rhs e ⟫[ ℓs ] m ⊢ ⟪ σeq .lhs e ⟫[ ℓs ] m
 eqn→inv e ℓs m = eqn→Iso e ℓs m .inv
 
--- the convolution of representables is the representable at the composite
 ⊗⌈⌉Iso : (o : σ .ops) (ms : interpIn o ↓M) (m : ↓M (σ .resultSort o))
   → Iso (⊗ᵘ[ o ] (λ a → ⌈ ms a ⌉) m) (⌈ M .snd .fst o ms ⌉ m)
 ⊗⌈⌉Iso o ms m .Iso.fun (ms' , e , as) =
@@ -258,7 +254,7 @@ eqn→inv e ℓs m = eqn→Iso e ℓs m .inv
   ΣPathP (funExt (λ a → sym (Eq.eqToPath (as a)))
     , isProp→PathP (λ _ → isProp× isPropValEq (isPropΠ λ _ → isPropValEq)) _ _)
 
--- A term that is a variable convolves to nothing
+-- The convolution of a term that is a bare variable is the slot it names.
 unVar : {n : ℕ} {ws : Fin n → S} {ℓs : Fin n → Level}
   {As : Args n ℓs ws} (v : Fin n)
   → ⟪ var v ⟫[ ℓs ] As ⊢ argAt n ℓs ws As v

@@ -30,7 +30,6 @@ open import Theory.Instances.Bags.Sorted.Base El le
 open import Theory.Instances.Bags.Sorted.HLevels El isSetEl le
 open import Theory.Type.Top.Base BagEqns El (λ _ → tt) closingPresentation
 
--- the pivot together with the sorted half above it
 Pivot : El → TheoryTy _ tt
 Pivot x = ⌈ ⌈gen x ⌉ ⌉ ⊎B (Sorted & Above x)
 
@@ -110,7 +109,6 @@ module _ (x : El) where
         ∘⊢ ((caseSorted nilJ consJ ∘⊢ π₁ ∘⊢ π₂)
              ,& ((π₂ ∘⊢ π₂) ,& π₁)))
 
-  -- the join itself: two sorted halves around a pivot make a sorted whole
   join : (Sorted & Below x) ⊎B Pivot x ⊢ Sorted
   join =
     ⊸B-intro⁻ (⇒-app ∘⊢ ((löb stepJ tt ∘⊢ ⊤Ty-intro) ,& id⊢))

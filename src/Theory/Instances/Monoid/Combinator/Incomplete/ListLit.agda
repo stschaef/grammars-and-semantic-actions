@@ -3,7 +3,8 @@
    combinators.  The point of the example is what is *absent*: no `NT`, no
    `Tag`, no `body : Tag → Code`, no `isSetValued`, no roll/unroll pair.
    Every other grammar in this directory pays that ~60 lines to get a
-   repetition; `sepBy` is the whole grammar here. -}
+   repetition; `sepBy` is the whole grammar here.  The suites are in
+   `Decidable/ListLitTests`. -}
 open import Cubical.Foundations.Prelude
 open import Cubical.Algebra.Theory.Finitary
 import Cubical.Data.Sum as Sum
@@ -14,7 +15,6 @@ open SortedEqns
 
 module Theory.Instances.Monoid.Combinator.Incomplete.ListLit where
 
-open import Cubical.Data.List using ([] ; _∷_)
 open import Cubical.Data.Sigma using (_,_ ; fst ; snd)
 open import Cubical.Data.Unit using (Unit ; tt)
 import Cubical.Data.Maybe as M
@@ -62,22 +62,3 @@ testList = runP ℓG (pmore ∘⊢ listP)
 
 ok? : String → M.Maybe Unit
 ok? = observe testList (semact-Maybe (semact-pure tt))
-
-accepts : passes
-  (ok? at
-    ( (lb ∷ rb ∷ [])                          ↦ M.just tt
-    ∷ (lb ∷ nm ∷ rb ∷ [])                     ↦ M.just tt
-    ∷ (lb ∷ nm ∷ cm ∷ nm ∷ rb ∷ [])           ↦ M.just tt
-    ∷ (lb ∷ nm ∷ cm ∷ nm ∷ cm ∷ nm ∷ rb ∷ []) ↦ M.just tt
-    ∷ [] ))
-accepts = refl
-
-rejects : passes
-  (ok? at
-    ( (lb ∷ [])                     ↦ M.nothing
-    ∷ (lb ∷ cm ∷ rb ∷ [])           ↦ M.nothing
-    ∷ (lb ∷ nm ∷ cm ∷ rb ∷ [])      ↦ M.nothing
-    ∷ (lb ∷ nm ∷ nm ∷ rb ∷ [])      ↦ M.nothing
-    ∷ (nm ∷ [])                     ↦ M.nothing
-    ∷ [] ))
-rejects = refl

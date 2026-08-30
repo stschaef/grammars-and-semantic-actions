@@ -32,7 +32,6 @@ Emit : {T : Type ℓTok} {A : TheoryTy ℓA tt} → Type _
 Emit {T = T} {A = A} = SemanticAction A (M.Maybe T)
 
 module _ {T : Type ℓTok} (Tk : TheorySet ℓA tt) where
-  -- the token stream grammar: a repetition of whatever one token is
   Tokens : TheorySet (ℓF ℓA) tt
   Tokens = StarSet Tk
 

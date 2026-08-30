@@ -40,7 +40,6 @@ open NFA.Accepting
 εNFA .ε-src ()
 εNFA .ε-dst ()
 
--- the level a one-state automaton's traces land at
 ℓε : Level
 ℓε = ℓF (ℓ⋆ ℓ-zero)
 

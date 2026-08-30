@@ -26,7 +26,7 @@ open import Theory.Type.HLevels σeq V vs 𝒫
 open import Theory.Type.Product.Binary.Base σeq V vs 𝒫
 open import Theory.Type.Unambiguity.Base σeq V vs 𝒫
 open import Theory.Type.Equivalence.Base σeq V vs 𝒫
-open import Theory.Type.Subgrammar.Base σeq V vs 𝒫
+open import Theory.Type.Subtype.Base σeq V vs 𝒫
 
 open WildCatNotation
 open WildCatIso
@@ -56,7 +56,6 @@ elim∥∥ unambig-A f m = PT.rec (unambig-A m) (f m)
   → A ⊢ B → ∥ A ∥ ⊢ ∥ B ∥
 ∥∥-map f = elim∥∥ unambiguous∥∥ (trunc ∘⊢ f)
 
--- ...so truncating an unambiguous type does nothing.
 ∥∥idem : ∀ {s} {A : TheoryTy ℓA s} → unambiguous A → A ≅ ∥ A ∥
 ∥∥idem unambig-A .fun = trunc
 ∥∥idem unambig-A .inv = elim∥∥ unambig-A id⊢
@@ -65,22 +64,23 @@ elim∥∥ unambig-A f m = PT.rec (unambig-A m) (f m)
 
 -- The subobject of `A` at which some `B` parse exists over the same element.
 -- This is the image factorisation's middle object when `f : B ⊢ A`.
-module ∃Subgrammar {s : S} (A : TheoryTy ℓA s) (B : TheoryTy ℓB s) where
+module ∃SubTy {s : S} (A : TheoryTy ℓA s) (B : TheoryTy ℓB s) where
   ∃-prop : A ⊢ Ω {ℓ' = ℓB}
   ∃-prop = unambiguous-prop (unambiguous∥∥ {A = B}) A
 
-  ∃subgrammar : TheoryTy (ℓ-max ℓA ℓB) s
-  ∃subgrammar = subgrammar ∃-prop
+  ∃subTy : TheoryTy (ℓ-max ℓA ℓB) s
+  ∃subTy = subTy ∃-prop
 
-  ∃-π : ∃subgrammar ⊢ A
+  ∃-π : ∃subTy ⊢ A
   ∃-π = sub-π ∃-prop
 
-  witness∃ : ∃subgrammar ⊢ ∥ B ∥
+  witness∃ : ∃subTy ⊢ ∥ B ∥
   witness∃ = extract-pf ∃-prop ∃-π (sub-π-pf ∃-prop)
 
-  witness∃' : ∃subgrammar ⊢ A & ∥ B ∥
+  witness∃' : ∃subTy ⊢ A & ∥ B ∥
   witness∃' = ∃-π ,& witness∃
 
-  -- the image factorisation: a map into `A` factors through `∃subgrammar`
-  ∃-intro : {C : TheoryTy ℓA s} (f : C ⊢ A) → C ⊢ ∥ B ∥ → C ⊢ ∃subgrammar
+  -- The image factorisation: any map into `A` that has a `B` over it
+  -- factors through the subobject.
+  ∃-intro : {C : TheoryTy ℓA s} (f : C ⊢ A) → C ⊢ ∥ B ∥ → C ⊢ ∃subTy
   ∃-intro f g = sub-intro ∃-prop f (insert-pf ∃-prop f λ m x → g m x)

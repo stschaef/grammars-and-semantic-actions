@@ -1,5 +1,4 @@
 {-# OPTIONS -WnoUnsupportedIndexedMatch #-}
--- Signature of Lambda ASTs
 open import Cubical.Foundations.Prelude
 open import Cubical.Foundations.HLevels using (isOfHLevelRetract)
 open import Cubical.Algebra.Theory.Finitary

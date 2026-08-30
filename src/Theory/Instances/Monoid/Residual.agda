@@ -56,7 +56,6 @@ two-η f = funExt λ where
   zero → refl
   (suc zero) → refl
 
--- ...and this is the only thing the two transposes' β laws are missing.
 ⊗-split-η : {A : TheoryTy ℓ tt} {B : TheoryTy ℓ' tt}
   (ms : Fin 2 → ↓M tt) (a : A (ms zero)) (b : B (ms (suc zero)))
   → Path ((A ⊗ B) (ms zero ++ ms (suc zero)))
@@ -105,7 +104,6 @@ module _ {A : TheoryTy ℓ tt} {B : TheoryTy ℓ' tt} {C : TheoryTy ℓ'' tt} wh
 ⟜-app : {B : TheoryTy ℓ tt} {C : TheoryTy ℓ' tt} → (C ⟜ B) ⊗ B ⊢ C
 ⟜-app = ⟜-intro⁻ id⊢
 
--- contravariance in the thing still wanted: every dot movement is this
 ⟜-precomp : {B : TheoryTy ℓ tt} {B' : TheoryTy ℓ' tt} {C : TheoryTy ℓ'' tt}
   → B' ⊢ B → C ⟜ B ⊢ C ⟜ B'
 ⟜-precomp g m f r b = f r (g r b)
@@ -118,15 +116,14 @@ module _ {A : TheoryTy ℓ tt} {B : TheoryTy ℓ' tt} {C : TheoryTy ℓ'' tt} wh
 ⟜-uncurry : {A : TheoryTy ℓ tt} {B : TheoryTy ℓ' tt} {C : TheoryTy ℓ'' tt}
   → (C ⟜ (A ⊗ B)) ⊗ A ⊢ C ⟜ B
 ⟜-uncurry {A = A} {B = B} {C = C} m (ms , e , (f , (a , _))) r b =
-  go (ms zero) (ms (suc zero)) m f a e
+  reassocSplit (ms zero) (ms (suc zero)) m f a e
   where
-  go : (x y w : ↓M tt) → (C ⟜ (A ⊗ B)) x → A y
-     → (x ++ y) Eq.≡ w → C (w ++ r)
-  go x y w f' a' Eq.refl =
+  reassocSplit : (x y w : ↓M tt) → (C ⟜ (A ⊗ B)) x → A y
+    → (x ++ y) Eq.≡ w → C (w ++ r)
+  reassocSplit x y w f' a' Eq.refl =
     castEq {A = C} (Eq.sym (++-assocEq x y r))
       (f' (y ++ r) (two y r , Eq.refl , (a' , (b , tt*))))
 
--- a residual that wants nothing more is what it produces
 ⟜-unitr : {C : TheoryTy ℓ tt} → C ⟜ εTy ⊢ C
 ⟜-unitr {C = C} m f = castEq {A = C} (++-unit-rEq m) (f [] εTy-pt)
 
@@ -183,28 +180,27 @@ module _ {A : TheoryTy ℓ tt} {B : TheoryTy ℓ' tt} {C : TheoryTy ℓ'' tt} wh
 ⊸-uncurry : {A : TheoryTy ℓ tt} {B : TheoryTy ℓ' tt} {C : TheoryTy ℓ'' tt}
   → B ⊸ (A ⊸ C) ⊢ (A ⊗ B) ⊸ C
 ⊸-uncurry {A = A} {B = B} {C = C} m f l (ms , e , (a , (b , _))) =
-  go (ms zero) (ms (suc zero)) l a b e
+  applyAtSplit (ms zero) (ms (suc zero)) l a b e
   where
-  go : (x y w : ↓M tt) → A x → B y → (x ++ y) Eq.≡ w → C (w ++ m)
-  go x y w a' b' Eq.refl =
+  applyAtSplit : (x y w : ↓M tt) → A x → B y → (x ++ y) Eq.≡ w → C (w ++ m)
+  applyAtSplit x y w a' b' Eq.refl =
     castEq {A = C} (Eq.sym (++-assocEq x y m)) (f y b' x a')
 
--- feeding the left slot at the unit: this is how a parser is started
+-- Feeding the left slot at the unit: how a parser is started.
 ⊸-unitl : {A : TheoryTy ℓ tt} {C : TheoryTy ℓ' tt} → εTy ⊢ A → A ⊸ C ⊢ C
 ⊸-unitl p m f = f [] (p [] εTy-pt)
 
--- moving a consumed factor from the input side to the awaited side: this
--- is a `shift`, before any parser is mentioned
+-- Moving a consumed factor from the input side to the awaited side: a `shift`.
 ⊸⟜-swap : {A : TheoryTy ℓ tt} {B : TheoryTy ℓ' tt} {C : TheoryTy ℓ'' tt}
   → A ⊗ (B ⊸ C) ⊢ (B ⟜ A) ⊸ C
 ⊸⟜-swap {A = A} {B = B} {C = C} m (ms , e , (a , (f , _))) l g =
-  go (ms zero) (ms (suc zero)) m a f e
+  shiftAtSplit (ms zero) (ms (suc zero)) m a f e
   where
-  go : (x y w : ↓M tt) → A x → (B ⊸ C) y → (x ++ y) Eq.≡ w → C (l ++ w)
-  go x y w a' f' Eq.refl =
+  shiftAtSplit : (x y w : ↓M tt) → A x → (B ⊸ C) y
+    → (x ++ y) Eq.≡ w → C (l ++ w)
+  shiftAtSplit x y w a' f' Eq.refl =
     castEq {A = C} (++-assocEq l x y) (f' (l ++ x) (g x a'))
 
--- the left residual turns a dependent sum on its left into a product
 ⊸⊕ᴰ : {Y : Type ℓY} {A : Y → TheoryTy ℓ tt} {C : TheoryTy ℓ' tt}
   → &[ y ∈ Y ] (A y ⊸ C) ⊢ (⊕[ y ∈ Y ] A y) ⊸ C
 ⊸⊕ᴰ m f l (y , a) = f y l a
@@ -220,8 +216,8 @@ module _ {A : TheoryTy ℓ tt} {B : TheoryTy ℓ' tt} {C : TheoryTy ℓ'' tt} wh
   zero → a
   (suc zero) → b
 
--- ...and the same passage at a code, which is the form every client of `μ`
--- meets it in.  Writing the slot family out is all `two`'s missing η needs.
+-- The same passage at a code, the form every client of `μ` meets it in.
+-- Writing the slot family out is all `two`'s missing η needs.
 module _ {ℓA ℓB ℓX} {X : Type ℓX} {xs : X → Unit}
   {A : (x : X) → TheoryTy ℓB tt} (Fa Fb : Functor ℓA X xs tt) where
 
@@ -242,13 +238,12 @@ module _ {ℓA ℓB ℓX} {X : Type ℓX} {xs : X → Unit}
 
 ⊗ε-unit-r : {A : TheoryTy ℓ tt} → A ⊗ εTy ⊢ A
 ⊗ε-unit-r {A = A} m (ms , e , (a , (u , _))) =
-  go (ms zero) (ms (suc zero)) m a (u .snd .fst) e
+  atEmptyRight (ms zero) (ms (suc zero)) m a (u .snd .fst) e
   where
-  go : (x y w : ↓M tt) → A x → [] Eq.≡ y → (x ++ y) Eq.≡ w → A w
-  go x .[] w a' Eq.refl r =
+  atEmptyRight : (x y w : ↓M tt) → A x → [] Eq.≡ y → (x ++ y) Eq.≡ w → A w
+  atEmptyRight x .[] w a' Eq.refl r =
     castEq {A = A} r (castEq {A = A} (Eq.sym (++-unit-rEq x)) a')
 
--- naturality of the left unitor's inverse, in the slot it does not touch
 ⊗-unit-l⁻-nat : {K : TheoryTy ℓ tt} {L : TheoryTy ℓ' tt} (f : K ⊢ L)
   → ⊗ε-unit-l⁻ ∘⊢ f ≡ ⊗-map (id⊢ {A = εTy}) f ∘⊢ ⊗ε-unit-l⁻
 ⊗-unit-l⁻-nat f = refl
@@ -283,10 +278,10 @@ module _ {A : TheoryTy ℓ tt} {K : TheoryTy ℓ' tt} where
 
   -- the empty half of the split is dropped by `⊗-unit-l`, at `refl`
   ⊗-tri-l : triL ≡ id⊢
-  ⊗-tri-l = funExt λ m → funExt (go m)
+  ⊗-tri-l = funExt λ m → funExt (atPoint m)
     where
-    go : (m : ↓M tt) (x : (A ⊗ K) m) → triL m x ≡ x
-    go m (ms , e , (a , (k' , _))) =
+    atPoint : (m : ↓M tt) (x : (A ⊗ K) m) → triL m x ≡ x
+    atPoint m (ms , e , (a , (k' , _))) =
       ⊗PathP' {A = A} {B = K} refl (two≡ refl refl)
         (symP (unit-l≡ {A = A} (ms zero)
                 (two [] (ms zero) , Eq.refl , (εTy-pt , (a , tt*))) refl))
@@ -295,30 +290,30 @@ module _ {A : TheoryTy ℓ tt} {K : TheoryTy ℓ' tt} where
   -- the other way round the transport lands on the whole pair, so the
   -- split's own equation is the path it is taken along
   ⊗-tri-l⁻ : triL⁻ ≡ id⊢
-  ⊗-tri-l⁻ = funExt λ m → funExt (go m)
+  ⊗-tri-l⁻ = funExt λ m → funExt (atPoint m)
     where
-    go : (m : ↓M tt) (x : (A ⊗ K) m) → triL⁻ m x ≡ x
-    go m x@(ms , e , (a , (k' , _))) =
+    atPoint : (m : ↓M tt) (x : (A ⊗ K) m) → triL⁻ m x ≡ x
+    atPoint m x@(ms , e , (a , (k' , _))) =
       sym (fromPathP (unit-l≡ {A = A ⊗ K} m (triL⁻in m x) (Eq.eqToPath e)))
       ∙ fromPathP (⊗PathP' {A = A} {B = K}
           (Eq.eqToPath e) (two≡ refl refl) refl refl)
 
   -- an empty *right* half instead: `⊗ε-unit-r` pays `++-unit-r`
   ⊗-tri-r : triR ≡ id⊢
-  ⊗-tri-r = funExt λ m → funExt (go m)
+  ⊗-tri-r = funExt λ m → funExt (atPoint m)
     where
-    go : (m : ↓M tt) (x : (A ⊗ K) m) → triR m x ≡ x
-    go m (ms , e , (a , (k' , _))) =
+    atPoint : (m : ↓M tt) (x : (A ⊗ K) m) → triR m x ≡ x
+    atPoint m (ms , e , (a , (k' , _))) =
       ⊗PathP' {A = A} {B = K} refl (two≡ (L.++-unit-r (ms zero)) refl)
         (castEqPathP {A = A} (Eq.sym (++-unit-rEq (ms zero)))
           (L.++-unit-r (ms zero)) a)
         refl
 
   ⊗-tri-r⁻ : triR⁻ ≡ id⊢
-  ⊗-tri-r⁻ = funExt λ m → funExt (go m)
+  ⊗-tri-r⁻ = funExt λ m → funExt (atPoint m)
     where
-    go : (m : ↓M tt) (x : (A ⊗ K) m) → triR⁻ m x ≡ x
-    go m (ms , e , (a , (k' , _))) =
+    atPoint : (m : ↓M tt) (x : (A ⊗ K) m) → triR⁻ m x ≡ x
+    atPoint m (ms , e , (a , (k' , _))) =
       ⊗PathP' {A = A} {B = K} refl (two≡ refl refl) refl
         (symP (unit-l≡ {A = K} (ms (suc zero))
                 (two [] (ms (suc zero)) , Eq.refl , (εTy-pt , (k' , tt*)))
@@ -327,32 +322,32 @@ module _ {A : TheoryTy ℓ tt} {K : TheoryTy ℓ' tt} where
 -- concatenation of representables, in both directions: the free monoid's
 -- multiplication *is* the tensor of the words it multiplies
 ⌈⌉-cat : (u v : ↓M tt) → ⌈ u ⌉ ⊗ ⌈ v ⌉ ⊢ ⌈ u ++ v ⌉
-⌈⌉-cat u v m (ms , e , (p , (q , _))) = go (ms zero) (ms (suc zero)) m p q e
+⌈⌉-cat u v m (ms , e , (p , (q , _))) =
+  atSplit (ms zero) (ms (suc zero)) m p q e
   where
-  go : (x y w : ↓M tt) → x Eq.≡ u → y Eq.≡ v
-     → (x ++ y) Eq.≡ w → w Eq.≡ (u ++ v)
-  go .u .v w Eq.refl Eq.refl r = Eq.sym r
+  atSplit : (x y w : ↓M tt) → x Eq.≡ u → y Eq.≡ v
+    → (x ++ y) Eq.≡ w → w Eq.≡ (u ++ v)
+  atSplit .u .v w Eq.refl Eq.refl r = Eq.sym r
 
 ⌈⌉-split : (u v : ↓M tt) → ⌈ u ++ v ⌉ ⊢ ⌈ u ⌉ ⊗ ⌈ v ⌉
-⌈⌉-split u v m p = go p
+⌈⌉-split u v m p = atConcatEq p
   where
-  go : m Eq.≡ (u ++ v) → (⌈ u ⌉ ⊗ ⌈ v ⌉) m
-  go Eq.refl = two u v , Eq.refl , (Eq.refl , (Eq.refl , tt*))
+  atConcatEq : m Eq.≡ (u ++ v) → (⌈ u ⌉ ⊗ ⌈ v ⌉) m
+  atConcatEq Eq.refl = two u v , Eq.refl , (Eq.refl , (Eq.refl , tt*))
 
 -- the unit law, at a representable: Eq-clean, unlike `⊗-unit-l`
 ε⌈⌉-unit-l : (v : ↓M tt) → εTy ⊗ ⌈ v ⌉ ⊢ ⌈ v ⌉
 ε⌈⌉-unit-l v m (ms , e , (u , (q , _))) =
-  go (ms zero) (ms (suc zero)) m (u .snd .fst) q e
+  atEmptyLeft (ms zero) (ms (suc zero)) m (u .snd .fst) q e
   where
-  go : (x y w : ↓M tt) → [] Eq.≡ x → y Eq.≡ v
-     → (x ++ y) Eq.≡ w → w Eq.≡ v
-  go .[] .v w Eq.refl Eq.refl r = Eq.sym r
+  atEmptyLeft : (x y w : ↓M tt) → [] Eq.≡ x → y Eq.≡ v
+    → (x ++ y) Eq.≡ w → w Eq.≡ v
+  atEmptyLeft .[] .v w Eq.refl Eq.refl r = Eq.sym r
 
 ⊗⊕ᴰ-distL : {Y : Type ℓY} {A : Y → TheoryTy ℓ tt} {C : TheoryTy ℓ' tt}
   → (⊕[ y ∈ Y ] A y) ⊗ C ⊢ ⊕[ y ∈ Y ] (A y ⊗ C)
 ⊗⊕ᴰ-distL m (ms , e , ((y , a) , (c , _))) = y , (ms , e , (a , (c , tt*)))
 
--- ...and the mirror, in the right factor
 ⊗⊕ᴰ-distR : {Y : Type ℓY} {A : TheoryTy ℓ tt} {C : Y → TheoryTy ℓ' tt}
   → A ⊗ (⊕[ y ∈ Y ] C y) ⊢ ⊕[ y ∈ Y ] (A ⊗ C y)
 ⊗⊕ᴰ-distR m (ms , e , (a , ((y , c) , _))) = y , (ms , e , (a , (c , tt*)))
@@ -370,9 +365,9 @@ module _ {A : TheoryTy ℓ tt} {K : TheoryTy ℓ' tt} where
   → (⊕[ y ∈ Y ] A y) & B ⊢ ⊕[ y ∈ Y ] (A y & B)
 &⊕ᴰ-distL m ((y , a) , b) = y , (a , b)
 
--- The constant grammar, carrying a metalanguage type through the DSL, with
--- its functorial action and its points.  A `⊕ᴰ` tag can then be constrained
--- by an equation, which is what pins a stack to one symbol string.
+-- The constant type, carrying a metalanguage type through the DSL, with its
+-- functorial action and its points.  A `⊕ᴰ` tag can then be constrained by an
+-- equation, which is what pins a stack to one symbol string.
 Konst : {s : Sorts} → Type ℓ → TheoryTy ℓ s
 Konst X _ = X
 

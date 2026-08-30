@@ -33,7 +33,7 @@ module CE = Choice (decTag Exp) (Cb Exp)
 module F = FixAll ℓG LangSet
 
 private
-  -- a literal, relabelled to the lifted `literal` the grammar's body uses
+  -- relabelled to the lifted `literal` the grammar's body uses
   tokL : {ℓD : Level} {D : TheoryTy ℓD tt} (c : Tok)
     → D ⊢ Parser ℓG ⟨▷⟩ ⟨□⟩ (lit↑ c)
   tokL c = mapP± liftTy lowerTy ∘⊢ tok c

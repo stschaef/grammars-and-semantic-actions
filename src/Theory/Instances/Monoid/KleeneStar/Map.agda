@@ -41,7 +41,6 @@ module _ {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt} where
   *-map : (f : A ⊢ B) → A * ⊢ B *
   *-map f = rec (λ _ → StarCode A) (*Alg f) tt
 
--- A retraction of the elements is a retraction of the lists.
 module _ {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt}
   (f : A ⊢ B) (h : B ⊢ A) (hf : h ∘⊢ f ≡ id⊢) where
 
@@ -87,7 +86,6 @@ module _ {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt}
 
 
 module _ {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt} (A≅B : A ≅ B) where
-  -- ...so an isomorphism of elements is an isomorphism of lists.
   *≅ : (A *) ≅ (B *)
   *≅ .fun = *-map (A≅B .fun)
   *≅ .inv = *-map (A≅B .inv)

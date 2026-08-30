@@ -45,9 +45,7 @@ open import Theory.Type.Decidable.Base MonEqns Alphabet (λ _ → tt) listPresen
 
 private variable ℓA ℓB ℓC : Level
 
--- The connectives' h-levels and the distributivity `⊗⊕-distL` is missing
--- an inverse for.  `Strings` states the connectives but does not import
--- `HLevels`, so the set-ness of a binary `⊗` has to be said here.
+-- The connectives' h-levels, and the inverse that `⊗⊕-distL` lacks.
 
 isSet⊗2 : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt}
   → isSetTheoryTy A → isSetTheoryTy B → isSetTheoryTy (A ⊗ B)
@@ -70,8 +68,8 @@ isSetDecTy sA = isSet⊕ sA (isSet⇒ isSet⊥Ty)
   → (A ⊗ C) ⊕ (B ⊗ C) ⊢ (A ⊕ B) ⊗ C
 ⊗⊕-distL⁻ = ⊕-elim (inl ,⊗ id⊢) (inr ,⊗ id⊢)
 
--- ...and it is an inverse: neither direction touches the splitting, so
--- both round trips are the `⊕`'s case split and nothing else.
+-- It is an inverse: neither direction touches the splitting, so both round
+-- trips are the `⊕`'s case split and nothing else.
 ⊗⊕-distL⁻∘distL : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt} {C : TheoryTy ℓC tt}
   → ⊗⊕-distL⁻ {A = A} {B = B} {C = C} ∘⊢ ⊗⊕-distL ≡ id⊢
 ⊗⊕-distL⁻∘distL = funExt λ m → funExt λ where
@@ -83,9 +81,6 @@ isSetDecTy sA = isSet⊕ sA (isSet⇒ isSet⊥Ty)
 ⊗⊕-distL∘distL⁻ = funExt λ m → funExt λ where
   (Sum.inl x) → refl
   (Sum.inr x) → refl
-
--- ...and the grammars that carry their set-ness, which is what a guarded
--- recursion asks of one.  `_&Set_` and `_⊕Set_` are in `HLevels`.
 
 infixr 20 _⊗Set_
 
@@ -108,8 +103,7 @@ charSet = char , isSet⊕ᴰ isSetAlphabet isSetLiteral
 εSet : TheorySet ℓM tt
 εSet = εTy , isSetεTy
 
--- Deciding a lookahead class.  This is equality of classes, not a parser
--- combinator, so it sits with the classes.
+-- Deciding a lookahead class: equality of classes, not a parser combinator.
 
 _≟M_ : (o o' : M₁) → (o Eq.≡ o') Sum.⊎ ((o Eq.≡ o') → Empty.⊥)
 ε₁ ≟M ε₁ = Sum.inl Eq.refl

@@ -58,7 +58,7 @@ data Prod (X : Type ℓAlph) : M₁ → Type ℓAlph where
 record Table (X : Type ℓAlph) : Type ℓAlph where
   field
     at  : (x : X) (o : M₁) → Prod X o    -- which production each class predicts
-    nul : X → Bool                       -- ...and which nonterminals derive ε
+    nul : X → Bool                       -- which nonterminals derive ε
 
 -- A parse tree, as data.  The class names the production, so a rose tree
 -- loses nothing: `node o ts` is "the production this class predicts,
@@ -69,8 +69,6 @@ data Tree : Type ℓAlph where
 
 module Gen {X : Type ℓAlph} (T : Table X) where
   open Table T
-
-  -- The table, as an indexed functor
 
   itemCode : Item X → Functor ℓM X (λ _ → tt) tt
   itemCode (tm c) = k (literal c)
@@ -120,8 +118,6 @@ module Gen {X : Type ℓAlph} (T : Table X) where
   isSetF x .fst = lift (isOfHLevelMaybe 0 isSetM₁)
   isSetF x .snd = isSetTag x
 
-  -- ...and as a family of grammars
-
   S : X → TheoryTy ℓG tt
   S = μ F
 
@@ -143,7 +139,6 @@ module Gen {X : Type ℓAlph} (T : Table X) where
   nulSet : (x : X) → TheorySet ℓG tt
   nulSet x = setOf (nulCode (nul x)) (isSetNul (nul x))
 
-  -- one summand per class, which is what `choose` decides
   C : (x : X) (o : M₁) → TheorySet ℓG tt
   C x o = prodSet (at x o)
 
@@ -161,7 +156,6 @@ module Gen {X : Type ℓAlph} (T : Table X) where
 
   module Pred (x : X) = Predictive _≟M_ Λ₁ Λ-cover (C x) (lead x)
 
-  -- the class sum and the ε-production are the two halves of the unrolling
   rollAlt : (x : X) → ty (Pred.Alt x) ⊕ ty (nulSet x) ⊢ S x
   rollAlt x = roll ∘⊢ ⊕-elim (⊕ᴰ-elim λ o → σ⊕ (MB.just o)) (σ⊕ MB.nothing)
 
@@ -203,14 +197,13 @@ module Gen {X : Type ℓAlph} (T : Table X) where
          (⟦⊗e⟧ (itemCode (tm c)) (bodyCode β))
     ∘⊢ seq (bodySet β) (tokP c) (tailP β)
 
-  -- the ε-production, if there is one, and a refutation if there is not
   nulP : (x : X) → ty (▷ Pall) ⊢ Parser ℓG ⟨□⟩ ⟨□⟩ (nulSet x)
-  nulP x = go (nul x)
+  nulP x = onNullable (nul x)
     where
-    go : (b : Bool)
+    onNullable : (b : Bool)
       → ty (▷ Pall) ⊢ Parser ℓG ⟨□⟩ ⟨□⟩ (setOf (nulCode b) (isSetNul b))
-    go true = mapP liftTy lowerTy ∘⊢ nil
-    go false = mapP (liftTy ∘⊢ liftTy) (lowerTy ∘⊢ lowerTy) ∘⊢ fail
+    onNullable true = mapP liftTy lowerTy ∘⊢ nil
+    onNullable false = mapP (liftTy ∘⊢ liftTy) (lowerTy ∘⊢ lowerTy) ∘⊢ fail
 
   step : ty (▷ Pall) ⊢ ty Pall
   step = &ᴰ-intro λ x →
@@ -223,23 +216,22 @@ module Gen {X : Type ℓAlph} (T : Table X) where
   decide : (x : X) → Decidable (S x)
   decide x = runP ℓG (π x ∘⊢ parsers)
 
-  -- Reading the parse tree out
-
   private
     Kst : X → TheoryTy ℓAlph tt
     Kst _ _ = Tree
 
-    -- the nonterminal items of a body, in order
-    kids : (β : List (Item X)) → ∀ m → ⟦ bodyCode β ⟧TheoryTy Kst m → List Tree
-    kids [] m z = []
-    kids (tm c ∷ β) m (ms , e , g) = kids β (ms (suc zero)) (g (suc zero))
-    kids (nt y ∷ β) m (ms , e , g) =
-      g zero .lower ∷ kids β (ms (suc zero)) (g (suc zero))
+    subtrees : (β : List (Item X)) → ∀ m
+      → ⟦ bodyCode β ⟧TheoryTy Kst m → List Tree
+    subtrees [] m z = []
+    subtrees (tm c ∷ β) m (ms , e , g) =
+      subtrees β (ms (suc zero)) (g (suc zero))
+    subtrees (nt y ∷ β) m (ms , e , g) =
+      g zero .lower ∷ subtrees β (ms (suc zero)) (g (suc zero))
 
     readProd : {o : M₁} (p : Prod X o) → ∀ m
       → ⟦ prodCode p ⟧TheoryTy Kst m → Tree
     readProd none m z = Empty.rec* (z .lower .lower)
-    readProd (led {c} β) m z = node (tk c) (kids (tm c ∷ β) m z)
+    readProd (led {c} β) m z = node (tk c) (subtrees (tm c ∷ β) m z)
 
     readNul : (b : Bool) → ∀ m → ⟦ nulCode b ⟧TheoryTy Kst m → Tree
     readNul true m z = eps

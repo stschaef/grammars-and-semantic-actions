@@ -1,4 +1,3 @@
--- TODO how much of this Monad/ dir is actually used?
 open import Cubical.Foundations.Prelude
 open import Cubical.Categories.Category.Base
 open import Cubical.Algebra.Theory.Finitary
@@ -41,8 +40,8 @@ record Monad : Typeω where
   join : ∀ {ℓA} {s} {A : TheoryTy ℓA s} → T (T A) ⊢ T A
   join = bind id⊢
 
-  -- ...and `fmap` is functorial, from the three laws above.  Every covariant
-  -- answer functor gets its `Ans-≅` laws from these.
+  -- `fmap` is functorial, from the three laws above.  Every covariant answer
+  -- functor gets its `Ans-≅` laws from these.
   fmap-id : ∀ {ℓA} {s} {A : TheoryTy ℓA s} → fmap (id⊢ {A = A}) ≡ id⊢
   fmap-id = bind-η
 

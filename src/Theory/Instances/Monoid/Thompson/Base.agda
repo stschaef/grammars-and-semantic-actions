@@ -49,12 +49,11 @@ open import Theory.Instances.Monoid.Thompson.Construction
   Alphabet isSetAlphabet
 open import Theory.Instances.Monoid.Thompson.Construction.Sat
   Alphabet isSetAlphabet isFinSetAlphabet
-  using (satNFA ; satNFA≅ ; Sat ; satG)
+  using (satNFA ; satNFA≅ ; Sat ; satTy)
   renaming (STATE≅Fin2 to satSTATE≅Fin2)
 
 open NFA
 
--- where each regex's automaton lands
 reLevel : ∀ {n} → RE n → Level
 reLevel εr = ℓ-zero
 reLevel ⊥r = ℓ-zero

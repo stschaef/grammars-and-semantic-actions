@@ -58,8 +58,6 @@ sQs (fs (fs fz)) = Rnum.isSetQ
 
 module Lx = Product Qs Ms Dead sQs
 
--- One token: the winning rule's index, and the text it matched.
-
 lexS : AS.String → Mb.Maybe (ℕ × AS.String)
 lexS s = Mb.map-Maybe (λ x → toℕ (x .fst) , untext (x .snd .fst))
   (Lx.lexOneS (text s))
@@ -69,25 +67,21 @@ lexS s = Mb.map-Maybe (λ x → toℕ (x .fst) , untext (x .snd .fst))
 _ : lexS "wherever" ≡ Mb.just (1 , "wherever")
 _ = refl
 
--- Priority breaks the tie: both rules match all five characters.
 _ : lexS "where" ≡ Mb.just (0 , "where")
 _ = refl
 
--- ...and that really is a tie, not a keyword-only match
-_ : Rkw.accepts (text "where") ≡ true
+_ : Rkw.endsAccepting (text "where") ≡ true
 _ = refl
 
-_ : Rid.accepts (text "where") ≡ true
+_ : Rid.endsAccepting (text "where") ≡ true
 _ = refl
 
--- ...while at "wherever" only the identifier rule is still alive
-_ : Rkw.accepts (text "wherever") ≡ false
+_ : Rkw.endsAccepting (text "wherever") ≡ false
 _ = refl
 
-_ : Rid.accepts (text "wherever") ≡ true
+_ : Rid.endsAccepting (text "wherever") ≡ true
 _ = refl
 
--- the same pair for the other keyword
 _ : lexS "let" ≡ Mb.just (0 , "let")
 _ = refl
 
@@ -97,14 +91,12 @@ _ = refl
 _ : lexS "x9" ≡ Mb.just (1 , "x9")
 _ = refl
 
--- a number, and a number the identifier rule cannot extend
 _ : lexS "42" ≡ Mb.just (2 , "42")
 _ = refl
 
 _ : lexS "42x" ≡ Mb.just (2 , "42")
 _ = refl
 
--- no rule matches, so there is no token -- not an empty one
 _ : lexS "?" ≡ Mb.nothing
 _ = refl
 
@@ -136,18 +128,8 @@ _ = refl
 _ : toks "x?" ≡ Mb.nothing
 _ = refl
 
--- ...at length.  Three automata step in lockstep, and the scan is still
--- one pass.  Measured off-tree against the 3.2s baseline of this file:
---
---     n:    50   200   800  3200  12800
---   sec:  +0.1  +0.2  +0.7  +3.3  +17.5
---
--- Four times the input costs three to five times the work -- the same
--- mild drift `Automaton/GreedyMaxExamples` shows for a single automaton,
--- and not the squaring that re-deriving the match would give.
---
--- Only the 200 row is checked here; `Automaton/Demo` carries the 3200
--- one, over five rules rather than three.
+-- At length: three automata step in lockstep, and the scan is still one
+-- pass, not the squaring that re-deriving the match would give.
 
 as : ℕ → List UChar
 as zero = []

@@ -41,7 +41,6 @@ open import Theory.Type.Unambiguity.Disjoint MonEqns Alphabet (λ _ → tt)
 
 private variable ℓA ℓB ℓC ℓD : Level
 
--- a word beginning with `c`
 startsWith : Alphabet → TheoryTy ℓM tt
 startsWith c = literal c ⊗ ⊤Ty
 
@@ -67,7 +66,7 @@ c ∉First A = FirstTy A c ⊢ ⊥Ty
 
 ∉First-⊕ᴰ : {Y : Type ℓB} {A : Y → TheoryTy ℓA tt} {c : Alphabet}
   → ((y : Y) → c ∉First (A y)) → c ∉First (⊕[ y ∈ Y ] A y)
-∉First-⊕ᴰ h m (sw , (y , a)) = h y m (sw , a)
+∉First-⊕ᴰ h = ⊕ᴰ-elim h ∘⊢ &⊕ᴰ-distR
 
 ∉First-⊥ : {c : Alphabet} → c ∉First (⊥Ty {s = tt})
 ∉First-⊥ = ⊥Ty-elim ∘⊢ π₂
@@ -142,13 +141,12 @@ sym# sep c = Sum.rec Sum.inr Sum.inl (sep c)
   → ¬Nullable A → A # B → (A ⊗ C) # B
 #⊗l nu sep c = Sum.map (∉First⊗l nu) (λ x → x) (sep c)
 
--- Every nonempty word begins with some character.
 char⁺→⊕startsWith : char⁺ ⊢ ⊕[ c ∈ Alphabet ] startsWith c
 char⁺→⊕startsWith =
   map⊕ᴰ (λ c → ⊗-map id⊢ ⊤Ty-intro) ∘⊢ ⊗⊕ᴰ-distL
 
--- ...so two separated grammars, one of which cannot be empty, are disjoint:
--- an empty word is refuted by the nullability, a nonempty one by whichever
+-- Two separated grammars, one of which cannot be empty, are disjoint: an
+-- empty word is refuted by the nullability, a nonempty one by whichever
 -- side the separation refuses its first character to.
 #→disjoint : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt}
   → A # B → (¬Nullable A) Sum.⊎ (¬Nullable B) → disjoint A B

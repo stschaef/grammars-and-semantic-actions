@@ -54,7 +54,6 @@ module _ (discAlpha : Discrete Alphabet) where
   εAut .δq ()
   εAut .δᵢ _ = fail
 
-  -- one position, reached exactly by its own letter
   litAut : (c : Alphabet) → ImplicitDeterministicAutomaton (Unit* {ℓAlph})
   litAut c .acc _ = true
   litAut c .null = false
@@ -63,17 +62,17 @@ module _ (discAlpha : Discrete Alphabet) where
   ... | no _ = fail
   litAut c .δq _ _ = fail
 
-  -- ...and a character class is the same automaton with a decidable
-  -- predicate deciding the entry instead of a single letter.  Its
-  -- follow-last set is empty for the same reason: it never steps once
-  -- it has accepted.
   satAut : (P : Alphabet → Bool) → ImplicitDeterministicAutomaton (Unit* {ℓAlph})
   satAut P .acc _ = true
   satAut P .null = false
   satAut P .δᵢ c = if P c then ↑f _ else fail
   satAut P .δq _ _ = fail
 
-  -- Alternation: disjoint firsts, and not both nullable.
+  -- The three combinators, and the side condition each demands:
+  --   ⊕Aut  disjoint firsts, and not both nullable
+  --   ⊗Aut  non-nullable left factor, its follow set disjoint from the
+  --         right factor's first set
+  --   *Aut  the same condition against itself, so a loop is unambiguous
 
   module _ {Q Q' : Type ℓAlph}
     (M : ImplicitDeterministicAutomaton Q)
@@ -94,9 +93,6 @@ module _ (discAlpha : Discrete Alphabet) where
         (λ _ → mapFreelyAddFail Sum.inr (M' .δᵢ c))
         (λ _ → mapFreelyAddFail Sum.inl (M .δᵢ c))
         (disjointFirsts c)
-
-  -- Concatenation: the left factor consumes, and its follow set is
-  -- disjoint from the right's first set.
 
   module _ {Q Q' : Type ℓAlph}
     (M : ImplicitDeterministicAutomaton Q)
@@ -120,8 +116,6 @@ module _ (discAlpha : Discrete Alphabet) where
       else mapFreelyAddFail Sum.inl (M .δq q c)
     ⊗Aut .δq (Sum.inr q') c = mapFreelyAddFail Sum.inr (M' .δq q' c)
     ⊗Aut .δᵢ c = mapFreelyAddFail Sum.inl (M .δᵢ c)
-
-  -- Star: the same condition against itself, so a loop is unambiguous.
 
   module _ {Q : Type ℓAlph}
     (M : ImplicitDeterministicAutomaton Q)

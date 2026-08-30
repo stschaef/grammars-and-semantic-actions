@@ -1,4 +1,3 @@
--- TODO how much of this is actually used?
 open import Cubical.Foundations.Prelude
 open import Cubical.Algebra.Theory.Finitary
 open SortedSig
@@ -116,24 +115,25 @@ dec-retract f g d = dec-map f (¬Ty-map g) ∘⊢ d
 
 dec-retract-id : ∀ {s} {A : TheoryTy ℓA s} (d : Decidable A)
   → dec-retract id⊢ id⊢ d ≡ d
-dec-retract-id {A = A} d = funExt λ m → funExt λ u → go m (d m u)
+dec-retract-id {A = A} d = funExt λ m → funExt λ u → atDecision m (d m u)
   where
-  go : (m : ↓M _) (z : DecAt A m)
+  atDecision : (m : ↓M _) (z : DecAt A m)
      → dec-map {A = A} {B = A} id⊢ (¬Ty-map id⊢) m z ≡ z
-  go m (Sum.inl a) = refl
-  go m (Sum.inr na) = refl
+  atDecision m (Sum.inl a) = refl
+  atDecision m (Sum.inr na) = refl
 
 dec-retract-∘ : ∀ {ℓC s} {A : TheoryTy ℓA s} {B : TheoryTy ℓB s}
   {C : TheoryTy ℓC s}
   (f : A ⊢ B) (g : B ⊢ A) (f' : B ⊢ C) (g' : C ⊢ B) (d : Decidable A)
   → dec-retract f' g' (dec-retract f g d) ≡ dec-retract (f' ∘⊢ f) (g ∘⊢ g') d
-dec-retract-∘ {A = A} f g f' g' d = funExt λ m → funExt λ u → go m (d m u)
+dec-retract-∘ {A = A} f g f' g' d =
+  funExt λ m → funExt λ u → atDecision m (d m u)
   where
-  go : (m : ↓M _) (z : DecAt A m)
+  atDecision : (m : ↓M _) (z : DecAt A m)
      → dec-map f' (¬Ty-map g') m (dec-map f (¬Ty-map g) m z)
        ≡ dec-map (f' ∘⊢ f) (¬Ty-map (g ∘⊢ g')) m z
-  go m (Sum.inl a) = refl
-  go m (Sum.inr na) = refl
+  atDecision m (Sum.inl a) = refl
+  atDecision m (Sum.inr na) = refl
 
 dec⊥Ty : ∀ {s} → Decidable (⊥Ty {s = s})
 dec⊥Ty m _ = Sum.inr (λ ())
@@ -214,8 +214,8 @@ dec-cover : ∀ {ℓY s} {Y : Type ℓY} {A : Y → TheoryTy ℓA s}
 dec-cover {A = A} decY c y = cover-elim c step
   where
   step : ∀ y' → A y' ⊢ DecTy (A y)
-  step y' = go (decY y' y)
+  step y' = onCellDec (decY y' y)
     where
-    go : (y' Eq.≡ y) Sum.⊎ ((y' Eq.≡ y) → ⊥) → A y' ⊢ DecTy (A y)
-    go (Sum.inl Eq.refl) = dec-yes
-    go (Sum.inr ne) = dec-no ∘⊢ ⇒-intro (c .disjoint y' y ne)
+    onCellDec : (y' Eq.≡ y) Sum.⊎ ((y' Eq.≡ y) → ⊥) → A y' ⊢ DecTy (A y)
+    onCellDec (Sum.inl Eq.refl) = dec-yes
+    onCellDec (Sum.inr ne) = dec-no ∘⊢ ⇒-intro (c .disjoint y' y ne)

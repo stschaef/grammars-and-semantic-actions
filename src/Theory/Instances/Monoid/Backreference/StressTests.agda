@@ -32,38 +32,29 @@ module Theory.Instances.Monoid.Backreference.StressTests where
 
 open import Theory.Instances.Monoid.Backreference.Stress.Common
 
--- CopyPos128
-_ : matches copyRE (a ∷ b ∷ b ∷ a ∷ a ∷ b ∷ b ∷ b ∷ b ∷ b ∷ a ∷ a ∷ b ∷ b ∷ a ∷ a ∷ b ∷ b ∷ b ∷ b ∷ b ∷ a ∷ b ∷ b ∷ a ∷ a ∷ b ∷ a ∷ a ∷ b ∷ a ∷ a ∷ b ∷ b ∷ b ∷ a ∷ a ∷ b ∷ b ∷ b ∷ a ∷ b ∷ b ∷ b ∷ b ∷ b ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ b ∷ a ∷ b ∷ b ∷ a ∷ a ∷ b ∷ b ∷ b ∷ a ∷ a ∷ b ∷ b ∷ a ∷ a ∷ b ∷ b ∷ b ∷ b ∷ b ∷ a ∷ a ∷ b ∷ b ∷ a ∷ a ∷ b ∷ b ∷ b ∷ b ∷ b ∷ a ∷ b ∷ b ∷ a ∷ a ∷ b ∷ a ∷ a ∷ b ∷ a ∷ a ∷ b ∷ b ∷ b ∷ a ∷ a ∷ b ∷ b ∷ b ∷ a ∷ b ∷ b ∷ b ∷ b ∷ b ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ b ∷ a ∷ b ∷ b ∷ a ∷ a ∷ b ∷ b ∷ b ∷ a ∷ []) ≡ M.just tt
-_ = refl
+CopyPos128 : matches copyRE (a ∷ b ∷ b ∷ a ∷ a ∷ b ∷ b ∷ b ∷ b ∷ b ∷ a ∷ a ∷ b ∷ b ∷ a ∷ a ∷ b ∷ b ∷ b ∷ b ∷ b ∷ a ∷ b ∷ b ∷ a ∷ a ∷ b ∷ a ∷ a ∷ b ∷ a ∷ a ∷ b ∷ b ∷ b ∷ a ∷ a ∷ b ∷ b ∷ b ∷ a ∷ b ∷ b ∷ b ∷ b ∷ b ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ b ∷ a ∷ b ∷ b ∷ a ∷ a ∷ b ∷ b ∷ b ∷ a ∷ a ∷ b ∷ b ∷ a ∷ a ∷ b ∷ b ∷ b ∷ b ∷ b ∷ a ∷ a ∷ b ∷ b ∷ a ∷ a ∷ b ∷ b ∷ b ∷ b ∷ b ∷ a ∷ b ∷ b ∷ a ∷ a ∷ b ∷ a ∷ a ∷ b ∷ a ∷ a ∷ b ∷ b ∷ b ∷ a ∷ a ∷ b ∷ b ∷ b ∷ a ∷ b ∷ b ∷ b ∷ b ∷ b ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ b ∷ a ∷ b ∷ b ∷ a ∷ a ∷ b ∷ b ∷ b ∷ a ∷ []) ≡ M.just tt
+CopyPos128 = refl
 
--- CopyNeg128
-_ : matches copyRE (b ∷ b ∷ b ∷ a ∷ a ∷ b ∷ a ∷ a ∷ b ∷ b ∷ a ∷ a ∷ a ∷ b ∷ b ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ b ∷ b ∷ b ∷ a ∷ a ∷ b ∷ b ∷ a ∷ a ∷ b ∷ b ∷ b ∷ a ∷ b ∷ b ∷ a ∷ b ∷ a ∷ a ∷ a ∷ b ∷ a ∷ b ∷ b ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ b ∷ b ∷ b ∷ b ∷ a ∷ a ∷ b ∷ b ∷ a ∷ b ∷ b ∷ b ∷ b ∷ b ∷ a ∷ a ∷ b ∷ a ∷ a ∷ b ∷ b ∷ a ∷ a ∷ a ∷ b ∷ b ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ b ∷ b ∷ b ∷ a ∷ a ∷ b ∷ b ∷ a ∷ a ∷ b ∷ b ∷ b ∷ a ∷ b ∷ b ∷ a ∷ b ∷ a ∷ a ∷ a ∷ b ∷ a ∷ b ∷ b ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ b ∷ b ∷ b ∷ b ∷ a ∷ a ∷ b ∷ b ∷ a ∷ b ∷ a ∷ []) ≡ M.nothing
-_ = refl
+CopyNeg128 : matches copyRE (b ∷ b ∷ b ∷ a ∷ a ∷ b ∷ a ∷ a ∷ b ∷ b ∷ a ∷ a ∷ a ∷ b ∷ b ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ b ∷ b ∷ b ∷ a ∷ a ∷ b ∷ b ∷ a ∷ a ∷ b ∷ b ∷ b ∷ a ∷ b ∷ b ∷ a ∷ b ∷ a ∷ a ∷ a ∷ b ∷ a ∷ b ∷ b ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ b ∷ b ∷ b ∷ b ∷ a ∷ a ∷ b ∷ b ∷ a ∷ b ∷ b ∷ b ∷ b ∷ b ∷ a ∷ a ∷ b ∷ a ∷ a ∷ b ∷ b ∷ a ∷ a ∷ a ∷ b ∷ b ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ b ∷ b ∷ b ∷ a ∷ a ∷ b ∷ b ∷ a ∷ a ∷ b ∷ b ∷ b ∷ a ∷ b ∷ b ∷ a ∷ b ∷ a ∷ a ∷ a ∷ b ∷ a ∷ b ∷ b ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ b ∷ b ∷ b ∷ b ∷ a ∷ a ∷ b ∷ b ∷ a ∷ b ∷ a ∷ []) ≡ M.nothing
+CopyNeg128 = refl
 
--- StarPos128
-_ : matches starRE (a ∷ b ∷ b ∷ a ∷ b ∷ b ∷ b ∷ a ∷ b ∷ a ∷ b ∷ a ∷ b ∷ a ∷ b ∷ b ∷ b ∷ a ∷ a ∷ b ∷ a ∷ a ∷ b ∷ a ∷ a ∷ b ∷ a ∷ b ∷ a ∷ b ∷ a ∷ a ∷ b ∷ b ∷ a ∷ a ∷ a ∷ b ∷ b ∷ b ∷ b ∷ a ∷ b ∷ b ∷ a ∷ b ∷ a ∷ b ∷ b ∷ b ∷ a ∷ b ∷ b ∷ b ∷ a ∷ a ∷ a ∷ a ∷ a ∷ b ∷ b ∷ a ∷ a ∷ b ∷ a ∷ b ∷ b ∷ b ∷ a ∷ b ∷ b ∷ a ∷ b ∷ a ∷ a ∷ b ∷ a ∷ b ∷ a ∷ a ∷ b ∷ a ∷ a ∷ a ∷ b ∷ a ∷ b ∷ a ∷ b ∷ b ∷ b ∷ a ∷ a ∷ a ∷ a ∷ a ∷ b ∷ a ∷ a ∷ a ∷ b ∷ b ∷ a ∷ b ∷ b ∷ a ∷ b ∷ b ∷ a ∷ b ∷ a ∷ a ∷ a ∷ a ∷ b ∷ a ∷ b ∷ a ∷ b ∷ b ∷ b ∷ b ∷ a ∷ a ∷ b ∷ a ∷ a ∷ b ∷ []) ≡ M.just tt
-_ = refl
+StarPos128 : matches starRE (a ∷ b ∷ b ∷ a ∷ b ∷ b ∷ b ∷ a ∷ b ∷ a ∷ b ∷ a ∷ b ∷ a ∷ b ∷ b ∷ b ∷ a ∷ a ∷ b ∷ a ∷ a ∷ b ∷ a ∷ a ∷ b ∷ a ∷ b ∷ a ∷ b ∷ a ∷ a ∷ b ∷ b ∷ a ∷ a ∷ a ∷ b ∷ b ∷ b ∷ b ∷ a ∷ b ∷ b ∷ a ∷ b ∷ a ∷ b ∷ b ∷ b ∷ a ∷ b ∷ b ∷ b ∷ a ∷ a ∷ a ∷ a ∷ a ∷ b ∷ b ∷ a ∷ a ∷ b ∷ a ∷ b ∷ b ∷ b ∷ a ∷ b ∷ b ∷ a ∷ b ∷ a ∷ a ∷ b ∷ a ∷ b ∷ a ∷ a ∷ b ∷ a ∷ a ∷ a ∷ b ∷ a ∷ b ∷ a ∷ b ∷ b ∷ b ∷ a ∷ a ∷ a ∷ a ∷ a ∷ b ∷ a ∷ a ∷ a ∷ b ∷ b ∷ a ∷ b ∷ b ∷ a ∷ b ∷ b ∷ a ∷ b ∷ a ∷ a ∷ a ∷ a ∷ b ∷ a ∷ b ∷ a ∷ b ∷ b ∷ b ∷ b ∷ a ∷ a ∷ b ∷ a ∷ a ∷ b ∷ []) ≡ M.just tt
+StarPos128 = refl
 
--- LitBack32
-_ : matches (litbackRE 31) (a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ []) ≡ M.just tt
-_ = refl
+LitBack32 : matches (litbackRE 31) (a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ []) ≡ M.just tt
+LitBack32 = refl
 
--- Deep15
-_ : matches (deepRE 15) (a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ []) ≡ M.just tt
-_ = refl
+Deep15 : matches (deepRE 15) (a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ []) ≡ M.just tt
+Deep15 = refl
 
--- TwicePos
-_ : matches twiceRE (a ∷ a ∷ a ∷ []) ≡ M.just tt
-_ = refl
+TwicePos : matches twiceRE (a ∷ a ∷ a ∷ []) ≡ M.just tt
+TwicePos = refl
 
--- TwiceNeg
-_ : matches twiceRE (a ∷ b ∷ a ∷ []) ≡ M.nothing
-_ = refl
+TwiceNeg : matches twiceRE (a ∷ b ∷ a ∷ []) ≡ M.nothing
+TwiceNeg = refl
 
--- AmbigPos20
-_ : matches ambigRE (a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ []) ≡ M.just tt
-_ = refl
+AmbigPos20 : matches ambigRE (a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ []) ≡ M.just tt
+AmbigPos20 = refl
 
--- AmbigNeg12
-_ : matches ambigRE (a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ b ∷ []) ≡ M.nothing
-_ = refl
+AmbigNeg12 : matches ambigRE (a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ a ∷ b ∷ []) ≡ M.nothing
+AmbigNeg12 = refl

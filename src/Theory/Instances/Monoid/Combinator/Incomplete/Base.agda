@@ -58,12 +58,12 @@ maybe-lit⊗-at c {K = K} = look⊗ br
   where
   br : (o : M₁) → ty (▷ (MaybeSet K)) & Λ₁ o ⊢ Maybe (literal c ⊗ ty K)
   br ε₁ = nothing ∘⊢ ⊤Ty-intro
-  br (tk d) = go (d ≟ c)
+  br (tk d) = onTokMatch (d ≟ c)
     where
-    go : (d Eq.≡ c) Sum.⊎ ((d Eq.≡ c) → Empty.⊥)
+    onTokMatch : (d Eq.≡ c) Sum.⊎ ((d Eq.≡ c) → Empty.⊥)
        → ty (▷ (MaybeSet K)) & Λ₁ (tk d) ⊢ Maybe (literal c ⊗ ty K)
-    go (Sum.inl Eq.refl) = Maybe⊗r ∘⊢ (id⊢ ,⊗ π₁) ∘⊢ ▷⊗r c
-    go (Sum.inr _) = nothing ∘⊢ ⊤Ty-intro
+    onTokMatch (Sum.inl Eq.refl) = Maybe⊗r ∘⊢ (id⊢ ,⊗ π₁) ∘⊢ ▷⊗r c
+    onTokMatch (Sum.inr _) = nothing ∘⊢ ⊤Ty-intro
 
 maybe-char⊗-at : {K : TheorySet ℓK tt}
   → ty (▷ (MaybeSet K)) ⊢ Maybe (char ⊗ ty K)
@@ -134,6 +134,5 @@ Test A = ⊤Ty ⊢ Maybe A
 module Fix {ℓA} (ℓK : Level) (A : TheorySet ℓA tt) where
   open Combinators.Fix MaybeAnswer ℓK A public
 
-  -- ...which are then used to build tests
   test : ty (▷ (ParserSet ℓ𝒦 ⟨□⟩ ⟨□⟩ A)) ⊢ Parser ℓ𝒦 ⟨□⟩ ⟨□⟩ A → Test (ty A)
   test = runFix

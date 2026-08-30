@@ -58,7 +58,7 @@ open import Theory.Instances.Monoid.Automaton.Unambiguous
   using (unambiguous-Trace ; unambiguousTrace ; isPropεTy)
 open import Theory.Instances.Monoid.Regex.Base Alphabet _≟_ ℓ
   using (RE ; ⟦_⟧ ; εr ; ⊥r ; ⟨_⟩r ; satr ; _⊗r_ ; _⊕r_ ; _*r
-        ; Sat ; satG ; satSet)
+        ; Sat ; satTy ; satSet)
 
 open WildCatNotation
 open WildCatIso
@@ -68,8 +68,7 @@ private variable
   ℓA ℓB ℓX : Level
   b b' : Bool
 
--- Two maps plus unambiguity of both ends is an iso: this is the old
--- `≈→≅`, and it is why the whole development can stay logical.
+-- Two maps plus unambiguity of both ends is an iso.
 
 ≈→≅ : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt}
   → unambiguous A → unambiguous B → A ⊢ B → B ⊢ A → A ≅ B
@@ -86,8 +85,6 @@ disc = discAlphabet
 Aut : {¬FL ¬F : ℙ} (dr : DetReg ¬FL ¬F b)
   → ImplicitDeterministicAutomaton (States dr)
 Aut dr = compile disc dr
-
--- The base cases.
 
 module Leaves where
   module _ where
@@ -183,7 +180,7 @@ module Leaves where
       using (Trace ; TraceTy ; STOP ; STEP)
 
     satCarrier : FreelyAddInitial (Unit* {ℓAlph}) → TheoryTy ℓM tt
-    satCarrier initial = satG P
+    satCarrier initial = satTy P
     satCarrier (↑i _) = εTy
 
     satAlg : ParseAlg Mach satCarrier
@@ -193,7 +190,7 @@ module Leaves where
       ∘⊢ fromCode Mach true initial
       where
       initialStep : (c' : Alphabet)
-        → ＂ c' ＂ ⊗ ParseAlgCarrier Mach satCarrier (↑f→q (Mach .δᵢ c')) ⊢ satG P
+        → ＂ c' ＂ ⊗ ParseAlgCarrier Mach satCarrier (↑f→q (Mach .δᵢ c')) ⊢ satTy P
       initialStep c' with P c' in eq
       ... | true = σ⊕ (c' , Eq.eqToPath eq) ∘⊢ ⊗ε-unit-r
       ... | false = ⊥Ty-elim ∘⊢ ⊗⊥↑-annihR {A = ＂ c' ＂}
@@ -203,10 +200,10 @@ module Leaves where
         (⊕ᴰ-elim λ _ → lowerTy)
       ∘⊢ fromCode Mach true (↑q tt*)
 
-    satAut→ : Parse Mach ⊢ satG P
+    satAut→ : Parse Mach ⊢ satTy P
     satAut→ = recParse Mach satAlg initial
 
-    satAut← : satG P ⊢ Parse Mach
+    satAut← : satTy P ⊢ Parse Mach
     satAut← = ⊕ᴰ-elim λ x → atLetter (x .fst) (x .snd)
       where
       atLetter : (d : Alphabet) → P d ≡ true → ＂ d ＂ ⊢ Parse Mach
@@ -242,8 +239,6 @@ module Alt {Q Q' : Type ℓAlph}
     Lε : TheoryTy (ℓF ℓM) tt
     Lε = LiftTheoryTy (ℓF ℓM) εTy
 
-    -- Into the alternation.
-
     ⟦_⟧M : FreelyAddInitial Q → TheoryTy _ tt
     ⟦ initial ⟧M = Parse ⊕A
     ⟦ ↑i q ⟧M = D⊕.Trace true (↑q (Sum.inl q))
@@ -255,20 +250,20 @@ module Alt {Q Q' : Type ℓAlph}
     -- the alternation is nullable whenever the branch that is allowed to
     -- be is
     nullFromL : true Eq.≡ M .null → ⊕A .null ≡ true
-    nullFromL p = go notBothNull
+    nullFromL p = onNotBothNull notBothNull
       where
-      go : (x : (M .null ≡ false) Sum.⊎ (M' .null ≡ false))
+      onNotBothNull : (x : (M .null ≡ false) Sum.⊎ (M' .null ≡ false))
         → Sum.rec (λ _ → M' .null) (λ _ → M .null) x ≡ true
-      go (Sum.inl h) = Empty.rec (true≢false (Eq.eqToPath p ∙ h))
-      go (Sum.inr h) = sym (Eq.eqToPath p)
+      onNotBothNull (Sum.inl h) = Empty.rec (true≢false (Eq.eqToPath p ∙ h))
+      onNotBothNull (Sum.inr h) = sym (Eq.eqToPath p)
 
     nullFromR : true Eq.≡ M' .null → ⊕A .null ≡ true
-    nullFromR p = go notBothNull
+    nullFromR p = onNotBothNull notBothNull
       where
-      go : (x : (M .null ≡ false) Sum.⊎ (M' .null ≡ false))
+      onNotBothNull : (x : (M .null ≡ false) Sum.⊎ (M' .null ≡ false))
         → Sum.rec (λ _ → M' .null) (λ _ → M .null) x ≡ true
-      go (Sum.inl h) = sym (Eq.eqToPath p)
-      go (Sum.inr h) = Empty.rec (true≢false (Eq.eqToPath p ∙ h))
+      onNotBothNull (Sum.inl h) = sym (Eq.eqToPath p)
+      onNotBothNull (Sum.inr h) = Empty.rec (true≢false (Eq.eqToPath p ∙ h))
 
     MAlg : ParseAlg M ⟦_⟧M
     MAlg fail = ParseAlgFail M
@@ -369,8 +364,6 @@ module Alt {Q Q' : Type ℓAlph}
         → ＂ c ＂ ⊗ ParseAlgCarrier M' ⟦_⟧M' (↑f→q (M' .δq q' c))
         ⊢ D⊕.Trace true (↑q (Sum.inr q'))
       stepM' c = D⊕.STEP c (↑q (Sum.inr q')) ∘⊢ (id⊢ ,⊗ conv c)
-
-    -- ...and back out of it.
 
     ⟦_⟧⊕ : FreelyAddInitial (Q Sum.⊎ Q') → TheoryTy _ tt
     ⟦ initial ⟧⊕ = Parse M ⊕ Parse M'
@@ -655,8 +648,6 @@ module Seq {Q Q' : Type ℓAlph}
         ⟜-intro
           (D⊗.STEP c (↑q (Sum.inl q)) ∘⊢ (id⊢ ,⊗ conv c) ∘⊢ ⊗-assoc)
 
-    -- ...and back: a trace of the concatenation splits at the join.
-
     ⟦_⟧⊗ : FreelyAddInitial (Q Sum.⊎ Q') → TheoryTy _ tt
     ⟦ initial ⟧⊗ = Parse M ⊗ Parse M'
     ⟦ ↑i (Sum.inl q) ⟧⊗ = DM.Trace true (↑q q) ⊗ Parse M'
@@ -805,7 +796,6 @@ module Kleene {Q : Type ℓAlph}
     Lε = LiftTheoryTy (ℓF ℓM) εTy
 
     -- Splicing a further run in at an accepting state.
-
     module Paste (q : Q) (accEq : true Eq.≡ M .acc q) where
       ⟦_⟧P : FreelyAddInitial Q → TheoryTy _ tt
       ⟦ initial ⟧P = D*.Trace true (↑q q)
@@ -953,8 +943,6 @@ module Kleene {Q : Type ℓAlph}
       stepM c =
         ⟜-intro (D*.STEP c (↑q q) ∘⊢ (id⊢ ,⊗ conv c) ∘⊢ ⊗-assoc)
 
-    -- ...and back: a run of the star is a list of runs of the body.
-
     ⟦_⟧* : FreelyAddInitial Q → TheoryTy _ tt
     ⟦ initial ⟧* = Parse M *
     ⟦ ↑i q ⟧* = DM.Trace true (↑q q) ⊗ (Parse M *)
@@ -1052,15 +1040,14 @@ module Kleene {Q : Type ℓAlph}
     consB =
       ⟜-app ∘⊢ (recParse M MAlg initial ,⊗ id⊢) ∘⊢ star-cons⁻
 
-unambiguous-satG : (P : Alphabet → Bool) → unambiguous (satG P)
-unambiguous-satG P m (x , p) (y , q) =
+unambiguous-satTy : (P : Alphabet → Bool) → unambiguous (satTy P)
+unambiguous-satTy P m (x , p) (y , q) =
   ΣPathP (xy , isProp→PathP (λ _ → isPropEqString) p q)
   where
   xy : x ≡ y
   xy = Σ≡Prop (λ _ → isSetBool _ _)
          (L.cons-inj₁ (sym (Eq.eqToPath p) ∙ Eq.eqToPath q))
 
--- functoriality of the star, as a fold
 map* : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt} → A ⊢ B → A * ⊢ B *
 map* {A = A} {B = B} f =
   fold*r (NIL ∘⊢ liftTy ∘⊢ lowerTy ∘⊢ star-nil⁻ {A = A} {B = B *})
@@ -1189,7 +1176,7 @@ unambig-erase : {¬FL ¬F : ℙ} (dr : DetReg ¬FL ¬F b)
 unambig-erase εdr = isPropεTy
 unambig-erase ⊥dr = unambiguous⊥
 unambig-erase ＂ c ＂dr = λ _ → isPropEqString
-unambig-erase (satdr P) = unambiguous-satG P
+unambig-erase (satdr P) = unambiguous-satTy P
 unambig-erase (dr ⊗DR[ su ] dr') =
   unambiguous⊗ (seqOfTy dr dr' su) (unambig-erase dr) (unambig-erase dr')
 unambig-erase (_⊕DR[_]_ {b = true} {notBothNull = nbn} dr sep dr') =
@@ -1201,8 +1188,6 @@ unambig-erase (_⊕DR[_]_ {b = false} {b' = true} {notBothNull = nbn} dr sep dr'
 unambig-erase (_⊕DR[_]_ {b = false} {b' = false} {notBothNull = ()} dr sep dr')
 unambig-erase (dr *DR[ su ]) =
   unambiguous-* (¬NullOf dr) (seqOfTy dr dr su) (unambig-erase dr)
-
--- The theorem.
 
 compile-sound : {¬FL ¬F : ℙ} (dr : DetReg ¬FL ¬F b)
   → Parse (compile disc dr) ≅ ty ⟦ erase dr ⟧

@@ -45,25 +45,24 @@ isPropεTy m (ms , e , _) (ns , f , _) =
 module _ {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt} {C : TheoryTy ℓC tt} where
 
   -- Both reassociations keep the same three slots over the same word; they
-  -- differ only in how the splitting is rebuilt, and `two≡` is the whole
-  -- difference.
+  -- differ only in how the splitting is rebuilt, which is what `two≡` gives.
   ⊗-assoc⁻∘⊗-assoc : ⊗-assoc⁻ {A = A} {B = B} {C = C} ∘⊢ ⊗-assoc ≡ id⊢
-  ⊗-assoc⁻∘⊗-assoc = funExt λ m → funExt (go m)
+  ⊗-assoc⁻∘⊗-assoc = funExt λ m → funExt (atPoint m)
     where
-    go : (m : String) (x : ((A ⊗ B) ⊗ C) m)
-       → ⊗-assoc⁻ {A = A} {B = B} {C = C} m (⊗-assoc m x) ≡ x
-    go m (ms , e , ((ns , f , (a , (b , _))) , (c , _))) =
+    atPoint : (m : String) (x : ((A ⊗ B) ⊗ C) m)
+      → ⊗-assoc⁻ {A = A} {B = B} {C = C} m (⊗-assoc m x) ≡ x
+    atPoint m (ms , e , ((ns , f , (a , (b , _))) , (c , _))) =
       ⊗PathP' {A = A ⊗ B} {B = C} refl
         (two≡ (Eq.eqToPath f) refl)
         (⊗PathP' {A = A} {B = B} (Eq.eqToPath f) (two≡ refl refl) refl refl)
         refl
 
   ⊗-assoc∘⊗-assoc⁻ : ⊗-assoc {A = A} {B = B} {C = C} ∘⊢ ⊗-assoc⁻ ≡ id⊢
-  ⊗-assoc∘⊗-assoc⁻ = funExt λ m → funExt (go m)
+  ⊗-assoc∘⊗-assoc⁻ = funExt λ m → funExt (atPoint m)
     where
-    go : (m : String) (x : (A ⊗ (B ⊗ C)) m)
-       → ⊗-assoc {A = A} {B = B} {C = C} m (⊗-assoc⁻ m x) ≡ x
-    go m (ms , e , (a , ((ns , f , (b , (c , _))) , _))) =
+    atPoint : (m : String) (x : (A ⊗ (B ⊗ C)) m)
+      → ⊗-assoc {A = A} {B = B} {C = C} m (⊗-assoc⁻ m x) ≡ x
+    atPoint m (ms , e , (a , ((ns , f , (b , (c , _))) , _))) =
       ⊗PathP' {A = A} {B = B ⊗ C} refl
         (two≡ refl (Eq.eqToPath f))
         refl
@@ -79,10 +78,11 @@ module _ {A : TheoryTy ℓA tt} where
     sym (unit-l≡ {A = A} m (⊗ε-unit-l⁻ m a) refl)
 
   ⊗-unit-l⁻∘l : ⊗ε-unit-l⁻ ∘⊢ ⊗-unit-l {A = A} ≡ id⊢
-  ⊗-unit-l⁻∘l = funExt λ m → funExt (go m)
+  ⊗-unit-l⁻∘l = funExt λ m → funExt (atPoint m)
     where
-    go : (m : String) (t : (εTy ⊗ A) m) → ⊗ε-unit-l⁻ m (⊗-unit-l {A = A} m t) ≡ t
-    go m t@(ms , e , (u , (a , _))) =
+    atPoint : (m : String) (t : (εTy ⊗ A) m)
+      → ⊗ε-unit-l⁻ m (⊗-unit-l {A = A} m t) ≡ t
+    atPoint m t@(ms , e , (u , (a , _))) =
       ⊗PathP' {A = εTy} {B = A} refl
         (two≡ (Eq.eqToPath (u .snd .fst)) (sym upath))
         (isProp→PathP (λ i → isPropεTy _) _ _)
@@ -91,15 +91,15 @@ module _ {A : TheoryTy ℓA tt} where
       upath : ms (suc zero) ≡ m
       upath = unit-lPath ms u e
 
-  -- The right unitor.  `⊗ε-unit-r` matches its argument's equation instead
-  -- of transporting, so one composite is `castEq` bookkeeping...
+  -- The right unitor.  `⊗ε-unit-r` matches its argument's equation instead of
+  -- transporting, so one composite is `castEq` bookkeeping; the other has to
+  -- *match* the splitting's right half as `[]`, since nothing reduces until
+  -- the `εTy` witness' equation is a constructor.  Writing the splitting as
+  -- `two x y` is what makes the match legal; `two-η` puts an arbitrary
+  -- splitting back into that form.
   ⊗-unit-r∘r⁻ : ⊗ε-unit-r {A = A} ∘⊢ ⊗ε-unit-r⁻ ≡ id⊢
   ⊗-unit-r∘r⁻ = funExt λ m → funExt λ a → castEq-inv {A = A} (++-unit-rEq m) a
 
-  -- ...and the other has to *match* the splitting's right half as `[]`,
-  -- since nothing reduces until the `εTy` witness' equation is a
-  -- constructor.  Writing the splitting as `two x y` is what makes the match
-  -- legal; `two-η` puts an arbitrary splitting back into that form.
   private
     unit-r-η : (m x : String) (us : arities MonSig ε· → String) (y : String)
       (e : op _⊙_ (two x y) Eq.≡ m) (a : A x) (q : op ε· us Eq.≡ y)
@@ -117,10 +117,11 @@ module _ {A : TheoryTy ℓA tt} where
       p = sym (Eq.eqToPath e) ∙ ++-unit-r x
 
   ⊗-unit-r⁻∘r : ⊗ε-unit-r⁻ ∘⊢ ⊗ε-unit-r {A = A} ≡ id⊢
-  ⊗-unit-r⁻∘r = funExt λ m → funExt (go m)
+  ⊗-unit-r⁻∘r = funExt λ m → funExt (atPoint m)
     where
-    go : (m : String) (t : (A ⊗ εTy) m) → ⊗ε-unit-r⁻ m (⊗ε-unit-r {A = A} m t) ≡ t
-    go m (ms , e , (a , ((us , q , _) , _))) =
+    atPoint : (m : String) (t : (A ⊗ εTy) m)
+      → ⊗ε-unit-r⁻ m (⊗ε-unit-r {A = A} m t) ≡ t
+    atPoint m (ms , e , (a , ((us , q , _) , _))) =
       subst
         (λ ns → (r : op _⊙_ ns Eq.≡ m) (a' : A (ns zero))
                 (q' : op ε· us Eq.≡ ns (suc zero))
@@ -131,9 +132,8 @@ module _ {A : TheoryTy ℓA tt} where
         (unit-r-η m (ms zero) us (ms (suc zero)))
         e a q
 
--- Naturality, at the levels a client actually meets.  `Strings` states these
--- only at `ℓM`, which is enough for its own use and for nothing else; the
--- proofs never mentioned the level.
+-- Naturality, restated level-polymorphically: `Strings` states these only at
+-- `ℓM`, though the proofs never mentioned the level.
 module _ {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt} where
   ⊗-unit-l-nat↑ : (f : A ⊢ B)
     → f ∘⊢ ⊗-unit-l {A = A} ≡ ⊗-unit-l {A = B} ∘⊢ ⊗-map (id⊢ {A = εTy}) f

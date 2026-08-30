@@ -30,8 +30,6 @@ import Theory.Instances.Monoid.Combinator.Grammars.Dyck
 import Theory.Instances.Monoid.Combinator.Grammars.Dyck
   ND.NDAnswer as GND
 
--- One parser, three answers.
-
 decDyck : Dec.Decidable S
 decDyck = GDec.dyck
 

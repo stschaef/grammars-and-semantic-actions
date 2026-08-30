@@ -38,7 +38,7 @@ open import Theory.Instances.Monoid.Automata.NFA.Base Alphabet isSetAlphabet
 open import Theory.Instances.Monoid.Thompson.Construction
   Alphabet isSetAlphabet
 open import Theory.Instances.Monoid.Thompson.Construction.Sat
-  Alphabet isSetAlphabet isFinSetAlphabet using (satNFA≅ ; satG ; ℓsat)
+  Alphabet isSetAlphabet isFinSetAlphabet using (satNFA≅ ; satTy ; ℓsat)
 open import Theory.Instances.Monoid.Thompson.Base
   Alphabet isSetAlphabet isFinSetAlphabet _≟_ ℓ
 open import Theory.Type.Equivalence.Base MonEqns Alphabet (λ _ → tt)
@@ -49,7 +49,6 @@ open WildCatIso
 open NFA
 open NFA.Accepting
 
--- the level a regex's automaton's traces land at
 reNFALevel : ∀ {n} → RE n → Level
 reNFALevel εr = ℓF ℓM
 reNFALevel ⊥r = ℓF ℓM
@@ -65,7 +64,7 @@ reNFALevel (r *r) = ℓF (reNFALevel r)
 ⟦ εr ⟧nfa = LiftTheoryTy (ℓF ℓM) εTy
 ⟦ ⊥r ⟧nfa = ⊥Ty↑ (ℓF ℓM)
 ⟦ ⟨ c ⟩r ⟧nfa = LiftTheoryTy (ℓF ℓM) (literal c)
-⟦ satr P ⟧nfa = LiftTheoryTy (ℓF (ℓ-max ℓAlph ℓM)) (satG P)
+⟦ satr P ⟧nfa = LiftTheoryTy (ℓF (ℓ-max ℓAlph ℓM)) (satTy P)
 ⟦ r ⊗r r' ⟧nfa = ⟦ r ⟧nfa ⊗ ⟦ r' ⟧nfa
 ⟦ r ⊕r r' ⟧nfa = ⟦ r ⟧nfa ⊕ ⟦ r' ⟧nfa
 ⟦ r *r ⟧nfa = ⟦ r ⟧nfa *

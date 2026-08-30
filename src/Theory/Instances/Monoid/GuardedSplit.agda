@@ -55,7 +55,6 @@ module _ {C : (s : Sorts) → TheoryTy ℓA s}
   PayR {X = X} = (m : ↓M tt) (ms : interpIn _⊙_ ↓M) → op _⊙_ ms Eq.≡ m
     → X (ms zero) → R (tt , ms (suc zero)) (tt , m)
 
-  -- ... and what it gets: the hypothesis alongside the right slot
   ▷⊛r : {X : TheoryTy ℓX tt} {B : TheoryTy ℓB tt}
     → PayR {X = X} → (X ⊛ B) & ▷ tt ⊢ X ⊛ (B & C tt)
   ▷⊛r pay = ⊗&-overSplit λ m ms e (x , b , tt*) β →

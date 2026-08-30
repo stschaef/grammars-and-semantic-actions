@@ -31,26 +31,7 @@ open import Theory.Type.Decidable.Base σeq V vs 𝒫 using (DecTy)
 
 private variable ℓA ℓB ℓX ℓY : Level
 
--- Test suites are ordinary external data.  They are independent of the
--- chosen theory; `run` below is the sole boundary at which an internal map
--- out of top is observed.
-module Suite where
-  Case : Type ℓX → Type ℓX
-  Case X = X × X
-
-  infix 6 _↦_
-  _↦_ : {W : Type ℓY} {X : Type ℓX} → W → X → W × X
-  w ↦ x = w , x
-
-  passes : {X : Type ℓX} → List (Case X) → Type ℓX
-  passes cs = List.map fst cs ≡ List.map snd cs
-
-  infix 3 _at_
-  _at_ : {W : Type ℓY} {X : Type ℓX}
-    → (W → X) → List (W × X) → List (Case X)
-  f at cs = List.map (λ c → f (c .fst) ↦ c .snd) cs
-
-open Suite public
+open import Theory.Type.SemanticAction.Suite public
 
 Δ : {s : S} → Type ℓX → TheoryTy ℓX s
 Δ X = ⊕[ x ∈ X ] ⊤Ty
@@ -58,7 +39,6 @@ open Suite public
 SemanticAction : {s : S} → TheoryTy ℓA s → Type ℓX → Type _
 SemanticAction A X = A ⊢ Δ X
 
--- Externalisation for every theory and every sort.
 run : {s : S} {X : Type ℓX} → (⊤Ty {s = s} ⊢ Δ X) → ↓M s → X
 run f m = f m tt .fst
 
@@ -90,12 +70,10 @@ semact-disjunct : {s : S} {A : TheoryTy ℓA s} {B : TheoryTy ℓB s}
   → SemanticAction A X → SemanticAction B Y → SemanticAction (A ⊕ B) (X Sum.⊎ Y)
 semact-disjunct x y = semact-⊕ (semact-map Sum.inl x) (semact-map Sum.inr y)
 
--- The internal error case is the external `nothing`.
 semact-Maybe : {s : S} {A : TheoryTy ℓA s} {X : Type ℓX}
   → SemanticAction A X → SemanticAction (Maybe A) (M.Maybe X)
 semact-Maybe a = semact-⊕ (semact-map M.just a) (semact-pure M.nothing)
 
--- ...and so is the refutation branch of a decision.
 semact-dec : {s : S} {A : TheoryTy ℓA s} {X : Type ℓX}
   → SemanticAction A X → SemanticAction (DecTy A) (M.Maybe X)
 semact-dec a = semact-⊕ (semact-map M.just a) (semact-pure M.nothing)
@@ -133,7 +111,6 @@ semact-⊗ : (o : σ .ops) {A : interpIn o (TheoryTy ℓA)}
   → SemanticAction (⊗ᵘ[ o ] A) ((a : arities σ o) → X a)
 semact-⊗ o X f = Δ-⊗ o X ∘⊢ ⊗map o f
 
--- An action out of an inductive grammar is precisely a Δ-valued algebra.
 semact-rec : {ℓX ℓA : Level} {X : Type ℓX} {xs : X → S}
   {F : (x : X) → Functor ℓA X xs (xs x)} {Y : X → Type ℓY}
   → (∀ x → ⟦ F x ⟧TheoryTy (λ x → Δ (Y x)) ⊢ Δ (Y x))

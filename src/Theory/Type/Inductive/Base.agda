@@ -38,6 +38,9 @@ module _ {ℓA ℓX} {X : Type ℓX} {xs : X → S} where
         Σ[ ϕ ∈ (∀ x → μ F x ⊢ A x) ]
           (∀ x → ϕ x ∘⊢ roll ≡ α x ∘⊢ map (F x) ϕ)
 
+      -- Structural on the `μ F` argument, but the recursive call is handed
+      -- to `map (F x)`, which the checker cannot see into.  See the note on
+      -- `fold` in `Type/Guarded/Base`.
       {-# TERMINATING #-}
       rec : ∀ x → μ F x ⊢ A x
       rec x m (roll ._ z) = α x m (map (F x) rec m z)
@@ -48,6 +51,9 @@ module _ {ℓA ℓX} {X : Type ℓX} {xs : X → S} where
 
       module _ (ϕ : RecHomo) where
         private
+          -- A proof, not a definition, with the same hidden descent as
+          -- `rec`: structural on the `μ F` argument, through `map (F x)`.
+          -- See the note on `fold` in `Type/Guarded/Base`.
           {-# TERMINATING #-}
           μ-η' : ∀ x m z → ϕ .fst x m z ≡ rec x m z
           μ-η' x m (roll _ z) =

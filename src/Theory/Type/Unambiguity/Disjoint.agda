@@ -101,8 +101,6 @@ module _ {s : S} {A : TheoryTy ℓA s} where
   unambiguous→Δ≅ u .sec = funExt λ m → funExt λ x → ΣPathP (refl , u m _ _)
   unambiguous→Δ≅ u .ret = refl
 
--- Transport of unambiguity, and the upgrade from a weak to a strong
--- equivalence that unambiguity licenses.
 isUnambiguousRetract' : (f : A ⊢ B) (g : B ⊢ A) → g ∘⊢ f ≡ id⊢
   → unambiguous B → unambiguous A
 isUnambiguousRetract' f g r uB = unambiguousRetract f g r uB
@@ -129,7 +127,7 @@ unambiguousRetract→≅ : A isRetractOf B → unambiguous B → A ≅ B
 unambiguousRetract→≅ r uB =
   unambiguous→≅ (isUnambiguousRetract r uB) uB (r .weak .fun) (r .weak .inv)
 
--- The point of `≈`: between unambiguous types it is already a `≅`.
+-- Between unambiguous types a weak equivalence is already a `≅`.
 ≈→≅ : unambiguous A → unambiguous B → A ≈ B → A ≅ B
 ≈→≅ uA uB e = unambiguous→≅ uA uB (e .fun) (e .inv)
 

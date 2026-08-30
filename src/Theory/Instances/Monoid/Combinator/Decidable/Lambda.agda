@@ -5,7 +5,8 @@
 
    Application is parenthesised, so the grammar is left-recursion-free and
    every production is terminal-led: `λ`, `(` and `v` name three classes and
-   the rest have none.  One nonterminal, not nullable. -}
+   the rest have none.  One nonterminal, not nullable.  The suites are in
+   `Decidable/LambdaTests`. -}
 open import Cubical.Foundations.Prelude
 import Cubical.Data.Sum as Sum
 import Cubical.Data.Empty as Empty
@@ -47,7 +48,7 @@ v ≟T lp = Sum.inr λ ()
 v ≟T rp = Sum.inr λ ()
 v ≟T v = Sum.inl Eq.refl
 
-open import Theory.Instances.Monoid.Combinator.Decidable.Productions Tok _≟T_
+open import Theory.Instances.Monoid.Combinator.Decidable.Productions Tok _≟T_ public
 
 lamTable : Table Unit
 lamTable .Table.at _ ε₁ = none
@@ -58,41 +59,10 @@ lamTable .Table.at _ (tk rp) = none
 lamTable .Table.at _ (tk v) = led []
 lamTable .Table.nul _ = false
 
-open Gen lamTable
+open Gen lamTable public
 
 Term : TheoryTy ℓG tt
 Term = S tt
 
 parse : Decidable Term
 parse = decide tt
-
--- Every `Eq.refl` below is the parser running.
-
-yes-v : Term (v ∷ [])
-yes-v = theYes (parse (v ∷ []) tt) Eq.refl
-
-yes-id : Term (lam ∷ v ∷ dot ∷ v ∷ [])
-yes-id = theYes (parse (lam ∷ v ∷ dot ∷ v ∷ []) tt) Eq.refl
-
-yes-app : Term (lp ∷ v ∷ v ∷ rp ∷ [])
-yes-app = theYes (parse (lp ∷ v ∷ v ∷ rp ∷ []) tt) Eq.refl
-
-yes-omega : Term (lp ∷ lam ∷ v ∷ dot ∷ lp ∷ v ∷ v ∷ rp ∷ lam ∷ v ∷ dot ∷ lp ∷ v ∷ v ∷ rp ∷ rp ∷ [])
-yes-omega = theYes
-  (parse (lp ∷ lam ∷ v ∷ dot ∷ lp ∷ v ∷ v ∷ rp ∷ lam ∷ v ∷ dot ∷ lp ∷ v ∷ v ∷ rp ∷ rp ∷ []) tt)
-  Eq.refl
-
-no-nil : ¬Ty Term []
-no-nil = theNo (parse [] tt) Eq.refl
-
-no-dot : ¬Ty Term (dot ∷ [])
-no-dot = theNo (parse (dot ∷ []) tt) Eq.refl
-
-no-unclosed : ¬Ty Term (lp ∷ v ∷ v ∷ [])
-no-unclosed = theNo (parse (lp ∷ v ∷ v ∷ []) tt) Eq.refl
-
-no-juxt : ¬Ty Term (v ∷ v ∷ [])
-no-juxt = theNo (parse (v ∷ v ∷ []) tt) Eq.refl
-
-no-lam-noarg : ¬Ty Term (lam ∷ v ∷ dot ∷ [])
-no-lam-noarg = theNo (parse (lam ∷ v ∷ dot ∷ []) tt) Eq.refl

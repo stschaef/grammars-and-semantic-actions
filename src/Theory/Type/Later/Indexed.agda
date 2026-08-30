@@ -1,8 +1,6 @@
--- TODO how much of this actually used?
--- WARNING for now I have been treating this as a place to sequester the
--- semantic reasoning about guarded recursion so that importers of this
--- module can work with a clean interface
--- The implementation are subject to change per experiments w Cass
+-- `Theory.Type.Later.*` sequesters the semantic reasoning about guarded
+-- recursion; importers should work against `Theory.Type.Guarded.Base`, which
+-- is the interface.  The implementations here are subject to change.
 open import Cubical.Foundations.Prelude
 open import Cubical.Foundations.HLevels
 open import Cubical.Foundations.Structure

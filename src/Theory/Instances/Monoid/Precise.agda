@@ -87,7 +87,7 @@ lit⊗-precise {K = K} c m (ms , e , (lc , (nk , _))) t =
         ∙ sym (flat c (ns zero) (ns (suc zero)) m
                  (t .snd .snd .fst) (t .snd .fst))
 
--- ...and so is `char`, which fixes the splitting without fixing the letter
+-- `char` is precise too: it fixes the splitting without fixing the letter.
 char⊗-precise : {K : TheoryTy ℓA tt} → char ⊗ ¬Ty K ⊢ ¬Ty (char ⊗ K)
 char⊗-precise {K = K} m (ms , e , ((d , lc) , (nk , _))) t =
   nk (subst K (sym (L.cons-inj₂ tails)) (t .snd .snd .snd .fst))
@@ -98,9 +98,9 @@ char⊗-precise {K = K} m (ms , e , ((d , lc) , (nk , _))) t =
         ∙ sym (flat (t .snd .snd .fst .fst) (ns zero) (ns (suc zero)) m
                  (t .snd .snd .fst .snd) (t .snd .fst))
 
--- Two more consequences of the same precision, both used wherever two
--- one-step unrollings are compared: a `literal`-headed word is not empty,
--- and two such words agree on their head letter.
+-- Two further consequences of the same precision, used wherever two one-step
+-- unrollings are compared: a `literal`-headed word is not empty, and two such
+-- words agree on their head letter.
 ε∉lit⊗ : {A : TheoryTy ℓA tt} (c : Alphabet) → εTy & (literal c ⊗ A) ⊢ ⊥Ty
 ε∉lit⊗ c m ((ms , e , _) , (ns , f , (l , (a , _)))) =
   Empty.rec
@@ -157,8 +157,7 @@ private
 -- then `g` both continues one left factor into the other and opens the
 -- other's right factor, so a separation hypothesis at `g` refutes it.
 -- With every proper case refuted the two splittings coincide and the
--- factors pair up.  This is the internal replacement for the old
--- `SplittingTrichotomy`-based `⊗&-distL≅`.
+-- factors pair up.
 module _ {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt}
          {C : TheoryTy ℓC tt} {D : TheoryTy ℓD tt}
   (sepL : (g : Alphabet)
@@ -186,8 +185,8 @@ module _ {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt}
               (λ h → Empty.rec (h y' (headed g (ds ++ y) y' r , d) .lower))
               (sepR g)
 
-  -- The two cuts coincide.  This is the whole content; `⊗&-align` below
-  -- repackages it as a term, and `unambiguous⊗` needs it as a path.
+  -- The two cuts coincide.  `⊗&-align` below repackages this as a term, and
+  -- `unambiguous⊗` needs it as a path.
   splitAgree : (x y x' y' : ↓M tt) → (x ++ y) ≡ (x' ++ y')
     → A x → B y → C x' → D y' → (x ≡ x') × (y ≡ y')
   splitAgree x y x' y' p a b c d =

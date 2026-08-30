@@ -55,8 +55,8 @@ module _ {X : Type ℓX} {xs : X → Unit} (Fa Fb : Functor ℓA X xs tt) where
       ≡ ⊗-map (map Fa f) (map Fb f) ∘⊢ ⟦⊗e⟧ {A = A} Fa Fb
   ⟦⊗e⟧-nat f = refl
 
-  -- ...and the same fact read backwards, which is the direction a
-  -- constructor is built in.
+  -- The same fact read backwards, which is the direction a constructor is
+  -- built in.
   ⟦⊗e⟧⁻-nat : {A : (x : X) → TheoryTy ℓB tt} {B : (x : X) → TheoryTy ℓC tt}
     (f : ∀ x → A x ⊢ B x)
     → map (⊗e _⊙_ (two Fa Fb)) f ∘⊢ ⟦⊗e⟧⁻ {A = A} Fa Fb
@@ -71,7 +71,6 @@ module _ {X : Type ℓX} {xs : X → Unit} (Fa Fb : Functor ℓA X xs tt) where
             zero → refl
             (suc zero) → refl) i
 
--- The nullary convolution, which mentions no slot family at all.
 module _ {X : Type ℓX} {xs : X → Unit} where
 
   -- The nullary convolution is `εTy` whatever slot family it carries: the
@@ -84,7 +83,6 @@ module _ {X : Type ℓX} {xs : X → Unit} where
     → εTy ⊢ ⟦ ⊗e ε· F ⟧TheoryTy A
   ⊗e-ε← F m (ms , e , _) = ms , e , λ ()
 
-  -- ...so `map` at a nullary summand carries no information.
   ⊗e-ε-map : {A : (x : X) → TheoryTy ℓB tt} {B : (x : X) → TheoryTy ℓC tt}
     (F : interpIn ε· (Functor ℓA X xs)) (f : ∀ x → A x ⊢ B x)
     → map (⊗e ε· F) f ≡ ⊗e-ε← {A = B} F ∘⊢ ⊗e-ε→ {A = A} F

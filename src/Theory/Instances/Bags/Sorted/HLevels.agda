@@ -17,21 +17,9 @@ open import Theory.Instances.Monoid.Base
 open import Theory.Instances.Bags.Base El
 open import Theory.Instances.Bags.Order El le
 open import Theory.Instances.Bags.Sorted.Base El le
+open import Theory.Instances.Bags.HLevels El isSetEl using (isSet⌈⌉ ; isSetεB)
 open import Theory.Type.HLevels BagEqns El (λ _ → tt) closingPresentation
 open import Theory.Type.Inductive.HLevels BagEqns El (λ _ → tt) closingPresentation
-
-private
-  -- a representable is prop-valued: it is an equality in a set
-  isSet⌈⌉ : (a : Bag) → isSetTheoryTy ⌈ a ⌉
-  isSet⌈⌉ a m =
-    isProp→isSet
-      (isOfHLevelRetractFromIso 1 (invIso Eq.PathIsoEq) (M .fst tt .snd _ _))
-
-  isSetεB : isSetTheoryTy εB
-  isSetεB = isSet⊗ ε· (λ ()) tt* λ ()
-
-  isSetAbove : (x : El) → isSetTheoryTy (Above x)
-  isSetAbove x m = isProp→isSet (isPropBagAll (aboveEl x) m)
 
 isSetValuedSortedCode : isSetValued {X = Unit} {xs = λ _ → tt} SortedCode
 isSetValuedSortedCode =

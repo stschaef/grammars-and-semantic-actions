@@ -33,9 +33,6 @@ private
   eqc : AC.Char → UChar → Bool
   eqc d c = AN._==_ (AC.primCharToNat d) (code c)
 
--- Predicates.  These are the real content; the regexes below are one
--- application of `satr` each.
-
 inRange : AC.Char → AC.Char → UChar → Bool
 inRange lo hi c =
   (AC.primCharToNat lo ≤ᵇ code c) and (code c ≤ᵇ AC.primCharToNat hi)
@@ -58,41 +55,39 @@ isGraph   = inRange '\x21' '\x7E'
 isPunct c = isGraph c and not (isAlnum c)
 isWord  c = isAlnum c or eqc '_' c
 
--- ...and the POSIX names, each with its complement.
-
 -- `[lo-hi]`
-rangeR : AC.Char → AC.Char → RE notNullable
-rangeR lo hi = satr (inRange lo hi)
+ranger : AC.Char → AC.Char → RE notNullable
+ranger lo hi = satr (inRange lo hi)
 
 -- `[c]`
-charR : AC.Char → RE notNullable
-charR c = ⟨ ch c ⟩r
+charr : AC.Char → RE notNullable
+charr c = ⟨ ch c ⟩r
 
-digitR alphaR alnumR upperR lowerR xdigitR : RE notNullable
-spaceR blankR punctR cntrlR printR graphR wordR : RE notNullable
-digitR  = satr isDigit
-alphaR  = satr isAlpha
-alnumR  = satr isAlnum
-upperR  = satr isUpper
-lowerR  = satr isLower
-xdigitR = satr isXDigit
-spaceR  = satr isSpace
-blankR  = satr isBlank
-punctR  = satr isPunct
-cntrlR  = satr isCntrl
-printR  = satr isPrint
-graphR  = satr isGraph
-wordR   = satr isWord
+digitr alphar alnumr upperr lowerr xdigitr : RE notNullable
+spacer blankr punctr cntrlr printr graphr wordr : RE notNullable
+digitr  = satr isDigit
+alphar  = satr isAlpha
+alnumr  = satr isAlnum
+upperr  = satr isUpper
+lowerr  = satr isLower
+xdigitr = satr isXDigit
+spacer  = satr isSpace
+blankr  = satr isBlank
+punctr  = satr isPunct
+cntrlr  = satr isCntrl
+printr  = satr isPrint
+graphr  = satr isGraph
+wordr   = satr isWord
 
 -- `\D`, `\S`, `\W` -- free, because a class is a predicate
-notDigitR notSpaceR notWordR : RE notNullable
-notDigitR = satr λ c → not (isDigit c)
-notSpaceR = satr λ c → not (isSpace c)
-notWordR  = satr λ c → not (isWord c)
+notDigitr notSpacer notWordr : RE notNullable
+notDigitr = satr λ c → not (isDigit c)
+notSpacer = satr λ c → not (isSpace c)
+notWordr  = satr λ c → not (isWord c)
 
 -- `.` -- POSIX's dot excludes the newline
-dotR : RE notNullable
-dotR = satr λ c → not (eqc '\n' c)
+dotr : RE notNullable
+dotr = satr λ c → not (eqc '\n' c)
 
 -- Bracket expressions.  `[abc0-9[:alpha:]]` is a union of items, and its
 -- negation is the same list read through `not`.
@@ -112,12 +107,12 @@ anyItem [] c = false
 anyItem (i ∷ is) c = itemHolds i c or anyItem is c
 
 -- `[…]`
-bracketR : List Item → RE notNullable
-bracketR is = satr (anyItem is)
+bracketr : List Item → RE notNullable
+bracketr is = satr (anyItem is)
 
 -- `[^…]`
-bracketNotR : List Item → RE notNullable
-bracketNotR is = satr λ c → not (anyItem is c)
+bracketNotr : List Item → RE notNullable
+bracketNotr is = satr λ c → not (anyItem is c)
 
 -- A literal word, written as text
 --

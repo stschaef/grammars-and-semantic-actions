@@ -171,7 +171,7 @@ module _ (N : NFA ℓN) (N' : NFA ℓN') where
   fromNFA : ∀ q → Trace q ⊢ ⟦ q ⟧⊕
   fromNFA = rec TraceTy ⊕Alg
 
-  -- ...and back: each sub-automaton's trace embeds by renaming transitions.
+  -- each sub-automaton's trace embeds by renaming transitions
   ⟦_⟧N : ⟨ N .Q ⟩ → TheoryTy ℓ⊕ tt
   ⟦ q ⟧N = Trace (inl' q)
 
@@ -207,8 +207,7 @@ module _ (N : NFA ℓN) (N' : NFA ℓN') where
 
   private
     -- The composite each `step` branch of the homomorphism law unfolds to,
-    -- with `z` the `map` that `map-step` rewrites.  Naming it is what gives
-    -- `cong` a domain to solve for.
+    -- with `z` the `map` that `map-step` rewrites.
     stepN-comp : (t : ⟨ N .transition ⟩)
       → (⟦ A.branch (N .src t) (A.step t Eq.refl) ⟧TheoryTy A.Trace
         ⊢ ⟦ A.branch (N .src t) (A.step t Eq.refl) ⟧TheoryTy ⟦_⟧N)
@@ -255,9 +254,9 @@ module _ (N : NFA ℓN) (N' : NFA ℓN') where
       ∙ cong (roll-step (Sum.inr t)) (sym (map-step toNFA (Sum.inr t) Eq.refl))
     (stepε (N'-ε-trans t) Eq.refl) → refl
 
-  -- ...and so is `fromNFA`, read as a map out of each sub-automaton's trace.
-  -- `rec-section` at `N` then says the round trip through `⊕NFA` is the
-  -- identity on `N`'s traces.
+  -- `fromNFA`, read as a map out of each sub-automaton's trace.  `rec-section`
+  -- at `N` then says the round trip through `⊕NFA` is the identity on `N`'s
+  -- traces.
   private
     fromN : ∀ q → ⟦ q ⟧N ⊢ A.Trace q
     fromN q = lowerTy ∘⊢ fromNFA (inl' q)

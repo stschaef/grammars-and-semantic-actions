@@ -39,8 +39,6 @@ open Combinators 𝒯
 
 private variable ℓA ℓB ℓD ℓK : Level
 
--- Repetition.
-
 module _ (ℓK : Level) (A : TheorySet ℓA tt) where
   private
     module P = Fix ℓK (StarSet A)
@@ -58,20 +56,17 @@ module _ (ℓK : Level) (A : TheorySet ℓA tt) where
     (mapP≅ roll↑≅
       ∘⊢ ((pmore ∘⊢ seq (StarSet A) (p ∘⊢ ⊤Ty-intro) P.call) <|> nil))
 
-  -- `A ⁺`
   some : ⊤Ty ⊢ Parser ℓE ⟨▷⟩ ⟨□⟩ A
        → ⊤Ty ⊢ Parser P.ℓ𝒦 ⟨▷⟩ ⟨□⟩ (A ⊗Set StarSet A)
   some p = seq (StarSet A) p (box (many p))
 
 module _ {D : TheoryTy ℓD tt} where
 
-  -- `p?`
   option : {ℓK : Level} {A : TheorySet ℓA tt}
     → D ⊢ Parser ℓK ⟨▷⟩ ⟨□⟩ A
     → D ⊢ Parser ℓK ⟨□⟩ ⟨□⟩ (A ⊕Set εSet)
   option p = (pmore ∘⊢ p) <|> nil
 
-  -- `l p r`
   between : {ℓK : Level} {a b c : ParserTag}
     {L : TheorySet ℓA tt} {A : TheorySet ℓB tt} {R : TheorySet ℓD tt}
     → D ⊢ Parser (ℓ⊗ ℓB (ℓ⊗ ℓD ℓK)) b c L
@@ -109,7 +104,6 @@ private variable t : ParserTag
 ⟦ r *r ⟧P ℓK = many ℓK ⟦ r ⟧ (⟦ r ⟧P (ℓ-max ℓAlph (ℓ-max (ℓF (ℓReg r)) ℓK)))
 ⟦ ↑r r ⟧P ℓK = pmore ∘⊢ ⟦ r ⟧P ℓK
 
--- ...and the answer, at whatever `𝒯` is.
 regex : (r : Reg t) → ⊤Ty ⊢ ty (Ans ⟦ r ⟧)
 regex r = runP ℓ-zero (pw ∘⊢ ⟦ r ⟧P ℓ-zero)
 

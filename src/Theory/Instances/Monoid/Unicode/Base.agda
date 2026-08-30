@@ -43,7 +43,7 @@ fromNat : (k : ℕ) → ℕ → Bits k
 fromNat zero n = []
 fromNat (suc k) n = odd n -∷ fromNat k (half n)
 
--- structural, so it reduces to `Eq.refl` -- the whole point
+-- structural, so it reduces to `Eq.refl`
 _≟Bits_ : {k : ℕ} (x y : Bits k) → (x Eq.≡ y) Sum.⊎ ((x Eq.≡ y) → Empty.⊥)
 [] ≟Bits [] = Sum.inl Eq.refl
 (true -∷ x) ≟Bits (true -∷ y) with x ≟Bits y
@@ -67,20 +67,19 @@ isSetUChar = Discrete→isSet λ x y → Sum.rec
   (λ p → yes (Eq.eqToPath p)) (λ ¬p → no λ p → ¬p (Eq.pathToEq p)) (x ≟U y)
 
 -- Accumulator form, so the recursive call appears once.  Measured: the
--- duplicating form (`toNat bs + toNat bs`) is no slower, so Agda shares
--- the thunk -- this is defensive, not a fix.
+-- duplicating form (`toNat bs + toNat bs`) is no slower, so Agda already
+-- shares the thunk.
 toNat : {k : ℕ} → Bits k → ℕ
-toNat = go 1
+toNat = weightedSum 1
   where
-  go : {k : ℕ} → ℕ → Bits k → ℕ
-  go w [] = 0
-  go w (true -∷ bs) = w + go (w + w) bs
-  go w (false -∷ bs) = go (w + w) bs
+  weightedSum : {k : ℕ} → ℕ → Bits k → ℕ
+  weightedSum w [] = 0
+  weightedSum w (true -∷ bs) = w + weightedSum (w + w) bs
+  weightedSum w (false -∷ bs) = weightedSum (w + w) bs
 
 ch : AC.Char → UChar
 ch c = fromNat 21 (AC.primCharToNat c)
 
--- the code point back out, so a range can be decided by comparison
 code : UChar → ℕ
 code = toNat
 
@@ -88,7 +87,6 @@ code = toNat
 text : AS.String → List UChar
 text s = map ch (AS.primStringToList s)
 
--- ...and leaves here, which is what lets a test state its result as text
 unch : UChar → AC.Char
 unch b = AC.primNatToChar (toNat b)
 

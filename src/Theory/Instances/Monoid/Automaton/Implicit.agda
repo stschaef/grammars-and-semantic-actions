@@ -37,8 +37,6 @@ open import Theory.Instances.Monoid.Automaton.Deterministic
 
 private variable ℓ ℓ' : Level
 
--- Freely adjoined states.
-
 data FreelyAddInitial (Q : Type ℓ) : Type ℓ where
   initial : FreelyAddInitial Q
   ↑i_ : Q → FreelyAddInitial Q
@@ -86,7 +84,6 @@ mapFreelyAddFail+Initial f fail = fail
 mapFreelyAddFail+Initial f initial = initial
 mapFreelyAddFail+Initial f (↑q x) = ↑q (f x)
 
--- ...and the state sets are sets, which is all `parse` needs of them.
 module _ (Q : Type ℓ) where
   open Iso
 
@@ -112,8 +109,6 @@ module _ (Q : Type ℓ) where
       (FreelyAddFail+Initial≅Unit⊎Unit⊎ .inv)
       (FreelyAddFail+Initial≅Unit⊎Unit⊎ .ret)
       (Sum.isSet⊎ (Sum.isSet⊎ isSetUnit isSetUnit) isSetQ)
-
--- The record, and its determinisation-free reading as a DFA.
 
 record ImplicitDeterministicAutomaton (Q : Type ℓAlph) : Type ℓAlph where
   constructor mkImplicitAut

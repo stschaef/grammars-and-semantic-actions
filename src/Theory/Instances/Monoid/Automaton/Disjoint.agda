@@ -102,7 +102,6 @@ module _ {Q : Type ℓQ} (Aut : DeterministicAutomaton Q) where
     TraceDisj : (q : Q) → Trace b q & Trace b' q ⊢ ⊕[ _ ∈ b ≡ b' ] ⊤Ty
     TraceDisj q = ⇒-intro⁻ (rec (TraceTy b) disjAlg (lift q))
 
-  -- ...so the run of a word from a state is unique, bit and all.
   Runs : Q → TheoryTy _ tt
   Runs q = ⊕[ b ∈ Bool ] Trace b q
 

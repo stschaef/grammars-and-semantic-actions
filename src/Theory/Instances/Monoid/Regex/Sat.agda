@@ -7,7 +7,7 @@
    two million disjuncts, and over an infinite alphabet it is not a finite
    disjunction at all.
 
-   `satG P` is the sum of `literal c` over the letters `P` accepts.  It is
+   `satTy P` is the sum of `literal c` over the letters `P` accepts.  It is
    `char` restricted along `P`, and everything about it is `char`'s proof
    with the index carrying its certificate. -}
 open import Cubical.Foundations.Prelude
@@ -40,28 +40,28 @@ open import Theory.Instances.Monoid.Residual Alphabet isSetAlphabet
 private variable ℓK : Level
 
 sat⊗-precise : {P : Alphabet → Bool} {K : TheoryTy ℓK tt}
-  → satG P ⊗ ¬Ty K ⊢ ¬Ty (satG P ⊗ K)
+  → satTy P ⊗ ¬Ty K ⊢ ¬Ty (satTy P ⊗ K)
 sat⊗-precise {K = K} m (ms , e , ((x , lc) , (nk , _))) t =
   nk (subst K (sym (L.cons-inj₂ tails)) (t .snd .snd .snd .fst))
   where
   ns = t .fst
-  y = t .snd .snd .fst .fst
-  tails : x .fst ∷ ms (suc zero) ≡ y .fst ∷ ns (suc zero)
+  matchedLetter = t .snd .snd .fst .fst
+  tails : x .fst ∷ ms (suc zero) ≡ matchedLetter .fst ∷ ns (suc zero)
   tails = flat (x .fst) (ms zero) (ms (suc zero)) m lc e
-        ∙ sym (flat (y .fst) (ns zero) (ns (suc zero)) m
+        ∙ sym (flat (matchedLetter .fst) (ns zero) (ns (suc zero)) m
                  (t .snd .snd .fst .snd) (t .snd .fst))
 
 dec-sat⊗↑ : {P : Alphabet → Bool} {K : TheoryTy ℓK tt}
-  → satG P ⊗ DecTy K ⊢ DecTy (satG P ⊗ K)
+  → satTy P ⊗ DecTy K ⊢ DecTy (satTy P ⊗ K)
 dec-sat⊗↑ = ⊕-elim dec-yes (dec-no ∘⊢ sat⊗-precise) ∘⊢ ⊗⊕-distR
 
 dec-sat⊗-at : (P : Alphabet → Bool) {K : TheorySet ℓK tt}
-  → ty (▷ (DecSet K)) ⊢ DecTy (satG P ⊗ ty K)
+  → ty (▷ (DecSet K)) ⊢ DecTy (satTy P ⊗ ty K)
 dec-sat⊗-at P {K = K} = look⊗ br
   where
   -- no accepted letter sits at the front of a word of class `o`
   miss : (o : M₁) → ((x : Sat P) → o Eq.≡ tk (x .fst) → Empty.⊥)
-       → ty (▷ (DecSet K)) & Λ₁ o ⊢ DecTy (satG P ⊗ ty K)
+       → ty (▷ (DecSet K)) & Λ₁ o ⊢ DecTy (satTy P ⊗ ty K)
   miss o ne = dec-no ∘⊢ ⇒-intro (⊕ᴰ-elim dis ∘⊢ &⊕ᴰ-distR
     ∘⊢ ((π₂ ∘⊢ π₁) ,&p ⊗⊕ᴰ-distL) ∘⊢ (id⊢ ,& π₂))
     where
@@ -69,14 +69,14 @@ dec-sat⊗-at P {K = K} = look⊗ br
     dis x = Λ-disjoint o (tk (x .fst)) (ne x)
       ∘⊢ (id⊢ ,&p (id⊢ ,⊗ ⊤Ty-intro))
 
-  br : (o : M₁) → ty (▷ (DecSet K)) & Λ₁ o ⊢ DecTy (satG P ⊗ ty K)
+  br : (o : M₁) → ty (▷ (DecSet K)) & Λ₁ o ⊢ DecTy (satTy P ⊗ ty K)
   br ε₁ = miss ε₁ λ _ ()
-  br (tk d) = go (P d) refl
+  br (tk d) = onSatisfies (P d) refl
     where
-    go : (b : Bool) → P d ≡ b
-       → ty (▷ (DecSet K)) & Λ₁ (tk d) ⊢ DecTy (satG P ⊗ ty K)
-    go true eq = dec-sat⊗↑ ∘⊢ (σ⊕ (d , eq) ,⊗ π₁) ∘⊢ ▷⊗r d
-    go false eq = miss (tk d) λ where
+    onSatisfies : (b : Bool) → P d ≡ b
+       → ty (▷ (DecSet K)) & Λ₁ (tk d) ⊢ DecTy (satTy P ⊗ ty K)
+    onSatisfies true eq = dec-sat⊗↑ ∘⊢ (σ⊕ (d , eq) ,⊗ π₁) ∘⊢ ▷⊗r d
+    onSatisfies false eq = miss (tk d) λ where
       x Eq.refl → true≢false (sym (x .snd) ∙ eq)
 
 satTok : {D : TheoryTy ℓK tt} (P : Alphabet → Bool) {ℓK' : Level}

@@ -9,7 +9,7 @@ open import Cubical.Algebra.Theory.Finitary
 open SortedSig
 open SortedEqns
 import Theory.Free.Base as FB
-module Theory.Type.Subgrammar.Equalizer
+module Theory.Type.Subtype.Equalizer
   {ℓ ℓ'' ℓv ℓS ℓP} {S : Type ℓS}
   {σ : SortedSig S ℓ}
   (σeq : SortedEqns σ ℓ'')
@@ -24,7 +24,7 @@ open import Theory.Type.Top.Base σeq V vs 𝒫
 open import Theory.Type.HLevels σeq V vs 𝒫
 open import Theory.Type.Equalizer.Base σeq V vs 𝒫
 open import Theory.Type.Equivalence.Base σeq V vs 𝒫
-open import Theory.Type.Subgrammar.Base σeq V vs 𝒫
+open import Theory.Type.Subtype.Base σeq V vs 𝒫
 
 private variable ℓA ℓB ℓC : Level
 
@@ -35,10 +35,10 @@ module _ {s : S} {A : TheoryTy ℓA s} {B : TheoryTy ℓB s}
   eq-prop m x .fst = f m x ≡ f' m x
   eq-prop m x .snd = isSetB m (f m x) (f' m x)
 
-  -- Not an iso: `subgrammar eq-prop m` unfolds to `Σ[ x ∈ A m ] f m x ≡ f' m x`,
+  -- Not an iso: `subTy eq-prop m` unfolds to `Σ[ x ∈ A m ] f m x ≡ f' m x`,
   -- which is `equalizer f f' m` on the nose.
-  equalizer≡subgrammar : equalizer f f' ≡ subgrammar eq-prop
-  equalizer≡subgrammar = refl
+  equalizer≡subTy : equalizer f f' ≡ subTy eq-prop
+  equalizer≡subTy = refl
 
   eq-π-pf' : eq-prop ∘⊢ eq-π f f' ≡ true ∘⊢ ⊤Ty-intro
   eq-π-pf' = sub-π-pf eq-prop
@@ -54,8 +54,8 @@ module _ {s : S} {A : TheoryTy ℓA s} {B : TheoryTy ℓB s}
     eq-η = funExt λ m → funExt λ x →
       Σ≡Prop (λ y → isSetB m (f m y) (f' m y)) refl
 
-  -- ...and so the equalizer is a subterminal-indexed choice: two maps into it
-  -- are equal as soon as their composites with `eq-π` are.
+  -- Two maps into the equalizer are equal as soon as their composites with
+  -- `eq-π` are.
   eq-ext : {C : TheoryTy ℓC s} (h h' : C ⊢ equalizer f f')
     → eq-π f f' ∘⊢ h ≡ eq-π f f' ∘⊢ h' → h ≡ h'
   eq-ext = isMono-eq-π

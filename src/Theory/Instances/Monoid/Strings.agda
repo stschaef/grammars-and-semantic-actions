@@ -58,12 +58,11 @@ open import Theory.Type.Top.Properties MonEqns Alphabet (λ _ → tt) listPresen
 open WildCatNotation
 open WildCatIso
 
--- the carrier: strings, as the free monoid -- here, the list type itself
+-- on this presentation the carrier is the list type itself
 String : Type ℓM
 String = ↓M tt
 
--- a single character, as a grammar: the sum of the representables at the
--- generators
+-- a single character: the sum of the representables at the generators
 char : TheoryTy ℓM tt
 char = ⊕[ c ∈ Alphabet ] ⌈ ⌈gen c ⌉ ⌉
 
@@ -167,7 +166,6 @@ unit-lPath : {m : String} (ms : arities MonSig _⊙_ → String)
 unit-lPath ms u e =
   cong (_++ ms (suc zero)) (Eq.eqToPath (u .snd .fst)) ∙ Eq.eqToPath e
 
--- the left unit law: an empty first factor is no factor
 ⊗-unit-l : {A : TheoryTy ℓA tt} → εTy ⊗ A ⊢ A
 ⊗-unit-l {A = A} m (ms , e , (u , (a , _))) =
   Eq.transport A (Eq.pathToEq (unit-lPath ms u e)) a
@@ -188,24 +186,24 @@ lits (c ∷ w) = ＂ c ＂ ⊗ lits w
 lits→⌈⌉ : (w : String) → lits w ⊢ ⌈ w ⌉
 lits→⌈⌉ [] m (ms , e , _) = Eq.sym e
 lits→⌈⌉ (c ∷ w) m (ms , e , (lc , (r , _))) =
-  go (ms zero) (ms (suc zero)) m lc (lits→⌈⌉ w (ms (suc zero)) r) e
+  atConsSplit (ms zero) (ms (suc zero)) m lc (lits→⌈⌉ w (ms (suc zero)) r) e
   where
-  go : (x y n : String) → x Eq.≡ (c ∷ []) → y Eq.≡ w → (x ++ y) Eq.≡ n
-     → n Eq.≡ (c ∷ w)
-  go .(c ∷ []) .w n Eq.refl Eq.refl q = Eq.sym q
+  atConsSplit : (x y n : String) → x Eq.≡ (c ∷ []) → y Eq.≡ w → (x ++ y) Eq.≡ n
+    → n Eq.≡ (c ∷ w)
+  atConsSplit .(c ∷ []) .w n Eq.refl Eq.refl q = Eq.sym q
 
 ⌈⌉→lits : (w : String) → ⌈ w ⌉ ⊢ lits w
-⌈⌉→lits [] m p = go p
+⌈⌉→lits [] m p = atNilEq p
   where
-  go : m Eq.≡ [] → εTy m
-  go Eq.refl = εTy-pt
-⌈⌉→lits (c ∷ w) m p = go p
+  atNilEq : m Eq.≡ [] → εTy m
+  atNilEq Eq.refl = εTy-pt
+⌈⌉→lits (c ∷ w) m p = atConsEq p
   where
-  go : m Eq.≡ (c ∷ w) → (＂ c ＂ ⊗ lits w) m
-  go Eq.refl =
+  atConsEq : m Eq.≡ (c ∷ w) → (＂ c ＂ ⊗ lits w) m
+  atConsEq Eq.refl =
     two (c ∷ []) w , Eq.refl , (Eq.refl , (⌈⌉→lits w w Eq.refl , tt*))
 
--- the carrier is a set, so a splitting's index equation is a proposition
+-- what makes a splitting's index equation a proposition
 isSetString : isSet String
 isSetString = M .fst tt .snd
 
@@ -245,7 +243,6 @@ transportEq {A = A} p a = J
           (isPropEqString (Eq.pathToEq refl) Eq.refl)))
   p
 
--- ...so `⊗-unit-l` is the second projection, over any path of indices.
 unit-l≡ : {A : TheoryTy ℓA tt} (m : String) (t : (εTy ⊗ A) m)
   (p : t .fst (suc zero) ≡ m)
   → PathP (λ j → A (p j)) (t .snd .snd .snd .fst) (⊗-unit-l {A = A} m t)
@@ -261,7 +258,6 @@ unit-l≡ {A = A} m t p =
 -- Naturality of the structural maps in one slot.  `⊗-map` never touches the
 -- splitting, so all but the left unitor are `refl`.
 
--- functoriality of `⊗-map`, slotwise
 ⊗-map-∘ : {A B C D E F : TheoryTy ℓM tt}
   (f : C ⊢ E) (g : D ⊢ F) (f' : A ⊢ C) (g' : B ⊢ D)
   → ⊗-map f g ∘⊢ ⊗-map f' g' ≡ ⊗-map (f ∘⊢ f') (g ∘⊢ g')
@@ -317,10 +313,10 @@ module _ {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt} {C : TheoryTy ℓC tt}
       ∘⊢ ⊗-assoc {A = A} {B = B ⊗ C} {C = K}
 
   ⊗-pent : pentL ≡ pentR
-  ⊗-pent = funExt λ m → funExt (go m)
+  ⊗-pent = funExt λ m → funExt (atPoint m)
     where
-    go : (m : String) (x : (A ⊗ B ⊗ C ⊗ K) m) → pentL m x ≡ pentR m x
-    go m (ms , e , (a , ((ns , f , (b , ((ps , g , (c , (k' , _))) , _))) , _))) =
+    atPoint : (m : String) (x : (A ⊗ B ⊗ C ⊗ K) m) → pentL m x ≡ pentR m x
+    atPoint m (ms , e , (a , ((ns , f , (b , ((ps , g , (c , (k' , _))) , _))) , _))) =
       ⊗PathP' {A = A ⊗ B ⊗ C} {B = K} refl (two≡ assoc3 refl)
         (⊗PathP' {A = A} {B = B ⊗ C} assoc3 refl refl refl) refl
       where
@@ -328,10 +324,10 @@ module _ {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt} {C : TheoryTy ℓC tt}
       assoc3 = ++-assoc (ms zero) (ns zero) (ps zero)
 
   ⊗-pent⁻ : pent⁻L ≡ pent⁻R
-  ⊗-pent⁻ = funExt λ m → funExt (go m)
+  ⊗-pent⁻ = funExt λ m → funExt (atPoint m)
     where
-    go : (m : String) (x : ((A ⊗ B ⊗ C) ⊗ K) m) → pent⁻L m x ≡ pent⁻R m x
-    go m (ms , e , ((ns , f , (a , ((ps , g , (b , (c , _))) , _))) , (k' , _))) =
+    atPoint : (m : String) (x : ((A ⊗ B ⊗ C) ⊗ K) m) → pent⁻L m x ≡ pent⁻R m x
+    atPoint m (ms , e , ((ns , f , (a , ((ps , g , (b , (c , _))) , _))) , (k' , _))) =
       ⊗PathP' {A = A} {B = B ⊗ C ⊗ K} refl (two≡ refl assoc3) refl
         (⊗PathP' {A = B} {B = C ⊗ K} assoc3 refl refl refl)
       where
@@ -377,8 +373,6 @@ StringLayer = ⊕[ b ∈ Bool ] ⟦ kleeneBranch b ⟧TheoryTy (λ _ → String*
 unrollString : String* ⊢ StringLayer
 unrollString = unroll (λ _ → KleeneCode) tt
 
--- Canonical input observation
---
 -- The only non-formal part of `⊤Ty ≅ String*` is `read`: it has to choose a
 -- cons list at each monoid element.  On this presentation the element *is*
 -- the list, so `read` is a plain structural recursion -- both index
@@ -517,7 +511,6 @@ unambiguous-String* : (m : String) → isProp (String* m)
 unambiguous-String* =
   unambiguousRetract ⊤Ty-intro read read-section unambiguous⊤
 
--- The `Grammar/String/Terminal.agda` equivalence, recaptured.
 String*≅⊤Ty : String* ≅ ⊤Ty
 String*≅⊤Ty .fun = ⊤Ty-intro
 String*≅⊤Ty .inv = read

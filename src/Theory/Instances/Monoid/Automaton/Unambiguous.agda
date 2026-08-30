@@ -42,7 +42,6 @@ open import Theory.Instances.Monoid.Automaton.Deterministic
 private variable ℓA ℓQ : Level
 
 
--- the empty splitting is nullary, and its index equation is a proposition
 isPropεTy : (m : String) → isProp (εTy m)
 isPropεTy m =
   isPropΣ (λ f g → funExt λ ()) λ _ → isProp× isPropEqString isPropUnit*
@@ -52,23 +51,19 @@ module _ {Q : Type ℓQ} (Aut : DeterministicAutomaton Q) where
 
   unambiguous-Trace : (b : Bool) (q : Q) (w : String)
     (t t' : Trace b q w) → t ≡ t'
-  -- stop / stop
   unambiguous-Trace b q w (roll .w (stop p , x)) (roll .w (stop p' , x')) =
     cong (roll w)
       (ΣPathP
         ( cong stop (isSet→isSetEq isSetBool p p')
         , isPropPathP _ (isOfHLevelLift 1 (isPropεTy w)) x x'))
-  -- stop / step
   unambiguous-Trace b q w (roll .w (stop p , x)) (roll .w (step d , ns , e' , f')) =
     Empty.rec (lit⊗-nil d (ns zero) (ns (suc zero))
                  (f' zero .lower)
                  (e' Eq.∙ Eq.sym (x .lower .snd .fst)))
-  -- step / stop
   unambiguous-Trace b q w (roll .w (step c , ms , e , f)) (roll .w (stop p' , x')) =
     Empty.rec (lit⊗-nil c (ms zero) (ms (suc zero))
                  (f zero .lower)
                  (e Eq.∙ Eq.sym (x' .lower .snd .fst)))
-  -- step / step
   unambiguous-Trace b q w (roll .w (step c , ms , e , f)) (roll .w (step d , ns , e' , f')) =
     -- the recursive call stands in the clause body: a `where` binding would
     -- hide the structural descent on `f' (suc zero)` from the checker
@@ -102,7 +97,6 @@ module _ {Q : Type ℓQ} (Aut : DeterministicAutomaton Q) where
     eqP : PathP (λ i → op _⊙_ (sp i) Eq.≡ w) e e'
     eqP = isProp→PathP (λ i → isPropEqString) e e'
 
-    -- the line of types the two tails live over
     Fam : I → Type ℓT
     Fam i = Trace b (δ q (c≡d i)) (sp i (suc zero))
 
@@ -122,10 +116,8 @@ module _ {Q : Type ℓQ} (Aut : DeterministicAutomaton Q) where
       gP zero = isPropPathP _ (isOfHLevelLift 1 isPropEqString) (f zero) (f' zero)
       gP (suc zero) = λ i → lift (tP i)
 
-  -- ...i.e. `Trace b q` is unambiguous in the sense of `Unambiguity/Base`
   unambiguousTrace : (b : Bool) (q : Q) → unambiguous (Trace b q)
   unambiguousTrace b q m = unambiguous-Trace b q m
 
-  -- and therefore subterminal: any two maps into it agree
   subterminalTrace : (b : Bool) (q : Q) → subterminal (Trace b q)
   subterminalTrace b q = unambiguous→subterminal (unambiguousTrace b q)

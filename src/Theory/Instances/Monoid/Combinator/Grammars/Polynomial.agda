@@ -67,7 +67,6 @@ private
     alt : (n : ℕ) → Hyp ⊢ Parser ℓG ⟨▷⟩ ⟨□⟩ (NatBr n)
     alt n = seq RestSet (tok (nat n)) (F.callAt rest)
 
-  -- the three `K`-heads, shared with `Q`
   addP : Hyp ⊢ Parser ℓG ⟨▷⟩ ⟨□⟩ (CK hadd)
   addP = seq ExprSet (tok plus) (F.callAt expr)
 

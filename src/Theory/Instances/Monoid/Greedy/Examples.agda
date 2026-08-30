@@ -44,29 +44,25 @@ private
   a : UChar
   a = ch 'a'
 
--- 1. A greedy match: `a+` against "aaab".
---
--- The match is "aaa" and the rest is "b".  It is greedy because of the
--- second component: after "aaa" the regex could still continue as `a*`,
--- and "b" refutes every nonempty way of doing so.
+-- `a+` against "aaab" is greedy because of the second component: after "aaa"
+-- the regex could still continue as `a*`, and "b" refutes every nonempty way
+-- of doing so.
 
 aPlus : RE notNullable
 aPlus = reOf "a+"
 
--- what is left of `a+` once it has matched: the residual
 aStar : RE nullable
 aStar = reOf "a*"
 
 Rest : TheoryTy ℓr tt
 Rest = ty ⟦ aStar ⟧
 
--- the match itself, decided rather than asserted
 match : ty ⟦ aPlus ⟧ (text "aaa")
 match = theYes (decide-r aPlus ℓr (text "aaa") tt) Eq.refl
 
--- ...and the refutation: "b" starts no continuation.  `noExt-step`
--- reduces "no nonempty extension" to "no derivative after this letter",
--- which is where the precision of `literal` does the work.
+-- The refutation: "b" starts no continuation.  `noExt-step` reduces "no
+-- nonempty extension" to "no derivative after this letter", which is where
+-- the precision of `literal` does the work.
 private
   noRest : Rest (text "b") → Empty.⊥
   noRest r = theNo (decide-r aStar ℓr (text "b") tt) Eq.refl r .lower
@@ -88,24 +84,20 @@ noLonger = noExt-step (ch 'b') (text "b")
 greedily : GreedyAt (ty ⟦ aPlus ⟧) Rest (text "aaab")
 greedily = two (text "aaa") (text "b") , Eq.refl , (match , (noLonger , tt*))
 
--- ...and what it matched, read back out
 _ : untext (greedily .fst fz) ≡ "aaa"
 _ = refl
 
 _ : untext (greedily .fst (fs fz)) ≡ "b"
 _ = refl
 
--- the parse tree agrees with the splitting
 _ : untext (yield aPlus (text "aaa") (greedily .snd .snd .fst) .fst) ≡ "aaa"
 _ = refl
 
--- 2. Extending a match, one character at a time.
---
 -- `extendAt` moves a letter out of the input and into the match.  `A` is
 -- ⊗-shaped on purpose: its witness carries a splitting, and it is that
--- splitting the substitution inside `lit⊗Dl` has to carry.  With a
--- `⊤Ty` there is nothing to carry and the step is trivially cheap,
--- which is exactly the case that hid a stuck `transp` here once.
+-- splitting the substitution inside `lit⊗Dl` has to carry.  With a `⊤Ty`
+-- there is nothing to carry, so the step is trivially cheap and a stuck
+-- `transp` here would go unnoticed.
 
 private
   A₀ : TheoryTy ℓM tt
@@ -119,12 +111,12 @@ private
   reps zero = []
   reps (suc n) = a ∷ reps n
 
-  -- n applications of `extendAt`, each O(1)
-  go : (dep : ℕ) {A : TheoryTy ℓM tt} {w : String}
-     → GreedyAt (Dln dep A) Rest w → Σ String (GreedyAt A Rest)
-  go zero {w = w} g = w , g
-  go (suc dep) {w = w} g =
-    go dep (extendAt a (a ∷ w) (two (a ∷ []) w , Eq.refl , (Eq.refl , (g , tt*))))
+  extendN : (dep : ℕ) {A : TheoryTy ℓM tt} {w : String}
+    → GreedyAt (Dln dep A) Rest w → Σ String (GreedyAt A Rest)
+  extendN zero {w = w} g = w , g
+  extendN (suc dep) {w = w} g =
+    extendN dep
+      (extendAt a (a ∷ w) (two (a ∷ []) w , Eq.refl , (Eq.refl , (g , tt*))))
 
   -- the far end of the chain: the match sits at aⁿ, the rest is "b"
   seed : (n : ℕ) → Dln (suc n) A₀ [] → GreedyAt (Dln (suc n) A₀) Rest (text "b")
@@ -134,11 +126,8 @@ private
   at200 = two (a ∷ []) (reps 199) , Eq.refl , (Eq.refl , (tt , tt*))
 
   built : Σ String (GreedyAt A₀ Rest)
-  built = go 200 (seed 199 at200)
+  built = extendN 200 (seed 199 at200)
 
--- 200 characters into the match, and the transported witness still
--- projects: the inner splitting is the leading `a`, and the refutation
--- has been carried through untouched.
 _ : untext (built .snd .snd .snd .fst .fst fz) ≡ "a"
 _ = refl
 

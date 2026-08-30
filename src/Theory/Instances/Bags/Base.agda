@@ -1,13 +1,5 @@
 {-# OPTIONS -WnoUnsupportedIndexedMatch #-}
-{- Bags: the theory of monoids extended by one permutation equation.
-
-   Everything that follows from the monoid equations alone -- `⊗ₑ` and its
-   map, associator and unitors, the residual `⊸ₑ`, and the carrier-level
-   `⊙-assoc`/`⊙-unitL`/`⊙-unitR` -- is inherited from
-   `Monoid/Extension`, which takes `MonEqns`' three equations literally.
-   What is here is the commutativity: the equation, its transport
-   `⊎B-comm`, and `⊙-inter`, which is the only consequence that mixes it
-   with associativity. -}
+{- Bags: the theory of monoids extended by one permutation equation. -}
 open import Cubical.Foundations.Prelude
 open import Cubical.Algebra.Theory.Finitary
 import Cubical.Data.Equality as Eq
@@ -20,7 +12,6 @@ module Theory.Instances.Bags.Base (El : Type ℓ-zero) where
 
 open import Cubical.Data.Sigma
 
--- The one extra equation: `x ⊙ y = y ⊙ x`, as a permutation of the slots.
 data CommEqn : Type ℓ-zero where
   comm : CommEqn
 
@@ -39,7 +30,7 @@ open import Theory.Instances.Monoid.Extension
            ; ε⊗→⌈ε⌉ to εB→⌈ε⌉ ; ⌈ε⌉→ε⊗ to ⌈ε⌉→εB
            ; ⊗ᵘ→⊗ₑ to ⊗ᵘ→⊎B ; ⊗ₑ→⊗ᵘ to ⊎B→⊗ᵘ
            ; K-⊗ₑ₁ to K-⊎B₁ ; K-⊗ₑ₂ to K-⊎B₂
-           ; ⊗ₑ⊕ᴰ-dist to ⊎B⊕ᴰ-dist
+           ; ⊗ₑ⊕ᴰ-dist to ⊎B⊕ᴰ-dist ; ⊗ₑ⊕-dist to ⊎B⊕-dist
            ; MonPlusEqns to BagEqns ; MonPlusEqn to BagEqn )
 
 private variable ℓA ℓB : Level
@@ -59,7 +50,6 @@ opaque
     M .snd .snd (ext comm) (two a b)
     ∙ cong (op _⊙_) (funExt (two refl refl))
 
--- the interchange law: the one place commutativity meets associativity
 opaque
   ⊙-inter : (a b c d : Bag) → (a ⊙ᵖ b) ⊙ᵖ (c ⊙ᵖ d) ≡ (a ⊙ᵖ c) ⊙ᵖ (b ⊙ᵖ d)
   ⊙-inter a b c d =

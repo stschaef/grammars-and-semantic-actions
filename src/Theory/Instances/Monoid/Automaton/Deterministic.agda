@@ -70,7 +70,6 @@ record DeterministicAutomaton (Q : Type ℓQ)
     stop : b Eq.≡ isAcc q → Tag b q
     step : Alphabet → Tag b q
 
-  -- the labelled summand, named so its two directions can be stated
   stepBranch : (q : Q) (c : Alphabet) → Functor ℓM QL (λ _ → tt) tt
   stepBranch q c = ⊗e _⊙_ (two (k (literal c)) (Var (lift (δ q c))))
 
@@ -82,7 +81,7 @@ record DeterministicAutomaton (Q : Type ℓQ)
   Trace : Bool → Q → TheoryTy _ tt
   Trace b q = μ (TraceTy b) (lift q)
 
-  -- an algebra over the trace code, indexed as `rec` wants it
+  -- indexed as `rec` wants it
   TraceAlg : Bool → (QL → TheoryTy ℓB tt) → Type _
   TraceAlg b A = ∀ q → ⟦ TraceTy b q ⟧TheoryTy A ⊢ A q
 
@@ -108,8 +107,6 @@ record DeterministicAutomaton (Q : Type ℓQ)
     sym (cong (λ z → map (stepBranch q c) f ∘⊢ z) (⟦⊗e⟧-η _ _ {A = A}))
     ∙ cong (λ z → z ∘⊢ ⟦⊗e⟧ {A = A} _ _) (⟦⊗e⟧⁻-nat _ _ f)
 
-  -- Constructors: pick the tag, roll.
-
   -- `stop` at a given bit, with the acceptance equation supplied.  The
   -- unprimed form is the common case, `b := isAcc q`.
   STOP' : {b : Bool} {q : Q} → b Eq.≡ isAcc q → εTy ⊢ Trace b q
@@ -120,14 +117,9 @@ record DeterministicAutomaton (Q : Type ℓQ)
 
   STEP : {b : Bool} (c : Alphabet) (q : Q)
     → literal c ⊗ Trace b (δ q c) ⊢ Trace b q
-  STEP {b = b} c q = roll ∘⊢ σ⊕ {Y = Tag b q} (step c) ∘⊢ STEP-branch
-    where
-    -- the only plumbing: a tensor's factors enter the code lifted, as in
-    -- `KleeneStar.CONS-branch`
-    STEP-branch : {b : Bool} → literal c ⊗ Trace b (δ q c)
-      ⊢ ⟦ ⊗e _⊙_ (two (k (literal c)) (Var (lift (δ q c)))) ⟧TheoryTy
-          (λ x → Trace b (x .lower))
-    STEP-branch m (ms , e , l , t , _) = ms , e , two (lift l) (lift t)
+  STEP {b = b} c q =
+    roll ∘⊢ σ⊕ {Y = Tag b q} (step c)
+    ∘⊢ step-in {A = λ x → Trace b (x .lower)} c
 
   -- The transition *is* the derivative.
   --
@@ -173,7 +165,7 @@ record DeterministicAutomaton (Q : Type ℓQ)
     → Trace b (δ q c) ⊢ Dl c (Trace b q)
   Trace→Dl b q c = ∂⌈⌉→Dl (⌈gen c ⌉) {B = Trace b q} ∘⊢ Trace→∂ b q c
 
-  -- ...and back, by determinism: a trace over `c ∷ m` cannot stop, and
+  -- Back, by determinism: a trace over `c ∷ m` cannot stop, and
   -- its step must be by `c`.  Both are the precision of `literal`.
   -- `Dl c` is reindexing, so it commutes with `⊕` and `⊕ᴰ` on the nose
   -- and the whole proof is the two precision facts of `Precise`:
@@ -192,8 +184,6 @@ record DeterministicAutomaton (Q : Type ℓQ)
   ∂→Trace : (b : Bool) (q : Q) (c : Alphabet)
     → ∂[ literal c ] (Trace b q) ⊢ Trace b (δ q c)
   ∂→Trace b q c = Dl→Trace b q c ∘⊢ ∂⌈⌉→Dl (⌈gen c ⌉) {B = Trace b q}
-
-  -- `parse`: the whole table, in one pass.
 
   private
     -- `Tag b q` is `(b ≡ isAcc q) ⊎ Alphabet`, by its two constructors
@@ -248,13 +238,9 @@ record DeterministicAutomaton (Q : Type ℓQ)
     parseInit : char * ⊢ ⊕[ b ∈ Bool ] Trace b init
     parseInit = π init ∘⊢ parse
 
--- Dead states.
---
--- A state is dead when nothing is accepted from it.  Two Boolean facts
--- say so -- `δ` never leaves the dead set, and a dead state rejects --
--- and `dead-empty` is then a structural recursion on the trace: `stop`
--- contradicts `dead-rej`, `step` recurses by `dead-δ`.  A consumer that
--- can test deadness therefore refutes a run without inspecting one.
+-- A state is dead when nothing is accepted from it: `δ` never leaves the
+-- dead set, and a dead state rejects.  A consumer that can test deadness
+-- refutes a run without inspecting one.
 module _ {Q : Type ℓQ} (M : DeterministicAutomaton Q) where
   open DeterministicAutomaton M
 
@@ -265,8 +251,6 @@ module _ {Q : Type ℓQ} (M : DeterministicAutomaton Q) where
                → isDead (δ q c) Eq.≡ true
       dead-rej : (q : Q) → isDead q Eq.≡ true → isAcc q Eq.≡ false
 
-  -- the always-available one: nothing is known dead, and nothing is
-  -- gained.  Existing users pass this and behave exactly as before.
   noDead : Deadness
   noDead .Deadness.isDead _ = false
   noDead .Deadness.dead-δ _ _ ()

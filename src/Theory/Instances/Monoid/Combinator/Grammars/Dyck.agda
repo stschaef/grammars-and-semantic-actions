@@ -30,11 +30,9 @@ Sset = S , isSetS
 
 module P = Fix ℓG Sset
 
--- what the inner `S` is followed by
 afterS : TheorySet ℓG tt
 afterS = litSet rp ⊗Set Sset
 
--- what a `(` is followed by
 afterLp : TheorySet ℓG tt
 afterLp = Sset ⊗Set afterS
 

@@ -28,7 +28,6 @@ yoIso m .inv a m' Eq.refl = a
 yoIso m .sec a = refl
 yoIso m .ret f = funExt λ m' → funExt λ where Eq.refl → refl
 
--- precomposition with a pointwise iso
 precompIso : ∀ {s} {A : TheoryTy ℓA s} {A' : TheoryTy ℓA' s}
   {B : TheoryTy ℓB s}
   → (∀ m → Iso (A m) (A' m)) → Iso (A ⊢ B) (A' ⊢ B)

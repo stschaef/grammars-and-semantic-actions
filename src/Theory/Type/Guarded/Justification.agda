@@ -1,5 +1,4 @@
 -- Semantic justification for using guarded recursion
--- TODO how much of this is actually used?
 {-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
 open import Cubical.Foundations.Prelude
 open import Cubical.Foundations.HLevels
@@ -90,8 +89,8 @@ module _ {X : Type ℓX} {xs : X → S} where
         → Löb.löb löbMemo φ ≡ Löb.löb (löbFrom O into A isSetA) φ
       löbMemo≡löbFrom = T.löbTab≡löb
 
-  -- ... and the order from a measure.  This is the *only* place a consumer's
-  -- size argument has to go.
+  -- The order from a measure.  This is the *only* place a consumer's size
+  -- argument is needed.
   löbByMeasure : (isSetX : isSet X) (W : WFOrder ℓW ℓ<)
     (meas : Pt xs → WFOrder.D W)
     {R : Pt xs → Pt xs → Type ℓR}
@@ -191,7 +190,6 @@ module _ {X : Type ℓX} {xs : X → S} where
         cong (λ u → ms , e , u)
           (funExt λ a → mapG≡map root f (G a) (ms a) (g (ms , e) a) (h a))
 
-    -- coalgebra + algebra + guardedness, by löb
     hylosFromGuard : (F : (x : X) → Functor ℓA X xs (xs x))
       → (∀ x m → Guard (F x) m (x , m)) → Hylos F
     hylosFromGuard F gF = record { hylo = hy ; hylo-unfold = hy-unfold }
@@ -255,45 +253,46 @@ module _ {X : Type ℓX} {xs : X → S} where
       nextF t x m _ x' m' r = t x' m' tt
 
       module _ (φ : ∀ x → ▷F x ⊢ A x) where
-        -- the fuel is spent one unit per step, structurally
-        go : (n : ℕ) (p : Pt xs) → fuel p NO.≤ n → A (p .fst) (p .snd)
-        go zero p le = φ (p .fst) (p .snd) λ x' m' r →
+        byFuel : (n : ℕ) (p : Pt xs) → fuel p NO.≤ n → A (p .fst) (p .snd)
+        byFuel zero p le = φ (p .fst) (p .snd) λ x' m' r →
           Empty.rec (NO.¬-<-zero (NO.≤-trans (drops r) le))
-        go (suc n) p le = φ (p .fst) (p .snd) λ x' m' r →
-          go n (x' , m') (NO.pred-≤-pred (NO.≤-trans (drops r) le))
+        byFuel (suc n) p le = φ (p .fst) (p .snd) λ x' m' r →
+          byFuel n (x' , m') (NO.pred-≤-pred (NO.≤-trans (drops r) le))
 
         -- how much fuel was left over does not change the value
-        go-irr : (n n' : ℕ) (p : Pt xs)
-          (le : fuel p NO.≤ n) (le' : fuel p NO.≤ n') → go n p le ≡ go n' p le'
-        go-irr zero zero p le le' = cong (φ (p .fst) (p .snd))
+        byFuel-irr : (n n' : ℕ) (p : Pt xs)
+          (le : fuel p NO.≤ n) (le' : fuel p NO.≤ n')
+          → byFuel n p le ≡ byFuel n' p le'
+        byFuel-irr zero zero p le le' = cong (φ (p .fst) (p .snd))
           (funExt λ x' → funExt λ m' → funExt λ r →
             Empty.rec (NO.¬-<-zero (NO.≤-trans (drops r) le)))
-        go-irr zero (suc n') p le le' = cong (φ (p .fst) (p .snd))
+        byFuel-irr zero (suc n') p le le' = cong (φ (p .fst) (p .snd))
           (funExt λ x' → funExt λ m' → funExt λ r →
             Empty.rec (NO.¬-<-zero (NO.≤-trans (drops r) le)))
-        go-irr (suc n) zero p le le' = cong (φ (p .fst) (p .snd))
+        byFuel-irr (suc n) zero p le le' = cong (φ (p .fst) (p .snd))
           (funExt λ x' → funExt λ m' → funExt λ r →
             Empty.rec (NO.¬-<-zero (NO.≤-trans (drops r) le')))
-        go-irr (suc n) (suc n') p le le' = cong (φ (p .fst) (p .snd))
+        byFuel-irr (suc n) (suc n') p le le' = cong (φ (p .fst) (p .snd))
           (funExt λ x' → funExt λ m' → funExt λ r →
-            go-irr n n' (x' , m') _ _)
+            byFuel-irr n n' (x' , m') _ _)
 
         löbF : ∀ x → ⊤Ty ⊢ A x
-        löbF x m _ = go (fuel (x , m)) (x , m) NO.≤-refl
+        löbF x m _ = byFuel (fuel (x , m)) (x , m) NO.≤-refl
 
         unf : (n : ℕ) (p : Pt xs) (le : fuel p NO.≤ n)
-          → go n p le ≡ φ (p .fst) (p .snd) (nextF löbF (p .fst) (p .snd) tt)
+          → byFuel n p le
+            ≡ φ (p .fst) (p .snd) (nextF löbF (p .fst) (p .snd) tt)
         unf zero p le = cong (φ (p .fst) (p .snd))
           (funExt λ x' → funExt λ m' → funExt λ r →
             Empty.rec (NO.¬-<-zero (NO.≤-trans (drops r) le)))
         unf (suc n) p le = cong (φ (p .fst) (p .snd))
           (funExt λ x' → funExt λ m' → funExt λ r →
-            go-irr n (fuel (x' , m')) (x' , m') _ NO.≤-refl)
+            byFuel-irr n (fuel (x' , m')) (x' , m') _ NO.≤-refl)
 
         uniqAux : (t : ∀ x → ⊤Ty ⊢ A x)
           → (∀ x → t x ≡ φ x ∘⊢ nextF t x)
           → (n : ℕ) (p : Pt xs) (le : fuel p NO.≤ n)
-          → t (p .fst) (p .snd) tt ≡ go n p le
+          → t (p .fst) (p .snd) tt ≡ byFuel n p le
         uniqAux t teq zero p le =
           (λ i → teq (p .fst) i (p .snd) tt)
           ∙ cong (φ (p .fst) (p .snd))

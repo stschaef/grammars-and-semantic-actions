@@ -34,7 +34,6 @@ open import Theory.Instances.Monoid.Greedy.Base Alphabet isSetAlphabet
 
 private variable ℓA ℓB ℓY : Level
 
--- `¬Nullable` transfers backwards along any map.
 ¬Nullable-map : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt}
   → A ⊢ B → ¬Nullable B → ¬Nullable A
 ¬Nullable-map f nu = nu ∘⊢ (f ,&p id⊢)
@@ -54,16 +53,13 @@ private variable ℓA ℓB ℓY : Level
 char⁺-¬Nullable : ¬Nullable char⁺
 char⁺-¬Nullable = ⊗-¬Nullable char-¬Nullable
 
--- The split.  `stringLayer↑` is the case analysis; `&⊕-distR` moves it
--- under the `&`.  This is the internal form of the old `&string-split≅`.
+-- `stringLayer↑` is the case analysis; `&⊕-distR` moves it under the `&`.
 stringSplit : {A : TheoryTy ℓA tt} → A ⊢ (A & εTy) ⊕ (A & char⁺)
 stringSplit = &⊕-distR ∘⊢ (id⊢ ,& (stringLayer↑ ∘⊢ read ∘⊢ ⊤Ty-intro))
 
 stringSplit⁻ : {A : TheoryTy ℓA tt} → (A & εTy) ⊕ (A & char⁺) ⊢ A
 stringSplit⁻ = ⊕-elim π₁ π₁
 
--- ...so a non-nullable grammar is entirely its nonempty part, and anything
--- landing in `char⁺` is non-nullable.
 ¬Nullable→char⁺ : {A : TheoryTy ℓA tt} → ¬Nullable A → A ⊢ char⁺
 ¬Nullable→char⁺ nu = ⊕-elim (⊥Ty-elim ∘⊢ nu) π₂ ∘⊢ stringSplit
 
@@ -73,11 +69,9 @@ char⁺→¬Nullable f = ¬Nullable-map f char⁺-¬Nullable
 ¬Nullable-&char⁺ : {A : TheoryTy ℓA tt} → ¬Nullable (A & char⁺)
 ¬Nullable-&char⁺ = &-¬NullableR char⁺-¬Nullable
 
--- a non-nullable grammar is refuted at ε
 ¬Nullable→¬ε : {A : TheoryTy ℓA tt} → ¬Nullable A → εTy ⊢ ¬Ty A
 ¬Nullable→¬ε nu = ⇒-intro (nu ∘⊢ &-swap)
 
--- the two ways a tensor inherits non-nullability
 ¬Nullable⊗l : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt}
   → ¬Nullable A → ¬Nullable (A ⊗ B)
 ¬Nullable⊗l = ⊗-¬Nullable

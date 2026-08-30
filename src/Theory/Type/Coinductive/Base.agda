@@ -41,6 +41,10 @@ module _ {ℓA ℓX} {X : Type ℓX} {xs : X → S} where
         Σ[ ϕ ∈ (∀ x → A x ⊢ ν F x) ]
           (∀ x → map (F x) ϕ ∘⊢ α x ≡ finalCoalgebra x ∘⊢ ϕ x)
 
+      -- Productive rather than structural: every corecursive call sits
+      -- under an `unroll` field, but reaches it through `map (F x)`, which
+      -- the checker cannot see into.  See the note on `fold` in
+      -- `Type/Guarded/Base`.
       {-# TERMINATING #-}
       corecHomo : CoRecHomo
       corecHomo .fst x m a .unroll = map (F x) (corecHomo .fst) m (α x m a)
@@ -51,6 +55,9 @@ module _ {ℓA ℓX} {X : Type ℓX} {xs : X → S} where
 
       module _ (ϕ : CoRecHomo) where
         private
+          -- A proof, not a definition, with the same hidden productivity
+          -- as `corecHomo`: each call is under an `unroll`, behind
+          -- `map (F x)`.  See the note on `fold` in `Type/Guarded/Base`.
           {-# TERMINATING #-}
           ν-η' : ∀ x m a → ϕ .fst x m a ≡ corec x m a
           ν-η' x m a i .unroll =

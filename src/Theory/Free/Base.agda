@@ -1,9 +1,6 @@
--- A presentation of the free model
--- This means we can choose a nicer presentation of the free model
--- when instantiating this DSL framework
--- This is often advantageous. For example, we'd rather the indices
--- of the monoid theory be presented by lists rather than
--- a HIT for both simplicity and computational behavior
+-- A presentation of the free model, so that an instantiation can pick the
+-- carrier it wants: the monoid theory's indices are lists rather than a HIT,
+-- which is both simpler and better behaved computationally.
 open import Cubical.Foundations.Prelude
 open import Cubical.Categories.Category.Base
 open import Cubical.Algebra.Theory.Finitary

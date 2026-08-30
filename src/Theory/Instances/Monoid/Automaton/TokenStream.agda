@@ -84,9 +84,8 @@ private variable ℓA ℓB : Level
 open DeterministicAutomaton
 
 ------------------------------------------------------------------------
--- Comparing two prefixes of one word.  Pure list arithmetic: the shorter
--- prefix is the other's prefix, and the difference is what separates the
--- two remainders.
+-- Comparing two prefixes of one word: the shorter prefix is the other's
+-- prefix, and the difference is what separates the two remainders.
 
 private
   splitCmp : (u z u' z' : String) → (u ++ z) ≡ (u' ++ z')
@@ -103,7 +102,6 @@ private
     hd : c ≡ d
     hd = cons-inj₁ p
 
-  -- a nonempty word is a `char⁺`, built rather than derived
   char⁺-cons : (c : Alphabet) (y : String) → char⁺ (c ∷ y)
   char⁺-cons c y =
     two (c ∷ []) y , Eq.refl , ((c , Eq.refl) , (read y tt , tt*))
@@ -129,8 +127,6 @@ module Stream {n : ℕ} (Qs : Fin n → Type ℓAlph)
   NoExt q' = ¬Ty ((L q' & char⁺) ⊗ ⊤Ty)
 
   ----------------------------------------------------------------------
-  -- 1. The grammar.
-
   -- The summand tag carries the winning rule: `Wins q'` is what `lexOne`
   -- already computes, so the tokenisation is in the parse tree and not
   -- recomputed at the display boundary.
@@ -162,7 +158,6 @@ module Stream {n : ℕ} (Qs : Fin n → Type ℓAlph)
           ⟧TheoryTy (μ (λ _ → StreamF))
     branch = ⟦⊗e⟧⁻ _ _ ∘⊢ ⊗-map liftTy (liftTy ,&p liftTy)
 
-  -- one layer, as a sum of connectives rather than a code
   StreamLayer : TheoryTy _ tt
   StreamLayer =
     εTy ⊕ (⊕[ t ∈ Σ[ q' ∈ ProdQ ] Wins q' ]
@@ -179,7 +174,6 @@ module Stream {n : ℕ} (Qs : Fin n → Type ℓAlph)
         ∘⊢ ⊗-map lowerTy (lowerTy ,&p lowerTy) ∘⊢ ⟦⊗e⟧ _ _
 
   ----------------------------------------------------------------------
-  -- 2. The tokenisation, read off the parse tree.
 
   emitStream : SemanticAction TokStream (List (Fin n × String))
   emitStream = semact-rec alg tt*
@@ -202,10 +196,8 @@ module Stream {n : ℕ} (Qs : Fin n → Type ℓAlph)
       (tokT q' w) → consAct q' w
 
   ----------------------------------------------------------------------
-  -- 3. The decision.
 
   private
-    -- `Match` forgets its end state and remembers that it accepts
     matchToL : (q' : ProdQ) → Match Prod q₀ q' ⊢ L q₀
     matchToL q' = bridge Prod true q₀ ∘⊢ σ⊕ q'
 
@@ -230,7 +222,6 @@ module Stream {n : ℕ} (Qs : Fin n → Type ℓAlph)
           (⊕ᴰ-¬Nullable λ pp →
             Empty.rec (true≢false (Eq.eqToPath (pp Eq.∙ q₀-rejects-ε)))))
 
-      -- ...hence no token is empty, which is the whole payment
       matchNN : (q' : ProdQ) → ¬Nullable (Match Prod q₀ q')
       matchNN q' = ¬Nullable-map (matchToL q') initNN
 
@@ -255,7 +246,6 @@ module Stream {n : ℕ} (Qs : Fin n → Type ℓAlph)
         ret nilT = refl
         ret (tokT q' w) = refl
 
-      -- `GreedyMax`'s own `isSetMatch`/`isSetTable` are private there
       isSetMatchAt : (q q' : ProdQ) → isSetTheoryTy (Match Prod q q')
       isSetMatchAt q q' =
         isSet⊕ᴰ (isProp→isSet (isSet→isSetEq isSetBool))
@@ -304,7 +294,7 @@ module Stream {n : ℕ} (Qs : Fin n → Type ℓAlph)
       isSetCarrier : isSetTheoryTy Carrier
       isSetCarrier = isSet& isSetTable isSetDecStream
 
-    -- ...and the hypothesis is tabulated, not re-derived: `Suffix/Base`'s
+    -- The hypothesis is tabulated, not re-derived: `Suffix/Base`'s
     -- `Guarded▷` would recompute the value at every suffix it is read at.
     module GD = GuardedMemo▷ (λ _ → Carrier) (λ _ → isSetCarrier)
 
@@ -315,7 +305,7 @@ module Stream {n : ℕ} (Qs : Fin n → Type ℓAlph)
       -- extension is exactly what `NoExt` refutes.
       refuteExt : (q' : ProdQ)
         → Match Prod q₀ q' ⊗ (NoExt q' & ¬Ty TokStream) ⊢ ¬Ty TokStream
-      refuteExt q' m gm t = go t
+      refuteExt q' m gm t = refuteStream t
         where
         u z : String
         u = gm .fst zero
@@ -365,7 +355,6 @@ module Stream {n : ℕ} (Qs : Fin n → Type ℓAlph)
               (char⁺-cons c y)
               (subst (L q₀) pu (matchToL q'' u'' mt''))
 
-          -- ...and the mirror, when this match is the longer one
           shorter : (y : String) → u ≡ (u'' ++ y) → z'' ≡ (y ++ z) → ⊥Ty m
           shorter [] pu pz = nrest (subst TokStream pz t'')
           shorter (c ∷ y) pu pz =
@@ -381,8 +370,8 @@ module Stream {n : ℕ} (Qs : Fin n → Type ℓAlph)
           branch (Sum.inl s) = longer (s .fst) (s .snd .fst) (s .snd .snd)
           branch (Sum.inr s) = shorter (s .fst) (s .snd .fst) (s .snd .snd)
 
-        go : TokStream m → ⊥Ty m
-        go s = Sum.rec
+        refuteStream : TokStream m → ⊥Ty m
+        refuteStream s = Sum.rec
           (λ eps → ⊗-¬Nullable (matchNN q') m (gm , eps))
           (λ r → rival (r .fst .fst) (r .snd))
           (unrollStream m s)
@@ -406,7 +395,6 @@ module Stream {n : ℕ} (Qs : Fin n → Type ℓAlph)
         ⊕ᴰ-elim (λ q' → ⊕ᴰ-elim (λ w → atTok q' w) ∘⊢ &⊕ᴰ-distL)
         ∘⊢ &⊕ᴰ-distL ∘⊢ &-swap
 
-      -- nothing matches: the word is a stream exactly when it is empty
       noneBranch : GD.▷ tt & ¬Ty (L q₀ ⊗ ⊤Ty) ⊢ DecStream
       noneBranch =
         ⊕-elim& (dec-yes ∘⊢ NILs ∘⊢ π₂)
@@ -447,28 +435,19 @@ module Stream {n : ℕ} (Qs : Fin n → Type ℓAlph)
     decideStream = π₂ ∘⊢ GD.löb (λ _ → decStep) tt
 
     ------------------------------------------------------------------
-    -- 4. ...and therefore a `Phase`.
 
     lexPhase : Phase _ (Fin n × String)
-    lexPhase .Phase.Gr = TokStream
+    lexPhase .Phase.Ty = TokStream
     lexPhase .Phase.dec = decideStream
     lexPhase .Phase.emit = emitStream
 
-    -- the display boundary.  The `Maybe` is external, as in `Lexicon`.
     tokeniseS : String → Mb.Maybe (List (Fin n × String))
     tokeniseS = observe decideStream (semact-dec emitStream)
 
--- COST.  Tokenising is linear.  It took two things, both upstream of
--- this file: `Deterministic.Deadness`, whose `dead-empty` lets
+-- Tokenising is linear, and two things upstream of this file are what
+-- make it so: `Deterministic.Deadness`, whose `dead-empty` lets
 -- `GreedyMax.scan-cons` refute a dead successor without forcing the
 -- tail's cell -- so a token costs its own length and not the remaining
 -- input -- and `Lexicon.Tup`, which makes the product state a pair
 -- rather than a function, so a component is forced once instead of
 -- re-derived at every character.
---
--- Measured against a baseline module that builds the five POSIX rules
--- and tokenises nothing (marginal seconds, `x ` repeated):
---
---     tokens:    40    80   160   320   640
---     before:  0.91  4.25 20.51     -     -
---      after:  0.16  0.29  0.54  1.06  2.04

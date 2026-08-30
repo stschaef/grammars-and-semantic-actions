@@ -76,7 +76,6 @@ open _isRetractOf_
 ≅→isRetractOf e .weak = ≅→≈ e
 ≅→isRetractOf e .ret = e .ret
 
--- Monomorphisms
 isMono : {s : S} {A : TheoryTy ℓA s} {B : TheoryTy ℓB s} → A ⊢ B → Typeω
 isMono {s = s} {A = A} f =
   ∀ {ℓC} {C : TheoryTy ℓC s} (g h : C ⊢ A) → f ∘⊢ g ≡ f ∘⊢ h → g ≡ h
@@ -102,9 +101,7 @@ isRetractOf→isMono r =
   (e : A ≅ B) → isMono (e .fun)
 ≅→isMono e = hasRetraction→isMono (e .fun) (e .inv) (e .ret)
 
--- Yoneda turns a mono into an injection.  The old grammar development had to
--- go through `pick-parse` and a `JDep` over `⌈ w ⌉`; here `yoIso` *is* that
--- argument, already done once and for all.
+-- Yoneda turns a mono into an injection.
 module _ {s : S} {A : TheoryTy ℓA s} {B : TheoryTy ℓB s} {f : A ⊢ B} where
   private
     yo-nat : (m : ↓M s) (x : A m) → f ∘⊢ yoIso m .inv x ≡ yoIso m .inv (f m x)
@@ -122,14 +119,12 @@ module _ {s : S} {A : TheoryTy ℓA s} {B : TheoryTy ℓB s} {f : A ⊢ B} where
   isMono→hasPropFibers isSetB mono m =
     injective→hasPropFibers (isSetB m) (isMono→injective mono m _ _)
 
-  -- ...and conversely, pointwise injectivity is monicity.
   injective→isMono : ((m : ↓M s) (x y : A m) → f m x ≡ f m y → x ≡ y) → isMono f
   injective→isMono inj g h p =
     funExt λ m → funExt λ x →
       inj m (g m x) (h m x) (funExt⁻ (funExt⁻ p m) x)
 
--- Composition and inversion of `≅`.  `THEORYTY`'s `⋆WildCatIso` does this
--- too, but that module is private to `Theory.Base`.
+-- Restated here because `THEORYTY`'s `⋆WildCatIso` is private to `Theory.Base`.
 module _ {s : S} {A : TheoryTy ℓA s} {B : TheoryTy ℓB s} {C : TheoryTy ℓC s}
   where
   _≅∙_ : A ≅ B → B ≅ C → A ≅ C

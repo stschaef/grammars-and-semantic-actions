@@ -66,8 +66,6 @@ private
   rep? n extra (notNullable , r) = M.just (zerob n , betweenr n extra r)
   rep? n extra (nullable , _) = M.nothing
 
--- A parser of characters, in the metalanguage
-
 private
   Src : Type ℓ-zero
   Src = List AC.Char
@@ -87,7 +85,6 @@ private
   elem c [] = false
   elem c (d ∷ ds) = eq c d or elem c ds
 
-  -- what may not stand for itself
   special : List AC.Char
   special = '|' ∷ '*' ∷ '+' ∷ '?' ∷ '(' ∷ ')' ∷ '[' ∷ ']'
           ∷ '{' ∷ '}' ∷ '.' ∷ '\\' ∷ []
@@ -99,28 +96,26 @@ private
   ... | false = M.nothing
 
   digitVal : AC.Char → M.Maybe ℕ
-  digitVal c = go ('0' ∷ '1' ∷ '2' ∷ '3' ∷ '4'
-                 ∷ '5' ∷ '6' ∷ '7' ∷ '8' ∷ '9' ∷ []) 0
+  digitVal c = indexOf ('0' ∷ '1' ∷ '2' ∷ '3' ∷ '4'
+                      ∷ '5' ∷ '6' ∷ '7' ∷ '8' ∷ '9' ∷ []) 0
     where
-    go : List AC.Char → ℕ → M.Maybe ℕ
-    go [] _ = M.nothing
-    go (d ∷ ds) v with eq c d
+    indexOf : List AC.Char → ℕ → M.Maybe ℕ
+    indexOf [] _ = M.nothing
+    indexOf (d ∷ ds) v with eq c d
     ... | true = M.just v
-    ... | false = go ds (suc v)
+    ... | false = indexOf ds (suc v)
 
   number : Src → M.Maybe (ℕ × Src)
-  number cs = go cs 0 false
+  number cs = readDigits cs 0 false
     where
-    go : Src → ℕ → Bool → M.Maybe (ℕ × Src)
-    go [] acc true = M.just (acc , [])
-    go [] acc false = M.nothing
-    go (c ∷ cs) acc seen with digitVal c
-    ... | M.just d = go cs (AN._+_ (AN._*_ acc 10) d) true
+    readDigits : Src → ℕ → Bool → M.Maybe (ℕ × Src)
+    readDigits [] acc true = M.just (acc , [])
+    readDigits [] acc false = M.nothing
+    readDigits (c ∷ cs) acc seen with digitVal c
+    ... | M.just d = readDigits cs (AN._+_ (AN._*_ acc 10) d) true
     ... | M.nothing with seen
     ...   | true = M.just (acc , c ∷ cs)
     ...   | false = M.nothing
-
--- Escapes and the named classes
 
 private
   escaped : AC.Char → M.Maybe RE?
@@ -130,14 +125,14 @@ private
   escaped 'W' = M.just (sat? λ c → not (isWord c))
   escaped 's' = M.just (sat? isSpace)
   escaped 'S' = M.just (sat? λ c → not (isSpace c))
-  escaped 'n' = M.just (notNullable , charR '\n')
-  escaped 't' = M.just (notNullable , charR '\t')
+  escaped 'n' = M.just (notNullable , charr '\n')
+  escaped 't' = M.just (notNullable , charr '\t')
   escaped c with elem c special
-  ... | true = M.just (notNullable , charR c)
+  ... | true = M.just (notNullable , charr c)
   ... | false = M.nothing
 
   namedClass : List AC.Char → M.Maybe (UChar → Bool)
-  namedClass cs = go (AS.primStringToList "alpha") isAlpha
+  namedClass cs = firstMatchingClass
     where
     same : List AC.Char → List AC.Char → Bool
     same [] [] = true
@@ -150,25 +145,24 @@ private
     ... | true = M.just P
     ... | false = alt
 
-    go : List AC.Char → (UChar → Bool) → M.Maybe (UChar → Bool)
-    go _ _ =
+    firstMatchingClass : M.Maybe (UChar → Bool)
+    firstMatchingClass =
       try "alpha" isAlpha (try "digit" isDigit (try "alnum" isAlnum
       (try "upper" isUpper (try "lower" isLower (try "space" isSpace
       (try "blank" isBlank (try "punct" isPunct (try "cntrl" isCntrl
       (try "print" isPrint (try "graph" isGraph
       (try "xdigit" isXDigit M.nothing)))))))))))
 
--- Bracket expressions
-
 private
   -- `[:name:]` -- the leading `[` is already consumed
   posixName : Par (UChar → Bool)
-  posixName (':' ∷ cs) = go cs []
+  posixName (':' ∷ cs) = readName cs []
     where
-    go : Src → List AC.Char → M.Maybe ((UChar → Bool) × Src)
-    go [] acc = M.nothing
-    go (':' ∷ ']' ∷ rest) acc = namedClass acc >>=? λ P → M.just (P , rest)
-    go (c ∷ rest) acc = go rest (acc ++ (c ∷ []))
+    readName : Src → List AC.Char → M.Maybe ((UChar → Bool) × Src)
+    readName [] acc = M.nothing
+    readName (':' ∷ ']' ∷ rest) acc =
+      namedClass acc >>=? λ P → M.just (P , rest)
+    readName (c ∷ rest) acc = readName rest (acc ++ (c ∷ []))
   posixName _ = M.nothing
 
   items : ℕ → Par (List Item)
@@ -188,9 +182,9 @@ private
 
   bracket : ℕ → Par RE?
   bracket f ('^' ∷ cs) =
-    items f cs >>=? λ r → M.just ((notNullable , bracketNotR (r .fst)) , r .snd)
+    items f cs >>=? λ r → M.just ((notNullable , bracketNotr (r .fst)) , r .snd)
   bracket f cs =
-    items f cs >>=? λ r → M.just ((notNullable , bracketR (r .fst)) , r .snd)
+    items f cs >>=? λ r → M.just ((notNullable , bracketr (r .fst)) , r .snd)
 
 -- The grammar proper.  `alt ::= cat ('|' cat)*`, `cat ::= piece*`,
 -- `piece ::= atom postfix*`.
@@ -208,15 +202,15 @@ private
     more (suc g) acc cs' = M.just (acc , cs')
 
   cat zero _ = M.nothing
-  cat (suc f) cs = go f ε? cs
+  cat (suc f) cs = concatPieces f ε? cs
     where
-    go : ℕ → RE? → Par RE?
-    go zero acc cs' = M.just (acc , cs')
-    go (suc g) acc [] = M.just (acc , [])
-    go (suc g) acc ('|' ∷ cs') = M.just (acc , '|' ∷ cs')
-    go (suc g) acc (')' ∷ cs') = M.just (acc , ')' ∷ cs')
-    go (suc g) acc cs' =
-      piece g cs' >>=? λ r → go g (acc ⊗? r .fst) (r .snd)
+    concatPieces : ℕ → RE? → Par RE?
+    concatPieces zero acc cs' = M.just (acc , cs')
+    concatPieces (suc g) acc [] = M.just (acc , [])
+    concatPieces (suc g) acc ('|' ∷ cs') = M.just (acc , '|' ∷ cs')
+    concatPieces (suc g) acc (')' ∷ cs') = M.just (acc , ')' ∷ cs')
+    concatPieces (suc g) acc cs' =
+      piece g cs' >>=? λ r → concatPieces g (acc ⊗? r .fst) (r .snd)
 
   piece zero _ = M.nothing
   piece (suc f) cs = atom f cs >>=? λ r → post f (r .fst) (r .snd)
@@ -246,20 +240,19 @@ private
   atom (suc f) ('(' ∷ cs) =
     alt f cs >>=? λ r → lit ')' (r .snd) >>=? λ q → M.just (r .fst , q .snd)
   atom (suc f) ('[' ∷ cs) = bracket f cs
-  atom (suc f) ('.' ∷ cs) = M.just ((notNullable , dotR) , cs)
+  atom (suc f) ('.' ∷ cs) = M.just ((notNullable , dotr) , cs)
   atom (suc f) ('\\' ∷ c ∷ cs) = escaped c >>=? λ r → M.just (r , cs)
   atom (suc f) (c ∷ cs) with elem c special
   ... | true = M.nothing
-  ... | false = M.just ((notNullable , charR c) , cs)
+  ... | false = M.just ((notNullable , charr c) , cs)
   atom (suc f) [] = M.nothing
 
--- The entry point
-
 parseRE : AS.String → M.Maybe RE?
-parseRE s = go (AS.primStringToList s)
+parseRE s = parseAll (AS.primStringToList s)
   where
-  go : Src → M.Maybe RE?
-  go cs = alt (suc (suc (AN._*_ (length cs) 4))) cs >>=? λ r → done (r .snd) (r .fst)
+  parseAll : Src → M.Maybe RE?
+  parseAll cs =
+    alt (suc (suc (AN._*_ (length cs) 4))) cs >>=? λ r → done (r .snd) (r .fst)
     where
     done : Src → RE? → M.Maybe RE?
     done [] r = M.just r
@@ -277,7 +270,6 @@ IsJust M.nothing = Empty.⊥
   get : (m : M.Maybe RE?) → IsJust m → RE?
   get (M.just r) _ = r
 
--- ...and its two projections
 ∥_∥ : (s : AS.String) → {_ : IsJust (parseRE s)} → Nullability
 ∥_∥ s {p} = ⟨|_|⟩ s {p} .fst
 

@@ -1,8 +1,3 @@
--- TODO how much of this actually used?
--- WARNING for now I have been treating this as a place to sequester the
--- semantic reasoning about guarded recursion so that importers of this
--- module can work with a clean interface
--- The implementation are subject to change per experiments w Cass
 {- A well-ordered poset is a (thin) direct category.
 
    `Cubical.Categories.Direct.Base` gives the thin category `WFOrder→Cat`

@@ -66,7 +66,7 @@ private variable t : ParserTag
 ⟦ r *r ⟧ = StarSet ⟦ r ⟧
 ⟦ ↑r r ⟧ = ⟦ r ⟧
 
--- The parse tree an expression admits: the expression's own shape.
+-- The parse tree an expression admits is the expression's own shape.
 
 Tree : Reg t → Type ℓAlph
 Tree ＂ c ＂r = Alphabet

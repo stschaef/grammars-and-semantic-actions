@@ -1,15 +1,4 @@
 {-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
-{- Nondeterministic finite automata, and the trace types they generate.
-
-   The record is data only; all of its content is the `Functor` code below,
-   which says that the language read from a state is a sum over the outgoing
-   transitions.  `Trace` is that code's `μ`, so everything a trace supports --
-   folds, uniqueness, set-ness -- comes from `Theory.Type.Inductive`.
-
-   Two presentations of the trace are given.  `Accepting` indexes the tag by
-   the state and only builds accepting runs; `PotentiallyRejecting` indexes by
-   a `Bool` and builds runs that may end in a rejecting state, which is what a
-   *total* parse needs.  `Properties` proves them equivalent at `true`. -}
 open import Cubical.Foundations.Prelude
 open import Cubical.Foundations.Structure
 open import Cubical.Foundations.HLevels
@@ -38,9 +27,6 @@ open import Theory.Instances.Monoid.Convolution Alphabet isSetAlphabet
 private
   variable ℓN ℓB : Level
 
--- The level at which an `ℓN`-state automaton's traces live.  Codes are
--- indexed by a single level, and the literals a transition carries sit at
--- `ℓM`, so the two are joined once here.
 ℓ⋆ : Level → Level
 ℓ⋆ ℓN = ℓ-max ℓN ℓM
 
@@ -63,9 +49,6 @@ record NFA ℓN : Type (ℓ-suc (ℓ-max ℓN ℓAlph)) where
   States : Type ℓN
   States = ⟨ Q ⟩
 
-  -- Whether a transition matches a given source, label and target.  The
-  -- comparison of labels is at the alphabet's level, so the whole decidable
-  -- proposition sits at `ℓ-max ℓN ℓAlph`.
   matchesTransition : Discrete Alphabet → ⟨ transition ⟩
     → States → Alphabet → States → DecProp (ℓ-max ℓN ℓAlph)
   matchesTransition discAlphabet t src' label' dst' =
@@ -83,9 +66,6 @@ record NFA ℓN : Type (ℓ-suc (ℓ-max ℓN ℓAlph)) where
   hasTransition discAlphabet src' label' dst' =
     DecProp∃ transition λ t → matchesTransition discAlphabet t src' label' dst'
 
-  -- One accepting run from a state: stop here, take a labelled transition,
-  -- or take a silent one.  A silent transition is a bare `Var` summand --
-  -- that is the whole of what "ε-transition" means.
   module Accepting where
     data Tag (q : States) : Type ℓN where
       stop : true Eq.≡ isAcc q → Tag q
@@ -110,10 +90,6 @@ record NFA ℓN : Type (ℓ-suc (ℓ-max ℓN ℓAlph)) where
     TraceAlg : (States → TheoryTy ℓB tt) → Type _
     TraceAlg A = ∀ q → ⟦ TraceTy q ⟧TheoryTy A ⊢ A q
 
-    -- The `step` summand, unbundled.  A code's `⊗e` is the *uncurried*
-    -- convolution; `⟦⊗e⟧` is the passage to the binary tensor, and these are
-    -- its two directions with the code's lifts peeled off.  Both are DSL
-    -- composites: nothing below binds a model element.
     module _ {ℓB} {A : States → TheoryTy ℓB tt} where
       step-out : ∀ {q} (t : ⟨ transition ⟩) (p : src t Eq.≡ q)
         → ⟦ branch q (step t p) ⟧TheoryTy A ⊢ literal (label t) ⊗ A (dst t)
@@ -129,9 +105,6 @@ record NFA ℓN : Type (ℓ-suc (ℓ-max ℓN ℓAlph)) where
       step-η : ∀ {q} t (p : src t Eq.≡ q) → step-in t p ∘⊢ step-out t p ≡ id⊢
       step-η t p = ⟦⊗e⟧-η _ _
 
-    -- ...and `map` at that summand is the tensor's functorial action: it is
-    -- `⟦⊗e⟧`'s naturality with the η law on one side.  This is the only fact
-    -- a homomorphism proof over a labelled transition ever needs.
     map-step : ∀ {ℓB ℓC} {A : States → TheoryTy ℓB tt}
       {B : States → TheoryTy ℓC tt} (f : ∀ q → A q ⊢ B q)
       {q} (t : ⟨ transition ⟩) (p : src t Eq.≡ q)
@@ -153,9 +126,6 @@ record NFA ℓN : Type (ℓ-suc (ℓ-max ℓN ℓAlph)) where
     Parse : TheoryTy _ tt
     Parse = Trace init
 
-  -- The same automaton, run to completion.  `b` records whether the run ends
-  -- accepting, so `Trace false q` is a *rejection certificate* rather than
-  -- the absence of a parse.
   module PotentiallyRejecting where
     data Tag : Type ℓN where
       stop step stepε : Tag
@@ -182,7 +152,6 @@ record NFA ℓN : Type (ℓ-suc (ℓ-max ℓN ℓAlph)) where
     TraceAlg : Bool → (States → TheoryTy ℓB tt) → Type _
     TraceAlg b A = ∀ q → ⟦ TraceTy b q ⟧TheoryTy A ⊢ A q
 
-    -- the same DSL plumbing as `Accepting`, at the fibred summand
     module _ {ℓB} {A : States → TheoryTy ℓB tt} where
       step-out : (t : ⟨ transition ⟩)
         → ⟦ stepBranch t ⟧TheoryTy A ⊢ literal (label t) ⊗ A (dst t)

@@ -25,8 +25,6 @@ open import Cubical.Data.FinData using (zero ; suc)
 open import Cubical.Data.Sigma using (_,_ ; fst ; snd)
 open import Cubical.Data.Unit using (Unit ; tt ; tt*)
 
--- The alphabet
-
 data Tok : Type where
   nm pl lb rb : Tok
 
@@ -47,8 +45,6 @@ open import Theory.Instances.Monoid.Residual Tok isSetAlphabet
 
 ℓG : Level
 ℓG = ℓ-max ℓM (ℓ-suc ℓ-zero)
-
--- The grammar
 
 data NT : Type ℓ-zero where
   Exp Exp' : NT
@@ -148,9 +144,8 @@ rollN N = roll ∘⊢ ⊕ᴰ-elim λ t → σ⊕ t ∘⊢ bodyIn N t
 unrollN : (N : NT) → Lang N ⊢ (⊕[ t ∈ Tag N ] ty (Cb N t))
 unrollN N = ⊕ᴰ-elim (λ t → σ⊕ t ∘⊢ bodyOut N t) ∘⊢ unroll Arith N
 
--- The route.  `rExp` is the LL(1) table for `Exp`, and `gExp` is the
--- coarsening of the one-token cover along it -- both answer-free, which is
--- the point: a table is a table at every answer.
+-- `rExp` is the LL(1) table for `Exp`, and `gExp` is the coarsening of the
+-- one-token cover along it.  Both are answer-free.
 
 rExp : M₁ → Maybe (Tag Exp)
 rExp (tk nm) = just enum

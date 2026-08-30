@@ -14,37 +14,46 @@ open import Cubical.Data.Bool using (Bool ; true ; false)
 open SortedSig
 open SortedEqns
 module Theory.Instances.Bags.Partition
-  (El : Type ℓ-zero) (le : El → El → Bool)
+  (El : Type ℓ-zero) (isSetEl : isSet El) (le : El → El → Bool)
   (leTotal : (x y : El) → le x y Eq.≡ false → le y x Eq.≡ true)
   where
 
+open import Cubical.Foundations.HLevels
 open import Cubical.Data.Unit using (tt)
 
 open import Theory.Instances.Monoid.Base
 open import Theory.Instances.Bags.Base El
 open import Theory.Instances.Bags.Order El le
 open import Theory.Instances.Bags.Sequence El
+open import Theory.Instances.Bags.Sequence.Fold El isSetEl
+open import Theory.Instances.Bags.HLevels El isSetEl
+open import Theory.Type.HLevels BagEqns El (λ _ → tt) closingPresentation
 
--- an arrangement split in two, each half bounded by the pivot
 Halves : El → TheoryTy _ tt
 Halves x = (Seq & Below x) ⊎B (Seq & Above x)
 
--- which side of the pivot a generator falls on
-side : El → Bool → El → hProp ℓ-zero
-side x true = belowEl x
-side x false = aboveEl x
+isSetHalves : (x : El) → isSetTheoryTy (Halves x)
+isSetHalves x =
+  isSet⊎B (isSet& isSetSeq (isSetBelow x)) (isSet& isSetSeq (isSetAbove x))
 
-sideOf : (x y : El)
-  → ⌈ ⌈gen y ⌉ ⌉ ⊢ ⊕[ b ∈ Bool ] (⌈ ⌈gen y ⌉ ⌉ & bagAll (side x b))
-sideOf x y = go (le y x) Eq.refl
+-- The head, sorted against the pivot.  `le` is a metalanguage function --
+-- the theory of bags has no order -- so consulting it is a step outside
+-- the DSL, and this is the only place it happens.  What crosses back in is
+-- a sum, so every caller eliminates it rather than casing on a `Bool`.
+SideOf : El → El → TheoryTy _ tt
+SideOf x y =
+  (⌈ ⌈gen y ⌉ ⌉ & bagAll (belowEl x)) ⊕ (⌈ ⌈gen y ⌉ ⌉ & bagAll (aboveEl x))
+
+sideOf : (x y : El) → ⌈ ⌈gen y ⌉ ⌉ ⊢ SideOf x y
+sideOf x y = onCompare (le y x) Eq.refl
   where
-  go : (b : Bool) → le y x Eq.≡ b
-     → ⌈ ⌈gen y ⌉ ⌉ ⊢ ⊕[ b' ∈ Bool ] (⌈ ⌈gen y ⌉ ⌉ & bagAll (side x b'))
-  go true w = σ⊕ true ∘⊢ (id⊢ ,& bagAll-gen (belowEl x) y w)
-  go false w = σ⊕ false ∘⊢ (id⊢ ,& bagAll-gen (aboveEl x) y (leTotal y x w))
+  onCompare : (b : Bool) → le y x Eq.≡ b → ⌈ ⌈gen y ⌉ ⌉ ⊢ SideOf x y
+  onCompare true w = inl ∘⊢ (id⊢ ,& bagAll-gen (belowEl x) y w)
+  onCompare false w =
+    inr ∘⊢ (id⊢ ,& bagAll-gen (aboveEl x) y (leTotal y x w))
 
 partSeq : (x : El) → Seq ⊢ Halves x
-partSeq x = recSeq nilCase consCase
+partSeq x = recSeqg (Halves x) (isSetHalves x) nilCase consCase
   where
   nilCase : ⌈ εᵖ ⌉ ⊢ Halves x
   nilCase =
@@ -53,7 +62,8 @@ partSeq x = recSeq nilCase consCase
     ∘⊢ ⊎B-unitL⁻
 
   consCase : (y : El) → ⌈ ⌈gen y ⌉ ⌉ ⊎B Halves x ⊢ Halves x
-  consCase y = ⊕ᴰ-elim put ∘⊢ ⊎B⊕ᴰ-dist ∘⊢ ⊎Bmap (sideOf x y) id⊢
+  consCase y =
+    ⊕-elim putBelow putAbove ∘⊢ ⊎B⊕-dist ∘⊢ ⊎Bmap (sideOf x y) id⊢
     where
     -- `bagAll` is a fold, so consing the head onto its own side just pairs
     -- the head's comparison with the half's bound
@@ -61,10 +71,11 @@ partSeq x = recSeq nilCase consCase
       → (⌈ ⌈gen y ⌉ ⌉ & bagAll p) ⊎B (Seq & bagAll p) ⊢ Seq & bagAll p
     consInto p = (consSeq y ,&p id⊢) ∘⊢ ⊗-bagAll p
 
-    put : (b : Bool)
-      → (⌈ ⌈gen y ⌉ ⌉ & bagAll (side x b)) ⊎B Halves x ⊢ Halves x
-    put true = ⊎Bmap (consInto (belowEl x)) id⊢ ∘⊢ ⊎B-assoc⁻
-    put false =
+    putBelow : (⌈ ⌈gen y ⌉ ⌉ & bagAll (belowEl x)) ⊎B Halves x ⊢ Halves x
+    putBelow = ⊎Bmap (consInto (belowEl x)) id⊢ ∘⊢ ⊎B-assoc⁻
+
+    putAbove : (⌈ ⌈gen y ⌉ ⌉ & bagAll (aboveEl x)) ⊎B Halves x ⊢ Halves x
+    putAbove =
       ⊎B-comm
       ∘⊢ ⊎Bmap (consInto (aboveEl x)) id⊢
       ∘⊢ ⊎B-assoc⁻

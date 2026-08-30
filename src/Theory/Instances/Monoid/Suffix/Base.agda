@@ -59,7 +59,6 @@ w ◂ (c ∷ v) = (w Eq.≡ v) Sum.⊎ (w ◂ v)
 
 infix 4 _◂_
 
--- a proper suffix is shorter, which is what makes the relation a poset
 ◂-length : ∀ {w} v → w ◂ v → length w NO.< length v
 ◂-length (c ∷ v) (Sum.inl Eq.refl) = NO.≤-refl
 ◂-length (c ∷ v) (Sum.inr i) = NO.<-trans (◂-length v i) NO.≤-refl
@@ -77,7 +76,6 @@ isProp◂ {w = w} (c ∷ v) =
 ◂-trans (c ∷ v) i (Sum.inl Eq.refl) = Sum.inr i
 ◂-trans (c ∷ v) i (Sum.inr j) = Sum.inr (◂-trans v i j)
 
--- deciding a proper suffix means deciding equality against each tail
 dec◂ : Discrete Alphabet → ∀ w v → NB.Dec (w ◂ v)
 dec◂ dA w [] = NB.no λ z → z .lower
 dec◂ dA w (c ∷ v) with discreteList dA w v
@@ -105,7 +103,6 @@ suffixWFOrder = record
   ; trans< = λ {u} {w} {v} → ◂-trans v
   ; wf< = acc◂ }
 
--- points of the one-nonterminal indexing: a memo row per suffix
 SPt : Type ℓM
 SPt = IPt {X = Unit} (λ _ → tt)
 
@@ -122,8 +119,6 @@ suffixOrder .IPtOrder.isProp< p q = isProp◂ (q .snd)
 suffixOrder .IPtOrder.trans< {q = q} {r = r} = ◂-trans (r .snd)
 suffixOrder .IPtOrder.wf< p = accPt (p .snd) (acc◂ (p .snd)) (p .fst)
 
--- Guarded elimination
-
 -- the suffix world's step relation: a recursive call is entitled to a proper
 -- suffix of its input
 Below : SPt → SPt → Type ℓM
@@ -132,7 +127,6 @@ Below p q = p .snd ◂ q .snd
 SFam : (ℓA : Level) → Type _
 SFam ℓA = (x : Unit) → TheoryTy ℓA tt
 
--- appending a non-empty prefix lands strictly below
 ◂-cons : (c : Alphabet) (u w : String) → w ◂ (c ∷ (u ++ w))
 ◂-cons c [] w = Sum.inl Eq.refl
 ◂-cons c (d ∷ u) w = Sum.inr (◂-cons d u w)
@@ -162,8 +156,6 @@ module Guarded▷ {ℓA} (A : SFam ℓA) (isSetA : ∀ x m → isSet (A x m)) wh
     payTok : (c : Alphabet) → PayR suffixLöb {X = literal c}
     payTok c _ = ◂-lit c
 
-  -- ... and in a tensor context: the second factor of `literal c ⊗ B` sits
-  -- strictly below, so the hypothesis may be read there
   ▷-⊗r : (c : Alphabet) {ℓB : Level} {B : TheoryTy ℓB tt}
     → ▷ tt & (literal c ⊗ B) ⊢ literal c ⊗ (A tt & B)
   ▷-⊗r c = (id⊢ ,⊗ &-swap) ∘⊢ ▷⊛r suffixLöb (payTok c) ∘⊢ &-swap
@@ -196,15 +188,14 @@ private variable
 □ : TheorySet ℓA tt → TheorySet (ℓ-max ℓA ℓM) tt
 □ = ▷? ⟨□⟩
 
--- the modality is functorial, lax over `&`, and holds a closed term
 ▷map : {t : ParserTag} → ty A ⊢ ty B → ty (▷? t A) ⊢ ty (▷? t B)
 ▷map {A = A} {B = B} f = G.▷?map {A = fam A} {B = fam B} (λ _ → f) tt
 
 ▷lax : {t : ParserTag} → ty (▷? t A) & ty (▷? t B) ⊢ ty (▷? t (A &Set B))
 ▷lax {A = A} {B = B} = G.▷?lax {A = fam A} {B = fam B} tt
 
--- ...over a whole family of them, which is how one branch of a choice is
--- taken at each point without the others being run
+-- lax over a whole family, which is how one branch of a choice is taken at
+-- each point without the others being run
 ▷laxᴰ : {t : ParserTag} {Y : Type ℓY} (A : Y → TheorySet ℓA tt)
   → &ᴰ Y (λ y → ty (▷? t (A y))) ⊢ ty (▷? t (&ᴰSet A))
 ▷laxᴰ {t = t} A = G.▷?laxᴰ {t = t} (λ y → fam (A y)) tt
@@ -212,21 +203,18 @@ private variable
 ▷next : {t : ParserTag} {D : TheoryTy ℓD tt} → ⊤Ty ⊢ ty A → D ⊢ ty (▷? t A)
 ▷next {A = A} f = G.▷?next (fam A) (λ _ → f) tt ∘⊢ ⊤Ty-intro
 
--- reading the term here, and forgetting it
 □here : ty (□ A) ⊢ ty A
 □here {A = A} = G.□here (fam A) tt
 
 ▷wk : {t : ParserTag} → ty (□ A) ⊢ ty (▷? t A)
 ▷wk {A = A} = G.▷?wk (fam A) tt
 
--- what holds at every proper suffix holds one step down, in both flavours
 ▷δ : ty (▷ A) ⊢ ty (▷ (▷ A))
 ▷δ {A = A} = G.▷δ (fam A) tt
 
 ▷δ□ : ty (▷ A) ⊢ ty (▷ (□ A))
 ▷δ□ = ▷lax ∘⊢ (id⊢ ,& ▷δ)
 
--- ...so a term made from the delayed one is available here as well
 ▷□ : (ty (▷ A) ⊢ ty B) → ty (▷ A) ⊢ ty (□ B)
 ▷□ {A = A} {B = B} f = G.▷□ {A = fam A} {B = fam B} (λ _ → f) tt
 
@@ -235,7 +223,6 @@ private variable
   → ty (▷ A) & (literal c ⊗ C) ⊢ literal c ⊗ (ty A & C)
 ▷⊗r {A = A} c = Guarded▷.▷-⊗r (fam A .fst) (fam A .snd) c
 
--- ...and Löb at a grammar
 löbG : (ty (▷ A) ⊢ ty A) → ⊤Ty ⊢ ty A
 löbG {A = A} φ = Guarded▷.löb (fam A .fst) (fam A .snd) (λ _ → φ) tt
 
@@ -247,11 +234,9 @@ module SufLex {ℓX} {X : Type ℓX} (xs : X → Sorts) (rank : X → ℕ) where
   Step : Pt xs → Pt xs → Type ℓM
   Step = Suffix {X = X} {xs = xs} suffixWFOrder (λ _ w → w) rank
 
-  -- the call consumed something...
   shorter : {y z : X} {v W : String} → v ◂ W → Step (z , v) (y , W)
   shorter = Sum.inl
 
-  -- ...or it stayed where it was and the rank dropped
   dropped : {y z : X} {v : String} → rank z NO.< rank y → Step (z , v) (y , v)
   dropped lt = Sum.inr (refl , lt)
 

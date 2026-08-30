@@ -111,18 +111,17 @@ module _ (c : Alphabet) where
     post : ∀ t → literal c ⊗ εTy ⊢ Trace c-st
     post t = STEP t ∘⊢ ⊗-map id⊢ (STOP Eq.refl)
 
-    -- rolling up a `step` summand, named so `cong` has a domain to solve
-    roll↑ : ∀ t → (⟦ branch c-st (step t Eq.refl) ⟧TheoryTy ⟦_⟧st
+    rollAtStep : ∀ t → (⟦ branch c-st (step t Eq.refl) ⟧TheoryTy ⟦_⟧st
                  ⊢ ⟦ branch c-st (step t Eq.refl) ⟧TheoryTy Trace)
                 → ⟦ branch c-st (step t Eq.refl) ⟧TheoryTy ⟦_⟧st ⊢ Trace c-st
-    roll↑ t z = roll ∘⊢ σ⊕ (step t Eq.refl) ∘⊢ z
+    rollAtStep t z = roll ∘⊢ σ⊕ (step t Eq.refl) ∘⊢ z
 
   toNFA-homo : ∀ q → toNFA q ∘⊢ litAlg q
                    ≡ roll ∘⊢ map (TraceTy q) toNFA
   toNFA-homo c-st = ⊕ᴰ≡ _ _ λ where
     (step t Eq.refl) →
       cong (λ z → post t ∘⊢ z ∘⊢ pre t) (⊗-unit-r⁻∘r {A = literal c})
-      ∙ cong (roll↑ t) (sym (map-step toNFA t Eq.refl))
+      ∙ cong (rollAtStep t) (sym (map-step toNFA t Eq.refl))
   toNFA-homo ε-st = ⊕ᴰ≡ _ _ λ where (stop Eq.refl) → refl
 
   litNFA≅ : Trace c-st ≅ LiftTheoryTy ℓlit (literal c)

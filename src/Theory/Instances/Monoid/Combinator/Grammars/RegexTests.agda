@@ -45,15 +45,11 @@ import Theory.Instances.Monoid.Combinator.Syntax
 
 open Dec using (_↦_ ; _at_ ; passes ; String ; ⟨▷⟩ ; ⟨□⟩)
 
--- The expressions.  Written once, at no answer at all.
-
 ab : Reg ⟨▷⟩
 ab = ＂ a ＂r ⊗r ＂ b ＂r
 
 amb : Reg ⟨□⟩
 amb = (＂ a ＂r ⊕r (＂ a ＂r ⊗r ＂ a ＂r)) *r
-
--- ...and the same compiler at three answers.
 
 decAmb : String → M.Maybe (Tree amb)
 decAmb = Dec.observe (SDec.regex amb) (Dec.semact-dec (regAct amb))
@@ -112,7 +108,6 @@ amb-nd : passes
     ∷ [] ))
 amb-nd = refl
 
--- ...and the leftmost of that fan is what the other two commit to.
 amb-dec : passes
   (decAmb at
     ( (a ∷ a ∷ a ∷ []) ↦ M.just (Sum.inl a ∷ Sum.inl a ∷ Sum.inl a ∷ [])

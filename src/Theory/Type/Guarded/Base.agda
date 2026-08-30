@@ -24,7 +24,7 @@ open import Theory.Type.Inductive.Base σeq V vs 𝒫
 
 private variable ℓA ℓB ℓR ℓX : Level
 
--- where a guarded recursion is at: an index and an input
+-- A point of a guarded recursion: an index and an input at that index.
 Pt : {X : Type ℓX} (xs : X → S) → Type (ℓ-max ℓX ℓM)
 Pt {X = X} xs = Σ[ x ∈ X ] ↓M (xs x)
 
@@ -77,7 +77,7 @@ module _ {X : Type ℓX} {xs : X → S} where
       → ∀ x → A x ⊢ μ F x
     unfold isSetμF c = hylo isSetμF c λ x → roll
 
-    -- ...and its dual, the recursor -- but by guarded recursion, not by
+    -- The dual, the recursor -- but by guarded recursion, not by
     -- matching on `roll`.  `Inductive/Base`'s `rec` needs `TERMINATING`
     -- because its descent runs through `map (F x)`, which Agda cannot see
     -- into; here the descent is `löb`, which is a term, so nothing is

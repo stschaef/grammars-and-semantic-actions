@@ -35,8 +35,6 @@ private
      → isNo (decide-r (reOf s {p}) ℓr (text w) tt) Eq.≡ true → No s {p} w
   no s {p} w q = theNo (decide-r (reOf s {p}) ℓr (text w) tt) q
 
--- concatenation, alternation, star
-
 _ : Yes "ab" "ab"
 _ = yes "ab" "ab" Eq.refl
 
@@ -54,8 +52,6 @@ _ = yes "(ab)*" "" Eq.refl
 
 _ : No "(ab)*" "aba"
 _ = no "(ab)*" "aba" Eq.refl
-
--- postfix operators
 
 _ : Yes "ab?c" "ac"
 _ = yes "ab?c" "ac" Eq.refl
@@ -81,8 +77,6 @@ _ = yes "a{2,4}" "aaa" Eq.refl
 _ : No "a{2,4}" "aaaaa"
 _ = no "a{2,4}" "aaaaa" Eq.refl
 
--- classes, ranges, escapes
-
 _ : Yes "[a-z]+" "hello"
 _ = yes "[a-z]+" "hello" Eq.refl
 
@@ -103,8 +97,6 @@ _ = yes "[[:alpha:]_][[:alnum:]_]*" "_foo42" Eq.refl
 
 _ : No "[[:alpha:]_][[:alnum:]_]*" "42foo"
 _ = no "[[:alpha:]_][[:alnum:]_]*" "42foo" Eq.refl
-
--- the ones a real lexicon is made of
 
 _ : Yes "-?[0-9]+" "-407"
 _ = yes "-?[0-9]+" "-407" Eq.refl

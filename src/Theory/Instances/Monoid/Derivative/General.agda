@@ -40,8 +40,6 @@ private
   cast : {X : String → Type ℓA} {x y : String} → x Eq.≡ y → X x → X y
   cast Eq.refl b = b
 
--- The two formers, and the adjunction between them.
-
 opaque
   -- sss-00PP
   ∂[_]_ : TheoryTy ℓA tt → TheoryTy ℓB tt → TheoryTy (ℓ-max ℓM (ℓ-max ℓA ℓB)) tt
@@ -117,7 +115,6 @@ module _ {A : TheoryTy ℓA tt} where
   ∂-⊥ : ∂[ A ] ⊥Ty ⊢ ⊥Ty
   ∂-⊥ = ∂-intro⁻ ⊥Ty-elim
 
--- reindexing the weight, from `√-reweight` above
 ∂-weight : {A : TheoryTy ℓA tt} {A' : TheoryTy ℓB tt} {B : TheoryTy ℓC tt}
   → A ⊢ A' → ∂[ A ] B ⊢ ∂[ A' ] B
 ∂-weight f = ∂-intro⁻ (√-reweight f ∘⊢ ∂-unit)
@@ -146,7 +143,6 @@ opaque
     → Dl→∂⌈⌉ w {B = B} ∘⊢ ∂⌈⌉→Dl w ≡ id⊢
   ∂⌈⌉-Dl-sec w = funExt λ m → funExt λ where (u , Eq.refl , b) → refl
 
-  -- ...and the residual, which agrees only here
   ∂⌈⌉→⊸ : (w : String) {B : TheoryTy ℓB tt} → ∂[ ⌈ w ⌉ ] B ⊢ ⌈ w ⌉ ⊸ B
   ∂⌈⌉→⊸ w {B = B} m (u , p , b) l q = cast {X = B} (Eq.ap (_++ m) (p Eq.∙ Eq.sym q)) b
 

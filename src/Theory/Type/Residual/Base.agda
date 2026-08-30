@@ -1,10 +1,6 @@
--- This is an attempt to give a uniform defintion of residuals
--- for all theories at once. It's not definitonally that nice, say for
--- the η-law, unless stating the adjunction with respect to the focused
--- version of ⊗
--- It tentatively seems that a manual definition of residuals
--- for each theory is the best definitionally, but perhaps there
--- is someway to clean this up to recover those niceties in general
+-- Residuals, defined uniformly for every theory.  These compute worse than a
+-- hand-written per-theory residual -- the η-law in particular -- unless the
+-- adjunction is stated against the focused version of ⊗.
 {-# OPTIONS -WnoUnsupportedIndexedMatch #-}
 open import Cubical.Foundations.Prelude
 open import Cubical.Foundations.Transport

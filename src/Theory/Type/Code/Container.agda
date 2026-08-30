@@ -1,4 +1,5 @@
--- TODO is this actually used?
+-- Container semantics for the codes.  Only `Split`/`parts` are consumed
+-- downstream, by `Type/Guarded/Justification`.
 {-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
 open import Cubical.Foundations.Prelude
 open import Cubical.Categories.Category.Base

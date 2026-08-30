@@ -63,8 +63,6 @@ _⊗s_ : RE? → RE? → RE?
 _⊕s_ : RE? → RE? → RE?
 (n , r) ⊕s (n' , r') = n +ν n' , r ⊕r r'
 
--- The derivative itself
-
 δ : ∀ {n} → RE n → Alphabet → RE?
 δ εr c = ∅?
 δ ⊥r c = ∅?
@@ -100,8 +98,6 @@ open import Theory.Instances.Monoid.Residual Alphabet isSetAlphabet
 -- case analysis to these four lemmas is what keeps `δ-sound`/`δ-complete`
 -- structural.
 
--- ...so these are all the identity, and the theorem below never has to
--- ask what a constructor did.
 ⊗s-out : (x y : RE?) → ty ⟦ (x ⊗s y) .snd ⟧ ⊢ ty ⟦ x .snd ⟧ ⊗ ty ⟦ y .snd ⟧
 ⊗s-out (n , r) (n' , r') = id⊢
 
@@ -129,13 +125,10 @@ private
   uncons++ (d ∷ u) v c m e =
     Sum.inr (u , cong (_∷ u) (LP.cons-inj₁ e) , LP.cons-inj₂ e)
 
--- `Dl` across the connectives.
-
 private variable ℓA ℓB : Level
 
 module _ (c : Alphabet) {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt} where
 
-  -- forget which side the split fell on
   Dl-⊗-out : Dl c (A ⊗ B) ⊢ (Dl c A ⊗ B) ⊕ Dl c B
   Dl-⊗-out m (ms , e , (a , (b , _))) with
     uncons++ (ms zero) (ms (suc zero)) c m (Eq.eqToPath e)
@@ -146,14 +139,13 @@ module _ (c : Alphabet) {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt} where
                 , Eq.pathToEq pv≡m
                 , (subst A u≡cp a , (b , tt*)))
 
-  -- ...and put it back, on the left
   Dl-⊗-in-l : (Dl c A ⊗ B) ⊢ Dl c (A ⊗ B)
   Dl-⊗-in-l m (ms , e , (a , (b , _))) =
       two (c ∷ ms zero) (ms (suc zero))
     , Eq.pathToEq (cong (c ∷_) (Eq.eqToPath e))
     , (a , (b , tt*))
 
-  -- ...or on the right, which costs a witness that `A` accepts ε
+  -- on the right, which costs a witness that `A` accepts ε
   Dl-⊗-in-r : (εTy ⊢ A) → Dl c B ⊢ Dl c (A ⊗ B)
   Dl-⊗-in-r nul m b =
       two [] (c ∷ m)
@@ -178,7 +170,7 @@ module _ (c : Alphabet) {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt} where
   Dl-⊕-in m (Sum.inl a) = Sum.inl a
   Dl-⊕-in m (Sum.inr b) = Sum.inr b
 
--- a map of grammars acts on derivatives by applying it one letter in
+-- a map of types acts on derivatives by applying it one letter in
 Dl-map : (c : Alphabet) {C : TheoryTy ℓA tt} {D : TheoryTy ℓB tt}
   → C ⊢ D → Dl c C ⊢ Dl c D
 Dl-map c f m x = f (c ∷ m) x

@@ -160,7 +160,6 @@ isSetCont : ∀ {s} (R : ∀ {s} → TheoryTy ℓR s) {A : TheoryTy ℓA s}
   → isSetTheoryTy R → isSetTheoryTy (Cont R A)
 isSetCont R isSetR = isSet⇒ isSetR
 
--- a proposition at one end of a line of types fills the whole line
 isPropPathP : ∀ {ℓ} (T : I → Type ℓ) → isProp (T i0)
   → (x : T i0) (y : T i1) → PathP T x y
 isPropPathP T pr =

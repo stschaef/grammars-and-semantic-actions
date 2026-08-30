@@ -26,7 +26,6 @@ open import Theory.Type.Decidable.Base MonEqns Alphabet (λ _ → tt)
 
 private variable ℓA ℓB : Level
 
--- one or more characters
 char⁺ : TheoryTy _ tt
 char⁺ = char ⊗ String*
 
@@ -48,10 +47,9 @@ module _ (A : TheoryTy ℓA tt) where
   disjointGreedy-GreedyCompl =
     ⇒-app ∘⊢ &-swap ∘⊢ (Greedy→leftmost ,&p id⊢)
 
--- `no-nonempty-extension-step` of `Grammar/Greedy/Regex.agda` (a hole
--- there) with the automaton removed: `Trace … q` becomes any `A`, and
--- `δ r disc q c` becomes the derivative `literal c ⊸ A`.  Proved from the
--- precision of `literal c`, which is why no step-inversion is needed.
+-- One step of "no nonempty extension": after a leading `c`, refuting the
+-- derivative `literal c ⊸ A` refutes every nonempty match there.  Proved from
+-- the precision of `literal c`, which is why no step-inversion is needed.
 noExt-step : (c : Alphabet) {A : TheoryTy ℓA tt}
   → literal c ⊗ ¬Ty ((literal c ⊸ A) ⊗ ⊤Ty)
   ⊢ ¬Ty ((A & char⁺) ⊗ ⊤Ty)
@@ -112,11 +110,9 @@ GreedyAt : (A : TheoryTy ℓA tt) (R : TheoryTy ℓB tt) → TheoryTy _ tt
 GreedyAt A R = A ⊗ ¬Ty ((R & char⁺) ⊗ ⊤Ty)
 
 module _ {A : TheoryTy ℓA tt} {R : TheoryTy ℓB tt} where
-  -- one character, O(1)
   extendAt : (c : Alphabet)
     → literal c ⊗ GreedyAt (Dl c A) R ⊢ GreedyAt A R
   extendAt c = (lit⊗Dl c ,⊗ id⊢) ∘⊢ ⊗-assoc⁻
 
-  -- ...and what it gives up: the prefix parse
   GreedyAt→prefix : GreedyAt A R ⊢ A ⊗ ⊤Ty
   GreedyAt→prefix = id⊢ ,⊗ ⊤Ty-intro

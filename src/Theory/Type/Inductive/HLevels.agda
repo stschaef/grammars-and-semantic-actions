@@ -151,6 +151,9 @@ module _ {ℓA ℓX} {X : Type ℓX} {xs : X → S} where
   reconstructF A (⊗e o F) m x (ms , e , es) =
     cong (λ zs → ms , e , zs) (funExt λ a → reconstructF A (F a) (ms a) x (es a))
 
+  -- Structural on the `μ F` argument: the recursive call is on a subtree
+  -- delivered by `getSubtreeF`, which the checker cannot see into.  See the
+  -- note on `fold` in `Type/Guarded/Base`.
   {-# TERMINATING #-}
   encode : (F : (x : X) → Functor ℓA X xs (xs x))
     → ∀ ix → μ F (ix .fst) (ix .snd) → μIW F ix
@@ -166,6 +169,9 @@ module _ {ℓA ℓX} {X : Type ℓX} {xs : X → S} where
       decode F (next (F x) m sh p) (subtree p))
 
   opaque
+    -- A proof, not a definition, with the same hidden descent as `encode`:
+    -- structural on the `μ F` argument, through `getSubtreeF`.  See the note
+    -- on `fold` in `Type/Guarded/Base`.
     {-# TERMINATING #-}
     isRetract : (F : (x : X) → Functor ℓA X xs (xs x))
       → ∀ x m (z : μ F x m) → decode F (x , m) (encode F (x , m) z) ≡ z

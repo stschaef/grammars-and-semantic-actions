@@ -78,9 +78,6 @@ private
       subst (size b <ℕ_) (sym sz) (ltLeft (size b) (size c))
     , subst (size c <ℕ_) (sym sz) (ltRight (size b) (size c))
 
--- Splitting off a pivot puts both halves below the whole.  A caller that has
--- decomposed its input this way is entitled to two recursive calls, and needs
--- to know nothing about why.
 pivotDrops : (y : El) {m lo hi : Bag} → m ≡ ⌈gen y ⌉ ⊙ᵖ (lo ⊙ᵖ hi)
   → ((tt , lo) ◃ (tt , m)) × ((tt , hi) ◃ (tt , m))
 pivotDrops y split = bothDrop (cong size split)
@@ -120,7 +117,6 @@ module Guarded▷ {ℓA} (A : Fam ℓA) (isSetA : ∀ s m → isSet (A s m)) whe
     → (⌈ ⌈gen y ⌉ ⌉ ⊎B B) & ▷ tt ⊢ ⌈ ⌈gen y ⌉ ⌉ ⊎B (B & A tt)
   ▷-cons y = ▷⊛r bagLöb (payCons y)
 
-  -- ... and splitting what the generator left: both halves are below it
   ▷-split : ∀ {ℓB} (y : El) {B C : TheoryTy ℓB tt}
     → (⌈ ⌈gen y ⌉ ⌉ ⊎B (B ⊎B C)) & ▷ tt
     ⊢ ⌈ ⌈gen y ⌉ ⌉ ⊎B ((B & A tt) ⊎B (C & A tt))

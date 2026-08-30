@@ -43,8 +43,7 @@ open import Theory.Instances.Monoid.SequentialUnambiguity.FollowLast
   using (startsWith ; _∉First_ ; _∉FollowLast_ ; ∉First*) public
 private variable ℓA ℓB ℓX : Level
 
--- `∀ m → isProp (A m)`, as `Theory/Type/Unambiguity/Base` states it; named
--- locally because that module reaches here by two paths.
+-- `∀ m → isProp (A m)`, as `Theory/Type/Unambiguity/Base` states it.
 Unambig : TheoryTy ℓA tt → Type _
 Unambig A = (m : String) → isProp (A m)
 
@@ -56,11 +55,11 @@ Unambig A = (m : String) → isProp (A m)
 SeqUnambig : TheoryTy ℓA tt → Type _
 SeqUnambig A = (c : Alphabet) → (c ∉FollowLast A) Sum.⊎ (c ∉First A)
 
--- The proof.  `A *` is a real `data`, so both arguments are matched as
+-- `A *` is a real `data`, so both arguments are matched as
 -- `roll m (b , payload)` and the tail `f (suc zero) .lower` descends
--- structurally -- no `rec`, no pragma.  This is `Automaton/Unambiguous`'s
--- `unambiguous-Trace` technique; the `PathP`s are built inline, so no
--- tensor-extensionality lemma is needed after all.
+-- structurally.  This is `Automaton/Unambiguous`'s `unambiguous-Trace`
+-- technique; the `PathP`s are built inline, so no tensor-extensionality
+-- lemma is needed.
 
 
 module Star* {A : TheoryTy ℓA tt}
@@ -84,7 +83,6 @@ module Star* {A : TheoryTy ℓA tt}
         → (g ∉FollowLast A) Sum.⊎ (g ∉First (A *))
       sep g = Sum.map (λ z → z) ∉First* (su g)
 
-    -- the nil layer is nullary, and its index equation is a proposition
     isPropNil : (m : String)
       → isProp (⟦ starBranch A false ⟧TheoryTy (λ _ → A *) m)
     isPropNil m (ms , e , u) (ns , e' , u') =
@@ -93,20 +91,17 @@ module Star* {A : TheoryTy ℓA tt}
                  , isPropPathP _ (λ p q → funExt λ ()) u u'))
 
   unambig : (m : String) (x y : (A *) m) → x ≡ y
-  -- nil / nil
   unambig m (roll .m (false , z)) (roll .m (false , z')) =
     cong (roll m) (ΣPathP (refl , isPropNil m z z'))
-  -- nil / cons
   unambig m (roll .m (false , ms , e , f)) (roll .m (true , ns , e' , f')) =
     nil-cons (ns zero) (ns (suc zero)) (f' zero .lower)
       (Eq.eqToPath e' ∙ sym (Eq.eqToPath e))
-  -- cons / nil
   unambig m (roll .m (true , ms , e , f)) (roll .m (false , ns , e' , f')) =
     nil-cons (ms zero) (ms (suc zero)) (f zero .lower)
       (Eq.eqToPath e ∙ sym (Eq.eqToPath e'))
-  -- cons / cons.  The recursive call stands in the clause body: through a
-  -- `where` binding the checker compares the tail against the parameter
-  -- rather than against the constructor pattern, and loses the descent.
+  -- The recursive call stands in the clause body: through a `where` binding
+  -- the checker compares the tail against the parameter rather than against
+  -- the constructor pattern, and loses the descent.
   unambig m (roll .m (true , ms , e , f)) (roll .m (true , ns , e' , f')) =
     main (unambig (ns (suc zero))
            (transport (λ i → (A *) (tails i)) (f (suc zero) .lower))

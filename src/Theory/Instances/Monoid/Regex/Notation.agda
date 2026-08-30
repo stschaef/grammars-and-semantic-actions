@@ -90,7 +90,7 @@ atMostr : (n : ℕ) → RE notNullable → RE nullable
 atMostr zero r = εr
 atMostr (suc n) r = εr ⊕r (r ⊗r atMostr n r)
 
--- `r{n,m}` -- n copies, then up to  more
+-- `r{n,n+extra}` -- n copies, then up to `extra` more
 betweenr : (n extra : ℕ) → RE notNullable → RE (zerob n)
 betweenr zero extra r = atMostr extra r
 betweenr (suc n) extra r = r ⊗r betweenr n extra r
