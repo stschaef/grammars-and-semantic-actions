@@ -6,6 +6,9 @@ for most of the investigation and that name was wrong for every one of them:
 `Ascent/*` and `LeftCorner/*` reach LC(k), not LR(k), and `Derivative/*` is
 strictly more general than LR.  See "What is and is not LR" below.
 
+`Decidable/Synthesis` is not a fourth line but a front end: it derives the
+LL(1) table the `LeftCorner/*` line feeds to `Decidable/Productions`.
+
 ## Line 1: recursive ascent — `Ascent/*`
 
 `Combinator/Core`'s parser is polymorphic in the *continuation*.
@@ -105,6 +108,39 @@ weaker than LR: left-corner parsing is LC(k), and LL(k) ⊊ LC(k) ⊊ LR(k).
 
 `ExprGrammar` holds the grammar that both `Ascent/Expr` and
 `LeftCorner/Expr` parse, so the two can be compared line for line.
+
+## Synthesising the table — `Decidable/Synthesis`
+
+`Decidable/Productions.Gen` turns a `Table` into a parser and its
+correctness.  Every `Table` in the repo used to be written out by hand,
+one clause per (nonterminal, class) pair -- `LeftCorner/Expr` had
+seventeen, eleven of them `none` -- and conflict-freedom was only
+*implicit*: `Prod X o` is indexed by the class it predicts, so a
+conflicting table cannot be written down, which makes LL(1) a property of
+the author rather than of the grammar.
+
+    record Rules X where nullable : X → Bool ; of : X → List (Rule X)
+    Rule X = Alphabet × List (Item X)   -- leading terminal, then the body
+
+    table   : Table X                   -- takes the first rule per class
+    clashes : List (X × Alphabet)       -- the LL(1) violations
+    synth   : Maybe (Table X)           -- a table only when there are none
+
+All three tables are now synthesised, each with a computed certificate
+(`exprLL1`, `lamLL1`, `stlcLL1` : `clashes Eq.≡ []`).  The check has
+teeth: a variant of the expression grammar with two rules led by `‵x`
+reports `(sT , ‵x)` and `synth` returns `nothing`, both by `Eq.refl`.
+`Decidable/STLC` keeps its extensive `Eq.refl` parse tests, so those
+double as the check that a synthesised table computes exactly like the
+hand-written one it replaced.
+
+**No FIRST, no FOLLOW, and that is the limit.**  `led` can only hold a
+body that *begins with a terminal*, so a body's FIRST set is its leading
+terminal and the LL(1) test collapses to "no nonterminal has two rules
+with the same leading terminal".  Grammars not in that form must be
+transformed first -- which is exactly what `LeftCorner/*` does by hand.
+Computing *that* is where FIRST and nullability would genuinely be
+needed, and it is the next piece of a real generator.
 
 ## Line 3: parsing with derivatives — `Derivative/*`
 
@@ -320,9 +356,16 @@ Three things in the tree still see elements, deliberately:
 * **Decidable ascent.**  Blocked as above.  The residual carries the value;
   the decision wants a positive carrier.  Whether one type can do both is
   untested.
-* **No construction.**  Every grammar transform here is hand-written; nothing
-  derives a table or a skeleton from a grammar.  That is the whole of
-  "generator".
+* **Half a generator.**  `Decidable/Synthesis` now derives the `Table` from
+  rules and *computes* the LL(1) check, so all three tables in the repo
+  (`LeftCorner/Expr`, `Decidable/Lambda`, `Decidable/STLC`) are synthesised
+  and each carries a `clashes Eq.≡ []` certificate.  What is still
+  hand-written is the step before it: getting a grammar *into* leading-
+  terminal form.  `led` only holds a body that begins with a terminal, so
+  FIRST and nullability never arise in the table; they arise in the
+  left-corner transform, which `LeftCorner/*` still does by hand.  Computing
+  that transform is the rest of "generator", and nothing derives an ascent
+  skeleton or an item set at all.
 * **Soundness only, on the factored line.**  `toOriginal : S sE ⊢ E` is one
   direction; completeness needs `E ⊢ S sE`, which is the correctness of the
   left-corner transform.
