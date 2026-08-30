@@ -22,6 +22,7 @@ open import Cubical.Data.Sigma
 
 open import Cubical.Categories.Category
 open import Cubical.Categories.Isomorphism
+open import Cubical.Categories.Instances.BinProduct
 open import Cubical.Categories.Functor
 open import Cubical.Categories.NaturalTransformation
 open import Cubical.Categories.NaturalTransformation.More
@@ -62,6 +63,7 @@ open Functor
 open Functorᴰ
 open NatTrans
 open isIso
+open NatIso
 
 module _ {M : MonoidalCategory ℓM ℓM'} {N : MonoidalCategory ℓN ℓN'}
   {Cᴰ : Categoryᴰ (MonoidalCategory.C N) ℓCᴰ ℓCᴰ'}
@@ -143,3 +145,137 @@ module _ {M : MonoidalCategory ℓM ℓM'} {N : MonoidalCategory ℓN ℓN'}
   tenstrᴰ' : TensorStrᴰ M Rᴰ
   tenstrᴰ' .TensorStrᴰ.─⊗ᴰ─ = ─⊗ᴰ'─
   tenstrᴰ' .TensorStrᴰ.unitᴰ = unitᴰ'
+
+------------------------------------------------------------------------
+-- The structure maps
+--
+-- Objects and base-level paths are ccl's (`Reindex.Monoidal`); only
+-- the `WeakIsoLift`s are replaced by genuine displayed isos.
+------------------------------------------------------------------------
+
+  αᴰ'⟨_,_,_⟩ : ∀ {x y z} (xᴰ : Rᴰ.ob[ x ])(yᴰ : Rᴰ.ob[ y ])(zᴰ : Rᴰ.ob[ z ])
+    → Rᴰ.Hom[ M.α⟨ x , y , z ⟩ ][ xᴰ ⊗ᴰ' (yᴰ ⊗ᴰ' zᴰ) , (xᴰ ⊗ᴰ' yᴰ) ⊗ᴰ' zᴰ ]
+  αᴰ'⟨ p , q , r ⟩ = R.reind
+    (cong₂ N._⋆_ refl
+      (cong₂ N._⋆_ refl (sym (N.⋆Assoc _ _ _) ∙ (G.αμ-law _ _ _)))
+    ∙ sym (N.⋆Assoc _ _ _) ∙ sym (N.⋆Assoc _ _ _)
+    ∙ cong₂ N._⋆_
+       (N.⋆Assoc _ _ _
+       ∙ cong₂ N._⋆_ refl
+         (sym (N.⋆Assoc _ _ _)
+         ∙ cong₂ N._⋆_
+           (F-Iso {F = N.─⊗─}
+             (CatIso× N.C N.C idCatIso (NatIsoAt G.μ-Iso _))
+             .snd .sec)
+           refl
+         ∙ N.⋆IdL _)
+       ∙ G.μ-isIso _ .sec)
+       refl
+    ∙ N.⋆IdL _)
+    (liftOut (μ≅ _ _) _
+    Cᴰ.⋆ᴰ (Cᴰ.idᴰ P.⊗ₕᴰ liftOut (μ≅ _ _) _)
+    Cᴰ.⋆ᴰ P.αᴰ⟨ p , q , r ⟩
+    Cᴰ.⋆ᴰ (liftIn (μ≅ _ _) _ P.⊗ₕᴰ Cᴰ.idᴰ)
+    Cᴰ.⋆ᴰ liftIn (μ≅ _ _) _)
+
+  α⁻¹ᴰ'⟨_,_,_⟩ : ∀ {x y z} (xᴰ : Rᴰ.ob[ x ])(yᴰ : Rᴰ.ob[ y ])(zᴰ : Rᴰ.ob[ z ])
+    → Rᴰ.Hom[ M.α⁻¹⟨ x , y , z ⟩ ][ (xᴰ ⊗ᴰ' yᴰ) ⊗ᴰ' zᴰ , xᴰ ⊗ᴰ' (yᴰ ⊗ᴰ' zᴰ) ]
+  α⁻¹ᴰ'⟨ p , q , r ⟩ = R.reind
+    (⋆CancelR (F-Iso {F = G.F} (NatIsoAt M.α _))
+      ((N.⋆Assoc _ _ _)
+      ∙ cong₂ N._⋆_ refl
+        (N.⋆Assoc _ _ _
+        ∙ cong₂ N._⋆_ refl
+          (N.⋆Assoc _ _ _
+          ∙ cong₂ N._⋆_ refl (sym (G.αμ-law _ _ _))
+          ∙ sym (N.⋆Assoc _ _ _)
+          ∙ cong₂ N._⋆_
+            (sym (N.⋆Assoc _ _ _) ∙ cong₂ N._⋆_ (N.α .nIso _ .sec) refl
+            ∙ N.⋆IdL _)
+            refl)
+        ∙ sym (N.⋆Assoc _ _ _)
+        ∙ cong₂ N._⋆_
+            (F-Iso {F = N.─⊗─}
+              (CatIso× N.C N.C (NatIsoAt G.μ-Iso _) idCatIso) .snd .sec)
+            refl
+        ∙ N.⋆IdL _)
+      ∙ G.μ-isIso _ .sec
+      ∙ sym ((F-Iso {F = G.F} (NatIsoAt M.α _)) .snd .sec)))
+    (liftOut (μ≅ _ _) _
+    Cᴰ.⋆ᴰ (liftOut (μ≅ _ _) _ P.⊗ₕᴰ Cᴰ.idᴰ)
+    Cᴰ.⋆ᴰ P.α⁻¹ᴰ⟨ p , q , r ⟩
+    Cᴰ.⋆ᴰ (Cᴰ.idᴰ P.⊗ₕᴰ liftIn (μ≅ _ _) _)
+    Cᴰ.⋆ᴰ liftIn (μ≅ _ _) _)
+
+  ηᴰ'⟨_⟩ : ∀ {x} (xᴰ : Rᴰ.ob[ x ]) → Rᴰ.Hom[ M.η⟨ x ⟩ ][ unitᴰ' ⊗ᴰ' xᴰ , xᴰ ]
+  ηᴰ'⟨ p ⟩ = R.reind
+    (cong₂ N._⋆_ refl
+      (cong₂ N._⋆_ refl (sym (G.ηε-law _))
+      ∙ sym (N.⋆Assoc _ _ _)
+      ∙ cong₂ N._⋆_
+        (sym (N.⋆Assoc _ _ _)
+        ∙ cong₂ N._⋆_
+          (F-Iso {F = N.─⊗─} (CatIso× N.C N.C G.ε-Iso idCatIso) .snd .sec)
+          refl
+        ∙ N.⋆IdL _)
+        refl)
+    ∙ sym (N.⋆Assoc _ _ _)
+    ∙ cong₂ N._⋆_ (NatIsoAt G.μ-Iso _ .snd .sec) refl
+    ∙ N.⋆IdL _)
+    (liftOut (μ≅ _ _) _ Cᴰ.⋆ᴰ ((liftOut ε≅ _ P.⊗ₕᴰ Cᴰ.idᴰ) Cᴰ.⋆ᴰ P.ηᴰ⟨ _ ⟩))
+
+  η⁻¹ᴰ'⟨_⟩ : ∀ {x} (xᴰ : Rᴰ.ob[ x ]) → Rᴰ.Hom[ M.η⁻¹⟨ x ⟩ ][ xᴰ , unitᴰ' ⊗ᴰ' xᴰ ]
+  η⁻¹ᴰ'⟨ p ⟩ = R.reind
+    (G.η⁻ε-law _)
+    ((P.η⁻¹ᴰ⟨ _ ⟩ Cᴰ.⋆ᴰ (liftIn ε≅ _ P.⊗ₕᴰ Cᴰ.idᴰ)) Cᴰ.⋆ᴰ liftIn (μ≅ _ _) _)
+
+  ρᴰ'⟨_⟩ : ∀ {x} (xᴰ : Rᴰ.ob[ x ]) → Rᴰ.Hom[ M.ρ⟨ x ⟩ ][ xᴰ ⊗ᴰ' unitᴰ' , xᴰ ]
+  ρᴰ'⟨ p ⟩ = R.reind
+    (cong₂ N._⋆_ refl
+    (cong₂ N._⋆_ refl (sym (G.ρε-law _))
+    ∙ sym (N.⋆Assoc _ _ _)
+    ∙ cong₂ N._⋆_
+      (sym (N.⋆Assoc _ _ _)
+      ∙ cong₂ N._⋆_
+        (F-Iso {F = N.─⊗─} (CatIso× N.C N.C idCatIso G.ε-Iso) .snd .sec)
+        refl
+      ∙ N.⋆IdL _)
+      refl)
+    ∙ sym (N.⋆Assoc _ _ _)
+    ∙ cong₂ N._⋆_ (G.μ-isIso _ .sec) refl
+    ∙ N.⋆IdL _)
+    (liftOut (μ≅ _ _) _
+    Cᴰ.⋆ᴰ (Cᴰ.idᴰ P.⊗ₕᴰ liftOut ε≅ _)
+    Cᴰ.⋆ᴰ P.ρᴰ⟨ p ⟩)
+
+  ρ⁻¹ᴰ'⟨_⟩ : ∀ {x} (xᴰ : Rᴰ.ob[ x ]) → Rᴰ.Hom[ M.ρ⁻¹⟨ x ⟩ ][ xᴰ , xᴰ ⊗ᴰ' unitᴰ' ]
+  ρ⁻¹ᴰ'⟨ p ⟩ = R.reind
+    (⋆CancelR (F-Iso {F = G.F} (NatIsoAt M.ρ _))
+      (N.⋆Assoc _ _ _ ∙ cong₂ N._⋆_ refl (G.ρε-law _)
+      ∙ N.ρ .nIso _ .sec
+      ∙ sym (F-Iso {F = G.F} (NatIsoAt M.ρ _) .snd .sec)))
+    (P.ρ⁻¹ᴰ⟨ p ⟩
+      Cᴰ.⋆ᴰ (Cᴰ.idᴰ P.⊗ₕᴰ liftIn ε≅ _)
+      Cᴰ.⋆ᴰ liftIn (μ≅ _ _) _)
+
+------------------------------------------------------------------------
+-- Coherence
+------------------------------------------------------------------------
+
+  private
+    -- `idᴰ ⋆ᴰ Rᴰ.idᴰ` is `idᴰ`.
+    id⋆Rid : ∀ {x}{xᴰ : Cᴰ.ob[ G.F ⟅ x ⟆ ]}
+      → Path Cᴰ.Hom[ (G.F ⟅ x ⟆ , xᴰ) , (G.F ⟅ x ⟆ , xᴰ) ]
+          (_ , Cᴰ.idᴰ Cᴰ.⋆ᴰ Rᴰ.idᴰ) (N.id , Cᴰ.idᴰ)
+    id⋆Rid = Cᴰ.⟨ refl ⟩⋆⟨ Rᴰid≡ ⟩ ∙ Cᴰ.⋆IdL _
+
+    -- Precomposing `ρᴰ'` with the μ-lift cancels its leading projection.
+    v⋆ρ' : ∀ {x} (xᴰ : Rᴰ.ob[ x ])
+      → Path Cᴰ.Hom[ ((G.F ⟅ x ⟆) N.⊗ (G.F ⟅ M.unit ⟆) , xᴰ P.⊗ᴰ unitᴰ') , (G.F ⟅ x ⟆ , xᴰ) ]
+          (_ , liftIn (μ≅ x M.unit) (xᴰ P.⊗ᴰ unitᴰ') Cᴰ.⋆ᴰ ρᴰ'⟨ xᴰ ⟩)
+          (_ , (Cᴰ.idᴰ P.⊗ₕᴰ liftOut ε≅ P.unitᴰ) Cᴰ.⋆ᴰ P.ρᴰ⟨ xᴰ ⟩)
+    v⋆ρ' xᴰ =
+        Cᴰ.⟨ refl ⟩⋆⟨ sym (R.reind-filler _ _) ⟩
+      ∙ sym (Cᴰ.⋆Assoc _ _ _)
+      ∙ Cᴰ.⟨ Cᴰ.≡in (liftIn⋆Out (μ≅ _ M.unit) (xᴰ P.⊗ᴰ unitᴰ')) ⟩⋆⟨ refl ⟩
+      ∙ Cᴰ.⋆IdL _
