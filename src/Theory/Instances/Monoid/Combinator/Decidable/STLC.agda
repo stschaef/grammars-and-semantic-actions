@@ -992,53 +992,58 @@ vxs ≟T vn = Sum.inr λ ()
 vxs ≟T vx = Sum.inr λ ()
 vxs ≟T vxs = Sum.inl Eq.refl
 
-open import Theory.Instances.Monoid.Combinator.Decidable.Productions Tok _≟T_
+open import Theory.Instances.Monoid.Combinator.Decidable.Synthesis Tok _≟T_
 
 -- the three nonterminals
 data NT : Type ℓ-zero where
   Ty Tm Var : NT
 
-stlc : Table NT
+-- The grammar, as rules.  Every production is led by its keyword, so the
+-- classes with no production need not be mentioned at all -- the `_ = none`
+-- catch-alls below were the table saying nothing, three times over.
+stlcRules : Rules NT
+stlcRules .Rules.nullable _ = false
+
 -- A ::= bool | nat | arr A A | prod A A | list A
-stlc .Table.at Ty (tk kbool) = led []
-stlc .Table.at Ty (tk knat) = led []
-stlc .Table.at Ty (tk karr) = led (nt Ty ∷ nt Ty ∷ [])
-stlc .Table.at Ty (tk kprod) = led (nt Ty ∷ nt Ty ∷ [])
-stlc .Table.at Ty (tk klist) = led (nt Ty ∷ [])
-stlc .Table.at Ty _ = none
--- v ::= f | g | n | x | xs
-stlc .Table.at Var (tk vf) = led []
-stlc .Table.at Var (tk vg) = led []
-stlc .Table.at Var (tk vn) = led []
-stlc .Table.at Var (tk vx) = led []
-stlc .Table.at Var (tk vxs) = led []
-stlc .Table.at Var _ = none
--- t ::= ...
-stlc .Table.at Tm (tk ktrue) = led []
-stlc .Table.at Tm (tk kfalse) = led []
-stlc .Table.at Tm (tk kif) =
-  led (nt Tm ∷ tm kthen ∷ nt Tm ∷ tm kelse ∷ nt Tm ∷ [])
-stlc .Table.at Tm (tk kzero) = led []
-stlc .Table.at Tm (tk ksuc) = led (nt Tm ∷ [])
-stlc .Table.at Tm (tk knatrec) = led (nt Tm ∷ nt Tm ∷ nt Tm ∷ [])
-stlc .Table.at Tm (tk klam) =
-  led (nt Var ∷ tm kcolon ∷ nt Ty ∷ tm kdot ∷ nt Tm ∷ [])
-stlc .Table.at Tm (tk kapp) = led (nt Tm ∷ nt Tm ∷ [])
-stlc .Table.at Tm (tk kpair) = led (nt Tm ∷ nt Tm ∷ [])
-stlc .Table.at Tm (tk kfst) = led (nt Tm ∷ [])
-stlc .Table.at Tm (tk ksnd) = led (nt Tm ∷ [])
-stlc .Table.at Tm (tk knil) = led (tm kcolon ∷ nt Ty ∷ [])
-stlc .Table.at Tm (tk kcons) = led (nt Tm ∷ nt Tm ∷ [])
-stlc .Table.at Tm (tk kfoldr) = led (nt Tm ∷ nt Tm ∷ nt Tm ∷ [])
-stlc .Table.at Tm (tk klet) =
-  led (nt Var ∷ tm kassign ∷ nt Tm ∷ tm kin ∷ nt Tm ∷ [])
-stlc .Table.at Tm (tk vf) = led []
-stlc .Table.at Tm (tk vg) = led []
-stlc .Table.at Tm (tk vn) = led []
-stlc .Table.at Tm (tk vx) = led []
-stlc .Table.at Tm (tk vxs) = led []
-stlc .Table.at Tm _ = none
-stlc .Table.nul _ = false
+stlcRules .Rules.of Ty =
+    (kbool  , [])
+  ∷ (knat   , [])
+  ∷ (karr   , nt Ty ∷ nt Ty ∷ [])
+  ∷ (kprod  , nt Ty ∷ nt Ty ∷ [])
+  ∷ (klist  , nt Ty ∷ [])
+  ∷ []
+
+stlcRules .Rules.of Var =
+    (vf , []) ∷ (vg , []) ∷ (vn , []) ∷ (vx , []) ∷ (vxs , []) ∷ []
+
+stlcRules .Rules.of Tm =
+    (ktrue   , [])
+  ∷ (kfalse  , [])
+  ∷ (kif     , nt Tm ∷ tm kthen ∷ nt Tm ∷ tm kelse ∷ nt Tm ∷ [])
+  ∷ (kzero   , [])
+  ∷ (ksuc    , nt Tm ∷ [])
+  ∷ (knatrec , nt Tm ∷ nt Tm ∷ nt Tm ∷ [])
+  ∷ (klam    , nt Var ∷ tm kcolon ∷ nt Ty ∷ tm kdot ∷ nt Tm ∷ [])
+  ∷ (kapp    , nt Tm ∷ nt Tm ∷ [])
+  ∷ (kpair   , nt Tm ∷ nt Tm ∷ [])
+  ∷ (kfst    , nt Tm ∷ [])
+  ∷ (ksnd    , nt Tm ∷ [])
+  ∷ (knil    , tm kcolon ∷ nt Ty ∷ [])
+  ∷ (kcons   , nt Tm ∷ nt Tm ∷ [])
+  ∷ (kfoldr  , nt Tm ∷ nt Tm ∷ nt Tm ∷ [])
+  ∷ (klet    , nt Var ∷ tm kassign ∷ nt Tm ∷ tm kin ∷ nt Tm ∷ [])
+  ∷ (vf , []) ∷ (vg , []) ∷ (vn , []) ∷ (vx , []) ∷ (vxs , [])
+  ∷ []
+
+module SS = Synth (Ty ∷ Tm ∷ Var ∷ []) stlcRules
+
+-- twenty-five productions across three nonterminals, and no two of them
+-- share a leading keyword -- computed, not asserted
+stlcLL1 : SS.clashes Eq.≡ []
+stlcLL1 = Eq.refl
+
+stlc : Table NT
+stlc = SS.table
 
 open Gen stlc
 
