@@ -1,4 +1,4 @@
-{-# OPTIONS --lossy-unification --allow-unsolved-metas #-}
+{-# OPTIONS --lossy-unification #-}
 {- The associator, the pentagon, and the assembled displayed monoidal
    structure. See `Semantics.Displayed.ReindexMonoidal.Base` for the
    tensor, the structure maps, and the unitor coherences.
@@ -34,6 +34,7 @@ open import Cubical.Categories.Displayed.Presheaf.Uncurried.Fibration using (isF
 open import Semantics.Displayed.IsoLift
 open import Semantics.Displayed.ReindexMonoidal.Base
 open import Semantics.Displayed.ReindexMonoidal.Assoc
+open import Semantics.Displayed.ReindexMonoidal.Pentagon
 
 private
   variable
@@ -66,7 +67,7 @@ module _ {M : MonoidalCategory ℓM ℓM'} {N : MonoidalCategory ℓN ℓN'}
 
     module Rᴰ = Fibers Rᴰ
 
-  open Assoc P G cartLifts public
+  open Pentagon P G cartLifts public
 
   open MonoidalStrᴰ
 
@@ -87,5 +88,5 @@ module _ {M : MonoidalCategory ℓM ℓM'} {N : MonoidalCategory ℓN ℓN'}
   reindexMonoidalStrᴰ .ρᴰ .nIsoᴰ xᴰ .invᴰ = ρ⁻¹ᴰ'⟨ xᴰ ⟩
   reindexMonoidalStrᴰ .ρᴰ .nIsoᴰ xᴰ .secᴰ = ρ'-sec xᴰ
   reindexMonoidalStrᴰ .ρᴰ .nIsoᴰ xᴰ .retᴰ = ρ'-ret xᴰ
-  reindexMonoidalStrᴰ .pentagonᴰ wᴰ xᴰ yᴰ zᴰ = {!!}
+  reindexMonoidalStrᴰ .pentagonᴰ wᴰ xᴰ yᴰ zᴰ = pentagonᴰ' wᴰ xᴰ yᴰ zᴰ
   reindexMonoidalStrᴰ .triangleᴰ xᴰ yᴰ = triangleᴰ' xᴰ yᴰ
