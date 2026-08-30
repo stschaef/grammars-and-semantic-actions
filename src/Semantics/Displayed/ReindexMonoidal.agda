@@ -383,3 +383,28 @@ module _ {M : MonoidalCategory ℓM ℓM'} {N : MonoidalCategory ℓN ℓN'}
           ∙ Cᴰ.⋆IdL _ ⟩
       ∙ Cᴰ.≡in (liftOut⋆In (μ≅ _ _) _)
       ∙ sym Rᴰid≡
+
+    η'-nat : ∀ {x y}{f : M.C [ x , y ]}{xᴰ : Rᴰ.ob[ x ]}{yᴰ : Rᴰ.ob[ y ]}
+      (fᴰ : Rᴰ.Hom[ f ][ xᴰ , yᴰ ])
+      → ((─⊗ᴰ'─ .F-homᴰ (Rᴰ.idᴰ , fᴰ)) Rᴰ.⋆ᴰ ηᴰ'⟨ yᴰ ⟩)
+          Rᴰ.≡[ M.η .trans .N-hom f ] (ηᴰ'⟨ xᴰ ⟩ Rᴰ.⋆ᴰ fᴰ)
+    η'-nat fᴰ = Cᴰ.rectify $ Cᴰ.≡out $
+        sym (R.reind-filler _ _)
+      ∙ Cᴰ.⟨ sym (R.reind-filler _ _) ⟩⋆⟨ sym (R.reind-filler _ _) ⟩
+      ∙ Cᴰ.⋆Assoc _ _ _
+      ∙ Cᴰ.⟨ refl ⟩⋆⟨
+            Cᴰ.⋆Assoc _ _ _
+          ∙ Cᴰ.⟨ refl ⟩⋆⟨ sym (Cᴰ.⋆Assoc _ _ _)
+                        ∙ Cᴰ.⟨ Cᴰ.≡in (liftIn⋆Out (μ≅ _ _) _) ⟩⋆⟨ refl ⟩
+                        ∙ Cᴰ.⋆IdL _ ⟩
+          ∙ sym (Cᴰ.⋆Assoc _ _ _)
+          ∙ Cᴰ.⟨ sym (Cᴰ.≡in (P.─⊗ᴰ─ .F-seqᴰ _ _))
+               ∙ ⟨ Cᴰ.⟨ Rᴰid≡ ⟩⋆⟨ refl ⟩ ∙ Cᴰ.⋆IdL _ ∙ sym (Cᴰ.⋆IdR _) ⟩⊗ₕᴰ⟨
+                   Cᴰ.⋆IdR _ ∙ sym (Cᴰ.⋆IdL _) ⟩
+               ∙ Cᴰ.≡in (P.─⊗ᴰ─ .F-seqᴰ _ _) ⟩⋆⟨ refl ⟩
+          ∙ Cᴰ.⋆Assoc _ _ _
+          ∙ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.≡in (P.ηᴰ .transᴰ .N-homᴰ fᴰ) ⟩
+          ∙ sym (Cᴰ.⋆Assoc _ _ _) ⟩
+      ∙ sym (Cᴰ.⋆Assoc _ _ _)
+      ∙ Cᴰ.⟨ R.reind-filler _ _ ⟩⋆⟨ refl ⟩
+      ∙ R.reind-filler _ _
