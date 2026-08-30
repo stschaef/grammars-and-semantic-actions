@@ -35,13 +35,17 @@ open import Cubical.Categories.Displayed.Base
 open import Cubical.Categories.Displayed.Presheaf.Uncurried.Base
 open import Cubical.Categories.Displayed.Presheaf.Uncurried.Fibration
 open import Cubical.Categories.Displayed.Presheaf.Uncurried.Representable
+open import Cubical.Categories.Displayed.Instances.Reindex.Base using (reindex)
+open import Cubical.Categories.Displayed.Instances.Reindex.UniversalProperties
+  using (reindex-π-/; reindexRepresentableIsoⱽ; reindexReflectsUMPⱽ)
+open import Cubical.Categories.Presheaf.Constructions.Reindex
 
 open import Semantics.Structure.IndexedCoproduct using (ΣTy)
 open import Semantics.Displayed.IndexedProduct using (ΠTyPshᴰ; ΠTyᴰ; ΣTyᴰ)
 
 private
   variable
-    ℓC ℓC' ℓCᴰ ℓCᴰ' ℓ ℓP ℓQ ℓPᴰ : Level
+    ℓB ℓB' ℓC ℓC' ℓD ℓD' ℓCᴰ ℓCᴰ' ℓDᴰ ℓDᴰ' ℓ ℓP ℓQ ℓPᴰ : Level
 
 module _ {C : Category ℓC ℓC'} (Cᴰ : Categoryᴰ C ℓCᴰ ℓCᴰ')
   {c : Category.ob C} where
@@ -54,9 +58,17 @@ module _ {C : Category ℓC ℓC'} (Cᴰ : Categoryᴰ C ℓCᴰ ℓCᴰ')
   ΠTyPshⱽ = ΠTyPsh
 
   -- | A vertical set-indexed product: fibrewise, over the identity.
+  --   Stated as a `Representableⱽ`, as ccl states `BinProductⱽ`, so
+  --   that ccl's `◁PshIsoⱽ` machinery applies directly.
   ΠTyⱽ : {X : Type ℓ} (Aⱽ : X → Categoryᴰ.ob[_] Cᴰ c) → Type _
-  ΠTyⱽ Aⱽ =
-    UniversalElementⱽ' Cᴰ c (ΠTyPshⱽ (λ x → Cᴰ [-][-, Aⱽ x ]))
+  ΠTyⱽ Aⱽ = Representableⱽ Cᴰ c (ΠTyPshⱽ (λ x → Cᴰ [-][-, Aⱽ x ]))
+
+  -- | The usual way to build one: give the vertex, the projections,
+  --   and the universal property.
+  mkΠTyⱽ : {X : Type ℓ} {Aⱽ : X → Categoryᴰ.ob[_] Cᴰ c}
+    → UniversalElementⱽ' Cᴰ c (ΠTyPshⱽ (λ x → Cᴰ [-][-, Aⱽ x ]))
+    → ΠTyⱽ Aⱽ
+  mkΠTyⱽ = UniversalElementⱽ'.REPRⱽ
 
 -- | Vertical coproducts are the ^op dual, as in the displayed case.
 module _ {C : Category ℓC ℓC'} (Cᴰ : Categoryᴰ C ℓCᴰ ℓCᴰ')
@@ -137,7 +149,7 @@ module _ {C : Category ℓC ℓC'} (Cᴰ : Categoryᴰ C ℓCᴰ ℓCᴰ')
     → ΠTyⱽ Cᴰ (λ x → π*Aᴰ x .fst)
     → ΠTyᴰ Cᴰ Aᴰ Π
   ΠTyⱽ+π*→ᴰ Π Aᴰ π*Aᴰ Πⱽ = ΠTyⱽ→ᴰ Π Aᴰ
-    (UniversalElementⱽ'.REPRⱽ Πⱽ ◁PshIsoⱽ ΠTyPshIso (λ x → π*Aᴰ x .snd))
+    (Πⱽ ◁PshIsoⱽ ΠTyPshIso (λ x → π*Aᴰ x .snd))
 
 -- | Coproducts are the ^op dual, exactly as `BinCoproductⱽ→ᴰ` is
 --   `BinProductⱽ→ᴰ` in the opposite displayed category.
@@ -149,3 +161,79 @@ module _ {C : Category ℓC ℓC'} (Cᴰ : Categoryᴰ C ℓCᴰ ℓCᴰ')
     → ΣTyⱽ Cᴰ (λ x → σ*Aᴰ x .fst)
     → ΣTyᴰ Cᴰ Aᴰ Σ'
   ΣTyⱽ+π*→ᴰ = ΠTyⱽ+π*→ᴰ (Cᴰ ^opᴰ)
+
+------------------------------------------------------------------------
+-- Vertical indexed products survive reindexing along any functor
+--
+-- This is the point of the vertical formulation, and the reason
+-- `elimLocal` can ask its caller for fibrewise data: unlike a
+-- displayed monoidal structure, which needs a monoidal functor,
+-- `ΠTyⱽ` and `ΣTyⱽ` transport along an arbitrary `F`.
+------------------------------------------------------------------------
+
+module _ {C : Category ℓC ℓC'} {E : Category ℓD ℓD'} (G : Functor E C)
+  {X : Type ℓ} (P⟨x⟩ : X → Presheaf C ℓP)
+  where
+  -- | Reindexing commutes with indexed products of presheaves: both
+  --   sides are `∀ x → P⟨x⟩ x (G c)` on the nose.
+  reindΠTyPshIso : PshIso (reindPsh G (ΠTyPsh P⟨x⟩)) (ΠTyPsh (λ x → reindPsh G (P⟨x⟩ x)))
+  reindΠTyPshIso = Isos→PshIso (λ _ → idIso) (λ _ _ _ _ → refl)
+
+module _ {B : Category ℓB ℓB'} {D : Category ℓD ℓD'}
+  (Dᴰ : Categoryᴰ D ℓDᴰ ℓDᴰ') (F : Functor B D)
+  {c : Category.ob B} {X : Type ℓ}
+  (Aⱽ : X → Categoryᴰ.ob[_] Dᴰ (Functor.F-ob F c))
+  where
+
+  ΠTyⱽReindex : ΠTyⱽ Dᴰ Aⱽ → ΠTyⱽ (reindex Dᴰ F) Aⱽ
+  ΠTyⱽReindex Πⱽ =
+    reindexReflectsUMPⱽ Dᴰ F c _ Πⱽ
+    ◁PshIsoⱽ (reindΠTyPshIso (reindex-π-/ Dᴰ F c) (λ x → Dᴰ [-][-, Aⱽ x ])
+             ⋆PshIso ΠTyPshIso (λ x → invPshIso (reindexRepresentableIsoⱽ Dᴰ F c (Aⱽ x))))
+
+module _ {B : Category ℓB ℓB'} {D : Category ℓD ℓD'}
+  (Dᴰ : Categoryᴰ D ℓDᴰ ℓDᴰ') (F : Functor B D)
+  {c : Category.ob B} {X : Type ℓ}
+  (Aⱽ : X → Categoryᴰ.ob[_] Dᴰ (Functor.F-ob F c))
+  where
+
+  private
+    open Functor
+    -- `_^opF` factors through `toOpOp`, so `reindex (Dᴰ ^opᴰ) (F ^opF)`
+    -- does not even have the same *composition* as `(reindex Dᴰ F) ^opᴰ`.
+    -- This op-functor does.
+    opFᵈ : Functor (B ^op) (D ^op)
+    opFᵈ .F-ob = F .F-ob
+    opFᵈ .F-hom = F .F-hom
+    opFᵈ .F-id = F .F-id
+    opFᵈ .F-seq f g = F .F-seq g f
+
+  -- | Reindexing an opposite is the opposite of the reindexing: with
+  --   `opFᵈ` the objects, homs, identities and composites agree on the
+  --   nose, and the remaining fields are proofs in a set.
+  reindex^opᴰ : reindex (Dᴰ ^opᴰ) opFᵈ ≡ (reindex Dᴰ F) ^opᴰ
+  reindex^opᴰ i .Categoryᴰ.ob[_] = Categoryᴰ.ob[_] (reindex (Dᴰ ^opᴰ) opFᵈ)
+  reindex^opᴰ i .Categoryᴰ.Hom[_][_,_] = Categoryᴰ.Hom[_][_,_] (reindex (Dᴰ ^opᴰ) opFᵈ)
+  reindex^opᴰ i .Categoryᴰ.idᴰ = Categoryᴰ.idᴰ (reindex (Dᴰ ^opᴰ) opFᵈ)
+  reindex^opᴰ i .Categoryᴰ._⋆ᴰ_ = Categoryᴰ._⋆ᴰ_ (reindex (Dᴰ ^opᴰ) opFᵈ)
+  reindex^opᴰ i .Categoryᴰ.isSetHomᴰ = Categoryᴰ.isSetHomᴰ (reindex (Dᴰ ^opᴰ) opFᵈ)
+  reindex^opᴰ i .Categoryᴰ.⋆IdLᴰ fᴰ =
+    isSet→SquareP (λ _ _ → Categoryᴰ.isSetHomᴰ Dᴰ)
+      (Categoryᴰ.⋆IdLᴰ (reindex (Dᴰ ^opᴰ) opFᵈ) fᴰ)
+      (Categoryᴰ.⋆IdLᴰ ((reindex Dᴰ F) ^opᴰ) fᴰ)
+      refl refl i
+  reindex^opᴰ i .Categoryᴰ.⋆IdRᴰ fᴰ =
+    isSet→SquareP (λ _ _ → Categoryᴰ.isSetHomᴰ Dᴰ)
+      (Categoryᴰ.⋆IdRᴰ (reindex (Dᴰ ^opᴰ) opFᵈ) fᴰ)
+      (Categoryᴰ.⋆IdRᴰ ((reindex Dᴰ F) ^opᴰ) fᴰ)
+      refl refl i
+  reindex^opᴰ i .Categoryᴰ.⋆Assocᴰ fᴰ gᴰ hᴰ =
+    isSet→SquareP (λ _ _ → Categoryᴰ.isSetHomᴰ Dᴰ)
+      (Categoryᴰ.⋆Assocᴰ (reindex (Dᴰ ^opᴰ) opFᵈ) fᴰ gᴰ hᴰ)
+      (Categoryᴰ.⋆Assocᴰ ((reindex Dᴰ F) ^opᴰ) fᴰ gᴰ hᴰ)
+      refl refl i
+
+  ΣTyⱽReindex : ΣTyⱽ Dᴰ Aⱽ → ΣTyⱽ (reindex Dᴰ F) Aⱽ
+  ΣTyⱽReindex Σⱽ =
+    transport (λ i → ΠTyⱽ (reindex^opᴰ i) Aⱽ)
+      (ΠTyⱽReindex (Dᴰ ^opᴰ) opFᵈ Aⱽ Σⱽ)
