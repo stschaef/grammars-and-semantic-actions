@@ -35,6 +35,8 @@ open import Cubical.Categories.Displayed.Base
 import Cubical.Categories.Displayed.Reasoning as HomᴰReasoning
 open import Cubical.Categories.Displayed.Functor
 open import Cubical.Categories.Displayed.BinProduct
+open import Cubical.Categories.Displayed.NaturalTransformation
+open import Cubical.Categories.Displayed.NaturalTransformation.More
 open import Cubical.Categories.Displayed.Monoidal.Base
 open import Cubical.Categories.Displayed.Instances.Reindex.Base using (reindex)
 open import Cubical.Categories.Displayed.Presheaf.Uncurried.Fibration using (isFibration)
@@ -64,6 +66,9 @@ open Functorᴰ
 open NatTrans
 open isIso
 open NatIso
+open NatIsoᴰ
+open NatTransᴰ
+open isIsoᴰ
 
 module _ {M : MonoidalCategory ℓM ℓM'} {N : MonoidalCategory ℓN ℓN'}
   {Cᴰ : Categoryᴰ (MonoidalCategory.C N) ℓCᴰ ℓCᴰ'}
@@ -279,3 +284,63 @@ module _ {M : MonoidalCategory ℓM ℓM'} {N : MonoidalCategory ℓN ℓN'}
       ∙ sym (Cᴰ.⋆Assoc _ _ _)
       ∙ Cᴰ.⟨ Cᴰ.≡in (liftIn⋆Out (μ≅ _ M.unit) (xᴰ P.⊗ᴰ unitᴰ')) ⟩⋆⟨ refl ⟩
       ∙ Cᴰ.⋆IdL _
+
+    -- The right-hand leg of the triangle, with the μ-lifts cancelled.
+    Z⋆S : ∀ {x y} (xᴰ : Rᴰ.ob[ x ]) (yᴰ : Rᴰ.ob[ y ])
+      → Path Cᴰ.Hom[ (((G.F ⟅ x ⟆) N.⊗ (G.F ⟅ M.unit ⟆)) N.⊗ (G.F ⟅ y ⟆)
+                     , (xᴰ P.⊗ᴰ unitᴰ') P.⊗ᴰ yᴰ)
+                   , ((G.F ⟅ x ⟆) N.⊗ (G.F ⟅ y ⟆) , xᴰ P.⊗ᴰ yᴰ) ]
+          (_ , (liftIn (μ≅ x M.unit) (xᴰ P.⊗ᴰ unitᴰ') P.⊗ₕᴰ Cᴰ.idᴰ {p = yᴰ})
+               Cᴰ.⋆ᴰ (ρᴰ'⟨ xᴰ ⟩ P.⊗ₕᴰ Rᴰ.idᴰ {p = yᴰ}))
+          (_ , ((Cᴰ.idᴰ P.⊗ₕᴰ liftOut ε≅ P.unitᴰ) P.⊗ₕᴰ Cᴰ.idᴰ {p = yᴰ})
+               Cᴰ.⋆ᴰ (P.ρᴰ⟨ xᴰ ⟩ P.⊗ₕᴰ Cᴰ.idᴰ {p = yᴰ}))
+    Z⋆S xᴰ yᴰ =
+        sym (Cᴰ.≡in (P.─⊗ᴰ─ .F-seqᴰ _ _))
+      ∙ ⟨ v⋆ρ' xᴰ ⟩⊗ₕᴰ⟨ id⋆Rid ⟩
+      ∙ ⟨ refl ⟩⊗ₕᴰ⟨ sym (Cᴰ.⋆IdL _) ⟩
+      ∙ Cᴰ.≡in (P.─⊗ᴰ─ .F-seqᴰ _ _)
+
+    -- The left-hand leg of the triangle, reassembled into `id ⊗' η'`.
+    W⋆η : ∀ {x y} (xᴰ : Rᴰ.ob[ x ]) (yᴰ : Rᴰ.ob[ y ])
+      → Path Cᴰ.Hom[ ((G.F ⟅ x ⟆) N.⊗ (G.F ⟅ M.unit M.⊗ y ⟆)
+                     , xᴰ P.⊗ᴰ (unitᴰ' ⊗ᴰ' yᴰ))
+                   , ((G.F ⟅ x ⟆) N.⊗ (G.F ⟅ y ⟆) , xᴰ P.⊗ᴰ yᴰ) ]
+          (_ , (Cᴰ.idᴰ {p = xᴰ} P.⊗ₕᴰ liftOut (μ≅ M.unit y) (unitᴰ' P.⊗ᴰ yᴰ))
+               Cᴰ.⋆ᴰ ((Cᴰ.idᴰ {p = xᴰ} P.⊗ₕᴰ (liftOut ε≅ P.unitᴰ P.⊗ₕᴰ Cᴰ.idᴰ))
+                      Cᴰ.⋆ᴰ (Cᴰ.idᴰ {p = xᴰ} P.⊗ₕᴰ P.ηᴰ⟨ yᴰ ⟩)))
+          (_ , Rᴰ.idᴰ {p = xᴰ} P.⊗ₕᴰ ηᴰ'⟨ yᴰ ⟩)
+    W⋆η xᴰ yᴰ =
+        Cᴰ.⟨ refl ⟩⋆⟨ sym (Cᴰ.≡in (P.─⊗ᴰ─ .F-seqᴰ _ _)) ⟩
+      ∙ sym (Cᴰ.≡in (P.─⊗ᴰ─ .F-seqᴰ _ _))
+      ∙ ⟨ Cᴰ.⋆IdL _ ∙ Cᴰ.⋆IdL _ ∙ sym Rᴰid≡ ⟩⊗ₕᴰ⟨ R.reind-filler _ _ ⟩
+
+  triangleᴰ' : ∀ {x y} (xᴰ : Rᴰ.ob[ x ]) (yᴰ : Rᴰ.ob[ y ])
+    → (αᴰ'⟨ xᴰ , unitᴰ' , yᴰ ⟩ Rᴰ.⋆ᴰ (─⊗ᴰ'─ .F-homᴰ (ρᴰ'⟨ xᴰ ⟩ , Rᴰ.idᴰ)))
+        Rᴰ.≡[ M.triangle x y ]
+      (─⊗ᴰ'─ .F-homᴰ (Rᴰ.idᴰ , ηᴰ'⟨ yᴰ ⟩))
+  triangleᴰ' xᴰ yᴰ = Cᴰ.rectify $ Cᴰ.≡out $
+      sym (R.reind-filler _ _)
+    ∙ Cᴰ.⟨ sym (R.reind-filler _ _) ⟩⋆⟨ sym (R.reind-filler _ _) ⟩
+    ∙ Cᴰ.⋆Assoc _ _ _
+    ∙ Cᴰ.⟨ refl ⟩⋆⟨
+        Cᴰ.⋆Assoc _ _ _
+      ∙ Cᴰ.⟨ refl ⟩⋆⟨
+          Cᴰ.⋆Assoc _ _ _
+        ∙ Cᴰ.⟨ refl ⟩⋆⟨
+            Cᴰ.⋆Assoc _ _ _
+          ∙ Cᴰ.⟨ refl ⟩⋆⟨ sym (Cᴰ.⋆Assoc _ _ _)
+                        ∙ Cᴰ.⟨ Cᴰ.≡in (liftIn⋆Out (μ≅ _ _) _) ⟩⋆⟨ refl ⟩
+                        ∙ Cᴰ.⋆IdL _ ⟩
+          ∙ sym (Cᴰ.⋆Assoc _ _ _)
+          ∙ Cᴰ.⟨ Z⋆S xᴰ yᴰ ⟩⋆⟨ refl ⟩
+          ∙ Cᴰ.⋆Assoc _ _ _ ⟩
+        ∙ sym (Cᴰ.⋆Assoc _ _ _)
+        ∙ Cᴰ.⟨ sym (Cᴰ.≡in (P.αᴰ .transᴰ .N-homᴰ
+                 (Cᴰ.idᴰ , (liftOut ε≅ P.unitᴰ , Cᴰ.idᴰ)))) ⟩⋆⟨ refl ⟩
+        ∙ Cᴰ.⋆Assoc _ _ _
+        ∙ Cᴰ.⟨ refl ⟩⋆⟨ sym (Cᴰ.⋆Assoc _ _ _)
+                      ∙ Cᴰ.⟨ Cᴰ.≡in (P.triangleᴰ _ _) ⟩⋆⟨ refl ⟩ ⟩ ⟩
+      ∙ Cᴰ.⟨ refl ⟩⋆⟨ sym (Cᴰ.⋆Assoc _ _ _) ⟩
+      ∙ sym (Cᴰ.⋆Assoc _ _ _)
+      ∙ Cᴰ.⟨ W⋆η xᴰ yᴰ ⟩⋆⟨ refl ⟩ ⟩
+    ∙ R.reind-filler _ _
