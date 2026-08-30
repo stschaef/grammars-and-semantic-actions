@@ -24,7 +24,10 @@ import Cubical.Data.Equality as Eq
 
 open import Theory.Instances.Monoid.Base
 open import Theory.Instances.Monoid.Strings Alphabet isSetAlphabet
-open import Theory.Instances.Monoid.Derivative Alphabet isSetAlphabet using (Dl)
+open import Theory.Instances.Monoid.Residual Alphabet isSetAlphabet
+  using (castEq)
+open import Theory.Instances.Monoid.Derivative Alphabet isSetAlphabet
+  using (Dl ; Dl-string)
 open import Theory.Type.Decidable.Base MonEqns Alphabet (λ _ → tt)
   listPresentation
 
@@ -200,3 +203,36 @@ module _ {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt}
     where
     pf = splitAgree (ms zero) (ms (suc zero)) (ns zero) (ns (suc zero))
            (Eq.eqToPath e ∙ sym (Eq.eqToPath e')) a b c d
+
+-- The derivative of a matching literal is `ε`, and a literal can be absorbed
+-- into the prefix a `Dl-string` is taken at, in both directions.  These are
+-- the terms an LR machine's shift is, and they live here for the same reason
+-- `Dl-lit⊗` does: they match on a splitting, which nothing above this tier
+-- may do.
+
+Dl-lit-ε : (c : Alphabet) → εTy ⊢ Dl c (literal c)
+Dl-lit-ε c m (ms , e , _) = go m e
+  where
+  go : (u : ↓M tt) → [] Eq.≡ u → (c ∷ u) Eq.≡ (c ∷ [])
+  go .[] Eq.refl = Eq.refl
+
+module _ {ℓA : Level} {A : TheoryTy ℓA tt} where
+
+  -- absorbing the letter into the prefix
+  Dl-absorb : (c : Alphabet) (w : ↓M tt)
+    → literal c ⊗ Dl-string (w ++ (c ∷ [])) A ⊢ Dl-string w A
+  Dl-absorb c w m (ms , e , (lc , (a , _))) =
+    castEq {A = λ z → A (w ++ z)} e
+      (castEq {A = λ z → A (w ++ (z ++ ms (suc zero)))} (Eq.sym lc)
+        (castEq {A = A} (++-assocEq w (c ∷ []) (ms (suc zero))) a))
+
+  -- ...and giving it back, which needs to know the letter is there
+  Dl-absorb⁻ : (c : Alphabet) (w : ↓M tt)
+    → (literal c ⊗ ⊤Ty) & Dl-string w A
+    ⊢ literal c ⊗ Dl-string (w ++ (c ∷ [])) A
+  Dl-absorb⁻ c w m ((ms , e , (lc , _)) , a) =
+    ms , e ,
+      (lc , (castEq {A = A} (Eq.sym (++-assocEq w (c ∷ []) (ms (suc zero))))
+              (castEq {A = λ z → A (w ++ (z ++ ms (suc zero)))} lc
+                (castEq {A = λ z → A (w ++ z)} (Eq.sym e) a))
+            , tt*))

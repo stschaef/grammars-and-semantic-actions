@@ -47,16 +47,25 @@ v ≟T lp = Sum.inr λ ()
 v ≟T rp = Sum.inr λ ()
 v ≟T v = Sum.inl Eq.refl
 
-open import Theory.Instances.Monoid.Combinator.Decidable.Productions Tok _≟T_
+open import Theory.Instances.Monoid.Combinator.Decidable.Synthesis Tok _≟T_
+
+-- The grammar, as rules.  `Synthesis` builds the table and checks LL(1);
+-- the classes with no production do not have to be listed as `none`.
+lamRules : Rules Unit
+lamRules .Rules.nullable _ = false
+lamRules .Rules.of _ =
+    (lam , tm v ∷ tm dot ∷ nt tt ∷ [])
+  ∷ (lp  , nt tt ∷ nt tt ∷ tm rp ∷ [])
+  ∷ (v   , [])
+  ∷ []
+
+module LS = Synth (tt ∷ []) lamRules
+
+lamLL1 : LS.clashes Eq.≡ []
+lamLL1 = Eq.refl
 
 lamTable : Table Unit
-lamTable .Table.at _ ε₁ = none
-lamTable .Table.at _ (tk lam) = led (tm v ∷ tm dot ∷ nt tt ∷ [])
-lamTable .Table.at _ (tk dot) = none
-lamTable .Table.at _ (tk lp) = led (nt tt ∷ nt tt ∷ tm rp ∷ [])
-lamTable .Table.at _ (tk rp) = none
-lamTable .Table.at _ (tk v) = led []
-lamTable .Table.nul _ = false
+lamTable = LS.table
 
 open Gen lamTable
 

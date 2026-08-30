@@ -30,9 +30,12 @@ import Theory.Type.Residual.Base MonEqns Alphabet (λ _ → tt) listPresentation
 
 private variable ℓ ℓ' ℓ'' ℓY : Level
 
--- `Eq.transport` goes through `subst`, so it leaves an `hcomp` even at
--- `Eq.refl`; matching the equation instead is what makes every cast below
--- vanish on canonical input.
+-- The discipline every cast below follows: build the equation in `Eq` and
+-- *match* it.  `Eq.transport` itself computes fine -- it is defined by
+-- `transport C refl b = b` -- but anything routed through a *path* does
+-- not: `Eq.pathToEq` is `JPath`, which does not reduce to `refl` even on
+-- `reflPath` (hence the separate propositional `pathToEq-reflPath`).  A
+-- cast built that way leaves an `hcomp` and blocks evaluation.
 castEq : {A : ↓M tt → Type ℓ} {x y : ↓M tt} → x Eq.≡ y → A x → A y
 castEq Eq.refl a = a
 
@@ -127,6 +130,23 @@ module _ {A : TheoryTy ℓ tt} {B : TheoryTy ℓ' tt} {C : TheoryTy ℓ'' tt} wh
       (f' (y ++ r) (two y r , Eq.refl , (a' , (b , tt*))))
 
 -- a residual that wants nothing more is what it produces
+-- Currying the tower the other way, and its converse.  A tower of residuals
+-- is what a bottom-up parser carries instead of a stack, and these two are
+-- what let it reassociate; neither mentions a parser.
+⟜-curry : {A : TheoryTy ℓ tt} {B : TheoryTy ℓ' tt} {C : TheoryTy ℓ'' tt}
+  → C ⟜ (A ⊗ B) ⊢ (C ⟜ B) ⟜ A
+⟜-curry {A = A} {B = B} {C = C} =
+  ⟜-intro {A = C ⟜ (A ⊗ B)} {B = A} {C = C ⟜ B}
+    (⟜-uncurry {A = A} {B = B} {C = C})
+
+⟜-curry⁻ : {A : TheoryTy ℓ tt} {B : TheoryTy ℓ' tt} {C : TheoryTy ℓ'' tt}
+  → (C ⟜ B) ⟜ A ⊢ C ⟜ (A ⊗ B)
+⟜-curry⁻ {A = A} {B = B} {C = C} =
+  ⟜-intro {A = (C ⟜ B) ⟜ A} {B = A ⊗ B} {C = C}
+    (⟜-app {B = B} {C = C}
+     ∘⊢ (⟜-app {B = A} {C = C ⟜ B} ,⊗ id⊢)
+     ∘⊢ ⊗-assoc⁻)
+
 ⟜-unitr : {C : TheoryTy ℓ tt} → C ⟜ εTy ⊢ C
 ⟜-unitr {C = C} m f = castEq {A = C} (++-unit-rEq m) (f [] εTy-pt)
 
@@ -240,6 +260,17 @@ module _ {ℓA ℓB ℓX} {X : Type ℓX} {xs : X → Unit}
 ⊗ε-unit-r⁻ m a =
   two m [] , ++-unit-rEq m , (a , (εTy-pt , tt*))
 
+-- The left unit, by *matching* the two equations.  `Strings.⊗-unit-l`
+-- builds its equation as a path and converts with `pathToEq`, which is
+-- `JPath` and does not reduce -- so a parser built on it recognises but
+-- will not compute its value.  This one does.
+⊗ε-unit-l : {A : TheoryTy ℓ tt} → εTy ⊗ A ⊢ A
+⊗ε-unit-l {A = A} m (ms , e , (u , (a , _))) =
+  go (ms zero) (ms (suc zero)) m a (u .snd .fst) e
+  where
+  go : (x y w : ↓M tt) → A y → [] Eq.≡ x → (x ++ y) Eq.≡ w → A w
+  go .[] y .y a Eq.refl Eq.refl = a
+
 ⊗ε-unit-r : {A : TheoryTy ℓ tt} → A ⊗ εTy ⊢ A
 ⊗ε-unit-r {A = A} m (ms , e , (a , (u , _))) =
   go (ms zero) (ms (suc zero)) m a (u .snd .fst) e
@@ -247,6 +278,10 @@ module _ {ℓA ℓB ℓX} {X : Type ℓX} {xs : X → Unit}
   go : (x y w : ↓M tt) → A x → [] Eq.≡ y → (x ++ y) Eq.≡ w → A w
   go x .[] w a' Eq.refl r =
     castEq {A = A} r (castEq {A = A} (Eq.sym (++-unit-rEq x)) a')
+
+-- the converse of `⟜-unitr`, which needs the unitor just above
+⟜-unitr⁻ : {C : TheoryTy ℓ tt} → C ⊢ C ⟜ εTy
+⟜-unitr⁻ {C = C} = ⟜-intro {B = εTy} {C = C} ⊗ε-unit-r
 
 -- naturality of the left unitor's inverse, in the slot it does not touch
 ⊗-unit-l⁻-nat : {K : TheoryTy ℓ tt} {L : TheoryTy ℓ' tt} (f : K ⊢ L)

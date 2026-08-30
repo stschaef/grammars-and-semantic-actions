@@ -150,7 +150,7 @@ module _ (c : Alphabet) {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt} where
   Dl-⊗-in-l : (Dl c A ⊗ B) ⊢ Dl c (A ⊗ B)
   Dl-⊗-in-l m (ms , e , (a , (b , _))) =
       two (c ∷ ms zero) (ms (suc zero))
-    , Eq.pathToEq (cong (c ∷_) (Eq.eqToPath e))
+    , Eq.ap (c ∷_) e
     , (a , (b , tt*))
 
   -- ...or on the right, which costs a witness that `A` accepts ε
@@ -169,6 +169,33 @@ module _ (c : Alphabet) {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt} where
       , (subst A u≡cp a , (b , tt*))
   ... | Sum.inl (u≡[] , _) =
         Empty.rec (lower (nn [] (subst A u≡[] a , εTy-pt)))
+
+  -- The same two with the null parse *retained*.  `Dl-⊗-in-r` takes a
+  -- section `εTy ⊢ A` and so commits to one null parse of `A`, and
+  -- `Dl-⊗-out` forgets it entirely; `A & εTy` is all of them.  That is the
+  -- difference between a recogniser and a parser here: with `A & εTy` the
+  -- two directions are inverse, and an ambiguous `A` keeps every
+  -- derivation.
+  Dl-⊗-out⁺ : Dl c (A ⊗ B) ⊢ (Dl c A ⊗ B) ⊕ ((A & εTy) ⊗ Dl c B)
+  Dl-⊗-out⁺ m (ms , e , (a , (b , _))) = go (ms zero) (ms (suc zero)) m a b e
+    where
+    -- by *matching* the equation rather than `subst`ing along a path, so
+    -- the branch reduces on a canonical string and a parser built on it
+    -- computes its value
+    go : (u v w : String) → A u → B v → (u ++ v) Eq.≡ (c ∷ w)
+       → ((Dl c A ⊗ B) ⊕ ((A & εTy) ⊗ Dl c B)) w
+    go [] .(c ∷ w) w a b Eq.refl =
+      Sum.inr (two [] w , Eq.refl , ((a , εTy-pt) , (b , tt*)))
+    go (d ∷ u) v .(u ++ v) a b Eq.refl =
+      Sum.inl (two u v , Eq.refl , (a , (b , tt*)))
+
+  Dl-⊗-in-r⁺ : (A & εTy) ⊗ Dl c B ⊢ Dl c (A ⊗ B)
+  Dl-⊗-in-r⁺ m (ms , e , ((a , u) , (b , _))) =
+    go (ms zero) (ms (suc zero)) a b (u .snd .fst) e
+    where
+    go : (x y : String) → A x → B (c ∷ y) → [] Eq.≡ x → (x ++ y) Eq.≡ m
+       → (A ⊗ B) (c ∷ m)
+    go .[] y a b Eq.refl Eq.refl = two [] (c ∷ y) , Eq.refl , (a , (b , tt*))
 
   Dl-⊕-out : Dl c (A ⊕ B) ⊢ Dl c A ⊕ Dl c B
   Dl-⊕-out m (Sum.inl a) = Sum.inl a
