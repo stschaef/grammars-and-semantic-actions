@@ -64,6 +64,7 @@ module Semantics where
 open import Semantics.Signature
 open import Semantics.Structure.IndexedCoproduct
 open import Semantics.Structure.Biclosed
+open import Semantics.Structure.BiclosedFunctor
 open import Semantics.Structure.Preservation
 open import Semantics.Structure.CartesianClosed
 open import Semantics.Structure.Operation
