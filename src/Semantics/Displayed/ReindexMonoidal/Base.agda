@@ -345,128 +345,128 @@ module Reindex {M : MonoidalCategory ℓM ℓM'} {N : MonoidalCategory ℓN ℓN
       ∙ Cᴰ.⟨ W⋆η xᴰ yᴰ ⟩⋆⟨ refl ⟩ ⟩
     ∙ R.reind-filler _ _
 
-  private
-    η'-sec : ∀ {x} (xᴰ : Rᴰ.ob[ x ])
-      → (η⁻¹ᴰ'⟨ xᴰ ⟩ Rᴰ.⋆ᴰ ηᴰ'⟨ xᴰ ⟩) Rᴰ.≡[ M.η .nIso x .sec ] Rᴰ.idᴰ
-    η'-sec xᴰ = Cᴰ.rectify $ Cᴰ.≡out $
-        sym (R.reind-filler _ _)
-      ∙ Cᴰ.⟨ sym (R.reind-filler _ _) ⟩⋆⟨ sym (R.reind-filler _ _) ⟩
-      ∙ Cᴰ.⋆Assoc _ _ _
-      ∙ Cᴰ.⟨ refl ⟩⋆⟨ sym (Cᴰ.⋆Assoc _ _ _)
-                    ∙ Cᴰ.⟨ Cᴰ.≡in (liftIn⋆Out (μ≅ _ _) _) ⟩⋆⟨ refl ⟩
-                    ∙ Cᴰ.⋆IdL _ ⟩
-      ∙ Cᴰ.⋆Assoc _ _ _
-      ∙ Cᴰ.⟨ refl ⟩⋆⟨ sym (Cᴰ.⋆Assoc _ _ _)
-                    ∙ Cᴰ.⟨ sym (Cᴰ.≡in (P.─⊗ᴰ─ .F-seqᴰ _ _))
-                         ∙ ⟨ Cᴰ.≡in (liftIn⋆Out ε≅ _) ⟩⊗ₕᴰ⟨ Cᴰ.⋆IdL _ ⟩
-                         ∙ Cᴰ.≡in (P.─⊗ᴰ─ .F-idᴰ) ⟩⋆⟨ refl ⟩
-                    ∙ Cᴰ.⋆IdL _ ⟩
-      ∙ Cᴰ.≡in (P.ηᴰ .nIsoᴰ _ .secᴰ)
-      ∙ sym Rᴰid≡
+  -- The unitor coherences.
+  η'-sec : ∀ {x} (xᴰ : Rᴰ.ob[ x ])
+    → (η⁻¹ᴰ'⟨ xᴰ ⟩ Rᴰ.⋆ᴰ ηᴰ'⟨ xᴰ ⟩) Rᴰ.≡[ M.η .nIso x .sec ] Rᴰ.idᴰ
+  η'-sec xᴰ = Cᴰ.rectify $ Cᴰ.≡out $
+      sym (R.reind-filler _ _)
+    ∙ Cᴰ.⟨ sym (R.reind-filler _ _) ⟩⋆⟨ sym (R.reind-filler _ _) ⟩
+    ∙ Cᴰ.⋆Assoc _ _ _
+    ∙ Cᴰ.⟨ refl ⟩⋆⟨ sym (Cᴰ.⋆Assoc _ _ _)
+                  ∙ Cᴰ.⟨ Cᴰ.≡in (liftIn⋆Out (μ≅ _ _) _) ⟩⋆⟨ refl ⟩
+                  ∙ Cᴰ.⋆IdL _ ⟩
+    ∙ Cᴰ.⋆Assoc _ _ _
+    ∙ Cᴰ.⟨ refl ⟩⋆⟨ sym (Cᴰ.⋆Assoc _ _ _)
+                  ∙ Cᴰ.⟨ sym (Cᴰ.≡in (P.─⊗ᴰ─ .F-seqᴰ _ _))
+                       ∙ ⟨ Cᴰ.≡in (liftIn⋆Out ε≅ _) ⟩⊗ₕᴰ⟨ Cᴰ.⋆IdL _ ⟩
+                       ∙ Cᴰ.≡in (P.─⊗ᴰ─ .F-idᴰ) ⟩⋆⟨ refl ⟩
+                  ∙ Cᴰ.⋆IdL _ ⟩
+    ∙ Cᴰ.≡in (P.ηᴰ .nIsoᴰ _ .secᴰ)
+    ∙ sym Rᴰid≡
 
-    η'-ret : ∀ {x} (xᴰ : Rᴰ.ob[ x ])
-      → (ηᴰ'⟨ xᴰ ⟩ Rᴰ.⋆ᴰ η⁻¹ᴰ'⟨ xᴰ ⟩) Rᴰ.≡[ M.η .nIso x .ret ] Rᴰ.idᴰ
-    η'-ret xᴰ = Cᴰ.rectify $ Cᴰ.≡out $
-        sym (R.reind-filler _ _)
-      ∙ Cᴰ.⟨ sym (R.reind-filler _ _) ⟩⋆⟨ sym (R.reind-filler _ _) ⟩
-      ∙ Cᴰ.⋆Assoc _ _ _
-      ∙ Cᴰ.⟨ refl ⟩⋆⟨
-            Cᴰ.⋆Assoc _ _ _
-          ∙ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.⋆Assoc _ _ _ ⟩
-                        ∙ sym (Cᴰ.⋆Assoc _ _ _)
-                        ∙ Cᴰ.⟨ Cᴰ.≡in (P.ηᴰ .nIsoᴰ _ .retᴰ) ⟩⋆⟨ refl ⟩
-                        ∙ Cᴰ.⋆IdL _ ⟩
-          ∙ sym (Cᴰ.⋆Assoc _ _ _)
-          ∙ Cᴰ.⟨ sym (Cᴰ.≡in (P.─⊗ᴰ─ .F-seqᴰ _ _))
-               ∙ ⟨ Cᴰ.≡in (liftOut⋆In ε≅ _) ⟩⊗ₕᴰ⟨ Cᴰ.⋆IdL _ ⟩
-               ∙ Cᴰ.≡in (P.─⊗ᴰ─ .F-idᴰ) ⟩⋆⟨ refl ⟩
-          ∙ Cᴰ.⋆IdL _ ⟩
-      ∙ Cᴰ.≡in (liftOut⋆In (μ≅ _ _) _)
-      ∙ sym Rᴰid≡
+  η'-ret : ∀ {x} (xᴰ : Rᴰ.ob[ x ])
+    → (ηᴰ'⟨ xᴰ ⟩ Rᴰ.⋆ᴰ η⁻¹ᴰ'⟨ xᴰ ⟩) Rᴰ.≡[ M.η .nIso x .ret ] Rᴰ.idᴰ
+  η'-ret xᴰ = Cᴰ.rectify $ Cᴰ.≡out $
+      sym (R.reind-filler _ _)
+    ∙ Cᴰ.⟨ sym (R.reind-filler _ _) ⟩⋆⟨ sym (R.reind-filler _ _) ⟩
+    ∙ Cᴰ.⋆Assoc _ _ _
+    ∙ Cᴰ.⟨ refl ⟩⋆⟨
+          Cᴰ.⋆Assoc _ _ _
+        ∙ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.⋆Assoc _ _ _ ⟩
+                      ∙ sym (Cᴰ.⋆Assoc _ _ _)
+                      ∙ Cᴰ.⟨ Cᴰ.≡in (P.ηᴰ .nIsoᴰ _ .retᴰ) ⟩⋆⟨ refl ⟩
+                      ∙ Cᴰ.⋆IdL _ ⟩
+        ∙ sym (Cᴰ.⋆Assoc _ _ _)
+        ∙ Cᴰ.⟨ sym (Cᴰ.≡in (P.─⊗ᴰ─ .F-seqᴰ _ _))
+             ∙ ⟨ Cᴰ.≡in (liftOut⋆In ε≅ _) ⟩⊗ₕᴰ⟨ Cᴰ.⋆IdL _ ⟩
+             ∙ Cᴰ.≡in (P.─⊗ᴰ─ .F-idᴰ) ⟩⋆⟨ refl ⟩
+        ∙ Cᴰ.⋆IdL _ ⟩
+    ∙ Cᴰ.≡in (liftOut⋆In (μ≅ _ _) _)
+    ∙ sym Rᴰid≡
 
-    η'-nat : ∀ {x y}{f : M.C [ x , y ]}{xᴰ : Rᴰ.ob[ x ]}{yᴰ : Rᴰ.ob[ y ]}
-      (fᴰ : Rᴰ.Hom[ f ][ xᴰ , yᴰ ])
-      → ((─⊗ᴰ'─ .F-homᴰ (Rᴰ.idᴰ , fᴰ)) Rᴰ.⋆ᴰ ηᴰ'⟨ yᴰ ⟩)
-          Rᴰ.≡[ M.η .trans .N-hom f ] (ηᴰ'⟨ xᴰ ⟩ Rᴰ.⋆ᴰ fᴰ)
-    η'-nat fᴰ = Cᴰ.rectify $ Cᴰ.≡out $
-        sym (R.reind-filler _ _)
-      ∙ Cᴰ.⟨ sym (R.reind-filler _ _) ⟩⋆⟨ sym (R.reind-filler _ _) ⟩
-      ∙ Cᴰ.⋆Assoc _ _ _
-      ∙ Cᴰ.⟨ refl ⟩⋆⟨
-            Cᴰ.⋆Assoc _ _ _
-          ∙ Cᴰ.⟨ refl ⟩⋆⟨ sym (Cᴰ.⋆Assoc _ _ _)
-                        ∙ Cᴰ.⟨ Cᴰ.≡in (liftIn⋆Out (μ≅ _ _) _) ⟩⋆⟨ refl ⟩
-                        ∙ Cᴰ.⋆IdL _ ⟩
-          ∙ sym (Cᴰ.⋆Assoc _ _ _)
-          ∙ Cᴰ.⟨ sym (Cᴰ.≡in (P.─⊗ᴰ─ .F-seqᴰ _ _))
-               ∙ ⟨ Cᴰ.⟨ Rᴰid≡ ⟩⋆⟨ refl ⟩ ∙ Cᴰ.⋆IdL _ ∙ sym (Cᴰ.⋆IdR _) ⟩⊗ₕᴰ⟨
-                   Cᴰ.⋆IdR _ ∙ sym (Cᴰ.⋆IdL _) ⟩
-               ∙ Cᴰ.≡in (P.─⊗ᴰ─ .F-seqᴰ _ _) ⟩⋆⟨ refl ⟩
-          ∙ Cᴰ.⋆Assoc _ _ _
-          ∙ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.≡in (P.ηᴰ .transᴰ .N-homᴰ fᴰ) ⟩
-          ∙ sym (Cᴰ.⋆Assoc _ _ _) ⟩
-      ∙ sym (Cᴰ.⋆Assoc _ _ _)
-      ∙ Cᴰ.⟨ R.reind-filler _ _ ⟩⋆⟨ refl ⟩
-      ∙ R.reind-filler _ _
+  η'-nat : ∀ {x y}{f : M.C [ x , y ]}{xᴰ : Rᴰ.ob[ x ]}{yᴰ : Rᴰ.ob[ y ]}
+    (fᴰ : Rᴰ.Hom[ f ][ xᴰ , yᴰ ])
+    → ((─⊗ᴰ'─ .F-homᴰ (Rᴰ.idᴰ , fᴰ)) Rᴰ.⋆ᴰ ηᴰ'⟨ yᴰ ⟩)
+        Rᴰ.≡[ M.η .trans .N-hom f ] (ηᴰ'⟨ xᴰ ⟩ Rᴰ.⋆ᴰ fᴰ)
+  η'-nat fᴰ = Cᴰ.rectify $ Cᴰ.≡out $
+      sym (R.reind-filler _ _)
+    ∙ Cᴰ.⟨ sym (R.reind-filler _ _) ⟩⋆⟨ sym (R.reind-filler _ _) ⟩
+    ∙ Cᴰ.⋆Assoc _ _ _
+    ∙ Cᴰ.⟨ refl ⟩⋆⟨
+          Cᴰ.⋆Assoc _ _ _
+        ∙ Cᴰ.⟨ refl ⟩⋆⟨ sym (Cᴰ.⋆Assoc _ _ _)
+                      ∙ Cᴰ.⟨ Cᴰ.≡in (liftIn⋆Out (μ≅ _ _) _) ⟩⋆⟨ refl ⟩
+                      ∙ Cᴰ.⋆IdL _ ⟩
+        ∙ sym (Cᴰ.⋆Assoc _ _ _)
+        ∙ Cᴰ.⟨ sym (Cᴰ.≡in (P.─⊗ᴰ─ .F-seqᴰ _ _))
+             ∙ ⟨ Cᴰ.⟨ Rᴰid≡ ⟩⋆⟨ refl ⟩ ∙ Cᴰ.⋆IdL _ ∙ sym (Cᴰ.⋆IdR _) ⟩⊗ₕᴰ⟨
+                 Cᴰ.⋆IdR _ ∙ sym (Cᴰ.⋆IdL _) ⟩
+             ∙ Cᴰ.≡in (P.─⊗ᴰ─ .F-seqᴰ _ _) ⟩⋆⟨ refl ⟩
+        ∙ Cᴰ.⋆Assoc _ _ _
+        ∙ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.≡in (P.ηᴰ .transᴰ .N-homᴰ fᴰ) ⟩
+        ∙ sym (Cᴰ.⋆Assoc _ _ _) ⟩
+    ∙ sym (Cᴰ.⋆Assoc _ _ _)
+    ∙ Cᴰ.⟨ R.reind-filler _ _ ⟩⋆⟨ refl ⟩
+    ∙ R.reind-filler _ _
 
-    -- ρ is the mirror image of η throughout.
-    ρ'-sec : ∀ {x} (xᴰ : Rᴰ.ob[ x ])
-      → (ρ⁻¹ᴰ'⟨ xᴰ ⟩ Rᴰ.⋆ᴰ ρᴰ'⟨ xᴰ ⟩) Rᴰ.≡[ M.ρ .nIso x .sec ] Rᴰ.idᴰ
-    ρ'-sec xᴰ = Cᴰ.rectify $ Cᴰ.≡out $
-        sym (R.reind-filler _ _)
-      ∙ Cᴰ.⟨ sym (R.reind-filler _ _) ⟩⋆⟨ sym (R.reind-filler _ _) ⟩
-      ∙ Cᴰ.⋆Assoc _ _ _
-      ∙ Cᴰ.⟨ refl ⟩⋆⟨
-            Cᴰ.⋆Assoc _ _ _
-          ∙ Cᴰ.⟨ refl ⟩⋆⟨ sym (Cᴰ.⋆Assoc _ _ _)
-                        ∙ Cᴰ.⟨ Cᴰ.≡in (liftIn⋆Out (μ≅ _ _) _) ⟩⋆⟨ refl ⟩
-                        ∙ Cᴰ.⋆IdL _ ⟩
-          ∙ sym (Cᴰ.⋆Assoc _ _ _)
-          ∙ Cᴰ.⟨ sym (Cᴰ.≡in (P.─⊗ᴰ─ .F-seqᴰ _ _))
-               ∙ ⟨ Cᴰ.⋆IdL _ ⟩⊗ₕᴰ⟨ Cᴰ.≡in (liftIn⋆Out ε≅ _) ⟩
-               ∙ Cᴰ.≡in (P.─⊗ᴰ─ .F-idᴰ) ⟩⋆⟨ refl ⟩
-          ∙ Cᴰ.⋆IdL _ ⟩
-      ∙ Cᴰ.≡in (P.ρᴰ .nIsoᴰ _ .secᴰ)
-      ∙ sym Rᴰid≡
-    ρ'-ret : ∀ {x} (xᴰ : Rᴰ.ob[ x ])
-      → (ρᴰ'⟨ xᴰ ⟩ Rᴰ.⋆ᴰ ρ⁻¹ᴰ'⟨ xᴰ ⟩) Rᴰ.≡[ M.ρ .nIso x .ret ] Rᴰ.idᴰ
-    ρ'-ret xᴰ = Cᴰ.rectify $ Cᴰ.≡out $
-        sym (R.reind-filler _ _)
-      ∙ Cᴰ.⟨ sym (R.reind-filler _ _) ⟩⋆⟨ sym (R.reind-filler _ _) ⟩
-      ∙ Cᴰ.⋆Assoc _ _ _
-      ∙ Cᴰ.⟨ refl ⟩⋆⟨
-            Cᴰ.⋆Assoc _ _ _
-          ∙ Cᴰ.⟨ refl ⟩⋆⟨ sym (Cᴰ.⋆Assoc _ _ _)
-                        ∙ Cᴰ.⟨ Cᴰ.≡in (P.ρᴰ .nIsoᴰ _ .retᴰ) ⟩⋆⟨ refl ⟩
-                        ∙ Cᴰ.⋆IdL _ ⟩
-          ∙ sym (Cᴰ.⋆Assoc _ _ _)
-          ∙ Cᴰ.⟨ sym (Cᴰ.≡in (P.─⊗ᴰ─ .F-seqᴰ _ _))
-               ∙ ⟨ Cᴰ.⋆IdL _ ⟩⊗ₕᴰ⟨ Cᴰ.≡in (liftOut⋆In ε≅ _) ⟩
-               ∙ Cᴰ.≡in (P.─⊗ᴰ─ .F-idᴰ) ⟩⋆⟨ refl ⟩
-          ∙ Cᴰ.⋆IdL _ ⟩
-      ∙ Cᴰ.≡in (liftOut⋆In (μ≅ _ _) _)
-      ∙ sym Rᴰid≡
-    ρ'-nat : ∀ {x y}{f : M.C [ x , y ]}{xᴰ : Rᴰ.ob[ x ]}{yᴰ : Rᴰ.ob[ y ]}
-      (fᴰ : Rᴰ.Hom[ f ][ xᴰ , yᴰ ])
-      → ((─⊗ᴰ'─ .F-homᴰ (fᴰ , Rᴰ.idᴰ)) Rᴰ.⋆ᴰ ρᴰ'⟨ yᴰ ⟩)
-          Rᴰ.≡[ M.ρ .trans .N-hom f ] (ρᴰ'⟨ xᴰ ⟩ Rᴰ.⋆ᴰ fᴰ)
-    ρ'-nat fᴰ = Cᴰ.rectify $ Cᴰ.≡out $
-        sym (R.reind-filler _ _)
-      ∙ Cᴰ.⟨ sym (R.reind-filler _ _) ⟩⋆⟨ sym (R.reind-filler _ _) ⟩
-      ∙ Cᴰ.⋆Assoc _ _ _
-      ∙ Cᴰ.⟨ refl ⟩⋆⟨
-            Cᴰ.⋆Assoc _ _ _
-          ∙ Cᴰ.⟨ refl ⟩⋆⟨ sym (Cᴰ.⋆Assoc _ _ _)
-                        ∙ Cᴰ.⟨ Cᴰ.≡in (liftIn⋆Out (μ≅ _ _) _) ⟩⋆⟨ refl ⟩
-                        ∙ Cᴰ.⋆IdL _ ⟩
-          ∙ sym (Cᴰ.⋆Assoc _ _ _)
-          ∙ Cᴰ.⟨ sym (Cᴰ.≡in (P.─⊗ᴰ─ .F-seqᴰ _ _))
-               ∙ ⟨ Cᴰ.⋆IdR _ ∙ sym (Cᴰ.⋆IdL _) ⟩⊗ₕᴰ⟨
-                   Cᴰ.⟨ Rᴰid≡ ⟩⋆⟨ refl ⟩ ∙ Cᴰ.⋆IdL _ ∙ sym (Cᴰ.⋆IdR _) ⟩
-               ∙ Cᴰ.≡in (P.─⊗ᴰ─ .F-seqᴰ _ _) ⟩⋆⟨ refl ⟩
-          ∙ Cᴰ.⋆Assoc _ _ _
-          ∙ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.≡in (P.ρᴰ .transᴰ .N-homᴰ fᴰ) ⟩
-          ∙ sym (Cᴰ.⋆Assoc _ _ _) ⟩
-      ∙ sym (Cᴰ.⋆Assoc _ _ _)
-      ∙ Cᴰ.⟨ R.reind-filler _ _ ⟩⋆⟨ refl ⟩
-      ∙ R.reind-filler _ _
+  -- ρ is the mirror image of η throughout.
+  ρ'-sec : ∀ {x} (xᴰ : Rᴰ.ob[ x ])
+    → (ρ⁻¹ᴰ'⟨ xᴰ ⟩ Rᴰ.⋆ᴰ ρᴰ'⟨ xᴰ ⟩) Rᴰ.≡[ M.ρ .nIso x .sec ] Rᴰ.idᴰ
+  ρ'-sec xᴰ = Cᴰ.rectify $ Cᴰ.≡out $
+      sym (R.reind-filler _ _)
+    ∙ Cᴰ.⟨ sym (R.reind-filler _ _) ⟩⋆⟨ sym (R.reind-filler _ _) ⟩
+    ∙ Cᴰ.⋆Assoc _ _ _
+    ∙ Cᴰ.⟨ refl ⟩⋆⟨
+          Cᴰ.⋆Assoc _ _ _
+        ∙ Cᴰ.⟨ refl ⟩⋆⟨ sym (Cᴰ.⋆Assoc _ _ _)
+                      ∙ Cᴰ.⟨ Cᴰ.≡in (liftIn⋆Out (μ≅ _ _) _) ⟩⋆⟨ refl ⟩
+                      ∙ Cᴰ.⋆IdL _ ⟩
+        ∙ sym (Cᴰ.⋆Assoc _ _ _)
+        ∙ Cᴰ.⟨ sym (Cᴰ.≡in (P.─⊗ᴰ─ .F-seqᴰ _ _))
+             ∙ ⟨ Cᴰ.⋆IdL _ ⟩⊗ₕᴰ⟨ Cᴰ.≡in (liftIn⋆Out ε≅ _) ⟩
+             ∙ Cᴰ.≡in (P.─⊗ᴰ─ .F-idᴰ) ⟩⋆⟨ refl ⟩
+        ∙ Cᴰ.⋆IdL _ ⟩
+    ∙ Cᴰ.≡in (P.ρᴰ .nIsoᴰ _ .secᴰ)
+    ∙ sym Rᴰid≡
+  ρ'-ret : ∀ {x} (xᴰ : Rᴰ.ob[ x ])
+    → (ρᴰ'⟨ xᴰ ⟩ Rᴰ.⋆ᴰ ρ⁻¹ᴰ'⟨ xᴰ ⟩) Rᴰ.≡[ M.ρ .nIso x .ret ] Rᴰ.idᴰ
+  ρ'-ret xᴰ = Cᴰ.rectify $ Cᴰ.≡out $
+      sym (R.reind-filler _ _)
+    ∙ Cᴰ.⟨ sym (R.reind-filler _ _) ⟩⋆⟨ sym (R.reind-filler _ _) ⟩
+    ∙ Cᴰ.⋆Assoc _ _ _
+    ∙ Cᴰ.⟨ refl ⟩⋆⟨
+          Cᴰ.⋆Assoc _ _ _
+        ∙ Cᴰ.⟨ refl ⟩⋆⟨ sym (Cᴰ.⋆Assoc _ _ _)
+                      ∙ Cᴰ.⟨ Cᴰ.≡in (P.ρᴰ .nIsoᴰ _ .retᴰ) ⟩⋆⟨ refl ⟩
+                      ∙ Cᴰ.⋆IdL _ ⟩
+        ∙ sym (Cᴰ.⋆Assoc _ _ _)
+        ∙ Cᴰ.⟨ sym (Cᴰ.≡in (P.─⊗ᴰ─ .F-seqᴰ _ _))
+             ∙ ⟨ Cᴰ.⋆IdL _ ⟩⊗ₕᴰ⟨ Cᴰ.≡in (liftOut⋆In ε≅ _) ⟩
+             ∙ Cᴰ.≡in (P.─⊗ᴰ─ .F-idᴰ) ⟩⋆⟨ refl ⟩
+        ∙ Cᴰ.⋆IdL _ ⟩
+    ∙ Cᴰ.≡in (liftOut⋆In (μ≅ _ _) _)
+    ∙ sym Rᴰid≡
+  ρ'-nat : ∀ {x y}{f : M.C [ x , y ]}{xᴰ : Rᴰ.ob[ x ]}{yᴰ : Rᴰ.ob[ y ]}
+    (fᴰ : Rᴰ.Hom[ f ][ xᴰ , yᴰ ])
+    → ((─⊗ᴰ'─ .F-homᴰ (fᴰ , Rᴰ.idᴰ)) Rᴰ.⋆ᴰ ρᴰ'⟨ yᴰ ⟩)
+        Rᴰ.≡[ M.ρ .trans .N-hom f ] (ρᴰ'⟨ xᴰ ⟩ Rᴰ.⋆ᴰ fᴰ)
+  ρ'-nat fᴰ = Cᴰ.rectify $ Cᴰ.≡out $
+      sym (R.reind-filler _ _)
+    ∙ Cᴰ.⟨ sym (R.reind-filler _ _) ⟩⋆⟨ sym (R.reind-filler _ _) ⟩
+    ∙ Cᴰ.⋆Assoc _ _ _
+    ∙ Cᴰ.⟨ refl ⟩⋆⟨
+          Cᴰ.⋆Assoc _ _ _
+        ∙ Cᴰ.⟨ refl ⟩⋆⟨ sym (Cᴰ.⋆Assoc _ _ _)
+                      ∙ Cᴰ.⟨ Cᴰ.≡in (liftIn⋆Out (μ≅ _ _) _) ⟩⋆⟨ refl ⟩
+                      ∙ Cᴰ.⋆IdL _ ⟩
+        ∙ sym (Cᴰ.⋆Assoc _ _ _)
+        ∙ Cᴰ.⟨ sym (Cᴰ.≡in (P.─⊗ᴰ─ .F-seqᴰ _ _))
+             ∙ ⟨ Cᴰ.⋆IdR _ ∙ sym (Cᴰ.⋆IdL _) ⟩⊗ₕᴰ⟨
+                 Cᴰ.⟨ Rᴰid≡ ⟩⋆⟨ refl ⟩ ∙ Cᴰ.⋆IdL _ ∙ sym (Cᴰ.⋆IdR _) ⟩
+             ∙ Cᴰ.≡in (P.─⊗ᴰ─ .F-seqᴰ _ _) ⟩⋆⟨ refl ⟩
+        ∙ Cᴰ.⋆Assoc _ _ _
+        ∙ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.≡in (P.ρᴰ .transᴰ .N-homᴰ fᴰ) ⟩
+        ∙ sym (Cᴰ.⋆Assoc _ _ _) ⟩
+    ∙ sym (Cᴰ.⋆Assoc _ _ _)
+    ∙ Cᴰ.⟨ R.reind-filler _ _ ⟩⋆⟨ refl ⟩
+    ∙ R.reind-filler _ _

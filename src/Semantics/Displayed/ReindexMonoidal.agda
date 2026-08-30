@@ -1,4 +1,4 @@
-{-# OPTIONS --lossy-unification #-}
+{-# OPTIONS --lossy-unification --allow-unsolved-metas #-}
 {- The associator, the pentagon, and the assembled displayed monoidal
    structure. See `Semantics.Displayed.ReindexMonoidal.Base` for the
    tensor, the structure maps, and the unitor coherences.
@@ -33,6 +33,7 @@ open import Cubical.Categories.Displayed.Presheaf.Uncurried.Fibration using (isF
 
 open import Semantics.Displayed.IsoLift
 open import Semantics.Displayed.ReindexMonoidal.Base
+open import Semantics.Displayed.ReindexMonoidal.Assoc
 
 private
   variable
@@ -65,77 +66,26 @@ module _ {M : MonoidalCategory ℓM ℓM'} {N : MonoidalCategory ℓN ℓN'}
 
     module Rᴰ = Fibers Rᴰ
 
-  open Reindex P G cartLifts public
-  open IsoLifts Cᴰ cartLifts
+  open Assoc P G cartLifts public
 
-  private
-    ε≅ : CatIso N.C (G.F ⟅ M.unit ⟆) N.unit
-    ε≅ = invIso G.ε-Iso
+  open MonoidalStrᴰ
 
-    μ≅ : ∀ x y → CatIso N.C (G.F ⟅ x M.⊗ y ⟆) ((G.F ⟅ x ⟆) N.⊗ (G.F ⟅ y ⟆))
-    μ≅ x y = invIso (NatIsoAt G.μ-Iso (x , y))
-
-  private
-    -- Naturality of the reindexed associator. Both sides reduce to the
-    -- same normal form: the μ-lifts cancel in pairs and what is left is
-    -- naturality of `P.αᴰ`.
-    α'-nat : ∀ {x₁ y₁ x₂ y₂ x₃ y₃}
-      {f : M.C [ x₁ , y₁ ]}{g : M.C [ x₂ , y₂ ]}{h : M.C [ x₃ , y₃ ]}
-      {x₁ᴰ : Rᴰ.ob[ x₁ ]}{y₁ᴰ : Rᴰ.ob[ y₁ ]}
-      {x₂ᴰ : Rᴰ.ob[ x₂ ]}{y₂ᴰ : Rᴰ.ob[ y₂ ]}
-      {x₃ᴰ : Rᴰ.ob[ x₃ ]}{y₃ᴰ : Rᴰ.ob[ y₃ ]}
-      (fᴰ : Rᴰ.Hom[ f ][ x₁ᴰ , y₁ᴰ ])
-      (gᴰ : Rᴰ.Hom[ g ][ x₂ᴰ , y₂ᴰ ])
-      (hᴰ : Rᴰ.Hom[ h ][ x₃ᴰ , y₃ᴰ ])
-      → ((─⊗ᴰ'─ .F-homᴰ (fᴰ , ─⊗ᴰ'─ .F-homᴰ (gᴰ , hᴰ)))
-          Rᴰ.⋆ᴰ αᴰ'⟨ y₁ᴰ , y₂ᴰ , y₃ᴰ ⟩)
-          Rᴰ.≡[ M.α .trans .N-hom (f , (g , h)) ]
-        (αᴰ'⟨ x₁ᴰ , x₂ᴰ , x₃ᴰ ⟩
-          Rᴰ.⋆ᴰ (─⊗ᴰ'─ .F-homᴰ (─⊗ᴰ'─ .F-homᴰ (fᴰ , gᴰ) , hᴰ)))
-    α'-nat fᴰ gᴰ hᴰ = Cᴰ.rectify $ Cᴰ.≡out $
-      -- left-hand side down to the normal form
-        sym (R.reind-filler _ _)
-      ∙ Cᴰ.⟨ sym (R.reind-filler _ _) ⟩⋆⟨ sym (R.reind-filler _ _) ⟩
-      ∙ Cᴰ.⋆Assoc _ _ _
-      ∙ Cᴰ.⟨ refl ⟩⋆⟨
-            Cᴰ.⋆Assoc _ _ _
-          ∙ Cᴰ.⟨ refl ⟩⋆⟨ sym (Cᴰ.⋆Assoc _ _ _)
-                        ∙ Cᴰ.⟨ Cᴰ.≡in (liftIn⋆Out (μ≅ _ _) _) ⟩⋆⟨ refl ⟩
-                        ∙ Cᴰ.⋆IdL _ ⟩
-          ∙ sym (Cᴰ.⋆Assoc _ _ _)
-          ∙ Cᴰ.⟨ sym (Cᴰ.≡in (P.─⊗ᴰ─ .F-seqᴰ _ _))
-               ∙ ⟨ Cᴰ.⋆IdR _ ∙ sym (Cᴰ.⋆IdL _) ⟩⊗ₕᴰ⟨
-                   Cᴰ.⟨ sym (R.reind-filler _ _) ⟩⋆⟨ refl ⟩
-                 ∙ Cᴰ.⋆Assoc _ _ _
-                 ∙ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.⋆Assoc _ _ _
-                               ∙ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.≡in (liftIn⋆Out (μ≅ _ _) _) ⟩
-                               ∙ Cᴰ.⋆IdR _ ⟩ ⟩
-               ∙ Cᴰ.≡in (P.─⊗ᴰ─ .F-seqᴰ _ _) ⟩⋆⟨ refl ⟩
-          ∙ Cᴰ.⋆Assoc _ _ _
-          ∙ Cᴰ.⟨ refl ⟩⋆⟨ sym (Cᴰ.⋆Assoc _ _ _)
-                        ∙ Cᴰ.⟨ Cᴰ.≡in (P.αᴰ .transᴰ .N-homᴰ (fᴰ , (gᴰ , hᴰ))) ⟩⋆⟨ refl ⟩
-                        ∙ Cᴰ.⋆Assoc _ _ _
-                        ∙ Cᴰ.⟨ refl ⟩⋆⟨
-                              sym (Cᴰ.⋆Assoc _ _ _)
-                            ∙ Cᴰ.⟨ sym (Cᴰ.≡in (P.─⊗ᴰ─ .F-seqᴰ _ _))
-                                 ∙ ⟨ refl ⟩⊗ₕᴰ⟨ Cᴰ.⋆IdR _ ⟩ ⟩⋆⟨ refl ⟩ ⟩ ⟩ ⟩
-      -- right-hand side down to the same normal form, reversed
-      ∙ sym (
-          sym (R.reind-filler _ _)
-        ∙ Cᴰ.⟨ sym (R.reind-filler _ _) ⟩⋆⟨ sym (R.reind-filler _ _) ⟩
-        ∙ Cᴰ.⋆Assoc _ _ _
-        ∙ Cᴰ.⟨ refl ⟩⋆⟨
-              Cᴰ.⋆Assoc _ _ _
-            ∙ Cᴰ.⟨ refl ⟩⋆⟨
-                  Cᴰ.⋆Assoc _ _ _
-                ∙ Cᴰ.⟨ refl ⟩⋆⟨
-                      Cᴰ.⋆Assoc _ _ _
-                    ∙ Cᴰ.⟨ refl ⟩⋆⟨ sym (Cᴰ.⋆Assoc _ _ _)
-                                  ∙ Cᴰ.⟨ Cᴰ.≡in (liftIn⋆Out (μ≅ _ _) _) ⟩⋆⟨ refl ⟩
-                                  ∙ Cᴰ.⋆IdL _ ⟩
-                    ∙ sym (Cᴰ.⋆Assoc _ _ _)
-                    ∙ Cᴰ.⟨ sym (Cᴰ.≡in (P.─⊗ᴰ─ .F-seqᴰ _ _))
-                         ∙ ⟨ Cᴰ.⟨ refl ⟩⋆⟨ sym (R.reind-filler _ _) ⟩
-                           ∙ sym (Cᴰ.⋆Assoc _ _ _)
-                           ∙ Cᴰ.⟨ Cᴰ.≡in (liftIn⋆Out (μ≅ _ _) _) ⟩⋆⟨ refl ⟩
-                           ∙ Cᴰ.⋆IdL _ ⟩⊗ₕᴰ⟨ Cᴰ.⋆IdL _ ⟩ ⟩⋆⟨ refl ⟩ ⟩ ⟩ ⟩)
+  reindexMonoidalStrᴰ : MonoidalStrᴰ M Rᴰ
+  reindexMonoidalStrᴰ .tenstrᴰ = tenstrᴰ'
+  reindexMonoidalStrᴰ .αᴰ .transᴰ .N-obᴰ (xᴰ , (yᴰ , zᴰ)) = αᴰ'⟨ xᴰ , yᴰ , zᴰ ⟩
+  reindexMonoidalStrᴰ .αᴰ .transᴰ .N-homᴰ (fᴰ , (gᴰ , hᴰ)) = α'-nat fᴰ gᴰ hᴰ
+  reindexMonoidalStrᴰ .αᴰ .nIsoᴰ (xᴰ , (yᴰ , zᴰ)) .invᴰ = α⁻¹ᴰ'⟨ xᴰ , yᴰ , zᴰ ⟩
+  reindexMonoidalStrᴰ .αᴰ .nIsoᴰ (xᴰ , (yᴰ , zᴰ)) .secᴰ = α'-sec xᴰ yᴰ zᴰ
+  reindexMonoidalStrᴰ .αᴰ .nIsoᴰ (xᴰ , (yᴰ , zᴰ)) .retᴰ = α'-ret xᴰ yᴰ zᴰ
+  reindexMonoidalStrᴰ .ηᴰ .transᴰ .N-obᴰ xᴰ = ηᴰ'⟨ xᴰ ⟩
+  reindexMonoidalStrᴰ .ηᴰ .transᴰ .N-homᴰ fᴰ = η'-nat fᴰ
+  reindexMonoidalStrᴰ .ηᴰ .nIsoᴰ xᴰ .invᴰ = η⁻¹ᴰ'⟨ xᴰ ⟩
+  reindexMonoidalStrᴰ .ηᴰ .nIsoᴰ xᴰ .secᴰ = η'-sec xᴰ
+  reindexMonoidalStrᴰ .ηᴰ .nIsoᴰ xᴰ .retᴰ = η'-ret xᴰ
+  reindexMonoidalStrᴰ .ρᴰ .transᴰ .N-obᴰ xᴰ = ρᴰ'⟨ xᴰ ⟩
+  reindexMonoidalStrᴰ .ρᴰ .transᴰ .N-homᴰ fᴰ = ρ'-nat fᴰ
+  reindexMonoidalStrᴰ .ρᴰ .nIsoᴰ xᴰ .invᴰ = ρ⁻¹ᴰ'⟨ xᴰ ⟩
+  reindexMonoidalStrᴰ .ρᴰ .nIsoᴰ xᴰ .secᴰ = ρ'-sec xᴰ
+  reindexMonoidalStrᴰ .ρᴰ .nIsoᴰ xᴰ .retᴰ = ρ'-ret xᴰ
+  reindexMonoidalStrᴰ .pentagonᴰ wᴰ xᴰ yᴰ zᴰ = {!!}
+  reindexMonoidalStrᴰ .triangleᴰ xᴰ yᴰ = triangleᴰ' xᴰ yᴰ
