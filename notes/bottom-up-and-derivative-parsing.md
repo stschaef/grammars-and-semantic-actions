@@ -9,7 +9,8 @@ strictly more general than LR.  See "What is and is not LR" below.
 ## Line 1: recursive ascent — `Ascent/*`
 
 `Combinator/Core`'s parser is polymorphic in the *continuation*.
-`Ascent/Base`'s is polymorphic in the *stack*, as the residual it owes the goal:
+`Ascent/Base`'s is polymorphic in the *stack*, carried as the residual it
+owes the goal:
 
     Parser ℓK a c A = &[ K ] ( ▷?a (Ans K)          ⇒ ▷?c (Ans (A ⊗ K)) )
     Asc    ℓB a c A = &[ B ] ( ▷?a (Ans (B ⊸ Goal)) ⇒ ▷?c (Ans ((B ⟜ A) ⊸ Goal)) )
@@ -18,13 +19,13 @@ strictly more general than LR.  See "What is and is not LR" below.
 then one of `Core`'s combinators read in the mirror, and each is a `⊢`-term
 already in `Residual.agda`, which says so in its own comments:
 
-| LR      | `Ascent/Base`  | is `Core`'s | built from                          |
-|---------|-----------|-------------|-------------------------------------|
-| shift   | `shift`   | `tok`       | `Ans-lit` then `⊸⟜-swap`            |
-| reduce  | `reduce`  | `mapP`      | `⟜-precomp` at the production term  |
-| goto    | `goto`    | `seq`       | `⟜-curry`, the tower reassociating  |
-| accept  | `runA`    | `runP`      | `⊸-unitl` at `⟜-intro ⊗ε-unit-l`     |
-| predict | `chooseA` | `choose`    | `Λ-total` observes, `π o` commits   |
+| action  | `Ascent/Base` | is `Core`'s | built from                         |
+|---------|---------------|-------------|------------------------------------|
+| shift   | `shift`       | `tok`       | `Ans-lit` then `⊸⟜-swap`           |
+| reduce  | `reduce`      | `mapP`      | `⟜-precomp` at the production term |
+| goto    | `goto`        | `seq`       | `⟜-curry`, the tower reassociating |
+| accept  | `runA`        | `runP`      | `⊸-unitl` at `⟜-intro ⊗ε-unit-l`   |
+| predict | `chooseA`     | `choose`    | `Λ-total` observes, `π o` commits  |
 
 The stack is the `⟜`-tower.  No stack of states, no pop count, no goto table;
 a production is the term `β ⊢ A` itself, and `start : (Goal ⟜ Goal) ⊸ Goal ⊢
@@ -37,15 +38,15 @@ Goal` is the whole soundness statement, because the states are grammars.
   Non-regular, left-recursive, mutually recursive.  Observes the class once
   and commits; nothing is attempted speculatively.  `x + x + x` yields
   `add (add (emb var) var) var` — left-associated, i.e. a parse of the
-  *original* left-recursive grammar, built by the reductions.  The LR
+  *original* left-recursive grammar, built by the reductions.  The no-conflict
   condition is exported as a checked term (`E-noConflict` etc.), out of
   `Predict.altDisjoint`: two branches at different classes cannot both match.
 
 One backtrack point survives deliberately: `sR` is nullable and ε cannot claim
 a class, so the ε-branch sits outside the committed choice under `<|>` —
-exactly as `Productions.step` does it.  It costs one O(1) probe.
+exactly as `Decidable/Productions.step` does it.  It costs one O(1) probe.
 
-## Arbitrary lookahead width — `Ascent/Lookahead`, `Ascent/LookaheadDemo`
+### Arbitrary lookahead width — `Ascent/Lookahead`, `Ascent/LookaheadDemo`
 
 `Predict` in `Ascent/Base` is fixed at width 1: it takes `Λ₁`/`M₁` directly.
 `Ascent/Lookahead.WidePredict` is the same module with the cover abstracted --
@@ -64,7 +65,54 @@ the reduction.  `S → A b | B c`, `A → a A | a`, `B → a B | a` is SLR(1)
 and outside LC(k) for every k: the deciding token comes after arbitrarily
 many `a`s, and by then the choice was already forced.
 
-## Not choosing at all — `Derivative/OneStep`
+### The decidability boundary — `Ascent/Decidability`
+
+Checked in both directions rather than argued.
+
+`Dec` is excluded from the ascent line, and **not** by anything about the
+answer functor.  Of the nine uses of covariance in `Ascent/Base`, seven have a
+converse and want only `DivariantAnswer`, which `Dec` has — the file proves
+this by giving `⟜-curry⁻`, `⟜-unitr⁻`, and `reduce±` over `DivariantAnswer`,
+instantiated at `DecAnswer`.
+
+Two do not, and `noShiftConverse` is a machine-checked counterexample for why:
+with the stack `⊥Ty`, `⊥Ty ⟜ literal c` is empty, so `(⊥Ty ⟜ literal c) ⊸ ⊥Ty`
+holds *vacuously* at the empty word while `literal c ⊗ (⊥Ty ⊸ ⊥Ty)` does not.
+`Owes B = B ⊸ Goal` is a universal over stacks, and a vacuous universal has
+nothing to refute.  `runA`'s `idOwes` fails identically.
+
+`shiftD`/`shiftD⁻` show the derivative does have both directions.  That is
+suggestive, not a plan: `Dl w Goal` at the empty remaining input is `Goal w`,
+so deciding it restates the original problem, and a reduction does not change
+the consumed prefix, so at a pure-derivative state `reduce` has nothing to do.
+
+## Line 2: left-factor and fold — `LeftCorner/*`
+
+A different technique, and **not** recursive ascent: transform the grammar so
+`Core`'s existing LL machinery decides it, then rebuild the original grammar's
+value with a `⊸`-fold.  `⊸` accumulates on the left, which is what makes the
+tree lean left.
+
+* `LeftCorner/LeftRec` — `E → E + a | a` over `a (+ a)*`.
+* `LeftCorner/Defer` — `S → A b | B c`, `A → a A | a`, `B → a B | a`.  LL(k)
+  for no k: `aaaaac` yields `viaB 5`, five tokens after the last chance to
+  commit early.
+* `LeftCorner/Expr` — the expression grammar, recognised by
+  `Decidable/Productions` *unchanged* applied to the left-corner transform.
+
+These are decidable, which the ascent line is not.  They are also strictly
+weaker than LR: left-corner parsing is LC(k), and LL(k) ⊊ LC(k) ⊊ LR(k).
+
+`ExprGrammar` holds the grammar that both `Ascent/Expr` and
+`LeftCorner/Expr` parse, so the two can be compared line for line.
+
+## Line 3: parsing with derivatives — `Derivative/*`
+
+A parser for every context-free grammar, ambiguous ones included, and the
+only line here that is a *construction from the grammar* rather than a
+parser written by hand.
+
+### One step, with the recursion assumed — `Derivative/OneStep`
 
 The way out of LC is to stop *eliminating* the `⊕` at a choice and start
 *differentiating* it: carry the whole alternation forward and let the input
@@ -84,18 +132,19 @@ derivative of a variable, which is what keeps `δ` structural under
 recursion.
 
 The gap -- `CF` duplicates a fragment of the repo's `Functor` code type, so
-`δ` does not apply to the `μ F` families `Decidable/Productions` and `Ascent/Expr` use
--- is closed by `Derivative/Parser` below, which redoes all of this at `Functor`
-directly.  This file is kept as the smaller statement: it is where the `⊗`
-rule and its soundness proof are legible without the fixed point on top.
+`δ` does not apply to the `μ F` families that `Decidable/Productions` and
+`Ascent/Expr` use -- is closed by `Derivative/Parser` below, which redoes
+all of this at `Functor` directly.  This file is kept as the smaller
+statement: it is where the `⊗` rule and its soundness proof are legible
+without the fixed point on top.
 
-## Line 3: parsing with derivatives — `Derivative/Parser`
+### Tying the knot — `Derivative/Parser`
 
 `Derivative/OneStep` is one *step* of Might-Darais-Spiewak, not the
 algorithm: `δ (var x) = dv x` hands the recursion back, `δ-sound` assumes
 a `step` per nonterminal, and nullability is an oracle `X → Bool`.
-`Derivative/Parser` ties the knot, at the repo's own grammar codes rather than a
-bespoke `CF`.
+`Derivative/Parser` ties the knot, at the repo's own grammar codes rather
+than a bespoke `CF`.
 
 Given `F : (x : X) → Functor _ X xs tt` with `A = μ F`, the derivative
 grammar is another `μ` over the *same* nonterminals, `D = μ (δ ∘ F)`.
@@ -128,8 +177,8 @@ derivative one (`Mot x = A x & √[ ⌈ c ⌉ ] (D x)`), because `δ` freezes at
 `μ F` while the fold has replaced `μ F` by the motive; `forget` projects
 back.
 
-`Derivative/ParserDemo` instantiates this at `S → x S | ε` and pushes a real parse
-of `x` through `complete`, so neither theorem is vacuous.
+`Derivative/ParserDemo` instantiates this at `S → x S | ε` and pushes a
+real parse of `x` through `complete`, so neither theorem is vacuous.
 
 **Iteration, and the parser.**  One letter is not a parser.  Because `δ`
 freezes at `μ F`, the next derivative freezes at `μ (δ ∘ F)` -- which is
@@ -152,14 +201,14 @@ differentiating, read the answer off the empty word:
 
 Both are `sound*`/`complete*` moved across `∂[ ⌈ w ⌉ ] ≅ Dl-string w` and
 out to the residual, where `⌈ w ⌉` makes them statements about the *word*
-rather than about a derivative.  `Derivative/ParserDemo` runs both on `x x`, which is
-the first word that exercises iteration: `DSxx`s frozen constants point
-at `μ (δ ∘ Sbody)`, not at `S`.
+rather than about a derivative.  `Derivative/ParserDemo` runs both on
+`x x`, the first word that exercises iteration: `DSxx`s frozen constants
+point at `μ (δ ∘ Sbody)`, not at `S`.
 
-**At the real grammar — `Derivative/ParserExpr`.**  `ExprGrammar` already presents
-`E → E + T | T`, `T → ( E ) | x` as a `Functor` system `G`, which is
-exactly the shape `Derivative/Parser` takes, so the derivative construction applies to
-it with *no transformation at all*: no left-corner transform, no
+**At the real grammar -- `Derivative/ParserExpr`.**  `ExprGrammar` already
+presents `E → E + T | T`, `T → ( E ) | x` as a `Functor` system `G`, which
+is exactly the shape `Derivative/Parser` takes, so the construction applies
+to it with *no transformation at all*: no left-corner transform, no
 left-factoring, no lookahead table.  This is the same left-recursive,
 mutually recursive grammar `Ascent/Expr` parses by ascent and
 `LeftCorner/Expr` parses by left-factoring, so the three techniques can be
@@ -186,47 +235,6 @@ those bottom out on `two-η` reshuffling -- `Fin 2` has no definitional
 then needs a `PathP` along it.  On top of that sits an induction over
 codes.  `Dl-⊗-in-l` was rewritten to compute (`Eq.ap` rather than
 `Eq.pathToEq`) as the first step; the rest is not done.
-
-## Line 2: left-factor and fold — `LeftCorner/*`
-
-A different technique, and **not** recursive ascent: transform the grammar so
-`Core`'s existing LL machinery decides it, then rebuild the original grammar's
-value with a `⊸`-fold.  `⊸` accumulates on the left, which is what makes the
-tree lean left.
-
-* `LeftCorner/LeftRec` — `E → E + a | a` over `a (+ a)*`.
-* `LeftCorner/Defer` — `S → A b | B c`, `A → a A | a`, `B → a B | a`.  LL(k)
-  for no k: `aaaaac` yields `viaB 5`, five tokens after the last chance to
-  commit early.
-* `LeftCorner/Expr` — the expression grammar, recognised by
-  `Decidable/Productions` *unchanged* applied to the left-corner transform.
-
-These are decidable, which the ascent line is not.  They are also strictly
-weaker than LR: left-corner parsing is LC(k), and LL(k) ⊊ LC(k) ⊊ LR(k).
-
-`ExprGrammar` holds the grammar both `Ascent/Expr` and `LeftCorner/Expr` parse,
-so the two can be compared line for line.
-
-## The decidability boundary — `Ascent/Decidability`
-
-Checked in both directions rather than argued.
-
-`Dec` is excluded from the ascent line, and **not** by anything about the
-answer functor.  Of the nine uses of covariance in `Ascent/Base`, seven have a
-converse and want only `DivariantAnswer`, which `Dec` has — the file proves
-this by giving `⟜-curry⁻`, `⟜-unitr⁻`, and `reduce±` over `DivariantAnswer`,
-instantiated at `DecAnswer`.
-
-Two do not, and `noShiftConverse` is a machine-checked counterexample for why:
-with the stack `⊥Ty`, `⊥Ty ⟜ literal c` is empty, so `(⊥Ty ⟜ literal c) ⊸ ⊥Ty`
-holds *vacuously* at the empty word while `literal c ⊗ (⊥Ty ⊸ ⊥Ty)` does not.
-`Owes B = B ⊸ Goal` is a universal over stacks, and a vacuous universal has
-nothing to refute.  `runA`'s `idOwes` fails identically.
-
-`shiftD`/`shiftD⁻` show the derivative does have both directions.  That is
-suggestive, not a plan: `Dl w Goal` at the empty remaining input is `Goal w`,
-so deciding it restates the original problem, and a reduction does not change
-the consumed prefix, so at a pure-derivative state `reduce` has nothing to do.
 
 ## What is and is not LR
 
@@ -318,6 +326,6 @@ Three things in the tree still see elements, deliberately:
 * **Soundness only, on the factored line.**  `toOriginal : S sE ⊢ E` is one
   direction; completeness needs `E ⊢ S sE`, which is the correctness of the
   left-corner transform.
-* **One backend exercised.**  `Ascent/Base` is parametric over `AnswerFunctor` +
-  `CovariantAnswer`, so `Maybe` and `ND` both should work, but only `Maybe`
-  has been run.
+* **One backend exercised.**  `Ascent/Base` is parametric over
+  `AnswerFunctor` + `CovariantAnswer`, so `Maybe` and `ND` should both
+  work, but only `Maybe` has been run.

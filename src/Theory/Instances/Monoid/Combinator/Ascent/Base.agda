@@ -39,12 +39,12 @@ module Theory.Instances.Monoid.Combinator.Ascent.Base
 open import Cubical.Data.Sigma using (_,_ ; fst ; snd)
 open import Cubical.Data.Unit using (tt)
 open import Cubical.Data.List using ([] ; _++_)
-open import Cubical.Data.FinData using (zero ; suc)
 
 open import Theory.Instances.Monoid.Combinator.Core Alphabet _≟_ public
 open import Theory.Instances.Monoid.Residual Alphabet isSetAlphabet
-  using ( _⟜_ ; ⟜-intro ; ⟜-app ; ⟜-precomp ; ⟜-uncurry ; ⟜-curry ; ⟜-unitr ; ⊗ε-unit-r ; ⊗ε-unit-l ; &⊕ᴰ-distR
-        ; _⊸_ ; ⊸-lam ; ⊸-app ; ⊸-precomp ; ⊸-unitl ; ⊸⟜-swap )
+  using ( _⟜_ ; ⟜-intro ; ⟜-precomp ; ⟜-curry ; ⟜-unitr
+        ; ⊗ε-unit-r ; ⊗ε-unit-l ; &⊕ᴰ-distR
+        ; _⊸_ ; ⊸-lam ; ⊸-precomp ; ⊸-unitl ; ⊸⟜-swap )
 
 private variable ℓA ℓB ℓC ℓD ℓG : Level
 

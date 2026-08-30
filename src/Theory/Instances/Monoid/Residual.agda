@@ -130,9 +130,9 @@ module _ {A : TheoryTy ℓ tt} {B : TheoryTy ℓ' tt} {C : TheoryTy ℓ'' tt} wh
       (f' (y ++ r) (two y r , Eq.refl , (a' , (b , tt*))))
 
 -- a residual that wants nothing more is what it produces
--- Currying the tower the other way, and its converse.  A stack of
--- residuals is `pop n` in an LR machine, and these two are what make it
--- associate; neither mentions a parser.
+-- Currying the tower the other way, and its converse.  A tower of residuals
+-- is what a bottom-up parser carries instead of a stack, and these two are
+-- what let it reassociate; neither mentions a parser.
 ⟜-curry : {A : TheoryTy ℓ tt} {B : TheoryTy ℓ' tt} {C : TheoryTy ℓ'' tt}
   → C ⟜ (A ⊗ B) ⊢ (C ⟜ B) ⟜ A
 ⟜-curry {A = A} {B = B} {C = C} =

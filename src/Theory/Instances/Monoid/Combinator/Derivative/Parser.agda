@@ -191,7 +191,10 @@ module _ {X : Type ℓX} {xs : X → Unit}
     comp' : (G : Functor ℓA X xs tt)
       → Dl c (⟦ G ⟧TheoryTy Mot) ⊢ ⟦ δ G ⟧TheoryTy D
     comp' (k B) = liftTy ∘⊢ liftTy ∘⊢ lowerTy
-    comp' (Var x) = liftTy ∘⊢ ∂-counit ∘⊢ Dl→∂⌈⌉ w ∘⊢ Dl-map c (π₂ {A = A x} {B = √[ ⌈ w ⌉ ] (D x)}) ∘⊢ lowerTy
+    comp' (Var x) =
+      liftTy ∘⊢ ∂-counit ∘⊢ Dl→∂⌈⌉ w
+      ∘⊢ Dl-map c (π₂ {A = A x} {B = √[ ⌈ w ⌉ ] (D x)})
+      ∘⊢ lowerTy
     comp' (⊕e Y G) = ⊕ᴰ-elim λ y → σ⊕ y ∘⊢ comp' (G y)
     comp' (&e Y G) = &ᴰ-intro λ y → comp' (G y) ∘⊢ π y
     comp' (G &e2 G') = comp' G ,&p comp' G'

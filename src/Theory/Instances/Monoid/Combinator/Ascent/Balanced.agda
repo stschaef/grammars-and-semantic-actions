@@ -25,10 +25,8 @@ module Theory.Instances.Monoid.Combinator.Ascent.Balanced where
 
 open import Cubical.Data.Bool using (Bool ; true ; false ; isSetBool)
 open import Cubical.Data.List using (List ; [] ; _∷_)
-open import Cubical.Data.Sigma using (_,_)
 open import Cubical.Data.Unit using (Unit ; tt ; tt*)
 open import Cubical.Data.FinData using (zero ; suc)
-import Cubical.Data.Maybe as MB
 
 data Br : Type where
   lp rp : Br

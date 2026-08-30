@@ -8,13 +8,14 @@
      `reduce`   `⊸-precomp (⟜-precomp p)`  -- invertible iff `p` is, so take
                                               both directions, as `mapP` does
      `goto`     `⊸-precomp ⟜-curry`        -- associativity; converse exists
-     `nil`      `⊸-precomp ⟜-unitr`        -- unit; converse is `⟜-intro ⊗ε-unit-r`
-     `pick`     `⊕-elim id id`             -- `inl` backwards; `dec-map` takes it
+     `nil`      `⊸-precomp ⟜-unitr`        -- unit; converse is `⟜-unitr⁻`
+     `pick`     `⊕-elim id id`             -- `inl` backwards; `dec-map`
+                                              takes it
      `runA`     `start`                    -- converse exists
      `failA`    `Ans-empty`                -- `Dec` refutes `⊥` outright
      `chooseA`  `⊸-precomp (⟜-precomp (σ⊕ o))`
                                            -- should go through `Ans-route`,
-                                              which `Dec` has, not through a map
+                                              which `Dec` has, not a map
 
    Two do not, and they fail for one reason.  `Owes B = B ⊸ Goal` puts a
    *universal quantifier inside the grammar* -- over every stack, at every
