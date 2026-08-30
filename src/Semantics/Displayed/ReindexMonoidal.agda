@@ -1,0 +1,145 @@
+{-# OPTIONS --lossy-unification #-}
+{- Reindexing a displayed monoidal structure along a strong monoidal
+   functor, without `hasPropHoms`.
+
+   ccl's `Displayed.Instances.Reindex.Monoidal` builds this only when
+   the displayed category has propositional homs, which makes
+   functoriality, naturality, and the pentagon/triangle coherences
+   free. A proof-relevant gluing model does not have propositional
+   homs, so those all have to be discharged.
+
+   The base-level path computations are ccl's; the displayed proofs
+   are the new content. Where ccl needs only a `WeakIsoLift`, we need
+   a genuine displayed iso, which `Semantics.Displayed.IsoLift`
+   extracts from a cartesian lift.
+-}
+module Semantics.Displayed.ReindexMonoidal where
+
+open import Cubical.Foundations.Prelude
+open import Cubical.Foundations.Function
+
+open import Cubical.Data.Sigma
+
+open import Cubical.Categories.Category
+open import Cubical.Categories.Isomorphism
+open import Cubical.Categories.Functor
+open import Cubical.Categories.NaturalTransformation
+open import Cubical.Categories.NaturalTransformation.More
+open import Cubical.Categories.Monoidal
+open import Cubical.Categories.Monoidal.Functor
+open import Cubical.Categories.Instances.Fiber
+open import Cubical.Categories.Instances.TotalCategory using (∫C)
+
+open import Cubical.Categories.Displayed.Base
+import Cubical.Categories.Displayed.Reasoning as HomᴰReasoning
+open import Cubical.Categories.Displayed.Functor
+open import Cubical.Categories.Displayed.BinProduct
+open import Cubical.Categories.Displayed.Monoidal.Base
+open import Cubical.Categories.Displayed.Instances.Reindex.Base using (reindex)
+open import Cubical.Categories.Displayed.Presheaf.Uncurried.Fibration using (isFibration)
+
+open import Semantics.Displayed.IsoLift
+
+private
+  variable
+    ℓM ℓM' ℓN ℓN' ℓCᴰ ℓCᴰ' : Level
+
+-- | Six-fold reassociation: conjugating by an iso pair is functorial.
+--   `u ⋆ (x ⋆ ((v ⋆ u) ⋆ (y ⋆ v)))  ≡  (u ⋆ (x ⋆ v)) ⋆ (u ⋆ (y ⋆ v))`
+module _ {C : Category ℓM ℓM'} where
+  private module C = Category C
+  conjReassoc : ∀ {a b c d e f g}
+    (u : C [ a , b ])(x : C [ b , c ])(v : C [ c , d ])
+    (u' : C [ d , e ])(y : C [ e , f ])(v' : C [ f , g ])
+    → (u C.⋆ (x C.⋆ ((v C.⋆ u') C.⋆ (y C.⋆ v'))))
+      ≡ ((u C.⋆ (x C.⋆ v)) C.⋆ (u' C.⋆ (y C.⋆ v')))
+  conjReassoc u x v u' y v' =
+      cong (u C.⋆_) (cong (x C.⋆_) (C.⋆Assoc v u' (y C.⋆ v')))
+    ∙ cong (u C.⋆_) (sym (C.⋆Assoc x v (u' C.⋆ (y C.⋆ v'))))
+    ∙ sym (C.⋆Assoc u (x C.⋆ v) (u' C.⋆ (y C.⋆ v')))
+
+open Functor
+open Functorᴰ
+open NatTrans
+open isIso
+
+module _ {M : MonoidalCategory ℓM ℓM'} {N : MonoidalCategory ℓN ℓN'}
+  {Cᴰ : Categoryᴰ (MonoidalCategory.C N) ℓCᴰ ℓCᴰ'}
+  (P : MonoidalStrᴰ N Cᴰ)
+  (G : StrongMonoidalFunctor M N)
+  (cartLifts : isFibration Cᴰ)
+  where
+  private
+    module M = MonoidalCategory M
+    module N = MonoidalCategory N
+    module Cᴰ = Fibers Cᴰ
+    module R = HomᴰReasoning Cᴰ
+    module P = MonoidalStrᴰ P
+    module G = StrongMonoidalFunctor G
+
+    Rᴰ : Categoryᴰ M.C ℓCᴰ ℓCᴰ'
+    Rᴰ = reindex Cᴰ G.F
+
+    module Rᴰ = Fibers Rᴰ
+
+  open IsoLifts Cᴰ cartLifts
+
+  private
+    -- The base isos we transport along: `ε` for the unit and `μ` for
+    -- the tensor, both inverted, since a cartesian lift moves an
+    -- object *backwards* along a base map.
+    ε≅ : CatIso N.C (G.F ⟅ M.unit ⟆) N.unit
+    ε≅ = invIso G.ε-Iso
+
+    μ≅ : ∀ x y → CatIso N.C (G.F ⟅ x M.⊗ y ⟆) ((G.F ⟅ x ⟆) N.⊗ (G.F ⟅ y ⟆))
+    μ≅ x y = invIso (NatIsoAt G.μ-Iso (x , y))
+
+  -- | `Rᴰ`'s identity is `Cᴰ`'s, reindexed along `G`'s unit law.
+  Rᴰid≡ : ∀ {x} {xᴰ : Cᴰ.ob[ G.F ⟅ x ⟆ ]}
+    → Path Cᴰ.Hom[ (G.F ⟅ x ⟆ , xᴰ) , (G.F ⟅ x ⟆ , xᴰ) ]
+        (G.F ⟪ M.id ⟫ , Rᴰ.idᴰ) (N.id , Cᴰ.idᴰ)
+  Rᴰid≡ = sym (R.reind-filler (sym G.F-id) Cᴰ.idᴰ)
+
+  -- | Congruence for the displayed tensor of morphisms.
+  ⟨_⟩⊗ₕᴰ⟨_⟩ : ∀ {x y z w}{xᴰ : Cᴰ.ob[ x ]}{yᴰ : Cᴰ.ob[ y ]}
+    {zᴰ : Cᴰ.ob[ z ]}{wᴰ : Cᴰ.ob[ w ]}
+    {f f' : N.C [ x , y ]}{fᴰ : Cᴰ.Hom[ f ][ xᴰ , yᴰ ]}{fᴰ' : Cᴰ.Hom[ f' ][ xᴰ , yᴰ ]}
+    {g g' : N.C [ z , w ]}{gᴰ : Cᴰ.Hom[ g ][ zᴰ , wᴰ ]}{gᴰ' : Cᴰ.Hom[ g' ][ zᴰ , wᴰ ]}
+    → Path Cᴰ.Hom[ (x , xᴰ) , (y , yᴰ) ] (f , fᴰ) (f' , fᴰ')
+    → Path Cᴰ.Hom[ (z , zᴰ) , (w , wᴰ) ] (g , gᴰ) (g' , gᴰ')
+    → Path Cᴰ.Hom[ (x N.⊗ z , xᴰ P.⊗ᴰ zᴰ) , (y N.⊗ w , yᴰ P.⊗ᴰ wᴰ) ]
+        (f N.⊗ₕ g , fᴰ P.⊗ₕᴰ gᴰ) (f' N.⊗ₕ g' , fᴰ' P.⊗ₕᴰ gᴰ')
+  ⟨ p ⟩⊗ₕᴰ⟨ q ⟩ i = (p i .fst N.⊗ₕ q i .fst) , (p i .snd P.⊗ₕᴰ q i .snd)
+
+  unitᴰ' : Rᴰ.ob[ M.unit ]
+  unitᴰ' = liftOb ε≅ P.unitᴰ
+
+  _⊗ᴰ'_ : ∀ {x y} → Rᴰ.ob[ x ] → Rᴰ.ob[ y ] → Rᴰ.ob[ x M.⊗ y ]
+  _⊗ᴰ'_ {x} {y} xᴰ yᴰ = liftOb (μ≅ x y) (xᴰ P.⊗ᴰ yᴰ)
+
+  ─⊗ᴰ'─ : Functorᴰ M.─⊗─ (Rᴰ ×Cᴰ Rᴰ) Rᴰ
+  ─⊗ᴰ'─ .F-obᴰ (xᴰ , yᴰ) = xᴰ ⊗ᴰ' yᴰ
+  ─⊗ᴰ'─ .F-homᴰ {f = f , g} (fᴰ , gᴰ) = R.reind
+    (cong₂ N._⋆_ refl (G.μ .N-hom _) ∙ sym (N.⋆Assoc _ _ _)
+      ∙ cong₂ N._⋆_ (G.μ-isIso _ .sec) refl ∙ N.⋆IdL _)
+    (liftOut (μ≅ _ _) _ Cᴰ.⋆ᴰ ((fᴰ P.⊗ₕᴰ gᴰ) Cᴰ.⋆ᴰ liftIn (μ≅ _ _) _))
+  ─⊗ᴰ'─ .F-idᴰ = Cᴰ.rectify $ Cᴰ.≡out $
+    sym (R.reind-filler _ _)
+    ∙ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.⟨ ⟨ Rᴰid≡ ⟩⊗ₕᴰ⟨ Rᴰid≡ ⟩ ∙ Cᴰ.≡in (P.─⊗ᴰ─ .F-idᴰ) ⟩⋆⟨ refl ⟩
+                   ∙ Cᴰ.⋆IdL _ ⟩
+    ∙ Cᴰ.≡in (liftOut⋆In _ _)
+    ∙ sym Rᴰid≡
+  ─⊗ᴰ'─ .F-seqᴰ (fᴰ , gᴰ) (f'ᴰ , g'ᴰ) = Cᴰ.rectify $ Cᴰ.≡out $
+      sym (R.reind-filler _ _)
+    ∙ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.⟨ ⟨ sym (R.reind-filler _ _) ⟩⊗ₕᴰ⟨ sym (R.reind-filler _ _) ⟩
+                         ∙ Cᴰ.≡in (P.─⊗ᴰ─ .F-seqᴰ _ _) ⟩⋆⟨ refl ⟩ ⟩
+    ∙ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.⋆Assoc _ _ _ ⟩
+    ∙ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.⟨ refl ⟩⋆⟨ sym (Cᴰ.⋆IdL _)
+                    ∙ Cᴰ.⟨ sym (Cᴰ.≡in (liftIn⋆Out _ _)) ⟩⋆⟨ refl ⟩ ⟩ ⟩
+    ∙ conjReassoc {C = ∫C Cᴰ} _ _ _ _ _ _
+    ∙ Cᴰ.⟨ R.reind-filler _ _ ⟩⋆⟨ R.reind-filler _ _ ⟩
+    ∙ R.reind-filler _ _
+
+  tenstrᴰ' : TensorStrᴰ M Rᴰ
+  tenstrᴰ' .TensorStrᴰ.─⊗ᴰ─ = ─⊗ᴰ'─
+  tenstrᴰ' .TensorStrᴰ.unitᴰ = unitᴰ'
