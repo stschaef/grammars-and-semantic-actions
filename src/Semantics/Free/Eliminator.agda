@@ -1,4 +1,4 @@
-{-# OPTIONS --lossy-unification --allow-unsolved-metas #-}
+{-# OPTIONS --lossy-unification #-}
 {- The eliminator out of the free model.
 
    A displayed model over `FreeModel`, together with an interpretation
@@ -74,7 +74,7 @@ module _ {ℓCᴰ ℓCᴰ'} (Mᴰ : Modelᴰ FreeModel ℓCᴰ ℓCᴰ') where
       loopReind : ∀ {a b}{f : Exp a b}{aᴰ bᴰ} {q : f ≡ f}
                   {Y : Cᴰ.Hom[ f ][ aᴰ , bᴰ ]}
                 → F.reind q Y ≡ Y
-      loopReind = {!!}
+      loopReind = F.rectifyOut (F.reind-filler⁻ _)
 
       module ⊗ᴰ = Functorᴰ ─⊗ᴰ─
       -- The displayed presheaves underlying the indexed (co)products,

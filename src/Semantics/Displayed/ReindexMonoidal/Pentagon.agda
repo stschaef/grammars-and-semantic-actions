@@ -1,4 +1,4 @@
-{-# OPTIONS --lossy-unification --allow-unsolved-metas #-}
+{-# OPTIONS --lossy-unification #-}
 {- The pentagon coherence for the reindexed monoidal structure.
    Both sides reduce to `PRE ⋆ (CORE ⋆ SUF)` with the same prefix and
    suffix; the cores are the two sides of `P.pentagonᴰ`.
@@ -68,6 +68,7 @@ module Pentagon {M : MonoidalCategory ℓM ℓM'} {N : MonoidalCategory ℓN ℓ
     module Rᴰ = Fibers Rᴰ
 
   open Assoc P G cartLifts public
+  open IsoLifts Cᴰ cartLifts
 
   -- | `idᴰ ⊗ (A ⋆ B)` splits.
   ⊗R-seq : ∀ {a b c d}{f : N.C [ b , c ]}{g : N.C [ c , d ]}
@@ -88,16 +89,89 @@ module Pentagon {M : MonoidalCategory ℓM ℓM'} {N : MonoidalCategory ℓN ℓ
   ⊗L-seq A B = ⟨ refl ⟩⊗ₕᴰ⟨ sym (Cᴰ.⋆IdL _) ⟩ ∙ Cᴰ.≡in (P.─⊗ᴰ─ .F-seqᴰ _ _)
 
 
-  -- | The pentagon.
-  --
-  --   Both sides collapse to `A₁ ⋆ ((A₂ ⋆ (CORE ⋆ (B₄ ⋆ B₅))) ⋆ b₃)`
-  --   with
-  --     A₁ = idᴰ ⊗ u⟨x,y⊗z⟩        B₄ = (v⟨w,x⟩ ⊗ idᴰ) ⊗ idᴰ
-  --     A₂ = idᴰ ⊗ (idᴰ ⊗ u⟨y,z⟩)  B₅ = v⟨w⊗x,y⟩ ⊗ idᴰ
-  --   and the two cores are the two sides of `P.pentagonᴰ`. Getting
-  --   there is: expand the two primed associators through `⊗`, cancel
-  --   the μ-lifts pairwise with `conjSeq`, and move the three
-  --   associators off the primed objects with `P.αᴰ`'s naturality.
+
+  -- | The heart of the pentagon: with the outer μ-lifts stripped by
+  --   `conjSeq`, the two sides of the pentagon have these cores.
+  pentCore : ∀ {w x y z}
+    (wᴰ : Rᴰ.ob[ w ])(xᴰ : Rᴰ.ob[ x ])(yᴰ : Rᴰ.ob[ y ])(zᴰ : Rᴰ.ob[ z ])
+    → Path Cᴰ.Hom[ ((G.F ⟅ w ⟆) N.⊗ (G.F ⟅ x M.⊗ (y M.⊗ z) ⟆)
+                   , wᴰ P.⊗ᴰ (xᴰ ⊗ᴰ' (yᴰ ⊗ᴰ' zᴰ)))
+                 , ((G.F ⟅ (w M.⊗ x) M.⊗ y ⟆) N.⊗ (G.F ⟅ z ⟆)
+                   , ((wᴰ ⊗ᴰ' xᴰ) ⊗ᴰ' yᴰ) P.⊗ᴰ zᴰ) ]
+        (_ , (Rᴰ.idᴰ P.⊗ₕᴰ αᴰ'⟨ xᴰ , yᴰ , zᴰ ⟩)
+             Cᴰ.⋆ᴰ (((Cᴰ.idᴰ P.⊗ₕᴰ liftOut (μ≅ (x M.⊗ y) z) ((xᴰ ⊗ᴰ' yᴰ) P.⊗ᴰ zᴰ))
+                     Cᴰ.⋆ᴰ (P.αᴰ⟨ wᴰ , xᴰ ⊗ᴰ' yᴰ , zᴰ ⟩
+                     Cᴰ.⋆ᴰ (liftIn (μ≅ w (x M.⊗ y)) (wᴰ P.⊗ᴰ (xᴰ ⊗ᴰ' yᴰ)) P.⊗ₕᴰ Cᴰ.idᴰ)))
+                    Cᴰ.⋆ᴰ (αᴰ'⟨ wᴰ , xᴰ , yᴰ ⟩ P.⊗ₕᴰ Rᴰ.idᴰ)))
+        (_ , ((Cᴰ.idᴰ P.⊗ₕᴰ liftOut (μ≅ x (y M.⊗ z)) (xᴰ P.⊗ᴰ (yᴰ ⊗ᴰ' zᴰ)))
+              Cᴰ.⋆ᴰ (P.αᴰ⟨ wᴰ , xᴰ , yᴰ ⊗ᴰ' zᴰ ⟩
+              Cᴰ.⋆ᴰ (liftIn (μ≅ w x) (wᴰ P.⊗ᴰ xᴰ) P.⊗ₕᴰ Cᴰ.idᴰ)))
+             Cᴰ.⋆ᴰ ((Cᴰ.idᴰ P.⊗ₕᴰ liftOut (μ≅ y z) (yᴰ P.⊗ᴰ zᴰ))
+              Cᴰ.⋆ᴰ (P.αᴰ⟨ wᴰ ⊗ᴰ' xᴰ , yᴰ , zᴰ ⟩
+              Cᴰ.⋆ᴰ (liftIn (μ≅ (w M.⊗ x) y) ((wᴰ ⊗ᴰ' xᴰ) P.⊗ᴰ yᴰ) P.⊗ₕᴰ Cᴰ.idᴰ))))
+  pentCore wᴰ xᴰ yᴰ zᴰ =
+    -- expand F₁ = Rᴰ.idᴰ ⊗ α'⟨x,y,z⟩ into a five-fold composite, regrouped
+      Cᴰ.⟨ ⟨ Rᴰid≡ ⟩⊗ₕᴰ⟨ sym (R.reind-filler _ _) ⟩
+         ∙ ⊗R-seq _ _
+         ∙ Cᴰ.⟨ refl ⟩⋆⟨ ⊗R-seq _ _
+                       ∙ Cᴰ.⟨ refl ⟩⋆⟨ ⊗R-seq _ _
+                                     ∙ Cᴰ.⟨ refl ⟩⋆⟨ ⊗R-seq _ _ ⟩ ⟩ ⟩
+         ∙ Cᴰ.⟨ refl ⟩⋆⟨ regroup ⟩
+         ∙ regroup ⟩⋆⟨ refl ⟩
+    -- reshape F₂ ⋆ F₃ into conjugate form
+    ∙ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.⋆Assoc _ _ _ ∙ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.⋆Assoc _ _ _ ⟩ ⟩
+    -- cancel (idᴰ ⊗ v⟨x⊗y,z⟩) against (idᴰ ⊗ u⟨x⊗y,z⟩)
+    ∙ conjSeq {C = ∫C Cᴰ} (⊗R-inv (Cᴰ.≡in (liftIn⋆Out (μ≅ _ _) _)))
+    -- move α off the primed x⊗y with P.αᴰ naturality
+    ∙ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.⟨
+          Cᴰ.⋆Assoc _ _ _
+        ∙ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.⋆Assoc _ _ _ ⟩
+        ∙ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.≡in (P.αᴰ .transᴰ .N-homᴰ
+                (Cᴰ.idᴰ , (liftIn (μ≅ _ _) _ , Cᴰ.idᴰ))) ⟩ ⟩
+        ∙ regroup ⟩⋆⟨ refl ⟩ ⟩
+    -- expand F₃ = α'⟨w,x,y⟩ ⊗ idᴰ and cancel its head against (v⟨w,x⊗y⟩ ⊗ idᴰ)
+    ∙ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.⟨ refl ⟩⋆⟨
+            Cᴰ.⟨ refl ⟩⋆⟨ ⟨ sym (R.reind-filler _ _) ⟩⊗ₕᴰ⟨ Rᴰid≡ ⟩
+                        ∙ ⊗L-seq _ _
+                        ∙ Cᴰ.⟨ refl ⟩⋆⟨ ⊗L-seq _ _
+                                      ∙ Cᴰ.⟨ refl ⟩⋆⟨ ⊗L-seq _ _
+                                                    ∙ Cᴰ.⟨ refl ⟩⋆⟨ ⊗L-seq _ _ ⟩ ⟩ ⟩ ⟩
+          ∙ ⋆cancelL {C = ∫C Cᴰ} (⊗L-inv (Cᴰ.≡in (liftIn⋆Out (μ≅ _ _) _))) ⟩ ⟩
+    -- cancel ((idᴰ ⊗ v⟨x,y⟩) ⊗ idᴰ) against ((idᴰ ⊗ u⟨x,y⟩) ⊗ idᴰ)
+    ∙ Cᴰ.⟨ refl ⟩⋆⟨
+        conjSeq {C = ∫C Cᴰ} (⊗L-inv (⊗R-inv (Cᴰ.≡in (liftIn⋆Out (μ≅ _ _) _)))) ⟩
+    -- the core is now exactly P.pentagonᴰ's left-hand side
+    ∙ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.⟨ Cᴰ.⋆Assoc _ _ _ ⟩⋆⟨ refl ⟩ ⟩ ⟩
+    ∙ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.⟨ refl ⟩⋆⟨
+        Cᴰ.⟨ Cᴰ.≡in (P.pentagonᴰ _ _ _ _) ⟩⋆⟨ refl ⟩ ⟩ ⟩
+    ∙ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.⋆Assoc _ _ _ ⟩ ⟩
+    -- the right-hand core, reduced to the same normal form
+    ∙ sym
+      ( Cᴰ.⋆Assoc _ _ _
+      ∙ Cᴰ.⟨ refl ⟩⋆⟨
+            Cᴰ.⋆Assoc _ _ _
+          ∙ Cᴰ.⟨ refl ⟩⋆⟨ sym (Cᴰ.⋆Assoc _ _ _) ⟩
+          -- (v⟨w,x⟩ ⊗ idᴰ) and (idᴰ ⊗ u⟨y,z⟩) act on different factors
+          ∙ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.⟨ sym (Cᴰ.≡in (P.─⊗ᴰ─ .F-seqᴰ _ _))
+                             ∙ ⟨ Cᴰ.⋆IdR _ ∙ sym (Cᴰ.⋆IdL _) ⟩⊗ₕᴰ⟨
+                                 Cᴰ.⋆IdL _ ∙ sym (Cᴰ.⋆IdR _) ⟩
+                             ∙ Cᴰ.≡in (P.─⊗ᴰ─ .F-seqᴰ _ _) ⟩⋆⟨ refl ⟩ ⟩
+          ∙ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.⋆Assoc _ _ _ ⟩
+          ∙ sym (Cᴰ.⋆Assoc _ _ _) ⟩
+      -- move α off the primed y⊗z
+      ∙ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.⟨
+              Cᴰ.⟨ refl ⟩⋆⟨ ⟨ sym (Cᴰ.≡in (P.─⊗ᴰ─ .F-idᴰ)) ⟩⊗ₕᴰ⟨ refl ⟩ ⟩
+            ∙ sym (Cᴰ.≡in (P.αᴰ .transᴰ .N-homᴰ
+                (Cᴰ.idᴰ , (Cᴰ.idᴰ , liftOut (μ≅ _ _) _)))) ⟩⋆⟨ refl ⟩ ⟩
+      ∙ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.⋆Assoc _ _ _ ⟩
+      -- move α off the primed w⊗x
+      ∙ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.⟨ refl ⟩⋆⟨
+              sym (Cᴰ.⋆Assoc _ _ _)
+            ∙ Cᴰ.⟨ Cᴰ.⟨ ⟨ refl ⟩⊗ₕᴰ⟨ sym (Cᴰ.≡in (P.─⊗ᴰ─ .F-idᴰ)) ⟩ ⟩⋆⟨ refl ⟩
+                 ∙ Cᴰ.≡in (P.αᴰ .transᴰ .N-homᴰ
+                     (liftIn (μ≅ _ _) _ , (Cᴰ.idᴰ , Cᴰ.idᴰ))) ⟩⋆⟨ refl ⟩
+            ∙ Cᴰ.⋆Assoc _ _ _ ⟩ ⟩ ⟩ )
+
   pentagonᴰ' : ∀ {w x y z}
     (wᴰ : Rᴰ.ob[ w ])(xᴰ : Rᴰ.ob[ x ])(yᴰ : Rᴰ.ob[ y ])(zᴰ : Rᴰ.ob[ z ])
     → ((─⊗ᴰ'─ .F-homᴰ (Rᴰ.idᴰ , αᴰ'⟨ xᴰ , yᴰ , zᴰ ⟩))
@@ -105,95 +179,17 @@ module Pentagon {M : MonoidalCategory ℓM ℓM'} {N : MonoidalCategory ℓN ℓ
         Rᴰ.⋆ᴰ (─⊗ᴰ'─ .F-homᴰ (αᴰ'⟨ wᴰ , xᴰ , yᴰ ⟩ , Rᴰ.idᴰ))))
         Rᴰ.≡[ M.pentagon w x y z ]
       (αᴰ'⟨ wᴰ , xᴰ , yᴰ ⊗ᴰ' zᴰ ⟩ Rᴰ.⋆ᴰ αᴰ'⟨ wᴰ ⊗ᴰ' xᴰ , yᴰ , zᴰ ⟩)
-  pentagonᴰ' wᴰ xᴰ yᴰ zᴰ = {!!}
-
-  -- The reduction, worked out but not yet parsed into a single chain.
-  -- Reading it as `LHS ∙ ⟨P.pentagonᴰ⟩ ∙ sym RHS`:
-  --
-  --   LHS: strip the reinds of the two `Rᴰ` compositions and the five
-  --   factors; `conjSeq` cancels v⟨w⊗(x⊗y),z⟩ then v⟨w,(x⊗y)⊗z⟩;
-  --   expand `idᴰ ⊗ α'⟨x,y,z⟩` with `⊗R-seq` and `α'⟨w,x,y⟩ ⊗ idᴰ`
-  --   with `⊗L-seq`; `conjSeq` cancels (idᴰ ⊗ v⟨x⊗y,z⟩) and then
-  --   ((idᴰ ⊗ v⟨x,y⟩) ⊗ idᴰ); one `P.αᴰ` naturality at
-  --   (idᴰ , (v⟨x,y⟩ , idᴰ)) moves α off the primed x⊗y.
-  --
-  --   RHS: same reind strip; `conjSeq` cancels v⟨w⊗x,y⊗z⟩; rewrite
-  --   (v⟨w,x⟩ ⊗ idᴰ) ⋆ (idᴰ ⊗ u⟨y,z⟩) as (idᴰ ⊗ u⟨y,z⟩) ⋆ (v⟨w,x⟩ ⊗ idᴰ);
-  --   two `P.αᴰ` naturalities, at (idᴰ , (idᴰ , u⟨y,z⟩)) and at
-  --   (v⟨w,x⟩ , (idᴰ , idᴰ)), move the two associators off the primed
-  --   objects. `F-idᴰ` supplies idᴰ ⊗ idᴰ ≡ idᴰ where those naturality
-  --   squares need it.
-  --
-  -- Both land on
-  --   A₁ ⋆ ((A₂ ⋆ (CORE ⋆ (B₄ ⋆ B₅))) ⋆ b₃)
-  -- with A₁ = idᴰ ⊗ u⟨x,y⊗z⟩, A₂ = idᴰ ⊗ (idᴰ ⊗ u⟨y,z⟩),
-  -- B₄ = (v⟨w,x⟩ ⊗ idᴰ) ⊗ idᴰ, B₅ = v⟨w⊗x,y⟩ ⊗ idᴰ, and the two cores
-  -- are the two sides of `P.pentagonᴰ wᴰ xᴰ yᴰ zᴰ`.
-  --
-  -- The drafted chain (rejected by the parser: bracket imbalance in a
-  -- 60-line mixfix expression, not a type error):
-  --       -- strip the reinds of the two `Rᴰ` compositions and the five factors
-  --         sym (R.reind-filler _ _)
-  --       ∙ Cᴰ.⟨ sym (R.reind-filler _ _) ⟩⋆⟨ sym (R.reind-filler _ _) ⟩
-  --       ∙ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.⟨ sym (R.reind-filler _ _) ⟩⋆⟨ sym (R.reind-filler _ _) ⟩ ⟩
-  --       -- T2 ⋆ T3 : cancel v⟨w⊗(x⊗y),z⟩ against u⟨w⊗(x⊗y),z⟩
-  --       ∙ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.⟨ Cᴰ.⟨ refl ⟩⋆⟨ regroup ∙ sym (Cᴰ.⋆Assoc _ _ _) ⟩ ⟩⋆⟨ refl ⟩
-  --                     ∙ conjSeq {C = ∫C Cᴰ} (Cᴰ.≡in (liftIn⋆Out (μ≅ _ _) _)) ⟩
-  --       -- T1 ⋆ (…) : cancel v⟨w,(x⊗y)⊗z⟩ against u⟨w,(x⊗y)⊗z⟩
-  --       ∙ conjSeq {C = ∫C Cᴰ} (Cᴰ.≡in (liftIn⋆Out (μ≅ _ _) _))
-  --       ∙ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.⟨
-  --           -- F₁ = idᴰ ⊗ α'⟨x,y,z⟩, expanded through ⊗ and regrouped
-  --             Cᴰ.⟨ ⟨ Rᴰid≡ ⟩⊗ₕᴰ⟨ sym (R.reind-filler _ _) ⟩
-  --                ∙ ⊗R-seq _ _
-  --                ∙ Cᴰ.⟨ refl ⟩⋆⟨ ⊗R-seq _ _
-  --                              ∙ Cᴰ.⟨ refl ⟩⋆⟨ ⊗R-seq _ _
-  --                                            ∙ Cᴰ.⟨ refl ⟩⋆⟨ ⊗R-seq _ _ ⟩ ⟩ ⟩
-  --                ∙ Cᴰ.⟨ refl ⟩⋆⟨ regroup ⟩ ∙ regroup ⟩⋆⟨
-  --           -- F₂ ⋆ F₃ into `l ⋆ (y ⋆ m)` shape
-  --                Cᴰ.⋆Assoc _ _ _ ∙ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.⋆Assoc _ _ _ ⟩ ⟩
-  --           -- cancel (idᴰ ⊗ v⟨x⊗y,z⟩) against (idᴰ ⊗ u⟨x⊗y,z⟩)
-  --           ∙ conjSeq {C = ∫C Cᴰ} (⊗R-inv (Cᴰ.≡in (liftIn⋆Out (μ≅ _ _) _)))
-  --           -- move α off the primed x⊗y
-  --           ∙ Cᴰ.⟨ Cᴰ.⋆Assoc _ _ _
-  --                ∙ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.⋆Assoc _ _ _
-  --                              ∙ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.≡in (P.αᴰ .transᴰ .N-homᴰ
-  --                                    (Cᴰ.idᴰ , (liftIn (μ≅ _ _) _ , Cᴰ.idᴰ))) ⟩ ⟩
-  --                ∙ Cᴰ.⟨ refl ⟩⋆⟨ regroup ⟩ ⟩⋆⟨
-  --           -- F₃ = α'⟨w,x,y⟩ ⊗ idᴰ, expanded, with its head cancelled
-  --                Cᴰ.⟨ refl ⟩⋆⟨ ⟨ sym (R.reind-filler _ _) ⟩⊗ₕᴰ⟨ Rᴰid≡ ⟩
-  --                            ∙ ⊗L-seq _ _
-  --                            ∙ Cᴰ.⟨ refl ⟩⋆⟨ ⊗L-seq _ _
-  --                                          ∙ Cᴰ.⟨ refl ⟩⋆⟨ ⊗L-seq _ _
-  --                                                        ∙ Cᴰ.⟨ refl ⟩⋆⟨ ⊗L-seq _ _ ⟩ ⟩ ⟩
-  --                ∙ ⋆cancelL {C = ∫C Cᴰ} (⊗L-inv (Cᴰ.≡in (liftIn⋆Out (μ≅ _ _) _))) ⟩
-  --           -- cancel ((idᴰ ⊗ v⟨x,y⟩) ⊗ idᴰ) against ((idᴰ ⊗ u⟨x,y⟩) ⊗ idᴰ)
-  --           ∙ conjSeq {C = ∫C Cᴰ} (⊗L-inv (⊗R-inv (Cᴰ.≡in (liftIn⋆Out (μ≅ _ _) _))))
-  --           ∙ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.⟨ Cᴰ.⋆Assoc _ _ _ ⟩⋆⟨ refl ⟩ ⟩
-  --         ⟩⋆⟨ refl ⟩ ⟩
-  --       ∙ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.⟨ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.⟨ Cᴰ.≡in (P.pentagonᴰ _ _ _ _) ⟩⋆⟨ refl ⟩ ⟩ ⟩⋆⟨ refl ⟩ ⟩
-  --       ∙ sym
-  --         ( sym (R.reind-filler _ _)
-  --         ∙ Cᴰ.⟨ sym (R.reind-filler _ _) ⟩⋆⟨ sym (R.reind-filler _ _) ⟩
-  --         ∙ Cᴰ.⟨ Cᴰ.⟨ refl ⟩⋆⟨ regroup ∙ sym (Cᴰ.⋆Assoc _ _ _) ⟩ ⟩⋆⟨
-  --                Cᴰ.⟨ refl ⟩⋆⟨ regroup ∙ sym (Cᴰ.⋆Assoc _ _ _) ⟩ ⟩
-  --         ∙ conjSeq {C = ∫C Cᴰ} (Cᴰ.≡in (liftIn⋆Out (μ≅ _ _) _))
-  --         ∙ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.⟨
-  --               Cᴰ.⋆Assoc _ _ _
-  --             ∙ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.⋆Assoc _ _ _
-  --                           ∙ Cᴰ.⟨ sym (Cᴰ.≡in (P.─⊗ᴰ─ .F-seqᴰ _ _))
-  --                                ∙ ⟨ Cᴰ.⋆IdR _ ∙ sym (Cᴰ.⋆IdL _) ⟩⊗ₕᴰ⟨
-  --                                    Cᴰ.⋆IdL _ ∙ sym (Cᴰ.⋆IdR _) ⟩
-  --                                ∙ Cᴰ.≡in (P.─⊗ᴰ─ .F-seqᴰ _ _) ⟩⋆⟨ refl ⟩
-  --                           ∙ Cᴰ.⋆Assoc _ _ _ ⟩
-  --             ∙ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.⟨ ⟨ refl ⟩⊗ₕᴰ⟨ sym (Cᴰ.≡in (P.─⊗ᴰ─ .F-idᴰ)) ⟩
-  --                                ∙ Cᴰ.≡in (P.αᴰ .transᴰ .N-homᴰ
-  --                                    (Cᴰ.idᴰ , (Cᴰ.idᴰ , liftOut (μ≅ _ _) _))) ⟩⋆⟨ refl ⟩ ⟩
-  --             ∙ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.⋆Assoc _ _ _
-  --                           ∙ Cᴰ.⟨ refl ⟩⋆⟨ sym (Cᴰ.⋆Assoc _ _ _)
-  --                                         ∙ Cᴰ.⟨ ⟨ refl ⟩⊗ₕᴰ⟨ sym (Cᴰ.≡in (P.─⊗ᴰ─ .F-idᴰ)) ⟩
-  --                                              ∙ Cᴰ.≡in (P.αᴰ .transᴰ .N-homᴰ
-  --                                                  (liftIn (μ≅ _ _) _ , (Cᴰ.idᴰ , Cᴰ.idᴰ))) ⟩⋆⟨ refl ⟩
-  --                                         ∙ Cᴰ.⋆Assoc _ _ _ ⟩ ⟩
-  --             ∙ sym (Cᴰ.⋆Assoc _ _ _)
-  --             ∙ Cᴰ.⟨ sym (Cᴰ.⋆Assoc _ _ _) ⟩⋆⟨ refl ⟩
-  --             ⟩⋆⟨ refl ⟩ ⟩)
+  pentagonᴰ' wᴰ xᴰ yᴰ zᴰ = Cᴰ.rectify $ Cᴰ.≡out $
+      sym (R.reind-filler _ _)
+    ∙ Cᴰ.⟨ sym (R.reind-filler _ _) ⟩⋆⟨ sym (R.reind-filler _ _) ⟩
+    ∙ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.⟨ sym (R.reind-filler _ _) ⟩⋆⟨ sym (R.reind-filler _ _) ⟩ ⟩
+    ∙ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.⟨ Cᴰ.⟨ refl ⟩⋆⟨ regroup ∙ sym (Cᴰ.⋆Assoc _ _ _) ⟩ ⟩⋆⟨ refl ⟩
+                  ∙ conjSeq {C = ∫C Cᴰ} (Cᴰ.≡in (liftIn⋆Out (μ≅ _ _) _)) ⟩
+    ∙ conjSeq {C = ∫C Cᴰ} (Cᴰ.≡in (liftIn⋆Out (μ≅ _ _) _))
+    ∙ Cᴰ.⟨ refl ⟩⋆⟨ Cᴰ.⟨ pentCore wᴰ xᴰ yᴰ zᴰ ⟩⋆⟨ refl ⟩ ⟩
+    ∙ sym
+      ( sym (R.reind-filler _ _)
+      ∙ Cᴰ.⟨ sym (R.reind-filler _ _) ⟩⋆⟨ sym (R.reind-filler _ _) ⟩
+      ∙ Cᴰ.⟨ Cᴰ.⟨ refl ⟩⋆⟨ regroup ∙ sym (Cᴰ.⋆Assoc _ _ _) ⟩ ⟩⋆⟨
+             Cᴰ.⟨ refl ⟩⋆⟨ regroup ∙ sym (Cᴰ.⋆Assoc _ _ _) ⟩ ⟩
+      ∙ conjSeq {C = ∫C Cᴰ} (Cᴰ.≡in (liftIn⋆Out (μ≅ _ _) _)) )

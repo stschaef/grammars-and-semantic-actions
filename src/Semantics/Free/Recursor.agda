@@ -1,4 +1,4 @@
-{-# OPTIONS --lossy-unification --allow-unsolved-metas #-}
+{-# OPTIONS --lossy-unification #-}
 {- The recursor, as an instance of the eliminator.
 
    Any model is a displayed model over the free one with constant

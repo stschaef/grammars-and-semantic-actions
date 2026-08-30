@@ -1,4 +1,4 @@
-{-# OPTIONS --lossy-unification --allow-unsolved-metas #-}
+{-# OPTIONS --lossy-unification #-}
 {- The *local* eliminator out of the free model.
 
    `Semantics.Free.Eliminator.elim` asks for a `Modelᴰ FreeModel`:
