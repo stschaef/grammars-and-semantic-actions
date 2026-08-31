@@ -1,0 +1,127 @@
+{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
+open import Cubical.Foundations.Prelude
+open import Cubical.Foundations.HLevels
+open import Cubical.Algebra.Theory.Finitary
+import Cubical.Data.Equality as Eq
+import Cubical.Algebra.Theory.Finitary.Free.Closing as Cl
+open SortedSig
+open SortedEqns
+module Theory.Instances.Bags.Rank (El : Type ℓ-zero) where
+
+open import Cubical.Data.FinData using (Fin ; zero ; suc)
+open import Cubical.Data.Nat using (ℕ ; zero ; suc ; _+_ ; isSetℕ ; +-assoc
+  ; +-comm ; +-zero)
+open import Cubical.Data.Nat using (+-suc)
+open import Cubical.Data.Nat.Order.Recursive renaming (_<_ to _<ℕ_) using ()
+open import Cubical.Data.Nat.WFOrder using (ℕWFRec)
+import Cubical.Data.Nat.Order.Recursive as R
+open import Cubical.Data.Sigma
+open import Cubical.Data.Unit using (tt ; tt* ; isSetUnit)
+
+open import Theory.Instances.Monoid.Base
+open import Theory.Instances.Bags.Base El
+open import Theory.Type.Guarded.Base BagEqns El (λ _ → tt) closingPresentation
+open import Theory.Instances.Monoid.GuardedSplit BagEqns El (λ _ → tt)
+  closingPresentation
+open import Theory.Type.Guarded.Justification BagEqns El (λ _ → tt)
+  closingPresentation
+
+private
+  N : Sorts → Type ℓ-zero
+  N _ = ℕ
+
+  +Ops : Ops {σ = MonSig} N
+  +Ops ε· f = zero
+  +Ops _⊙_ f = f zero + f (suc zero)
+
+  +Sat : (e : BagEqns .eqns)
+         (ρ : (w : vars BagEqns e) → N (BagEqns .varSort e w))
+       → TmRec N +Ops ρ (BagEqns .lhs e) ≡ TmRec N +Ops ρ (BagEqns .rhs e)
+  +Sat (mon assoc) ρ = sym (+-assoc (ρ zero) (ρ (suc zero)) (ρ (suc (suc zero))))
+  +Sat (mon unitL) ρ = refl
+  +Sat (mon unitR) ρ = +-zero (ρ zero)
+  +Sat (ext comm) ρ = +-comm (ρ zero) (ρ (suc zero))
+
+size : Bag → ℕ
+size m = Cl.rec BagEqns (λ _ → isSetℕ) +Ops +Sat (λ _ → 1) m
+
+Fam : (ℓA : Level) → Type _
+Fam ℓA = (s : Sorts) → TheoryTy ℓA s
+
+-- The bag world's step relation: a recursive call is entitled to a strictly
+-- smaller bag.  This is the only place `size` appears in a type.
+_◃_ : Pt {X = Sorts} (λ s → s) → Pt (λ s → s) → Type ℓ-zero
+p ◃ q = size (p .snd) <ℕ size (q .snd)
+
+private
+  -- the recursive order: both bounds are structural, with no transport
+  ltLeft : (a b : ℕ) → a <ℕ suc (a + b)
+  ltLeft zero b = _
+  ltLeft (suc a) b = ltLeft a b
+
+  ≤-suc : (a b : ℕ) → a R.≤ b → a R.≤ suc b
+  ≤-suc zero b p = _
+  ≤-suc (suc a) (suc b) p = ≤-suc a b p
+
+  ltRight : (a b : ℕ) → b <ℕ suc (a + b)
+  ltRight zero b = R.≤-refl b
+  ltRight (suc a) b = ≤-suc b (a + b) (ltRight a b)
+
+  -- Every drop in this module is one of these two: a bag one generator
+  -- shorter, or the two halves of what a generator left behind.
+  oneDrop : {m n : Bag} → size m ≡ suc (size n) → (tt , n) ◃ (tt , m)
+  oneDrop {n = n} sz = subst (size n <ℕ_) (sym sz) (R.≤-refl (size n))
+
+  bothDrop : {m b c : Bag} → size m ≡ suc (size b + size c)
+    → ((tt , b) ◃ (tt , m)) × ((tt , c) ◃ (tt , m))
+  bothDrop {b = b} {c = c} sz =
+      subst (size b <ℕ_) (sym sz) (ltLeft (size b) (size c))
+    , subst (size c <ℕ_) (sym sz) (ltRight (size b) (size c))
+
+-- Splitting off a pivot puts both halves below the whole.  A caller that has
+-- decomposed its input this way is entitled to two recursive calls, and needs
+-- to know nothing about why.
+pivotDrops : (y : El) {m lo hi : Bag} → m ≡ ⌈gen y ⌉ ⊙ᵖ (lo ⊙ᵖ hi)
+  → ((tt , lo) ◃ (tt , m)) × ((tt , hi) ◃ (tt , m))
+pivotDrops y split = bothDrop (cong size split)
+
+-- The termination argument for divide-and-conquer over bags, once and for
+-- all.  `size` is a fold, so once the two splittings are forced the ranks
+-- are already sums; peeling a generator drops the rank by one, which puts
+-- both parts of what remains strictly below the whole.
+module Guarded▷ {ℓA} (A : Fam ℓA) (isSetA : ∀ s m → isSet (A s m)) where
+  private
+    bagLöb : Löb _◃_ A
+    bagLöb = löbByMeasure {X = Sorts} {xs = λ s → s}
+      isSetUnit ℕWFRec (λ p → size (p .snd)) (λ r → r) A isSetA
+
+  open Löb bagLöb public
+
+  private
+    -- The payments.  Both are stated at `m` itself, never at `op _⊙_ ms`, so
+    -- `app` applies with nothing to transport across.  These are proofs, not
+    -- terms, and necessarily so: they relate the point `ms a` to the point
+    -- `m`, and a `⊢`-map preserves its index.
+    genDrop : (y : El) (m : Bag) (ms : interpIn _⊙_ ↓M) → op _⊙_ ms Eq.≡ m
+      → ⌈ ⌈gen y ⌉ ⌉ (ms zero) → size m ≡ suc (size (ms (suc zero)))
+    genDrop y m ms e hd =
+      sym (cong size (Eq.eqToPath e))
+      ∙ cong (_+ size (ms (suc zero))) (cong size (Eq.eqToPath hd))
+
+    payCons : (y : El) → PayR bagLöb {X = ⌈ ⌈gen y ⌉ ⌉}
+    payCons y m ms e hd = oneDrop (genDrop y m ms e hd)
+
+    paySplit : (y : El) → PayR² bagLöb {X = ⌈ ⌈gen y ⌉ ⌉}
+    paySplit y m ms ns e e' hd =
+      bothDrop (genDrop y m ms e hd ∙ cong suc (sym (cong size (Eq.eqToPath e'))))
+
+  -- peeling a generator: the cofactor is one shorter
+  ▷-cons : ∀ {ℓB} (y : El) {B : TheoryTy ℓB tt}
+    → (⌈ ⌈gen y ⌉ ⌉ ⊎B B) & ▷ tt ⊢ ⌈ ⌈gen y ⌉ ⌉ ⊎B (B & A tt)
+  ▷-cons y = ▷⊛r bagLöb (payCons y)
+
+  -- ... and splitting what the generator left: both halves are below it
+  ▷-split : ∀ {ℓB} (y : El) {B C : TheoryTy ℓB tt}
+    → (⌈ ⌈gen y ⌉ ⌉ ⊎B (B ⊎B C)) & ▷ tt
+    ⊢ ⌈ ⌈gen y ⌉ ⌉ ⊎B ((B & A tt) ⊎B (C & A tt))
+  ▷-split y = ▷⊛r² bagLöb (paySplit y)
