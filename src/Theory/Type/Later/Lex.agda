@@ -1,8 +1,6 @@
 -- TODO how much of this actually used?
--- WARNING for now I have been treating this as a place to sequester the
--- semantic reasoning about guarded recursion so that importers of this
--- module can work with a clean interface
--- The implementation are subject to change per experiments w Cass
+-- See `Theory/Type/Later/Indexed` for what this directory is for and how
+-- settled it is.
 {- The lexicographic product of two well-founded orders. -}
 open import Cubical.Foundations.Prelude
 open import Cubical.Foundations.HLevels using (isSet× ; isProp×)

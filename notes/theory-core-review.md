@@ -97,9 +97,12 @@ Otherwise the tree is in good shape:
 
 * 0 postulates in `src/Theory/` (the only one in the repo is
   `String/Unicode.agda`, pre-existing).
-* 0 `REWRITE` pragmas anywhere — yet `src/grammar.agda-lib` enables
-  `--rewriting` library-wide. That is a metatheoretic weakening bought for
-  nothing; drop the flag.
+* `--rewriting` in `src/grammar.agda-lib` is **required**, not gratuitous --
+  I checked by removing it and rebuilding.  There are 0 `REWRITE` pragmas in
+  `src/`, but the flag is infective and `cubical-categorical-logic` uses one
+  in `Guarded/Later/Base.agda`, which this repo's guarded-recursion layer
+  sits on.  (An earlier draft of this review said to drop it; that was from
+  grepping `src/` only.)
 * 8 `{-# TERMINATING #-}` pragmas — see §3.
 
 ---
