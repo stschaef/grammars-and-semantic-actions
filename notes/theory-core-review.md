@@ -31,27 +31,56 @@ is 0 commits behind `origin/main` and merges clean.
 * `-j4` (the CI setting), warm cache with only 8 modules left to check:
   died again, after 4m53s.
 
-It is **not** one heavy module. Measured individually with `+RTS -s`, the
-suspects are unremarkable:
+It is **one module**, and it is an 88-line demo. Measured individually with
+`+RTS -s` against `-M16G`:
 
 | module | max residency | total in use |
 |---|---|---|
+| **`Combinator/MachineDyck` (88 lines, this branch)** | **12.36 GB** | **16,632 MiB** |
 | `Automaton/Implicit/Soundness` (1,214 lines, this branch) | 1.00 GB | 1,957 MiB |
-| `Automata/Implicit/RegExp/WeakEquivalences` (on `main`) | 0.35 GB | 551 MiB |
 | `Examples/RegexParser` (on `main`) | 0.45 GB | 539 MiB |
+| `Automata/Implicit/RegExp/WeakEquivalences` (on `main`) | 0.35 GB | 551 MiB |
 
-`agda --build-library` is a **single process** — `-j` is in-process
-parallelism — so it holds the `TCState` for all 887 modules at once. The
-exhaustion is *cumulative*. `main`'s CI is green at `-j4 -M16G`, so `main`
-fits; this branch adds 225 modules / 36k lines to the same process and does
-not. That is a direct consequence of the branch's size, and it will hit CI
-on the first PR large enough to cross the line.
+`MachineDyck` alone consumes the entire budget. It was started at 755/887 in
+the `-j8` run and never finished; it was still unfinished in the `-j4` run.
+`agda --build-library` is a single process, so a module holding 12 GB for
+minutes while a hundred others typecheck around it is what tips the process
+over.
 
-**Actions.** (a) Raise `-M` in `src/Makefile:5` (or drop to `-j2`) and
-confirm; GitHub runners have 16 GB total, so `-M16G` was already optimistic.
-(b) The Makefile defaults to `AGDA_FLAGS=-j10` and CI overrides to `-j4` —
-the default is the one nobody tests; make them agree. (c) This is a further
-argument for the split in §5: ten smaller libraries each fit.
+Bisecting the file:
+
+| checked through | max residency |
+|---|---|
+| `:40` `dyckParser = P.fix step` | 0.52 GB |
+| `:48` `dyckByCut = R1.cut ∘⊢ (dyckParser ,& R1.initial)` | 0.54 GB |
+| `:71` all definitions, **tests deleted** | 12.58 GB |
+| whole file | 12.36 GB |
+
+So it is **not** the six `Eq.refl` normalisation tests at the bottom —
+deleting them changes nothing. The cost is in the definitions at `:50-66`,
+and the prime suspect is the one-liner
+
+    dyckByCut≡dyck : dyckByCut ≡ dyck
+    dyckByCut≡dyck = refl
+
+which asks the conversion checker to normalise two whole guarded-fixpoint
+parsers against each other. It is a *decorative* proof — the header
+describes it as showing "`runP` was already a cut" — and it costs more than
+the rest of the library combined.
+
+**Actions.** (a) Replace `dyckByCut≡dyck = refl` with a stated-but-not-
+checked remark, or prove it structurally rather than by conversion. (b)
+`MachineDyck` and `MachineDemo` are both orphans (no importer), so nothing
+depends on the fix. (c) Independently: `src/Makefile:1` defaults to
+`AGDA_FLAGS=-j10` while CI overrides to `-j4` — the default is the one
+nobody tests; make them agree, and reconsider `-M16G` given GitHub runners
+have 16 GB total.
+
+The wider lesson for the tree: **280 definitions in `Theory/` are proved by
+bare `refl`**. Most are cheap, but conversion-checking DSL terms is the one
+operation here with no cost model, and there is no guard against another
+`MachineDyck`. A CI step that reports per-module time or peak residency
+would have caught this at the commit that introduced it.
 
 Otherwise the tree is in good shape:
 
