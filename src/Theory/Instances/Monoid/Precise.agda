@@ -13,6 +13,7 @@ module Theory.Instances.Monoid.Precise
   {ℓAlph}
   (Alphabet : Type ℓAlph) (isSetAlphabet : isSet Alphabet) where
 
+open import Cubical.Data.Bool using (Bool)
 open import Cubical.Data.FinData using (zero ; suc)
 open import Cubical.Data.List using ([] ; _∷_ ; _++_)
 import Cubical.Data.List.Properties as L
@@ -24,6 +25,7 @@ import Cubical.Data.Equality as Eq
 
 open import Theory.Instances.Monoid.Base
 open import Theory.Instances.Monoid.Strings Alphabet isSetAlphabet
+open import Theory.Instances.Monoid.Sat Alphabet isSetAlphabet using (satG)
 open import Theory.Instances.Monoid.Residual Alphabet isSetAlphabet
   using (castEq)
 open import Theory.Instances.Monoid.Derivative Alphabet isSetAlphabet
@@ -77,29 +79,40 @@ lit⊗-tail : {B : TheoryTy ℓA tt} (c : Alphabet) (u v as : ↓M tt)
 lit⊗-tail {B = B} c u v as lc e =
   subst B (L.cons-inj₂ (flat c u v (c ∷ as) lc e))
 
+-- A grammar every one of whose parses is a single character is *precise*:
+-- the splitting of `A ⊗ K` is determined by the word, so a refutation of
+-- the suffix refutes the whole tensor.  `literal c`, `char` and `satG P`
+-- are all of that shape, and the three lemmas below are this one lemma at
+-- the three maps into `char`; only the map differs, never the argument.
+tok⊗-precise : {A : TheoryTy ℓA tt} {K : TheoryTy ℓB tt}
+  → A ⊢ char → A ⊗ ¬Ty K ⊢ ¬Ty (A ⊗ K)
+tok⊗-precise {K = K} f m (ms , e , (a , (nk , _))) t =
+  nk (subst K (sym (L.cons-inj₂ tails)) (t .snd .snd .snd .fst))
+  where
+  ns = t .fst
+  here  = f (ms zero) a
+  there = f (ns zero) (t .snd .snd .fst)
+  tails : here .fst ∷ ms (suc zero) ≡ there .fst ∷ ns (suc zero)
+  tails = flat (here .fst) (ms zero) (ms (suc zero)) m (here .snd) e
+        ∙ sym (flat (there .fst) (ns zero) (ns (suc zero)) m
+                 (there .snd) (t .snd .fst))
+
 -- `literal c` is precise: two splittings with the same one-letter prefix
 -- agree on the suffix, so refuting the suffix refutes the whole tensor.
 lit⊗-precise : {K : TheoryTy ℓA tt} (c : Alphabet)
   → literal c ⊗ ¬Ty K ⊢ ¬Ty (literal c ⊗ K)
-lit⊗-precise {K = K} c m (ms , e , (lc , (nk , _))) t =
-  nk (subst K (sym (L.cons-inj₂ tails)) (t .snd .snd .snd .fst))
-  where
-  ns = t .fst
-  tails : c ∷ ms (suc zero) ≡ c ∷ ns (suc zero)
-  tails = flat c (ms zero) (ms (suc zero)) m lc e
-        ∙ sym (flat c (ns zero) (ns (suc zero)) m
-                 (t .snd .snd .fst) (t .snd .fst))
+lit⊗-precise c = tok⊗-precise λ _ lc → c , lc
 
 -- ...and so is `char`, which fixes the splitting without fixing the letter
 char⊗-precise : {K : TheoryTy ℓA tt} → char ⊗ ¬Ty K ⊢ ¬Ty (char ⊗ K)
-char⊗-precise {K = K} m (ms , e , ((d , lc) , (nk , _))) t =
-  nk (subst K (sym (L.cons-inj₂ tails)) (t .snd .snd .snd .fst))
-  where
-  ns = t .fst
-  tails : d ∷ ms (suc zero) ≡ t .snd .snd .fst .fst ∷ ns (suc zero)
-  tails = flat d (ms zero) (ms (suc zero)) m lc e
-        ∙ sym (flat (t .snd .snd .fst .fst) (ns zero) (ns (suc zero)) m
-                 (t .snd .snd .fst .snd) (t .snd .fst))
+char⊗-precise = tok⊗-precise id⊢
+
+-- ...and so is `satG P`, whose parse carries the letter and a proof that
+-- the predicate accepts it.  Stated here rather than in `Regex/Sat`,
+-- beside the other two, so that the argument is written once.
+sat⊗-precise : {P : Alphabet → Bool} {K : TheoryTy ℓA tt}
+  → satG P ⊗ ¬Ty K ⊢ ¬Ty (satG P ⊗ K)
+sat⊗-precise = tok⊗-precise λ _ (x , lc) → x .fst , lc
 
 -- Two more consequences of the same precision, both used wherever two
 -- one-step unrollings are compared: a `literal`-headed word is not empty,

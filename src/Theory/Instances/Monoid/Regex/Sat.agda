@@ -32,24 +32,16 @@ open import Cubical.Foundations.HLevels using (isSetΣ)
 
 open import Theory.Instances.Monoid.Combinator.Decidable.Base Alphabet _≟_ ℓ
   public
-open import Theory.Instances.Monoid.Precise Alphabet isSetAlphabet using (flat)
+-- `sat⊗-precise` lives in `Precise` beside `lit⊗-precise` and
+-- `char⊗-precise`: all three are the one `tok⊗-precise` argument at a
+-- different map into `char`, and only that layer binds a model element.
+open import Theory.Instances.Monoid.Precise Alphabet isSetAlphabet
+  using (sat⊗-precise)
 open import Theory.Instances.Monoid.Sat Alphabet isSetAlphabet public
 open import Theory.Instances.Monoid.Residual Alphabet isSetAlphabet
   using (⊗⊕ᴰ-distL ; &⊕ᴰ-distR)
 
 private variable ℓK : Level
-
-sat⊗-precise : {P : Alphabet → Bool} {K : TheoryTy ℓK tt}
-  → satG P ⊗ ¬Ty K ⊢ ¬Ty (satG P ⊗ K)
-sat⊗-precise {K = K} m (ms , e , ((x , lc) , (nk , _))) t =
-  nk (subst K (sym (L.cons-inj₂ tails)) (t .snd .snd .snd .fst))
-  where
-  ns = t .fst
-  y = t .snd .snd .fst .fst
-  tails : x .fst ∷ ms (suc zero) ≡ y .fst ∷ ns (suc zero)
-  tails = flat (x .fst) (ms zero) (ms (suc zero)) m lc e
-        ∙ sym (flat (y .fst) (ns zero) (ns (suc zero)) m
-                 (t .snd .snd .fst .snd) (t .snd .fst))
 
 dec-sat⊗↑ : {P : Alphabet → Bool} {K : TheoryTy ℓK tt}
   → satG P ⊗ DecTy K ⊢ DecTy (satG P ⊗ K)

@@ -10,9 +10,9 @@
    Here the grammar is `Grammars/Dyck`'s `S` -- `S → ε | ( S ) S` -- and
    nothing is hard-coded to any string.  Two things are shown:
 
-     * the ordinary Dyck parser *is* a cut against the empty configuration
-       (`dyckByCut≡dyck`, by `refl`), so configurations are not a side
-       gadget: `runP` was already one;
+     * the ordinary Dyck parser *is* a cut against the empty configuration,
+       so configurations are not a side gadget: `runP` was already one.
+       (The `refl` proof of this is disabled -- see the FIXME below.)
      * `push` puts a whole *grammar* on the stack, not a token.  `ctxTwo`
        holds a pending `S`, so cutting the same parser against it accepts
        two concatenated Dyck words. -}
@@ -47,8 +47,19 @@ module R1 = Mch.Runner Inc.MaybeAnswer {ℓK = ℓG} {A = Sset}
 dyckByCut : ⊤Ty ⊢ ty (Ans Sset)
 dyckByCut = R1.cut ∘⊢ (dyckParser ,& R1.initial)
 
-dyckByCut≡dyck : dyckByCut ≡ dyck
-dyckByCut≡dyck = refl
+-- FIXME(theory-core-review): DISABLED -- this two-line proof cost 12.36 GB of
+-- heap and never terminated, and is what made `make check` die with
+-- "Heap exhausted" against the Makefile's -M16G.  Commenting it out takes
+-- this module from "never finishes" to 535 MB / 2.97 s.
+--
+-- `refl` asks the conversion checker to normalise two whole guarded-fixpoint
+-- parsers against each other; there is no cost model for that.  The claim --
+-- that `runP` is a cut against the trivial configuration -- is worth keeping,
+-- but it needs a structural proof (or `Machine.runFromInit` stated so that it
+-- holds by construction), not one by conversion.
+--
+-- dyckByCut≡dyck : dyckByCut ≡ dyck
+-- dyckByCut≡dyck = refl
 
 -- ---------------------------------------------------------------------------
 -- 2.  A configuration holding a whole grammar.

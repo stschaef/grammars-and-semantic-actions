@@ -1,64 +1,24 @@
 {-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
-{- `list ::= '[' ( n (',' n)* )? ']'`, built entirely from the derived
-   combinators.  The point of the example is what is *absent*: no `NT`, no
-   `Tag`, no `body : Tag → Code`, no `isSetValued`, no roll/unroll pair.
-   Every other grammar in this directory pays that ~60 lines to get a
-   repetition; `sepBy` is the whole grammar here. -}
+{- The list-literal `Maybe`-parser.  The grammar itself is
+   `Combinator/Grammars/ListLit`, written once for every answer; this module
+   only picks `MaybeAnswer` and runs the tests.
+
+   Sound but not complete: `nothing` is a refusal, not a refutation. -}
 open import Cubical.Foundations.Prelude
-open import Cubical.Algebra.Theory.Finitary
-import Cubical.Data.Sum as Sum
-import Cubical.Data.Empty as Empty
-import Cubical.Data.Equality as Eq
-open SortedSig
-open SortedEqns
 
 module Theory.Instances.Monoid.Combinator.Incomplete.ListLit where
 
 open import Cubical.Data.List using ([] ; _∷_)
-open import Cubical.Data.Sigma using (_,_ ; fst ; snd)
 open import Cubical.Data.Unit using (Unit ; tt)
 import Cubical.Data.Maybe as M
 
--- three tokens: `[`, `]`, `,`, and a number `n`
-data Tok : Type ℓ-zero where
-  lb rb cm nm : Tok
-
-_≟T_ : (x y : Tok) → (x Eq.≡ y) Sum.⊎ ((x Eq.≡ y) → Empty.⊥)
-lb ≟T lb = Sum.inl Eq.refl
-rb ≟T rb = Sum.inl Eq.refl
-cm ≟T cm = Sum.inl Eq.refl
-nm ≟T nm = Sum.inl Eq.refl
-lb ≟T rb = Sum.inr λ ()
-lb ≟T cm = Sum.inr λ ()
-lb ≟T nm = Sum.inr λ ()
-rb ≟T lb = Sum.inr λ ()
-rb ≟T cm = Sum.inr λ ()
-rb ≟T nm = Sum.inr λ ()
-cm ≟T lb = Sum.inr λ ()
-cm ≟T rb = Sum.inr λ ()
-cm ≟T nm = Sum.inr λ ()
-nm ≟T lb = Sum.inr λ ()
-nm ≟T rb = Sum.inr λ ()
-nm ≟T cm = Sum.inr λ ()
-
-open import Theory.Instances.Monoid.Combinator.Incomplete.Star Tok _≟T_
+open import Theory.Instances.Monoid.Grammars.ListLit using (Tok ; _≟T_ ; lb ; rb ; cm ; nm)
+open import Theory.Instances.Monoid.Combinator.Incomplete.Base Tok _≟T_
   (ℓ-suc ℓ-zero)
+import Theory.Instances.Monoid.Combinator.Grammars.ListLit MaybeAnswer as G
 
--- `n (',' n)*`
-items : ⊤Ty ⊢ Parser ℓG ⟨▷⟩ ⟨□⟩ (litSet nm ⊗Set StarSet (litSet cm ⊗Set litSet nm))
-items = sepBy ℓG (tok nm) (tok cm)
-
--- `'[' items? ']'`
-listP : ⊤Ty ⊢ Parser ℓG ⟨▷⟩ ⟨□⟩ ((litSet lb ⊗Set
-                                (litSet nm ⊗Set StarSet (litSet cm ⊗Set litSet nm) ⊕Set εSet))
-                               ⊗Set litSet rb)
-listP = between (tok lb) (box (option items)) (pless ∘⊢ tok rb)
-
-testList : Test (ty
-                 ((litSet lb ⊗Set
-                   (litSet nm ⊗Set StarSet (litSet cm ⊗Set litSet nm) ⊕Set εSet))
-                  ⊗Set litSet rb))
-testList = runP ℓG (pmore ∘⊢ listP)
+testList : Test _
+testList = runP G.ℓG (pmore ∘⊢ G.listP)
 
 ok? : String → M.Maybe Unit
 ok? = observe testList (semact-Maybe (semact-pure tt))
