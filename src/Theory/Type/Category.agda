@@ -20,11 +20,10 @@ open import Theory.Type.HLevels σeq V vs 𝒫
 open Σω
 open Liftω
 
-SetTheoryTy : (ℓA : Level) → S → Type _
-SetTheoryTy ℓA s = Σ[ A ∈ TheoryTy ℓA s ] isSetTheoryTy A
-
+-- `SetTheoryTy` used to be redefined here, character for character, as
+-- `Type/HLevels`' `TheorySet` -- in a module that already imports HLevels.
 SetTheoryTyω : S → Typeω
-SetTheoryTyω s = Σω (Liftω Level) λ (liftω ℓA) → Liftω (SetTheoryTy ℓA s)
+SetTheoryTyω s = Σω (Liftω Level) λ (liftω ℓA) → Liftω (TheorySet ℓA s)
 
 TheoryTyHomℓ : {s : S} → SetTheoryTyω s → SetTheoryTyω s → Level
 TheoryTyHomℓ (liftω ℓA , liftω A) (liftω ℓB , liftω B) =

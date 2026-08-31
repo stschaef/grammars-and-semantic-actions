@@ -22,12 +22,10 @@ module Theory.Instances.Monoid.Types
   where
 
 open import Cubical.Data.Unit using (tt ; tt*)
-open import Cubical.Relation.Nullary.Properties using (Discrete→isSet)
+open import Cubical.Relation.Nullary.DiscreteEq using (DiscreteEq→isSet)
 
 isSetAlphabet : isSet Alphabet
-isSetAlphabet = Discrete→isSet λ x y → Sum.rec
-  (λ p → yes (Eq.eqToPath p)) (λ ¬p → no λ p → ¬p (Eq.pathToEq p)) (x ≟ y)
-  where open import Cubical.Relation.Nullary.Base using (yes ; no)
+isSetAlphabet = DiscreteEq→isSet _≟_
 
 open import Theory.Instances.Monoid.Base public
 open import Theory.Instances.Monoid.Strings Alphabet isSetAlphabet public

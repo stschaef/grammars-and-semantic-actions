@@ -109,10 +109,25 @@ roll* = ⊕-elim CONS NIL
 
 -- Every word is a list of characters: `Strings.read` at the star rather
 -- than at `String*`.  This is how an input is presented to a fold.
+--
+-- `Strings.read` is the one place that chooses a cons list at a monoid
+-- element, and its header says so.  This used to repeat that recursion at
+-- the other code, so the choice was made twice and only one of the two had
+-- a section law.  It does not have to be: `starBranch char b` and
+-- `kleeneBranch b` are the *same* functor at each `b` -- only the two
+-- `Bool → Functor` functions differ, which is why they never unify -- so a
+-- fold that renames the summand carries one μ to the other, and `read`
+-- stays the only recursion on a word.
+fromString* : String* ⊢ char *
+fromString* = rec (λ _ → KleeneCode) alg tt
+  where
+  alg : ∀ _ → ⟦ KleeneCode ⟧TheoryTy (λ _ → char *) ⊢ char *
+  alg _ = roll ∘⊢ ⊕ᴰ-elim λ where
+    false → σ⊕ false
+    true  → σ⊕ true
+
 readChars : ⊤Ty ⊢ char *
-readChars [] _ = NIL _ (lift εTy-pt)
-readChars (c ∷ w) _ =
-  CONS _ (two (c ∷ []) w , Eq.refl , ((c , Eq.refl) , (readChars w _ , tt*)))
+readChars = fromString* ∘⊢ read
 
 fold*r : {ℓA ℓB : Level} {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt}
   → (⟦ starBranch A false ⟧TheoryTy (λ _ → B) ⊢ B)

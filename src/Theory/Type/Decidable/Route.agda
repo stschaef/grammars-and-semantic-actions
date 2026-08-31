@@ -40,9 +40,10 @@ open import Theory.Type.Decidable.Base σeq V vs 𝒫
 
 private variable ℓA ℓB ℓY : Level
 
--- Deciding an index in `Eq`, so that matching refines.
-DiscreteEq : ∀ {ℓY} → Type ℓY → Type ℓY
-DiscreteEq Y = (y y' : Y) → (y Eq.≡ y') Sum.⊎ ((y Eq.≡ y') → ⊥)
+-- `DiscreteEq` is parameter-free, so it lives outside the theory modules;
+-- re-exported here for the clients that used to get it from this file.
+open import Cubical.Relation.Nullary.DiscreteEq public
+  using (DiscreteEq ; DiscreteEq→Discrete ; DiscreteEq→isSet)
 
 module _ {s} {Y : Type ℓY} (Φ : Y → TheoryTy ℓA s) where
 

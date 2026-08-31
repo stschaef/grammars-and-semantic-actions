@@ -29,23 +29,10 @@ open import Theory.Instances.Monoid.Residual Alphabet isSetAlphabet
 
 private variable ℓ ℓ' ℓ'' : Level
 
--- A right factor that may read the left factor's parse.
-Dep : TheoryTy ℓ tt → (ℓ' : Level) → Type _
-Dep A ℓ' = (l : String) → A l → TheoryTy ℓ' tt
-
--- The same shape as `_⊗_`: a splitting, an equation, and the two slots --
--- except the slots are a Σ rather than a ×, so the second may see the first.
-⊗ᴰ : (A : TheoryTy ℓ tt) → Dep A ℓ' → TheoryTy (ℓ-max ℓM (sup 2 (two ℓ ℓ'))) tt
-⊗ᴰ A B m =
-  Σ[ ms ∈ interpIn _⊙_ ↓M ]
-    (op _⊙_ ms Eq.≡ m)
-    × (Σ[ a ∈ A (ms zero) ] (B (ms zero) a (ms (suc zero)) × Unit* {ℓ-zero}))
-
--- Conservativity: when the right factor ignores the tree, this *is* `_⊗_`.
--- A `Σ` over a constant family is a `×`, so the two are the same type.
-⊗ᴰ-const : {A : TheoryTy ℓ tt} {B : TheoryTy ℓ' tt}
-  → ⊗ᴰ A (λ _ _ → B) ≡ A ⊗ B
-⊗ᴰ-const = refl
+-- `Dep`, `⊗ᴰ`, `⊗ᴰ-const` and `⊗ᴰ-assoc⁻` now live in `Strings`, beside the
+-- `_⊗_` they generalise: `⊗ᴰ-assoc⁻` and `Strings.⊗-assoc⁻` had identical
+-- bodies and identical `where` clauses, and keeping the general one in a
+-- module the specific one cannot see is what let that happen.
 -- Associativity with a prefix-indexed right factor.
 
 -- `seq` reassociates `A ⊗ (B ⊗ K)` with `⊗-assoc`/`⊗-assoc⁻`.  The same
@@ -69,17 +56,6 @@ module _ {A : TheoryTy ℓ tt} {B : String → TheoryTy ℓ' tt}
     split = Eq.sym (++-assocEq (ns zero) (ns (suc zero)) (ms (suc zero)))
        Eq.∙ (Eq.ap (_++ ms (suc zero)) f Eq.∙ e)
 
-  ⊗ᴰ-assoc⁻ :
-    ⊗ᴰ A (λ l₁ _ → ⊗ᴰ (B l₁) (λ l₂ _ → C (l₁ ++ l₂)))
-    ⊢ ⊗ᴰ (⊗ᴰ A (λ l _ → B l)) (λ l _ → C l)
-  ⊗ᴰ-assoc⁻ m (ms , e , (a , ((ns , f , (b , (c , _))) , _))) =
-    two (ms zero ++ ns zero) (ns (suc zero))
-      , split
-      , ((two (ms zero) (ns zero) , Eq.refl , (a , (b , tt*))) , (c , tt*))
-    where
-    split : ((ms zero ++ ns zero) ++ ns (suc zero)) Eq.≡ m
-    split = ++-assocEq (ms zero) (ns zero) (ns (suc zero))
-       Eq.∙ (Eq.ap (ms zero ++_) f Eq.∙ e)
 
 -- `⊗ᴰ` is functorial in its left factor, at a fixed indexed continuation.
 ⊗ᴰ-mapL : {A : TheoryTy ℓ tt} {B : TheoryTy ℓ' tt}

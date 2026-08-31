@@ -100,12 +100,9 @@ module PushOf (ℓB : Level) {I : Type ℓAlph} (Λ : I → TheoryTy ℓM tt)
       same Eq.refl Eq.refl = Eq.refl
     go (Sum.inr nb) = cov .disjoint b b' nb m (t , t')
 
--- The `isSet` a routed sum is indexed by.  A definition rather than an
--- inlined `Discrete→isSet` so that a grammar may name the *same* proof the
--- `Choice` module will use: `⊕ᴰSet` is definitional in its proof.
-DiscreteEq→isSet : {ℓY : Level} {Y : Type ℓY} → DiscreteEq Y → isSet Y
-DiscreteEq→isSet decY = Discrete→isSet λ y y' → Sum.rec
-  (λ p → yes (Eq.eqToPath p)) (λ ¬p → no λ p → ¬p (Eq.pathToEq p)) (decY y y')
+-- `DiscreteEq→isSet` arrives with `DiscreteEq` itself, from
+-- `Cubical.Relation.Nullary.DiscreteEq` via `Type/Decidable/Route`, so
+-- that the modules imported *by* this one can name the same proof.
 
 decM₁ : DiscreteEq M₁
 decM₁ ε₁ ε₁ = Sum.inl Eq.refl

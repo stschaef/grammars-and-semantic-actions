@@ -32,7 +32,6 @@ import Cubical.Data.Maybe as MB
 open import Cubical.Data.Maybe.Properties using (isOfHLevelMaybe)
 open import Cubical.Data.Sigma using (_,_ ; fst ; snd)
 open import Cubical.Data.Unit using (Unit ; tt ; tt*)
-open import Cubical.Relation.Nullary.Properties using (Discrete→isSet)
 
 open import Theory.Instances.Monoid.Combinator.Decidable.Lookahead
   Alphabet _≟_ (ℓ-suc ℓAlph) public
@@ -40,9 +39,7 @@ open import Theory.Instances.Monoid.Residual Alphabet isSetAlphabet
   using (⟦⊗e⟧ ; ⟦⊗e⟧⁻)
 
 isSetM₁ : isSet M₁
-isSetM₁ = Discrete→isSet λ o o' → Sum.rec
-  (λ p → yes (Eq.eqToPath p)) (λ ¬p → no λ p → ¬p (Eq.pathToEq p)) (o ≟M o')
-  where open import Cubical.Relation.Nullary.Base using (yes ; no)
+isSetM₁ = DiscreteEq→isSet _≟M_
 
 -- a symbol of a production body: a terminal, or another nonterminal
 data Item (X : Type ℓAlph) : Type ℓAlph where

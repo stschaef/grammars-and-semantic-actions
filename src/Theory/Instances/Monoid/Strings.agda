@@ -134,6 +134,42 @@ infixr 20 _,⊗_
 ++-unit-rEq : (a : String) → (a ++ []) Eq.≡ a
 ++-unit-rEq [] = Eq.refl
 ++-unit-rEq (x ∷ a) = Eq.ap (x ∷_) (++-unit-rEq a)
+-- The dependent tensor: `A ⊗ B` where the right factor may mention the
+-- string the left factor consumed and the tree it built over it.  It is
+-- introduced here, beside `_⊗_`, because it *generalises* `_⊗_` -- a `Σ`
+-- over a constant family is a `×`, so `⊗ᴰ-const` below is `refl` -- and
+-- because the reassociation the two share was otherwise written twice, once
+-- here and once in `Backreference/Base`, with identical bodies and
+-- identical `where` clauses.
+Dep : TheoryTy ℓA tt → (ℓB : Level) → Type _
+Dep A ℓB = (l : String) → A l → TheoryTy ℓB tt
+
+⊗ᴰ : (A : TheoryTy ℓA tt) → Dep A ℓB → TheoryTy (ℓ-max ℓM (sup 2 (two ℓA ℓB))) tt
+⊗ᴰ A B m =
+  Σ[ ms ∈ interpIn _⊙_ ↓M ]
+    (op _⊙_ ms Eq.≡ m)
+    × (Σ[ a ∈ A (ms zero) ] (B (ms zero) a (ms (suc zero)) × Unit* {ℓ-zero}))
+
+-- Conservativity: when the right factor ignores the tree, this *is* `_⊗_`.
+⊗ᴰ-const : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt}
+  → ⊗ᴰ A (λ _ _ → B) ≡ A ⊗ B
+⊗ᴰ-const = refl
+
+-- Reassociation, with the right factor indexed by the prefix consumed.  The
+-- index splits into the two prefixes, `l₁` and `l₁ ++ l₂`.
+⊗ᴰ-assoc⁻ : {A : TheoryTy ℓA tt} {B : String → TheoryTy ℓB tt}
+  {C : String → TheoryTy ℓC tt}
+  → ⊗ᴰ A (λ l₁ _ → ⊗ᴰ (B l₁) (λ l₂ _ → C (l₁ ++ l₂)))
+  ⊢ ⊗ᴰ (⊗ᴰ A (λ l _ → B l)) (λ l _ → C l)
+⊗ᴰ-assoc⁻ m (ms , e , (a , ((ns , f , (b , (c , _))) , _))) =
+  two (ms zero ++ ns zero) (ns (suc zero))
+    , split
+    , ((two (ms zero) (ns zero) , Eq.refl , (a , (b , tt*))) , (c , tt*))
+  where
+  split : ((ms zero ++ ns zero) ++ ns (suc zero)) Eq.≡ m
+  split = ++-assocEq (ms zero) (ns zero) (ns (suc zero))
+     Eq.∙ (Eq.ap (ms zero ++_) f Eq.∙ e)
+
 
 ⊗-assoc : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt} {C : TheoryTy ℓC tt}
   → (A ⊗ B) ⊗ C ⊢ A ⊗ (B ⊗ C)
@@ -146,6 +182,13 @@ infixr 20 _,⊗_
   split = Eq.sym (++-assocEq (ns zero) (ns (suc zero)) (ms (suc zero)))
      Eq.∙ (Eq.ap (_++ ms (suc zero)) f Eq.∙ e)
 
+-- ...and at constant families.  This *is* `⊗ᴰ-assoc⁻` above -- same body,
+-- same `where` clause -- and it is written out anyway, deliberately.
+-- Defining it as `⊗ᴰ-assoc⁻ {B = λ _ → B} {C = λ _ → C}` typechecks here
+-- but stops it reducing when it is passed *unapplied*, as the pentagon
+-- below does (`⊗-map ⊗-assoc⁻ id⊢`): the families become metas that
+-- nothing solves, so `⊗ᴰ-assoc⁻` never gets to match and the pentagon
+-- fails with unsolved constraints.  Measured, not assumed.
 ⊗-assoc⁻ : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt} {C : TheoryTy ℓC tt}
   → A ⊗ (B ⊗ C) ⊢ (A ⊗ B) ⊗ C
 ⊗-assoc⁻ m (ms , e , (a , ((ns , f , (b , (c , _))) , _))) =

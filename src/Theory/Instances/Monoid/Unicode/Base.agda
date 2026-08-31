@@ -18,7 +18,7 @@ module Theory.Instances.Monoid.Unicode.Base where
 open import Cubical.Data.Nat using (ℕ ; zero ; suc ; _+_)
 open import Cubical.Data.Bool using (Bool ; true ; false)
 open import Cubical.Data.List using (List ; [] ; _∷_ ; map)
-open import Cubical.Relation.Nullary.Properties using (Discrete→isSet)
+open import Cubical.Relation.Nullary.DiscreteEq using (DiscreteEq→isSet)
 open import Cubical.Relation.Nullary.Base using (yes ; no)
 open import Agda.Builtin.Nat using (div-helper ; mod-helper)
 import Agda.Builtin.Char as AC
@@ -63,8 +63,7 @@ _≟U_ : (x y : UChar) → (x Eq.≡ y) Sum.⊎ ((x Eq.≡ y) → Empty.⊥)
 _≟U_ = _≟Bits_
 
 isSetUChar : isSet UChar
-isSetUChar = Discrete→isSet λ x y → Sum.rec
-  (λ p → yes (Eq.eqToPath p)) (λ ¬p → no λ p → ¬p (Eq.pathToEq p)) (x ≟U y)
+isSetUChar = DiscreteEq→isSet _≟U_
 
 -- Accumulator form, so the recursive call appears once.  Measured: the
 -- duplicating form (`toNat bs + toNat bs`) is no slower, so Agda shares
