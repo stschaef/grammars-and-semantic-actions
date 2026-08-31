@@ -1,4 +1,5 @@
 -- The free model of a many-sorted finitary theory
+-- TODO upstream this to cubical-categorical-logic
 module Cubical.Algebra.Theory.Finitary.Free.Closing where
 
 open import Cubical.Foundations.Prelude

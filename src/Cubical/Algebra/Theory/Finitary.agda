@@ -44,7 +44,6 @@ module _ {S : Type ℓS} (σ : SortedSig S ℓ) where
       → Tm V vs (σ .resultSort o)
 
 module _ {S : Type ℓS} {σ : SortedSig S ℓ} where
-  -- an interpretation of the operations on an S-indexed family
   Ops : (S → Type ℓX) → Type _
   Ops X = (o : σ .ops)
     → ((a : arities σ o) → X (σ .sortOf o a)) → X (σ .resultSort o)
@@ -55,8 +54,6 @@ module _ {S : Type ℓS} {σ : SortedSig S ℓ} where
   TmRec X α ρ (var v) = ρ v
   TmRec X α ρ (node o ts) = α o (λ a → TmRec X α ρ (ts a))
 
--- equations are finitary too: an equation has finitely many variables,
--- which is what lets a convolution along a term carry a level per slot
 record SortedEqns {S : Type ℓS} (σ : SortedSig S ℓ) ℓ''
   : Type (ℓ-max (ℓ-max ℓS ℓ) (ℓ-suc ℓ'')) where
   field
@@ -72,7 +69,6 @@ vars : {S : Type ℓS} {σ : SortedSig S ℓ} (σeq : SortedEqns σ ℓ'')
      → σeq .eqns → Type ℓ-zero
 vars σeq e = Fin (σeq .varCount e)
 
--- S-indexed families of sets
 FAM : (S : Type ℓS) (ℓX : Level)
   → Category (ℓ-max ℓS (ℓ-suc ℓX)) (ℓ-max ℓS ℓX)
 FAM S ℓX .Category.ob = S → hSet ℓX
