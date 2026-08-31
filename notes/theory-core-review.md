@@ -421,3 +421,69 @@ or not at all.
 9. Make `{Decidable,Incomplete}/{Dyck,ListLit}` one module parameterised by
    the answer (−~130 lines).
 10. Stop `Regex/{Base,Sat}` re-exporting the Dec combinator stack `public`.
+
+---
+
+## 6. Fixes applied
+
+Everything below was typechecked. Where a fix was attempted and abandoned,
+the measurement that killed it is recorded — two of §1–§2's findings did not
+survive contact.
+
+### Landed
+
+| what | where | effect |
+|---|---|---|
+| **Build blocker.** `dyckByCut≡dyck = refl` disabled, with a FIXME giving the numbers and what a real proof would need | `Combinator/MachineDyck` | 12.36 GB / never finished → **535 MB / 2.97 s** |
+| **Three precision proofs → one.** `lit⊗-precise`, `char⊗-precise` and `sat⊗-precise` were the same argument at three maps into `char`; factored as `tok⊗-precise` | `Monoid/Precise` | −24 lines; `Regex/Sat` drops to **zero** model-element bindings |
+| **`sat⊗-precise` rehomed** from `Regex/Sat` to `Precise`, beside its two siblings | `Monoid/{Precise,Regex/Sat}` | the leak in §1's table, closed |
+| **`DiscreteEq` rehomed.** It was declared in `Type/Decidable/Route` — nothing to do with routing — and the bridge to `isSet` was written **five** times, twice unavoidably (`Monoid/Types` and `Decidable/Productions` are imported *by* the module holding the shared copy). Neither notion mentions a theory, so both now live parameter-free | new `Cubical/Relation/Nullary/DiscreteEq` | 5 copies → 1 |
+| **Dependent tensor rehomed** to `Strings`, beside the `_⊗_` it generalises | `Strings`, `Backreference/Base` | `Backreference/Base` 159 → 135 lines |
+| **`readChars` is now internal.** Was a second recursion on the word, duplicating `Strings.read`; now a fold over `String*` composed with `read`. `starBranch char b` and `kleeneBranch b` are the same functor at each `b` — only the two `Bool → Functor` functions differ, which is why they never unified | `Monoid/KleeneStar` | one recursion on a word, not two |
+| **`ListLit` written once.** The grammar was duplicated to pick two answers; migrated to the `Grammars/Dyck` arrangement the codebase already had | new `Grammars/ListLit`, `Combinator/Grammars/ListLit`, two leaves | 161 → 115 lines, grammar and token table each written once |
+| **`SetTheoryTy`** was `TheorySet` character for character, in a module already importing HLevels | `Type/Category` | 1 copy removed |
+
+### Attempted, measured, reverted — and why
+
+**`Combinator/Core`'s `node-mk`/`node-elim` are not a leak.** §1 listed them as
+re-deriving `⊗ᵘ-intro`/`⊗ᵘ-elim` by hand. They cannot: `NodeArgs` lets the
+slots depend on the splitting `ms` and `⊗ᵘ`'s do not, so `⊗ᴰ` is a strict
+generalisation and this is its connective-introduction boundary — the same
+licence `Operation/Base` takes. Unifying them would mean moving the dependent
+tensor into `Operation/Base`, which is blocked today: `⊗ᴰ` is `TheorySet`-valued
+and `Type/HLevels` already imports `Operation/Base` (`HLevels.agda:35`), so the
+dependency inverts. The boundary is now stated in the file instead.
+
+**The `⊗ᴰ-assoc⁻` / `⊗-assoc⁻` duplication is only half-removable.** The bodies
+really are identical, `where` clause included, and `⊗ᴰ-const` really is `refl` —
+but defining `⊗-assoc⁻ = ⊗ᴰ-assoc⁻ {B = λ _ → B} {C = λ _ → C}` makes it stop
+reducing when passed *unapplied*, which the pentagon does (`⊗-map ⊗-assoc⁻ id⊢`):
+the families become metas nothing solves, so the general lemma never gets to
+match, and the pentagon fails with unsolved constraints. Eta-expanding does not
+help. The general lemma now lives next to the specific one in `Strings` with
+that reason recorded; the two bodies stay.
+
+**The 961-line STLC table is load-bearing, not duplication.** §2.3 called it
+derivable and put it at ~2.4% of the branch. Deriving it —
+`sectionDiscrete uncode code uncode-code discreteℕ`, 125 lines including a
+`code`, a list-based `uncode` (numeral patterns are refused past 20) and 31
+`refl`s — typechecks the *definition*, but `sectionDiscrete`'s `yes` branch
+builds `sym (sect x) ∙∙ cong f p ∙∙ sect y`, a path composition **per token
+comparison**. The parser dispatches on `_≟T_` at every step and the tests
+normalise it, so the module went from checking in the ordinary build to 6 GB
+resident and still climbing after five minutes; it was killed, not finished.
+The table stays, and the file now says why. A cheaper derivation would have to
+reduce to `inl Eq.refl` / `inr _` in one step — deciding on `code a ≡ᵇ code b`
+and rebuilding the `Eq.≡` directly — rather than going through `Discrete`.
+
+### Not attempted
+
+`char⁺-cons` (`Automaton/TokenStream:107`), `Λ-total` (`Lookahead/Base:62`) and
+`litc-ends` (`Ascent/ShiftConverse:268`) still build an element by hand. All
+three *construct* rather than destructure, and all three are indexed by
+metalanguage data, so they are weaker instances of the pattern than the ones
+above; they want `⊗-intro` rather than a raw tuple.
+
+The `AnswerFunctor` unification (§2.2) is untouched: it is a design change
+across two combinator libraries with ~56 dependent files, not a cleanup, and it
+should land as its own PR between B and D of §5.
