@@ -47,17 +47,9 @@ module R1 = Mch.Runner Inc.MaybeAnswer {ℓK = ℓG} {A = Sset}
 dyckByCut : ⊤Ty ⊢ ty (Ans Sset)
 dyckByCut = R1.cut ∘⊢ (dyckParser ,& R1.initial)
 
--- FIXME(theory-core-review): DISABLED -- this two-line proof cost 12.36 GB of
--- heap and never terminated, and is what made `make check` die with
--- "Heap exhausted" against the Makefile's -M16G.  Commenting it out takes
--- this module from "never finishes" to 535 MB / 2.97 s.
---
--- `refl` asks the conversion checker to normalise two whole guarded-fixpoint
--- parsers against each other; there is no cost model for that.  The claim --
--- that `runP` is a cut against the trivial configuration -- is worth keeping,
--- but it needs a structural proof (or `Machine.runFromInit` stated so that it
--- holds by construction), not one by conversion.
---
+-- FIXME: disabled -- `refl` here normalises two guarded-fixpoint parsers
+-- against each other, which took 12 GB and did not terminate.  The claim is
+-- worth keeping, but it needs a structural proof.
 -- dyckByCut≡dyck : dyckByCut ≡ dyck
 -- dyckByCut≡dyck = refl
 

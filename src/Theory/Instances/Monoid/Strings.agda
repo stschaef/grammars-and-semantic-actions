@@ -135,12 +135,9 @@ infixr 20 _,⊗_
 ++-unit-rEq [] = Eq.refl
 ++-unit-rEq (x ∷ a) = Eq.ap (x ∷_) (++-unit-rEq a)
 -- The dependent tensor: `A ⊗ B` where the right factor may mention the
--- string the left factor consumed and the tree it built over it.  It is
--- introduced here, beside `_⊗_`, because it *generalises* `_⊗_` -- a `Σ`
--- over a constant family is a `×`, so `⊗ᴰ-const` below is `refl` -- and
--- because the reassociation the two share was otherwise written twice, once
--- here and once in `Backreference/Base`, with identical bodies and
--- identical `where` clauses.
+-- string the left factor consumed and the tree it built over it.  It sits
+-- beside `_⊗_` because it generalises it: a `Σ` over a constant family is a
+-- `×`, so `⊗ᴰ-const` below is `refl`.
 Dep : TheoryTy ℓA tt → (ℓB : Level) → Type _
 Dep A ℓB = (l : String) → A l → TheoryTy ℓB tt
 
@@ -182,13 +179,10 @@ Dep A ℓB = (l : String) → A l → TheoryTy ℓB tt
   split = Eq.sym (++-assocEq (ns zero) (ns (suc zero)) (ms (suc zero)))
      Eq.∙ (Eq.ap (_++ ms (suc zero)) f Eq.∙ e)
 
--- ...and at constant families.  This *is* `⊗ᴰ-assoc⁻` above -- same body,
--- same `where` clause -- and it is written out anyway, deliberately.
--- Defining it as `⊗ᴰ-assoc⁻ {B = λ _ → B} {C = λ _ → C}` typechecks here
--- but stops it reducing when it is passed *unapplied*, as the pentagon
--- below does (`⊗-map ⊗-assoc⁻ id⊢`): the families become metas that
--- nothing solves, so `⊗ᴰ-assoc⁻` never gets to match and the pentagon
--- fails with unsolved constraints.  Measured, not assumed.
+-- ...and at constant families.  Written out rather than defined as
+-- `⊗ᴰ-assoc⁻ {B = λ _ → B} {C = λ _ → C}`, which typechecks but stops
+-- reducing when passed unapplied, as the pentagon below does
+-- (`⊗-map ⊗-assoc⁻ id⊢`): the families become metas nothing solves.
 ⊗-assoc⁻ : {A : TheoryTy ℓA tt} {B : TheoryTy ℓB tt} {C : TheoryTy ℓC tt}
   → A ⊗ (B ⊗ C) ⊢ (A ⊗ B) ⊗ C
 ⊗-assoc⁻ m (ms , e , (a , ((ns , f , (b , (c , _))) , _))) =

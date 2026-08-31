@@ -1,12 +1,7 @@
 {-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
 {- The alphabet of the list-literal example: three punctuation tokens and a
-   number.
-
-   Split out of `Combinator/{Decidable,Incomplete}/ListLit`, which each
-   carried their own copy of this datatype and of the sixteen-clause
-   decision table, so that `Combinator/Grammars/ListLit` can name it once
-   and be parametric in the answer -- the same arrangement `Grammars/Dyck`
-   already has. -}
+   number.  Named once here so `Combinator/Grammars/ListLit` can be
+   parametric in the answer, as `Grammars/Dyck` is. -}
 open import Cubical.Foundations.Prelude
 import Cubical.Data.Sum as Sum
 import Cubical.Data.Empty as Empty

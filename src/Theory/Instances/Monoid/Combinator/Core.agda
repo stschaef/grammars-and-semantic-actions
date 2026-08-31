@@ -100,10 +100,6 @@ module PushOf (ℓB : Level) {I : Type ℓAlph} (Λ : I → TheoryTy ℓM tt)
       same Eq.refl Eq.refl = Eq.refl
     go (Sum.inr nb) = cov .disjoint b b' nb m (t , t')
 
--- `DiscreteEq→isSet` arrives with `DiscreteEq` itself, from
--- `Cubical.Relation.Nullary.DiscreteEq` via `Type/Decidable/Route`, so
--- that the modules imported *by* this one can name the same proof.
-
 decM₁ : DiscreteEq M₁
 decM₁ ε₁ ε₁ = Sum.inl Eq.refl
 decM₁ ε₁ (tk c) = Sum.inr λ ()

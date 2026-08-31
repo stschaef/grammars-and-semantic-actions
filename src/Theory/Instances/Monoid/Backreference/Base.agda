@@ -29,10 +29,7 @@ open import Theory.Instances.Monoid.Residual Alphabet isSetAlphabet
 
 private variable ℓ ℓ' ℓ'' : Level
 
--- `Dep`, `⊗ᴰ`, `⊗ᴰ-const` and `⊗ᴰ-assoc⁻` now live in `Strings`, beside the
--- `_⊗_` they generalise: `⊗ᴰ-assoc⁻` and `Strings.⊗-assoc⁻` had identical
--- bodies and identical `where` clauses, and keeping the general one in a
--- module the specific one cannot see is what let that happen.
+-- `Dep`, `⊗ᴰ`, `⊗ᴰ-const` and `⊗ᴰ-assoc⁻` come from `Strings`.
 -- Associativity with a prefix-indexed right factor.
 
 -- `seq` reassociates `A ⊗ (B ⊗ K)` with `⊗-assoc`/`⊗-assoc⁻`.  The same

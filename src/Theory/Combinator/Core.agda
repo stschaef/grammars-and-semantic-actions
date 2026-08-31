@@ -136,19 +136,9 @@ isSet⊗ᴰ o As m =
 ⊗ᴰSet o As = ⊗ᴰ o As , isSet⊗ᴰ o As
 
 -- Introduction and elimination, in the shape `Operation/Base` states them
--- for `⊗ᵘ`: at `op o ms`, a witness in each slot.
---
--- These two bind a model element, and they are allowed to: `⊗ᴰ` is
--- introduced here, so this is its connective-introduction boundary, the
--- same licence `Operation/Base` takes for `⊗ᵘ` and `Backreference/Base`
--- for the monoid's dependent tensor.  Nothing downstream of them binds one.
---
--- `⊗ᴰ` is `⊗ᵘ` with the slots allowed to depend on the splitting `ms`, so
--- it cannot be `⊗ᵘ-intro`/`⊗ᵘ-elim` as written.  Making it one connective
--- would mean moving the dependent tensor down into `Operation/Base`, which
--- today is blocked: `⊗ᴰ` is `TheorySet`-valued and `Type/HLevels` already
--- imports `Operation/Base` (`HLevels.agda:35`), so the dependency inverts.
--- See notes/theory-core-review.md for the three-way `⊗` unification.
+-- for `⊗ᵘ`: at `op o ms`, a witness in each slot.  These bind a model
+-- element because `⊗ᴰ` is introduced here; nothing downstream of them does.
+-- `⊗ᴰ` is `⊗ᵘ` with the slots depending on `ms`, so it is not `⊗ᵘ-intro`.
 node-mk : {o : σ .ops} {As : NodeArgs ℓA o} {ms : interpIn o ↓M}
   → ((a : arities σ o) → ty (As ms a) (ms a))
   → ty (⊗ᴰSet o As) (op o ms)

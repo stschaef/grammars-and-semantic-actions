@@ -79,11 +79,9 @@ lit⊗-tail : {B : TheoryTy ℓA tt} (c : Alphabet) (u v as : ↓M tt)
 lit⊗-tail {B = B} c u v as lc e =
   subst B (L.cons-inj₂ (flat c u v (c ∷ as) lc e))
 
--- A grammar every one of whose parses is a single character is *precise*:
--- the splitting of `A ⊗ K` is determined by the word, so a refutation of
--- the suffix refutes the whole tensor.  `literal c`, `char` and `satG P`
--- are all of that shape, and the three lemmas below are this one lemma at
--- the three maps into `char`; only the map differs, never the argument.
+-- A grammar whose every parse is a single character is precise: the
+-- splitting of `A ⊗ K` is pinned by the word, so refuting the suffix refutes
+-- the tensor.  `literal c`, `char` and `satG P` are the three instances.
 tok⊗-precise : {A : TheoryTy ℓA tt} {K : TheoryTy ℓB tt}
   → A ⊢ char → A ⊗ ¬Ty K ⊢ ¬Ty (A ⊗ K)
 tok⊗-precise {K = K} f m (ms , e , (a , (nk , _))) t =
@@ -108,8 +106,7 @@ char⊗-precise : {K : TheoryTy ℓA tt} → char ⊗ ¬Ty K ⊢ ¬Ty (char ⊗ 
 char⊗-precise = tok⊗-precise id⊢
 
 -- ...and so is `satG P`, whose parse carries the letter and a proof that
--- the predicate accepts it.  Stated here rather than in `Regex/Sat`,
--- beside the other two, so that the argument is written once.
+-- the predicate accepts it.
 sat⊗-precise : {P : Alphabet → Bool} {K : TheoryTy ℓA tt}
   → satG P ⊗ ¬Ty K ⊢ ¬Ty (satG P ⊗ K)
 sat⊗-precise = tok⊗-precise λ _ (x , lc) → x .fst , lc

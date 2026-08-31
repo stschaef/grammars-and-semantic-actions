@@ -32,9 +32,6 @@ open import Cubical.Foundations.HLevels using (isSetΣ)
 
 open import Theory.Instances.Monoid.Combinator.Decidable.Base Alphabet _≟_ ℓ
   public
--- `sat⊗-precise` lives in `Precise` beside `lit⊗-precise` and
--- `char⊗-precise`: all three are the one `tok⊗-precise` argument at a
--- different map into `char`, and only that layer binds a model element.
 open import Theory.Instances.Monoid.Precise Alphabet isSetAlphabet
   using (sat⊗-precise)
 open import Theory.Instances.Monoid.Sat Alphabet isSetAlphabet public

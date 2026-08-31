@@ -7,11 +7,8 @@
    grammar in this directory pays that ~60 lines to get a repetition;
    `sepBy` is the whole grammar here.
 
-   `Decidable/ListLit` and `Incomplete/ListLit` were this text twice,
-   differing only in which answer they picked -- and, gratuitously, in
-   whether they wrote the inferred grammar types out or left them `_`.
-   Nothing in the grammar mentions an answer, so it is parametric, exactly
-   as `Grammars/Dyck` is; those two modules now only choose one and run the
+   Nothing in the grammar mentions an answer, so it is parametric;
+   `Decidable/ListLit` and `Incomplete/ListLit` only choose one and run the
    tests. -}
 open import Cubical.Foundations.Prelude
 open import Theory.Instances.Monoid.Grammars.ListLit using (Tok ; _≟T_)

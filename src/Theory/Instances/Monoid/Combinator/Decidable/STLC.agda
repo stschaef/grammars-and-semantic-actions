@@ -29,24 +29,11 @@ open import Cubical.Data.Unit using (tt)
 data Tok : Type ℓ-zero where
   kbool knat karr kprod klist ktrue kfalse kif kthen kelse kzero ksuc knatrec klam kcolon kdot kapp kpair kfst ksnd knil kcons kfoldr klet kassign kin vf vg vn vx vxs : Tok
 
--- The 31x31 table below is 961 lines, 48% of this file, and it looks like
--- the most obvious duplication in the tree.  It is not: it is paying for
--- reduction, and the price of removing it was measured.
---
--- Replacing it with `sectionDiscrete uncode code uncode-code discreteℕ`
--- (a `code : Tok → ℕ`, a list-based `uncode`, and 31 `refl`s -- 125 lines)
--- typechecks the definition, but `sectionDiscrete`'s `yes` branch builds
--- `sym (sect x) ∙∙ cong f p ∙∙ sect y`, a path composition *per token
--- comparison*.  The parser dispatches on `_≟T_` at every step, and the
--- tests at the bottom of this file run it by normalisation, so that cost is
--- multiplied by the whole parse: the module went from checking inside the
--- ordinary build to 6 GB resident and still climbing after five minutes,
--- and was killed rather than allowed to finish.
---
--- So the table stays, and this comment is the reason.  A cheaper
--- derivation would have to reduce to `inl Eq.refl`/`inr _` in one step --
--- e.g. deciding on `code a ≡ᵇ code b` and recovering the `Eq.≡` without a
--- composite path -- not go through `Discrete`.
+-- Do not replace this table with `sectionDiscrete _ code _ discreteℕ`: its
+-- `yes` branch builds a path composition per comparison, and since the
+-- parser dispatches on `_≟T_` at every step and the tests normalise it, the
+-- module then runs out of memory instead of checking.  A derivation has to
+-- reduce to `inl Eq.refl` in one step to be viable.
 _≟T_ : (a b : Tok) → (a Eq.≡ b) Sum.⊎ ((a Eq.≡ b) → Empty.⊥)
 kbool ≟T kbool = Sum.inl Eq.refl
 kbool ≟T knat = Sum.inr λ ()

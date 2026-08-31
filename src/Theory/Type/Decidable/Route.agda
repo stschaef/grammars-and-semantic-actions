@@ -40,8 +40,7 @@ open import Theory.Type.Decidable.Base σeq V vs 𝒫
 
 private variable ℓA ℓB ℓY : Level
 
--- `DiscreteEq` is parameter-free, so it lives outside the theory modules;
--- re-exported here for the clients that used to get it from this file.
+-- `DiscreteEq` is parameter-free, so it lives outside the theory modules.
 open import Cubical.Relation.Nullary.DiscreteEq public
   using (DiscreteEq ; DiscreteEq→Discrete ; DiscreteEq→isSet)
 
