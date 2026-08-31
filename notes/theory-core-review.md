@@ -82,6 +82,17 @@ operation here with no cost model, and there is no guard against another
 `MachineDyck`. A CI step that reports per-module time or peak residency
 would have caught this at the commit that introduced it.
 
+The shape to watch for is narrower than "a `refl` between `⊢`-terms", and
+checking found **no second instance**. Every other bare-`refl` equation
+between composed terms in `Theory/` — `Unitor`'s `⊗-assoc-nat↑`,
+`Convolution`'s `⟦⊗e⟧-β`, `Subgrammar`'s `sub-β`, `Equalizer`'s `eq-β`,
+`Grammars/Dyck`'s `nodeOut∘nodeIn`, `Product/Binary`'s `&-swap-invol` — has
+both sides *structural*: they unfold to a fixed depth and stop.
+`dyckByCut≡dyck` was the only one where both sides contain a **guarded
+fixpoint** (`P.fix step`), so conversion had to unroll a parser against
+itself with nothing bounding the unrolling. That is the rule a lint could
+encode: a `refl` is suspect exactly when both sides mention a `fix`/`löb`.
+
 Otherwise the tree is in good shape:
 
 * 0 postulates in `src/Theory/` (the only one in the repo is
@@ -425,6 +436,13 @@ or not at all.
 ---
 
 ## 6. Fixes applied
+
+**Verification.** After the fixes, `make check` from an *empty* `_build`
+rebuilds all **408 modules of this library** with **0 errors, exit 0**, in
+3m48s wall / 11m17s CPU, peaking well under the `-M16G` cap.  The same
+command on the branch tip heap-exhausted.  (The "890" in §0 counts the
+cubical and c-c-l modules cached outside `src/_build`; 408 is this
+repository.)
 
 Everything below was typechecked. Where a fix was attempted and abandoned,
 the measurement that killed it is recorded — two of §1–§2's findings did not
