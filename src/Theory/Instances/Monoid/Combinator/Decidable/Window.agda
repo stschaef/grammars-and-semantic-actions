@@ -1,0 +1,51 @@
+{-# OPTIONS --lossy-unification -WnoUnsupportedIndexedMatch #-}
+open import Cubical.Foundations.Prelude
+open import Cubical.Algebra.Theory.Finitary
+import Cubical.Data.Sum as Sum
+import Cubical.Data.Empty as Empty
+import Cubical.Data.Equality as Eq
+open SortedSig
+open SortedEqns
+
+module Theory.Instances.Monoid.Combinator.Decidable.Window
+  {ℓAlph}
+  (Alphabet : Type ℓAlph)
+  (_≟_ : (x y : Alphabet) → (x Eq.≡ y) Sum.⊎ ((x Eq.≡ y) → Empty.⊥))
+  (ℓ : Level)
+  where
+
+open import Cubical.Data.Maybe using (Maybe ; just ; nothing)
+open import Cubical.Data.Unit using (tt)
+
+open import Theory.Instances.Monoid.Combinator.Decidable.Routed Alphabet _≟_ ℓ public
+  hiding (_◂_)
+open import Theory.Instances.Monoid.Lookahead.Window Alphabet isSetAlphabet
+  public
+
+-- `◂` inverted by projection: K is off, constructor equations don't split
+private
+  hdOr : Alphabet → {n : Width} → Window (more n) → Alphabet
+  hdOr a ⟨⟩ = a
+  hdOr a (c ◂ _) = c
+
+  tlOr : {n : Width} → Window n → Window (more n) → Window n
+  tlOr v ⟨⟩ = v
+  tlOr v (_ ◂ w) = w
+
+decWindow : {n : Width} → DiscreteEq (Window n)
+decWindow ⟨⟩ ⟨⟩ = Sum.inl Eq.refl
+decWindow ⟨⟩ (c ◂ w') = Sum.inr λ ()
+decWindow (c ◂ w) ⟨⟩ = Sum.inr λ ()
+decWindow (c ◂ w) (d ◂ w') = go (c ≟ d) (decWindow w w')
+  where
+  go : (c Eq.≡ d) Sum.⊎ ((c Eq.≡ d) → Empty.⊥)
+     → (w Eq.≡ w') Sum.⊎ ((w Eq.≡ w') → Empty.⊥)
+     → ((c ◂ w) Eq.≡ (d ◂ w')) Sum.⊎ (((c ◂ w) Eq.≡ (d ◂ w')) → Empty.⊥)
+  go (Sum.inl Eq.refl) (Sum.inl Eq.refl) = Sum.inl Eq.refl
+  go (Sum.inl Eq.refl) (Sum.inr nw) =
+    Sum.inr λ e → nw (Eq.ap (tlOr w) e)
+  go (Sum.inr nc) _ = Sum.inr λ e → nc (Eq.ap (hdOr c) e)
+
+-- `PushOf` is the only place the width enters.
+module PushW (n : Width) {Y : Type ℓAlph} (r : Window n → Maybe Y) =
+  PushOf ℓG (Λw {n}) (windowCover n) decWindow r
